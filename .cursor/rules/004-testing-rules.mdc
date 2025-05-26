@@ -1,0 +1,21 @@
+---
+description: Enforce general coding rules for tests to prevent common errors.
+globs: 
+alwaysApply: true
+---
+
+- Write tests first, then the code, then run the tests and update the code until tests pass.
+- Include appropriate unit tests for all code. Use subdirectories named **`/__tests__/`** inline in the source tree.
+  Everything in a **`/__tests__/`** subdirectory will be treated and run as a test.
+- Include appropriate integration tests or end-to-end (e2e) tests in **`/tests`** for all components.
+- Use vitest for tests.
+- Use vitest types and not jest types.
+- Properly type mock functions.
+- Properly type event handlers.
+- Use arrow functions where appropriate.
+- Fix unbound method warnings.
+- Fix any lint errors in the code and tests, use **npm run lint**
+- Fix any type errors in the code and tests, use **npm run type-check**
+- There is a frontend directory where package.json and the test files are located. Run the tests from there.
+- Fix failing tests one by one, use sequential thinking.
+- Do not run a development server, do not use **npm run dev**

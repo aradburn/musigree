@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>{{ title }}</title>
+
+    {%- if not is_production %}
+    <script type="module" src="{{ asset('@vite/client') }}"></script>
+    <script type="module">
+        import RefreshRuntime from "{{ asset('@react-refresh') }}";
+        RefreshRuntime.injectIntoGlobalHook(window);
+        window.$RefreshReg$ = () => {};
+        window.$RefreshSig$ = () => (type) => type;
+        window.__vite_plugin_react_preamble_installed__ = true;
+    </script>
+    {%- endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"
+    />
+
+    <!-- Musigree -->
+    <meta
+        property="og:description"
+        content=" Musigree provides an
+            interactive visualization of the relationships between nearly 11 million
+            artists, bands and labels using information derived from the Discogs.com
+            database."
+    />
+    <meta property="og:title" content="{{ og_title }}"/>
+    <meta property="og:site_name" content="Musigree"/>
+    <meta property="og:url" content="{{ application_url }}{{ og_url }}"/>
+    <meta
+        property="og:image"
+        content="{{ application_url }}/img/og_image.png"
+    />
+
+    <!-- favicon-->
+    <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="/public/img/apple-touch-icon.png"
+    />
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="32x32"
+        href="/public/img/favicon-32x32.png"
+    />
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="16x16"
+        href="/public/img/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/public/site.webmanifest"/>
+</head>
+
+<body id="{{ key }}">
+<!-- This div will be the mount point for the React application -->
+<div id="react-app-container" class="h-100"></div>
+
+{% if initial_json %}
+<script>{{ initial_json|safe }}</script>
+{% endif %}
+
+<script type="module" src="{{ asset('index.ts') }}"></script>
+</body>
+</html>

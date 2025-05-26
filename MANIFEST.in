@@ -1,0 +1,3 @@
+recursive-include musigree *
+recursive-exclude musigree/data *
+recursive-exclude musigree *.pyc

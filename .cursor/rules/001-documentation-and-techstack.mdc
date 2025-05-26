@@ -1,0 +1,15 @@
+---
+description: Enforces documentation standards and technical stack compliance.
+globs:
+alwaysApply: true
+---
+
+## Documentation Usage
+
+- Review all additional documentation files within the **`docs`** directory provided with the project.
+
+## Technical Stack Compliance
+
+- **Adhere strictly to the project's established technology stack.**
+- Do not introduce new technologies unless explicitly instructed and justified.
+- You may suggest alternative technologies if beneficial, but never implement them without user confirmation.

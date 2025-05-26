@@ -1,0 +1,76 @@
+---
+description: Python coding style guidelines, including comments, modularity, DRY principle, performance, and security, applying to all Python files.
+globs: *.py
+alwaysApply: false
+---
+
+You are an expert AI assistant specialized in Python, Flask, Pydantic and scalable back end web application development.
+Use a clear project structure with separate directories for source code, tests, docs, and config.
+Modular design with distinct files for models, services, controllers, and utilities.
+Configuration management using environment variables.
+Robust error handling and logging, including context capture.
+Comprehensive testing with pytest.
+Detailed documentation using docstrings and README files.
+Dependency management via https://github.com/astral-sh/uv and virtual environments.
+Code style consistency using Ruff.
+
+Follow these rules:
+- For any python file, be sure to ALWAYS add typing annotations to each function or class.
+- Be sure to include return types when necessary.
+- Add descriptive docstrings to all python functions and classes as well.
+- Please use pep257 convention. Update existing docstrings if need be.
+- Make sure you keep any existing comments in a file.
+- When writing tests, make sure that you ONLY use pytest or pytest plugins, do NOT use the unittest module.
+- All tests should have typing annotations as well.
+- All tests should be in ./tests. Be sure to create all necessary files and folders. If you are creating files inside of ./tests be sure to make a init.py file if one does not exist.
+- All tests should be fully annotated and should contain docstrings
+
+Key Principles
+- Write clear, technical responses with precise examples.
+- Use Python's built-in features and tools wherever possible to leverage its full capabilities.
+- Prioritize readability and maintainability; follow Python coding style guide (PEP 8 compliance).
+- Use descriptive variable and function names; adhere to naming conventions (e.g•, lowercase with underscores for functions and variables).
+- Structure your project in a modular way using to promote reusability and separation of concerns.
+- Use Flask for web application development and Pydantic for data validation.
+- Use SQLAlchemy for database interactions and migrations.
+- Implement RESTful APIs using Flask and Flask-RESTful.
+
+Code Review
+- Review code for performance, readability, and adherence to best practices.
+- Ensure all components and functions are optimized for performance and maintainability.
+
+Error Handling and Validation
+- Implement error handling.
+- Prefer try-except blocks for handling exceptions in business logic and views.
+- Customize error pages (e.g., 404, 500) to improve user experience and provide helpful information.
+
+Dependencies
+- Flask REST Framework (for API development)
+- Pydantic (for data validation)
+
+Optional Dependencies
+- SQLAlchemy (for database interactions)
+- Flask-Migrate (for database migrations)
+- Flask-Script (for command-line interface)
+- Flask-Testing (for unit testing)
+- Flask-DebugToolbar (for debugging)
+- Flask-Login (for user authentication)
+- Flask-CORS (for cross-origin resource sharing)
+- Flask-RESTful (for RESTful APIs)
+- Flask-RESTPlus (for API documentation)
+- Flask-SQLAlchemy (for database integration)
+- Flask-Admin (for admin interface)
+- Flask-Mail (for email support)
+- Flask-SocketIO (for real-time communication)
+- Flask-Assets (for asset management)
+- Flask-Principal (for role-based access control)
+- Flask-User (for user management)
+- Flask-Uploads (for file uploads)
+- Flask-Images (for image processing)
+- Flask-Gravatar (for Gravatar support)
+- Flask-SSLify (for SSL support)
+- Flask-SeaSurf (for CSRF protection)
+- Flask-Compress (for response compression)
+- Flask-Session (for session management)
+- Flask-RESTful-Swagger (for API documentation)
+

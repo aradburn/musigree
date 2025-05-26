@@ -1,0 +1,89 @@
+---
+description: Enforces project standards and operational guidelines.
+globs:
+alwaysApply: true
+---
+# Project Context and Architecture
+SYSTEM_CONTEXT: |
+  Required file reads on startup:
+  - docs/PRD.md: Project Requirements Document
+  - **`docs/technical.md`**: Technical specifications and patterns
+  - **`tasks/tasks.md`**: Current development tasks and requirements
+  - **`docs/status.md`**: Project progress and state
+
+  Before making any changes:
+  1. Parse and understand system architecture from **`docs/PRD.md`**
+  2. Check current task context from **`tasks/tasks.md`**
+  3. Update progress in **`docs/status.md`**
+  4. Follow technical specifications from **`docs/technical.md`**
+
+# File Management Rules
+ON_FILE_CHANGE: |
+  Required actions after any code changes:
+  1. READ **`docs/PRD.md`** to verify architectural compliance
+  2. UPDATE **`docs/status.md`** with:
+     - Current progress
+     - Any new issues encountered
+     - Completed items
+  3. VALIDATE changes against **`docs/technical.md`** specifications
+  4. VERIFY task progress against **`tasks/tasks.md`**
+
+# Architecture Understanding
+READ_ARCHITECTURE: |
+  File: **`docs/PRD.md`**
+  Required parsing:
+  1. Load and parse complete architecture
+  2. Extract and understand:
+     - Module boundaries and relationships
+     - Data flow patterns
+     - System interfaces
+     - Component dependencies
+  3. Validate any changes against architectural constraints
+  4. Ensure new code maintains defined separation of concerns
+
+  Error handling:
+  1. If file not found: STOP and notify user
+  2. If **`docs/PRD.md`** parse fails: REQUEST clarification
+  3. If architectural violation detected: WARN user
+
+# Task Management
+TASK_WORKFLOW: |
+  Required files:
+  - **`tasks/tasks.md`**: Source of task definitions
+  - **`docs/status.md`**: Progress tracking
+  - **`docs/technical.md`**: Implementation guidelines
+
+  Workflow steps:
+  1. READ **`tasks/tasks.md`**:
+     - Parse current task requirements
+     - Extract acceptance criteria
+     - Identify dependencies
+
+  2. VALIDATE against **`docs/PRD.md`**:
+     - Confirm architectural alignment
+     - Check component interactions
+
+  3. UPDATE **`docs/status.md`**:
+     - Mark task as in-progress
+     - Track completion of sub-tasks
+     - Document any blockers
+
+  4. IMPLEMENT following TDD:
+     - Create test files first
+     - Implement to pass tests
+     - Update status on test completion
+     - Use **`npm test`** for test validation
+     - Use **`npm run lint`** for style and type validation
+
+# Error Prevention
+VALIDATION_RULES: |
+  1. Verify type consistency
+  2. Check for potential null/undefined
+  3. Validate against business rules
+  4. Ensure error handling
+
+# Running Commands
+- Automatically execute safe, non-destructive commands, including compilation commands, build commands, git operations (except force pushes or hard resets), package manager operations (npm/pip/yarn install, update), file navigation, search and replace operations, model context protocol tools, test runners, and debugging commands.
+- Do not execute commands that modify or delete files, create new files, or execute potentially destructive operations without user confirmation.
+- Always confirm before executing potentially destructive commands, such as deleting files, force pushing, or running scripts with unknown side effects.
+- 

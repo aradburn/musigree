@@ -1,0 +1,12 @@
+---
+description: Enforces specific rules for using MCP tools to maintain consistency and avoid common errors.
+globs: 
+alwaysApply: true
+---
+
+## Sequential Thinking
+
+- Use **Sequential Thinking MCP** for debugging, troubleshooting, complex problem-solving, and detailed project
+  planning.
+- Avoid excessive recursive calls; trigger intelligently only when new progress or significant information is possible.
+- Use **Sequential Thinking MCP** to break down complex tasks into smaller, more manageable steps.

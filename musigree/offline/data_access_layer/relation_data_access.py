@@ -1,0 +1,367 @@
+"""
+This module provides data access functionality for relations within the Musigree offline system.
+
+It defines the `RelationDataAccess` class, which offers methods for extracting
+relations from `Release` objects, determining relationships between artists and
+labels, handling compilations, and converting between different relation
+representations. It is designed to be used during the offline data loading
+process.
+
+Key functionalities include:
+    - Extracting relations from `Release` objects, considering artists, extra
+      artists, companies, and track information.
+    - Determining artist-label relationships based on release data, handling
+      compilations differently.
+    - Identifying and handling compilation releases, where various artists
+      are credited on individual tracks.
+    - Normalizing role names using `RoleDataAccess` to ensure consistency.
+    - Converting relations between internal and external representations.
+    - Finding relations based on a key (subject, role, object).
+
+The `RelationDataAccess` class interacts with `RoleDataAccess` for role
+normalization and lookup, `EntityRepository` for entity operations, and
+`RelationRepository` for relation operations. It uses `Relation`,
+`RelationInternal`, and `Release` from `musigree.offline.domain` for
+representing relation and release data, and `RoleType` for managing role
+types.
+
+The module utilizes logging for debugging and error reporting.
+"""
+
+import itertools
+import logging
+from typing import List, Dict, Any
+
+from musigree.library.fields.role_type import RoleType
+from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
+from musigree.offline.database.entity_repository import EntityRepository
+from musigree.offline.database.relation_repository import RelationRepository
+from musigree.offline.domain.relation import Relation, RelationInternal
+from musigree.offline.domain.release import Release
+
+log = logging.getLogger(__name__)
+"""
+The logger for the RelationDataAccess module.
+"""
+
+
+class RelationDataAccess:
+    """
+    Provides data access functionality for relations within the Musigree offline system.
+
+    This class offers methods for extracting relations from `Release` objects,
+    determining relationships between artists and labels, handling compilations,
+    and converting between different relation representations.
+    """
+
+    @classmethod
+    def from_release(cls, release: Release) -> List[Dict[str, Any]]:
+        """
+        Extracts relations from a `Release` object.
+
+        This method analyzes a `Release` object and extracts all the relations
+        present within it, considering artists, extra artists, companies, and
+        track information. It handles various types of relationships, including
+        artist-label relations, artist-artist relations, and artist-company
+        relations.
+
+        Args:
+            release (Release): The release object to extract relations from.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, where each dictionary
+                represents a relation.
+        """
+        # log.debug(f"      release: {release}")
+        triples = set()
+        """Set to store unique triples of (subject_id, role, object_id)."""
+        artist_ids, label_ids, is_compilation = cls.get_release_setup(release)
+        """Get the artist IDs, label IDs, and compilation status from the release."""
+
+        triples.update(
+            cls.get_artist_label_relations(
+                artist_ids,
+                label_ids,
+                is_compilation,
+            )
+        )
+        """Update the triples with artist-label relations."""
+        aggregate_roles = {}
+        """Dictionary to store aggregate roles and their associated artist IDs."""
+
+        if is_compilation:
+            iterator = itertools.product(label_ids, release.extra_artists)
+        else:
+            iterator = itertools.product(artist_ids, release.extra_artists)
+        """Determine the iterator based on whether the release is a compilation."""
+        for object_id, credit in iterator:
+            for roles in credit["roles"]:
+                input_role_str: str = roles["name"]
+                role_str_list = RoleDataUtils.normalise_role_names(input_role_str)
+                """Normalize the role names."""
+                for role_str in role_str_list:
+                    role_name = RoleDataAccess.find_role(role_str)
+                    """Find the normalized role name."""
+                    if role_name is not None:
+                        if role_name in RoleType.aggregate_roles:
+                            if role_name not in aggregate_roles:
+                                aggregate_roles[role_name] = []
+                            if "id" in credit:
+                                aggregate_credit_id = credit["id"]
+                                aggregate_roles[role_name].append(aggregate_credit_id)
+                        else:
+                            if "id" in credit:
+                                triples.add((credit["id"], role_name, object_id))
+
+        if is_compilation:
+            iterator = itertools.product(label_ids, release.companies)
+        else:
+            iterator = itertools.product(artist_ids, release.companies)
+        """Determine the iterator based on whether the release is a compilation."""
+        for subject_id, company in iterator:
+            input_role_str: str = company["entity_type_name"]
+            role_strs_list = RoleDataUtils.normalise_role_names(input_role_str)
+            """Normalize the role names."""
+            for role_str in role_strs_list:
+                role_name = RoleDataAccess.find_role(role_str)
+                """Find the normalized role name."""
+                if role_name is not None:
+                    if "id" in company:
+                        triples.add(
+                            (
+                                subject_id,
+                                role_name,
+                                company["id"],
+                            )
+                        )
+
+        all_track_artist_ids = set()
+        """Set to store all unique artist IDs from tracks."""
+        for track in release.tracklist:
+            track_artist_ids = set(
+                artist["id"] for artist in track.get("artists", ()) if "id" in artist
+            )
+            all_track_artist_ids.update(track_artist_ids)
+            if not track.get("extra_artists"):
+                continue
+            track_artist_ids = track_artist_ids or artist_ids or label_ids
+            iterator = itertools.product(track_artist_ids, track["extra_artists"])
+            for object_id, credit in iterator:
+                for roles in credit.get("roles", ()):
+                    input_role_str: str = roles["name"]
+                    role_strs_list = RoleDataUtils.normalise_role_names(input_role_str)
+                    """Normalize the role names."""
+                    for role_str in role_strs_list:
+                        role_name = RoleDataAccess.find_role(role_str)
+                        """Find the normalized role name."""
+                        if role_name is not None:
+                            if "id" in credit:
+                                subject_id = credit["id"]
+                                triples.add((subject_id, role_name, object_id))
+
+        for role_name, aggregate_artists in aggregate_roles.items():
+            iterator = itertools.product(all_track_artist_ids, aggregate_artists)
+            for track_artist_id, aggregate_artist_id in iterator:
+                subject_id = aggregate_artist_id
+                object_id = track_artist_id
+                triples.add((subject_id, role_name, object_id))
+        # log.debug(f"triples3: {triples}")
+        triples = sorted(triples)
+        """Sort the triples for consistency."""
+        # log.debug(f"      triples: {triples}")
+        relations = cls.from_triples(triples, release=release)
+        """Convert the triples to a list of relations."""
+        # log.debug(f"      relations: {relations}")
+        return relations
+
+    @classmethod
+    def get_artist_label_relations(
+        cls,
+        artist_ids: set[int],
+        label_ids: set[int],
+        is_compilation: bool,
+    ) -> set[tuple[int, str, int]]:
+        """
+        Determines artist-label relations for a release.
+
+        This method determines the relationships between artists and labels
+        based on whether the release is a compilation or not.
+
+        Args:
+            artist_ids (set[int]): A set of artist IDs.
+            label_ids (set[int]): A set of label IDs.
+            is_compilation (bool): Whether the release is a compilation.
+
+        Returns:
+            set[tuple[int, str, int]]: A set of unique triples representing
+                (artist_id, role, label_id).
+        """
+        # print(f"artist_ids: {artist_ids}")
+        # print(f"label_ids: {label_ids}")
+        triples = set()
+        """Set to store unique triples of (artist_id, role, label_id)."""
+        iterator = itertools.product(artist_ids, label_ids)
+        """Create an iterator for all combinations of artists and labels."""
+        if is_compilation:
+            role = "Compiled On"
+        else:
+            role = "Released On"
+        """Determine the role based on compilation status."""
+        for artist_id, label_id in iterator:
+            triples.add((artist_id, role, label_id))
+        return triples
+
+    @classmethod
+    def get_release_setup(cls, release) -> tuple[set[int], set[int], bool]:
+        """
+        Extracts the setup information from a release.
+
+        This method extracts the artist IDs, label IDs, and determines if the
+        release is a compilation.
+
+        Args:
+            release: The release object.
+
+        Returns:
+            tuple[set[int], set[int], bool]: A tuple containing the artist IDs,
+                label IDs, and the compilation status.
+        """
+        is_compilation = False
+        """Boolean to indicate if a release is a compilation."""
+        # log.debug(f"get_release_setup release: {release}")
+        artist_ids: set[int] = set(
+            artist["id"] for artist in release.artists if "id" in artist
+        )
+        """Set to store unique artist IDs."""
+        # log.debug(f"get_release_setup artists: {artist_ids}")
+        label_ids: set[int] = set(
+            label["id"] for label in release.labels if "id" in label
+        )
+        """Set to store unique label IDs."""
+        # log.debug(f"get_release_setup labels: {label_ids}")
+
+        if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
+            is_compilation = True
+            artist_ids.clear()
+            for track in release.tracklist:
+                artist_ids.update(
+                    artist["id"]
+                    for artist in track.get("artists", ())
+                    if "id" in artist
+                )
+            # log.debug(f"get_release_setup various artists: {artist_ids}")
+        return artist_ids, label_ids, is_compilation
+
+    @classmethod
+    def from_triples(cls, triples, release=None) -> List[Dict[str, Any]]:
+        """
+        Converts triples to a list of relations.
+
+        This method takes a set of triples (subject_id, role, object_id) and
+        converts them into a list of relation dictionaries.
+
+        Args:
+            triples: A set of triples.
+            release: The release object (optional).
+
+        Returns:
+            List[Dict[str, Any]]: A list of relation dictionaries.
+        """
+        relations = []
+        for subject_id, role, object_id in triples:
+            relation = dict(
+                subject=subject_id,
+                role=role,
+                object=object_id,
+            )
+            if release is not None:
+                relation["release_id"] = release.release_id
+                if release.release_date is not None:
+                    relation["year"] = release.release_date.year
+            relations.append(relation)
+        return relations
+
+    @classmethod
+    def find_relation_by_key(
+        cls,
+        *,
+        entity_repository: EntityRepository,
+        relation_repository: RelationRepository,
+        key: dict[str, Any],
+    ) -> list[Relation]:
+        """
+        Finds relations based on a key.
+
+        This method is a placeholder for future functionality to find relations
+        based on specific criteria (e.g., subject, role, object).
+
+        Args:
+            entity_repository (EntityRepository): The entity repository.
+            relation_repository (RelationRepository): The relation repository.
+            key (dict[str, Any]): The key to search for.
+
+        Returns:
+            list[Relation]: A list of relations matching the key.
+        """
+        pass
+
+    @classmethod
+    def relation_internal_dict_to_relation_external_dict(
+        cls,
+        relation_internal_dict: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """
+        Converts an internal relation dictionary to an external relation dictionary.
+
+        This method converts a relation dictionary from its internal
+        representation to an external representation, which is used for
+        output.
+
+        Args:
+            relation_internal_dict (dict[str, Any]): The internal relation dictionary.
+
+        Returns:
+            dict[str, Any] | None: The external relation dictionary, or None if
+                the conversion fails.
+        """
+        relation_internal_dict["id"] = 0
+        """Set the id to 0 for internal processing."""
+        relation_internal = RelationInternal.model_validate(relation_internal_dict)
+        relation = relation_internal.to_relation()
+        if relation is None:
+            return None
+        relation_external_dict = relation.model_dump(exclude={"id", "releases"})
+        """Exclude internal details"""
+        relation_external_dict["release_id"] = relation_internal_dict["release_id"]
+        relation_external_dict["year"] = relation_internal_dict["year"]
+        return relation_external_dict
+
+    @classmethod
+    def relation_internal_dicts_to_relation_external_dicts(
+        cls,
+        relation_internal_dicts: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """
+        Converts a list of internal relation dictionaries to a list of external relation dictionaries.
+
+        This method converts a list of relation dictionaries from their
+        internal representation to external representations.
+
+        Args:
+            relation_internal_dicts (list[dict[str, Any]]): The list of
+                internal relation dictionaries.
+
+        Returns:
+            list[dict[str, Any]]: A list of external relation dictionaries.
+        """
+        relation_external_dicts = []
+        for relation_internal_dict in relation_internal_dicts:
+            relation_external_dict = (
+                RelationDataAccess.relation_internal_dict_to_relation_external_dict(
+                    relation_internal_dict
+                )
+            )
+            if relation_external_dict:
+                relation_external_dicts.append(relation_external_dict)
+        return relation_external_dicts

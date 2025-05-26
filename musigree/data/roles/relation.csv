@@ -1,0 +1,9 @@
+name,category,subcategory
+Alias,RELATION,
+Member Of,RELATION,
+Compiled On,RELATION,
+Released On,RELATION,
+Sublabel Of,RELATION,
+Split With,RELATION,
+Collaborated With,RELATION,
+Other,RELATION,

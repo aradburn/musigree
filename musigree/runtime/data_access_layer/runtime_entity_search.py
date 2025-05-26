@@ -1,0 +1,111 @@
+import logging
+import re
+
+import rapidfuzz
+
+from musigree.library.cache.cache_manager import CacheManager
+from musigree.library.fields.entity_id import (
+    LABEL_ENTITY_ID_OFFSET,
+    to_entity_external_id,
+)
+from musigree.library.full_text_search.text_search_utils import (
+    normalise_search_content,
+)
+from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.utils import URLIFY_REGEX
+
+log = logging.getLogger(__name__)
+
+
+class RuntimeEntitySearch:
+    @staticmethod
+    def search_entities(search_string):
+
+        cache = CacheManager.get_cache()
+
+        normalised_search_string = normalise_search_content(search_string)
+
+        search_query_url = URLIFY_REGEX.sub("+", normalised_search_string)
+        cache_key = f"musigree:/api/search/{search_query_url}"
+        # log.debug(f"  get cache_key: {cache_key}")
+        data = cache.get(cache_key)
+        if data is not None:
+            log.debug(f"{cache_key}: CACHED")
+            # for datum in data["results"]:
+            #     log.debug(f"    {datum}")
+            return data
+
+        documents = RuntimeDatabaseManager.runtime_database_helper.search_text_index(
+            normalised_search_string
+        )
+        # log.debug(f"search results: {documents}")
+
+        sorted_documents = RuntimeEntitySearch.sort_search_results(
+            search_string, documents
+        )
+
+        # log.debug(f"{cache_key}: NOT CACHED")
+        data = []
+        for document in sorted_documents:
+            entity_id, entity_type = to_entity_external_id(document[0])
+            json_entity_key = RuntimeEntity.to_json_entity_key(entity_id, entity_type)
+            datum = dict(
+                key=json_entity_key,
+                name=document[1],
+            )
+            data.append(datum)
+            log.debug(f"    {datum}")
+        data = {"results": tuple(data)}
+        # log.debug(f"  set cache_key: {cache_key} data: {data}")
+        cache.set(cache_key, data)
+        return data
+
+    @staticmethod
+    def sort_search_results(
+        search_string: str,
+        documents: list[tuple[int, str]],
+    ) -> list[tuple[int, str]]:
+        scored_documents: list[tuple[float, tuple[int, str]]] = list()
+        for document in documents:
+            candidate_id = document[0]
+            candidate_name = document[1]
+            score = rapidfuzz.distance.JaroWinkler.normalized_distance(
+                search_string, candidate_name
+            )
+
+            matched_digits = re.match(r"(.*) \((\d+)\)", candidate_name)
+
+            # Boost candidates that match and order by the number in brackets
+            # eg. Test (1) is better than Test (23)
+            if matched_digits:
+                digits = matched_digits.group(2)
+                if matched_digits.group(1) == search_string:
+                    score += 1.0 + (1000.0 - int(digits)) / 1000.0
+                else:
+                    score += (1000.0 - int(digits)) / 1000.0
+
+            # Boost candidates that start with the given search string
+            if candidate_name.lower().startswith(search_string.lower()):
+                score += 1.0
+
+            # Boost candidates that are an exact match
+            if candidate_name.lower() == search_string.lower():
+                score += 100.0
+
+            # Penalise candidates that differ in length (longer or shorter)
+            len_diff = abs(len(candidate_name) - len(search_string)) / 100.0
+            score -= len_diff
+
+            # Put artists before labels
+            if candidate_id >= LABEL_ENTITY_ID_OFFSET:
+                score -= 10.0
+
+            scored_documents.append((score, document))
+        sorted_documents = sorted(
+            scored_documents,
+            key=lambda scored_document: scored_document[0],
+            reverse=True,
+        )
+        result_documents = [sorted_document[1] for sorted_document in sorted_documents]
+        return result_documents

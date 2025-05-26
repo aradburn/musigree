@@ -1,0 +1,6 @@
+---
+description: Preserve existing code and functionalities, avoiding unnecessary removal of code.
+globs: 
+alwaysApply: true
+---
+- Don't remove unrelated code or functionalities. Pay attention to preserving existing structures.
