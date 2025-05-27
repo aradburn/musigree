@@ -92,4 +92,4 @@ def test_converts_runtime_entity_db_to_domain_representation_with_none_entities(
 def test_raises_value_error_for_unrecognized_entity_type():
     with pytest.raises(ValueError):
         # noinspection PyTypeChecker
-        RuntimeEntity.to_json_entity_key(100, "UNKNOWN_TYPE")
+        RuntimeEntity.to_json_entity_key(100, "UNKNOWN_TYPE") # type: ignore

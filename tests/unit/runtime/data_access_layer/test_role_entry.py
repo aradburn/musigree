@@ -1,6 +1,8 @@
+import pytest
 from xml.etree.ElementTree import Element
 
 from musigree.runtime.data_access_layer.role_entry import RoleEntry
+from tests.unit.runtime.runtime_database.test_utils import RoleCacheMockHelper
 
 
 def test_creates_role_entry_with_valid_data():
@@ -10,7 +12,7 @@ def test_creates_role_entry_with_valid_data():
 
 
 def test_creates_role_entry_with_no_detail():
-    role_entry = RoleEntry(name="Producer")
+    role_entry = RoleEntry(name="Producer", detail=None)
     assert role_entry.name == "Producer"
     assert role_entry.detail is None
 
@@ -55,17 +57,20 @@ def test_creates_role_entry_from_element_with_empty_text():
     assert elements == []
 
 
-def test_creates_multiselect_mapping_with_valid_data(mocker):
-    mocker.patch(
-        "musigree.library.cache.role_cache.RoleCache.role_name_to_role_id_lookup",
-        {"Producer": 1, "Engineer": 2},
-    )
-    mocker.patch(
-        "musigree.library.cache.role_cache.RoleCache.role_id_to_role_category_lookup",
-        {1: "Music", 2: "Sound"},
-    )
-    mapping = RoleEntry.get_multiselect_mapping()
-    assert mapping == {"Music": ["Producer"], "Sound": ["Engineer"]}
+def test_creates_multiselect_mapping_with_valid_data():
+    # Use the RoleCacheMockHelper for consistent module-specific mocking
+    role_mappings = {"Producer": 1, "Engineer": 2}
+    role_categories = {1: "Music", 2: "Sound"}
+    
+    with RoleCacheMockHelper.mock_role_cache_in_module(
+        "musigree.runtime.data_access_layer.role_entry",
+        role_mappings
+    ) as mock_cache:
+        # Set up the role category lookup
+        mock_cache.role_id_to_role_category_lookup = role_categories
+        
+        mapping = RoleEntry.get_multiselect_mapping()
+        assert mapping == {"Music": ["Producer"], "Sound": ["Engineer"]}
 
 
 def test_checks_equality_of_role_entries():

@@ -97,7 +97,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         """
         for instance in self._all():
             # async for instance in self._all():
-            yield RuntimeRelationInternal.model_validate(instance)
+            relation_db = RuntimeRelationDB.model_validate(instance)
+            yield relation_db.to_domain()
 
     def get(self, relation_id: int) -> RuntimeRelationDB:
         """

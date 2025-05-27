@@ -31,7 +31,7 @@ def test_raises_value_error_for_unrecognized_entity_one_type():
         relation = RuntimeRelation(
             id=1,
             entity_one_id=100,
-            entity_one_type="UNKNOWN_TYPE",
+            entity_one_type="UNKNOWN_TYPE", # type: ignore
             entity_two_id=200,
             entity_two_type=EntityType.LABEL,
             role="Producer",
@@ -47,7 +47,7 @@ def test_raises_value_error_for_unrecognized_entity_two_type():
             entity_one_id=100,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=200,
-            entity_two_type="UNKNOWN_TYPE",
+            entity_two_type="UNKNOWN_TYPE", # type: ignore
             role="Producer",
         )
         _ = relation.json_entity_two_key
