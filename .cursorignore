@@ -11,6 +11,7 @@ runtime_database/**
 frontend/node_modules/
 frontend/coverage/
 frontend/dist/
+frontend/public/
 
 tests/data/entity_details/**
 tests/data/text_search/**
