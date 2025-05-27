@@ -4,14 +4,11 @@ from collections.abc import Iterator
 from sqlalchemy import Result, select
 
 from musigree.exceptions import NotFoundError
-from musigree.library.cache.cache_manager import CacheManager
-from musigree.runtime.runtime_database import RuntimeRoleTable
 from musigree.runtime.runtime_database.country_table import CountryTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
 from musigree.runtime.runtime_domain.country import Country
-from musigree.runtime.runtime_domain.role import RuntimeRole
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +30,7 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
     """
 
     schema_class = CountryTable
-    """The SQLAlchemy table class for runtime roles."""
+    """The SQLAlchemy table class for runtime countries."""
 
     def all(self) -> Iterator[Country]:
         """
@@ -46,12 +43,12 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
             # async for instance in self._all():
             yield Country.model_validate(instance)
 
-    def get(self, role_id: int) -> Country:
+    def get(self, country_id: int) -> Country:
         """
         Retrieves a country by its ID.
 
         Args:
-            role_id: The ID of the country to retrieve.
+            country_id: The ID of the country to retrieve.
 
         Returns:
             Country: The retrieved country.
@@ -59,7 +56,7 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
         Raises:
             NotFoundError: If no country is found with the given ID.
         """
-        query = select(CountryTable).where(CountryTable.id == role_id)
+        query = select(CountryTable).where(CountryTable.id == country_id)
 
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)

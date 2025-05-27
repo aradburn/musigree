@@ -1,0 +1,157 @@
+import unittest
+from unittest.mock import Mock, patch
+
+from sqlalchemy import Result
+from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.genre_repository import GenreRepository
+from musigree.runtime.runtime_database.genre_table import GenreTable
+from musigree.runtime.runtime_domain.genre import Genre
+
+
+class TestGenreRepository(unittest.TestCase):
+    """Unit tests for GenreRepository class."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.repository = GenreRepository()
+
+    def test_schema_class(self):
+        """Test that schema_class is correctly set."""
+        # GIVEN/WHEN/THEN
+        self.assertEqual(self.repository.schema_class, GenreTable)
+
+    @patch.object(GenreRepository, '_all')
+    def test_all(self, mock_all):
+        """Test retrieving all genres."""
+        # GIVEN
+        mock_instance1 = Mock()
+        mock_instance1.id = 1
+        mock_instance1.genre_name = "Electronic"
+        
+        mock_instance2 = Mock()
+        mock_instance2.id = 2
+        mock_instance2.genre_name = "Rock"
+        
+        mock_all.return_value = [mock_instance1, mock_instance2]
+        
+        with patch.object(Genre, 'model_validate') as mock_validate:
+            mock_validate.side_effect = [
+                Genre(id=1, genre_name="Electronic"),
+                Genre(id=2, genre_name="Rock")
+            ]
+            
+            # WHEN
+            result = list(self.repository.all())
+            
+            # THEN
+            self.assertEqual(len(result), 2)
+            self.assertIsInstance(result[0], Genre)
+            self.assertIsInstance(result[1], Genre)
+            self.assertEqual(result[0].genre_name, "Electronic")
+            self.assertEqual(result[1].genre_name, "Rock")
+
+    @patch.object(GenreRepository, 'execute')
+    def test_get_success(self, mock_execute):
+        """Test successfully retrieving a genre by ID."""
+        # GIVEN
+        genre_id = 1
+        mock_instance = Mock()
+        mock_instance.id = genre_id
+        mock_instance.genre_name = "Electronic"
+        
+        mock_result = Mock(spec=Result)
+        mock_scalars = Mock()
+        mock_scalars.one_or_none.return_value = mock_instance
+        mock_result.scalars.return_value = mock_scalars
+        mock_execute.return_value = mock_result
+        
+        with patch.object(Genre, 'model_validate') as mock_validate:
+            expected_genre = Genre(id=genre_id, genre_name="Electronic")
+            mock_validate.return_value = expected_genre
+            
+            # WHEN
+            result = self.repository.get(genre_id)
+            
+            # THEN
+            self.assertEqual(result, expected_genre)
+            mock_validate.assert_called_once_with(mock_instance)
+
+    @patch.object(GenreRepository, 'execute')
+    def test_get_not_found(self, mock_execute):
+        """Test retrieving a genre by ID when not found."""
+        # GIVEN
+        genre_id = 999
+        
+        mock_result = Mock(spec=Result)
+        mock_scalars = Mock()
+        mock_scalars.one_or_none.return_value = None
+        mock_result.scalars.return_value = mock_scalars
+        mock_execute.return_value = mock_result
+        
+        # WHEN/THEN
+        with self.assertRaises(NotFoundError):
+            self.repository.get(genre_id)
+
+    @patch.object(GenreRepository, 'execute')
+    def test_get_by_name_success(self, mock_execute):
+        """Test successfully retrieving a genre by name."""
+        # GIVEN
+        genre_name = "Electronic"
+        mock_instance = Mock()
+        mock_instance.id = 1
+        mock_instance.genre_name = genre_name
+        
+        mock_result = Mock(spec=Result)
+        mock_scalars = Mock()
+        mock_scalars.one_or_none.return_value = mock_instance
+        mock_result.scalars.return_value = mock_scalars
+        mock_execute.return_value = mock_result
+        
+        with patch.object(Genre, 'model_validate') as mock_validate:
+            expected_genre = Genre(id=1, genre_name=genre_name)
+            mock_validate.return_value = expected_genre
+            
+            # WHEN
+            result = self.repository.get_by_name(genre_name)
+            
+            # THEN
+            self.assertEqual(result, expected_genre)
+            mock_validate.assert_called_once_with(mock_instance)
+
+    @patch.object(GenreRepository, 'execute')
+    def test_get_by_name_not_found(self, mock_execute):
+        """Test retrieving a genre by name when not found."""
+        # GIVEN
+        genre_name = "NonexistentGenre"
+        
+        mock_result = Mock(spec=Result)
+        mock_scalars = Mock()
+        mock_scalars.one_or_none.return_value = None
+        mock_result.scalars.return_value = mock_scalars
+        mock_execute.return_value = mock_result
+        
+        # WHEN/THEN
+        with self.assertRaises(NotFoundError):
+            self.repository.get_by_name(genre_name)
+
+    @patch.object(GenreRepository, '_save')
+    def test_create(self, mock_save):
+        """Test creating a new genre."""
+        # GIVEN
+        genre = Genre(id=1, genre_name="Electronic")
+        mock_instance = Mock()
+        mock_instance.id = 1
+        mock_instance.genre_name = "Electronic"
+        mock_save.return_value = mock_instance
+        
+        with patch.object(Genre, 'model_validate') as mock_validate:
+            expected_genre = Genre(id=1, genre_name="Electronic")
+            mock_validate.return_value = expected_genre
+            
+            # WHEN
+            result = self.repository.create(genre)
+            
+            # THEN
+            self.assertEqual(result, expected_genre)
+            mock_save.assert_called_once_with(genre.model_dump())
+            mock_validate.assert_called_once_with(mock_instance) 
