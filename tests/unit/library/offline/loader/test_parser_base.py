@@ -11,6 +11,7 @@ from musigree.offline.loader.parser_utils import ParserUtils
 log = logging.getLogger(__name__)
 
 
+# noinspection PyUnresolvedReferences
 class TestParserBase:
     class DummyDomainClass:
         def __init__(self, **kwargs):
