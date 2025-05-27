@@ -4,11 +4,16 @@ globs:
 alwaysApply: true
 ---
 
+## General Testing 
+
 - Write tests first, then the code, then run the tests and update the code until tests pass.
-- Include appropriate unit tests for all code. Use subdirectories named **`/__tests__/`** inline in the source tree.
+- Include appropriate unit tests for all code.
+ 
+## Frontend Typescript Tests
+
+- For Typescript tests use subdirectories named **`/__tests__/`** inline in the source tree.
   Everything in a **`/__tests__/`** subdirectory will be treated and run as a test.
-- Include appropriate integration tests or end-to-end (e2e) tests in **`/tests`** for all components.
-- Use vitest for tests.
+- Use vitest for Typescript or React tests.
 - Use vitest types and not jest types.
 - Properly type mock functions.
 - Properly type event handlers.
@@ -16,6 +21,12 @@ alwaysApply: true
 - Fix unbound method warnings.
 - Fix any lint errors in the code and tests, use **npm run lint**
 - Fix any type errors in the code and tests, use **npm run type-check**
-- There is a frontend directory where package.json and the test files are located. Run the tests from there.
+- There is a **`frontend`** directory where **`package.json`** and the test files are located. Run the tests from there.
 - Fix failing tests one by one, use sequential thinking.
 - Do not run a development server, do not use **npm run dev**
+
+## Backend Python Tests
+
+- For Python unit tests use an appropriate subdirectory in the **`/tests/unit`** unit tests directory.
+- For Python integration tests use an appropriate subdirectory in the **`/tests/integration`** test directory.
+- Include appropriate Python integration tests or Python end-to-end (e2e) tests in **`/tests`** for all components.
