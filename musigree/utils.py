@@ -141,13 +141,9 @@ def batched(iterable: Sequence[T], n) -> Iterator[List[T]]:
 
 def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[T]:
     num_items = count(seq)
-    # print(f"num_items: {num_items}")
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
-    # print(f"num_chunks: {num_chunks}")
     return batched(seq, math.ceil(num_items / num_chunks))
-    # return list(iter_in_slices(seq, math.ceil(num_items / num_chunks)))
-    # return partition_all(math.ceil(num_items / num_chunks), seq)
 
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
@@ -273,9 +269,6 @@ def strip_trailing_newline(input_str: str) -> str:
 
 
 def row2dict(row):
-    # for c in row.__table__.columns:
-    #     print(f"c.name: {c.name}")
-    #     print(f"    getattr(row, c.name): {getattr(row, c.name)}")
     return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 

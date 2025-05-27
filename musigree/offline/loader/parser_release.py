@@ -375,8 +375,6 @@ class ParserRelease(ParserBase):
             dict: The preprocessed data.
         """
         if element.tag == "release":
-            # print(f"el: {element}")
-            # print(f"el_id: {element.get('id')}")
             data["release_id"] = int(element.get("id"))
             if "identifiers" not in data:
                 data["identifiers"] = None

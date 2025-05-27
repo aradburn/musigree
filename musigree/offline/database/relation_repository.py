@@ -110,11 +110,9 @@ class RelationRepository(BaseRepository[RelationTable]):
         Raises:
             NotFoundError: If no relation is found with the given ID.
         """
-        # print(f"get")
         query = select(RelationTable).where(RelationTable.id == relation_id)
         result: Result = self.execute(query)
         # result: Result = await self.execute(query)
-        # print(f"result: {result}")
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -300,7 +298,6 @@ class RelationRepository(BaseRepository[RelationTable]):
             raise DatabaseError
 
         relation_db = RelationDB.model_validate(instance)
-        # print(f"relation_db: {utils.normalize_dict(relation_db)}")
         return relation_db.to_domain()
 
     def create_bulk(
@@ -321,7 +318,6 @@ class RelationRepository(BaseRepository[RelationTable]):
             relation_dict = relation.model_dump(exclude={"role_name"})
             role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
             relation_dict.update(predicate=role_id)
-            # print(f"relation_dict: {relation_dict}")
             relation_dicts.append(relation_dict)
         query = (
             OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(

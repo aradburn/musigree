@@ -256,7 +256,6 @@ def loader_main() -> None:
     # Setup Cache
     CacheManager.setup_cache(offline_config)
     cache = CacheManager.get_cache()
-    print(f"cache: {cache}")
     if cache is None:
         log.error("Cache not set")
         sys.exit()
@@ -291,7 +290,7 @@ def loader_main() -> None:
         local_scheduler=True,
         log_level="WARNING",
     )
-    print(luigi_run_result.summary_text)
+    log.info(luigi_run_result.summary_text)
 
 
 if __name__ == "__main__":

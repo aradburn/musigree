@@ -276,5 +276,4 @@ async def route__api__role(
     from musigree.library.cache.role_cache import RoleCache
 
     role_data = RoleCache.get_all_roles()
-    # print(f"role_data: {role_data}")
     return role_data

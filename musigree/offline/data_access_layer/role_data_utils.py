@@ -139,10 +139,10 @@ class RoleDataUtils:
 
         # Strings
         if match := re.search(r"^(\d+)( *)[sS]tring$", name):
-            # print("  Add hyphen")
+            # Add hyphen
             name = match.group(1) + "-String Guitar"
         if match := re.search(r"^(\d+)( *)[sS]tring Guitar$", name):
-            # print("  Add hyphen")
+            # Add hyphen
             name = match.group(1) + "-String Guitar"
 
         # Convert number of strings
@@ -166,10 +166,8 @@ class RoleDataUtils:
 
         # Ordering
         if match := re.search(r"^(.*) \(Six-String\)$", name):
-            # print("  Ordering")
             name = "Six-String " + match.group(1)
         if match := re.search(r"^(.*) \(Twelve-String\)$", name):
-            # print("  Ordering")
             name = "Twelve-String " + match.group(1)
         return name
 
@@ -237,7 +235,6 @@ class RoleDataUtils:
         # name = re.sub(r"(&[a-z])", upper, name)
         # Capitalise after round bracket
         # name = re.sub(r"\(([a-z]{2,})\)", capitalize, name)
-        # print(f"bracket: {bracket}, apos2: {apos2}")
 
         # Single quote
         # name = re.sub(r" '", " ", name)
@@ -261,10 +258,9 @@ class RoleDataUtils:
 
         # Ignore with only digits or special characters
         if re.match(RoleDataUtils.DIGITS_AND_SPECIAL_CHARACTERS, name):
-            # print("  Ignore with only digits or special characters")
             return ""
         if match := re.search(r"^\d+[^\d-]{1} +(.*)$", name):
-            # print("  Remove digit + char")
+            # Remove digit + char
             name = match.group(1)
 
         # Convert guitar strings and numbers
@@ -279,7 +275,6 @@ class RoleDataUtils:
 
         # Remove leading numbers
         if match := re.search(r"^\d+[ :]+(.*)$", name):
-            # print("  Remove leading numbers")
             matched = match.group(1)
             if matched == "Tone Row":
                 name = re.sub(r"12[- ]", "Twelve-", name)
@@ -346,15 +341,12 @@ class RoleDataUtils:
 
         # Initialisms eg. A.B.C.
         if match := re.search(r"^(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = match.group(1).upper() + match.group(2).upper()
         if match := re.search(r"^(\S)\.(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = (
                 match.group(1).upper() + match.group(2).upper() + match.group(3).upper()
             )
         if match := re.search(r"^(\S)\.(\S)\.(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = (
                 match.group(1).upper()
                 + match.group(2).upper()
@@ -383,5 +375,4 @@ class RoleDataUtils:
         # Remove leading and trailing spaces
         name = name.strip()
 
-        # print(f"    {name}")
         return name

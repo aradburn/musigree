@@ -103,10 +103,7 @@ class OfflineDatabaseHelper(ABC):
         ]
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
-        print(
-            f"OfflineDatabaseManager.offline_database_helper.offline_engine: "
-            + f"{OfflineDatabaseManager.offline_database_helper.offline_engine}"
-        )
+
         Base.metadata.create_all(
             OfflineDatabaseManager.offline_database_helper.offline_engine,
             checkfirst=True,

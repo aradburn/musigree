@@ -35,9 +35,7 @@ class RoleDataAccess:
             RoleCache.role_name_set,
             # score_hint=90,
         )
-        # print(f"{role_name} -> {top_role_name}")
         if top_role_name[1] > 90:
-            # print(f"{int(top_role_name[1])} {role_name} -> {top_role_name}")
             return top_role_name[0], int(top_role_name[1])
         else:
             return None
@@ -56,7 +54,6 @@ class RoleDataAccess:
 
         while queue:
             queued_role_name: str = queue.popleft()
-            # print(f"{queued_role_name}")
 
             # find if we have a match
             found_role_name = RoleDataAccess.find_role_inner(queued_role_name)

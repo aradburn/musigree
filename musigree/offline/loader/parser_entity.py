@@ -110,7 +110,6 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where keys are names and values are their Discogs IDs.
         """
-        # print(f"names_and_ids1: {[(item.tag, item.text) for item in names_and_ids]}")
         result = {}
         if names_and_ids is None or not len(names_and_ids):
             return result

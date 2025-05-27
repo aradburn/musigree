@@ -87,7 +87,6 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
             List[RelationReleaseYear]: A list of relation-release-year pairs associated
                 with the specified relation ID.
         """
-        # print(f"get")
         query = (
             select(RelationReleaseYearTable)
             # .options(
@@ -132,7 +131,6 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
             raise DatabaseError
 
         relation_release_year_db = RelationReleaseYearDB.model_validate(instance)
-        # print(f"relation_db: {utils.normalize_dict(relation_db)}")
         return relation_release_year_db.to_domain()
 
     def create_bulk(

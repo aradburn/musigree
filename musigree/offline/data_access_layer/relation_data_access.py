@@ -197,8 +197,6 @@ class RelationDataAccess:
             set[tuple[int, str, int]]: A set of unique triples representing
                 (artist_id, role, label_id).
         """
-        # print(f"artist_ids: {artist_ids}")
-        # print(f"label_ids: {label_ids}")
         triples = set()
         """Set to store unique triples of (artist_id, role, label_id)."""
         iterator = itertools.product(artist_ids, label_ids)

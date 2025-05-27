@@ -48,7 +48,7 @@ class OfflineDatabaseManager:
 
         engine = OfflineDatabaseManager.offline_database_helper.setup_database(config)
         OfflineDatabaseManager.offline_database_helper.offline_engine = engine
-        print(
+        log.debug(
             f"engine: {OfflineDatabaseManager.offline_database_helper.offline_engine}"
         )
 
