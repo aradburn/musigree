@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import Mock, patch
 
 from sqlalchemy import Result
+
 from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_entity_table import RuntimeEntityTable
-from musigree.runtime.runtime_domain.entity import RuntimeEntity, RuntimeEntityDB
-
+from musigree.runtime.runtime_domain.entity import RuntimeEntityDB
 # Import the test utility
 from .test_utils import SessionMockHelper
 

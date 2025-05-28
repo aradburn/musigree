@@ -344,7 +344,8 @@ class RoleCacheMockHelper:
             for attr_name, attr_value in cache_data.items():
                 setattr(mock_cache, attr_name, attr_value)
             mock_caches.append(mock_cache)
-        
+
+        # noinspection PyUnreachableCode
         try:
             yield mock_caches
         finally:

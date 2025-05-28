@@ -1,8 +1,8 @@
 import unittest
-from unittest.mock import Mock, patch, MagicMock
-from collections.abc import Iterator
+from unittest.mock import Mock, patch
 
 from sqlalchemy import Result
+
 from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.runtime.runtime_database.style_table import StyleTable

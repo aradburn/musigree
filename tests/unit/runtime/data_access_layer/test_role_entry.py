@@ -1,4 +1,3 @@
-import pytest
 from xml.etree.ElementTree import Element
 
 from musigree.runtime.data_access_layer.role_entry import RoleEntry
