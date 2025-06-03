@@ -7,10 +7,7 @@ from sqlalchemy.exc import DatabaseError
 from musigree.config import (
     Configuration,
 )
-from musigree.constants import (
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
-    RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
-)
+from musigree.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
 from musigree.runtime.data_access_layer.relation_grapher import RelationGrapher
@@ -40,17 +37,15 @@ class RuntimeRepositoryTestCase(unittest.TestCase):
         setup_logging(is_testing=True)
         if cls.runtime_config is not None:
             CacheManager.setup_cache(cls.runtime_config)
+            table_names_to_drop = [table_name for table_name in ALL_RUNTIME_DATABASE_TABLE_NAMES if "role" not in table_name]
+
             try:
                 RuntimeDatabaseManager.setup_database(cls.runtime_config)
             except DatabaseError:
                 log.error("Error in database setup")
-                RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-                    ALL_RUNTIME_DATABASE_TABLE_NAMES
-                )
+                RuntimeDatabaseManager.runtime_database_helper.drop_tables(table_names_to_drop)
             else:
-                RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-                    RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE
-                )
+                RuntimeDatabaseManager.runtime_database_helper.drop_tables(table_names_to_drop)
                 RuntimeDatabaseManager.runtime_database_helper.create_tables(
                     ALL_RUNTIME_DATABASE_TABLE_NAMES
                 )

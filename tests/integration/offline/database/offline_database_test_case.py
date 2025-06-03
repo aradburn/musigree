@@ -6,10 +6,7 @@ from sqlalchemy.exc import DatabaseError
 from musigree.config import (
     Configuration,
 )
-from musigree.constants import (
-    ALL_OFFLINE_DATABASE_TABLE_NAMES,
-    OFFLINE_DATABASE_TABLE_NAMES_WITHOUT_ROLE,
-)
+from musigree.constants import ALL_OFFLINE_DATABASE_TABLE_NAMES
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.loader import load_offline_test_tables
 from musigree.logging_config import setup_logging
@@ -60,12 +57,9 @@ class OfflineDatabaseTestCase(unittest.TestCase):
             # noinspection PyTypeChecker
             cls.fail(cls, "Error in offline database test setup")
 
-        OfflineDatabaseManager.offline_database_helper.drop_tables(
-            OFFLINE_DATABASE_TABLE_NAMES_WITHOUT_ROLE
-        )
-        OfflineDatabaseManager.offline_database_helper.create_tables(
-            ALL_OFFLINE_DATABASE_TABLE_NAMES
-        )
+        table_names_to_drop = [table_name for table_name in ALL_OFFLINE_DATABASE_TABLE_NAMES if "role" not in table_name]
+        OfflineDatabaseManager.offline_database_helper.drop_tables(table_names_to_drop)
+        OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES)
 
         load_offline_test_tables(
             OfflineDatabaseTestCase.offline_config.DATA_DIR,

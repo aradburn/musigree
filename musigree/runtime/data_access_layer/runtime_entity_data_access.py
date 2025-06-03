@@ -1,12 +1,9 @@
 import logging
-import pickle
-from pathlib import Path
 from typing import Dict, cast
 
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
-from musigree.library.full_text_search.entity_details_index import EntityDetailsIndex
 from musigree.logging_config import LOGGING_TRACE
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
@@ -179,21 +176,3 @@ class RuntimeEntityDataAccess:
                 cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
 
         return id_
-
-    @staticmethod
-    def load_entity_details_index_from_file(filename: Path) -> EntityDetailsIndex:
-        log.debug(f"load entity details index from file: {filename}")
-
-        # open a file, where you stored the pickled data
-        with open(filename, "rb") as file:
-            # read pickle dump information from that file
-            entity_details_index: EntityDetailsIndex = pickle.load(file)
-            # log.debug(f"Countries:")
-            # for country in sorted(entity_details_index.countries_list):
-            #     print(f"{country}")
-        log.debug(
-            f"loaded {len(entity_details_index.entity_countries)} entity countries"
-        )
-        log.debug(f"loaded {len(entity_details_index.entity_genres)} entity genres")
-        log.debug(f"loaded {len(entity_details_index.entity_styles)} entity styles")
-        return entity_details_index

@@ -55,17 +55,14 @@ The module utilizes `logging` for logging operations, `pickle` for serialization
 """
 
 import logging
-import pickle
 from pathlib import Path
 from typing import Any
 
 from sortedcontainers import SortedSet
 
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.library.full_text_search.entity_details_index import EntityDetailsIndex
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.loader.worker_release_deleter import WorkerReleaseDeleter
@@ -310,77 +307,27 @@ class LoaderRelease(LoaderBase):
             release_repository.vacuum(has_tablename, is_full, is_analyze)
             """Execute the vacuum command on the release repository."""
 
-    @classmethod
-    @timeit
-    def loader_create_entity_details_index(cls, entity_details_path: Path) -> None:
-        """
-        Creates an `EntityDetailsIndex` from release data.
-
-        This method either creates a new `EntityDetailsIndex` by processing
-        all releases in the database or loads it from a file if it already exists.
-
-        Args:
-            entity_details_path (Path): The path to the file where the
-                `EntityDetailsIndex` will be stored or loaded from.
-        """
-        log.debug(f"loader release create entity details index")
-        # TODO move to runtime database
-        if not entity_details_path.exists():
-            """Check if the file exists."""
-            entity_details_index = cls.loader_init_entity_details_index_from_database()
-            """Create a new EntityDetailsIndex from the database."""
-            cls.save_entity_details_index_to_file(
-                entity_details_path, entity_details_index
-            )
-            """Save the index to file."""
-        else:
-            log.debug("entity details exists - skipping creation...")
-            """Skip creation if the file exists."""
-
-    @classmethod
-    @timeit
-    def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
-        """
-        Initializes an `EntityDetailsIndex` by iterating through all releases.
-
-        This method processes all releases in the database, extracting
-        information about the countries, genres, and styles associated with
-        each release. It then indexes this information for each artist and
-        label involved in the release.
-
-        Returns:
-            EntityDetailsIndex: The created and populated `EntityDetailsIndex`.
-        """
-        log.debug(f"loader release init entity details")
-
-        with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            release_repository = ReleaseRepository()
-            """Instance of ReleaseRepository for database operations on releases."""
-            entity_details_index = ReleaseDataAccess.create_entity_details_index(
-                release_repository
-            )
-        return entity_details_index
-
-    @classmethod
-    @timeit
-    def save_entity_details_index_to_file(
-        cls, filename: Path, entity_details_index: EntityDetailsIndex
-    ) -> None:
-        """
-        Saves an `EntityDetailsIndex` to a file using pickle.
-
-        This method serializes the given `EntityDetailsIndex` and saves it to
-        the specified file.
-
-        Args:
-            filename (Path): The path to the file where the index should be saved.
-            entity_details_index (EntityDetailsIndex): The index to save.
-        """
-        log.debug(f"save entity details index to file: {filename}")
-
-        # open a file, where you ant to store the data
-        with open(filename, "wb") as file:
-            # dump information to that file
-            # noinspection PyTypeChecker
-            pickle.dump(entity_details_index, file)
+    # @classmethod
+    # @timeit
+    # def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
+    #     """
+    #     Initializes an `EntityDetailsIndex` by iterating through all releases.
+    #
+    #     This method processes all releases in the database, extracting
+    #     information about the countries, genres, and styles associated with
+    #     each release. It then indexes this information for each artist and
+    #     label involved in the release.
+    #
+    #     Returns:
+    #         EntityDetailsIndex: The created and populated `EntityDetailsIndex`.
+    #     """
+    #     log.debug(f"loader release init entity details")
+    #
+    #     with offline_transaction():
+    #         """Ensure that database operations are performed within a transaction."""
+    #         release_repository = ReleaseRepository()
+    #         """Instance of ReleaseRepository for database operations on releases."""
+    #         entity_details_index = ReleaseDataAccess.create_entity_details_index(
+    #             release_repository
+    #         )
+    #     return entity_details_index

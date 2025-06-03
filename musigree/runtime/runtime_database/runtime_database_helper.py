@@ -34,7 +34,7 @@ from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.library.full_text_search.entity_details_index import EntityDetailsIndex
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.runtime.runtime_database.runtime_base_table import (
     RuntimeBase,

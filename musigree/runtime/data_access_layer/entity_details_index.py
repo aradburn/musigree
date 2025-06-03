@@ -41,6 +41,14 @@ class EntityDetailsIndex:
         self.entity_styles: dict[int, list[int]] = {}
         self.styles_list: list[str] = []
 
+    @staticmethod
+    def split_country(country: str) -> list[str]:
+        # Match regex pattern for country names that should not be split
+        if match := re.search(r"(.*),(\s*)(Democratic Republic of the|Republic of the|Republic of|Isle of|The)$",
+                              country):
+            country = match.group(3).strip() + " " + match.group(1).strip()
+        return re.split(r"[&,/]", country)
+
     def index_country(self, id_: int, country: str) -> None:
         """
         Indexes a country for a given entity ID.
@@ -52,7 +60,8 @@ class EntityDetailsIndex:
             id_: The ID of the entity.
             country: The name of the country.
         """
-        for token in re.split(r"[&,/]", country):
+
+        for token in self.split_country(country):
             normalized_token = token.strip()
             if normalized_token == "":
                 continue
@@ -79,7 +88,7 @@ class EntityDetailsIndex:
         for token in re.split(r"[&,/]", genre):
             normalized_token = token.strip()
             if normalized_token == "":
-                return
+                continue
             if id_ not in self.entity_genres:
                 self.entity_genres[id_] = []
             if normalized_token not in self.genres_list:
@@ -103,7 +112,7 @@ class EntityDetailsIndex:
         for token in re.split(r"[&,/]", style):
             normalized_token = token.strip()
             if normalized_token == "":
-                return
+                continue
             if id_ not in self.entity_styles:
                 self.entity_styles[id_] = []
             if normalized_token not in self.styles_list:
@@ -193,18 +202,22 @@ class EntityDetailsIndex:
         """
         Prints the contents of the various indexes in the class.
         """
-        print("Countries")
+        log.debug("\nCountries")
+        log.debug("=========\n")
         for country in self.countries_list:
-            print(country)
+            log.debug(country)
         # for entry in self.entity_countries.items():
         #     print(entry)
-        print("Genres")
+        log.debug("\nGenres")
+        log.debug("=========\n")
         for genre in self.genres_list:
-            print(genre)
+            log.debug(genre)
         # for entry in self.entity_genres.items():
         #     print(entry)
-        print("Styles")
+        log.debug("\nStyles")
+        log.debug("=========\n")
         for style in self.styles_list:
-            print(style)
+            log.debug(style)
+        log.debug("\n")
         # for entry in self.entity_styles.items():
         #     print(entry)

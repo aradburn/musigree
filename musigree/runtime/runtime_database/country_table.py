@@ -33,7 +33,7 @@ class CountryTable(RuntimeBase):
     """
     country_name: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
     """
-    The name of the country (e.g., 'Producer', 'Remixer'). Indexed for faster lookup.
+    The name of the country (e.g., 'UK', 'France'). Indexed for faster lookup.
     """
 
     def __init__(self, **entries):

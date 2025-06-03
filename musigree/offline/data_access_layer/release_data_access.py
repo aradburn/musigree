@@ -26,7 +26,7 @@ the index.
 import logging
 
 from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.library.full_text_search.entity_details_index import EntityDetailsIndex
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.offline.loader.loader_base import LoaderBase
 
 log = logging.getLogger(__name__)

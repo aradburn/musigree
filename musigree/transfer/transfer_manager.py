@@ -1,19 +1,17 @@
 import logging
 from pathlib import Path
 
-from musigree.constants import (
-    ENTITY_DETAILS_DATA,
-    ENTITY_DETAILS_FILENAME,
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
-)
+from musigree.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from musigree.exceptions import DatabaseError
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.relation_repository import RelationRepository
+from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.role_repository import RoleRepository
-from musigree.runtime.data_access_layer.runtime_entity_data_access import (
-    RuntimeEntityDataAccess,
-)
+from musigree.runtime.runtime_database.country_repository import CountryRepository
+from musigree.runtime.runtime_database.genre_repository import GenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -24,12 +22,16 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
+from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+from musigree.runtime.runtime_domain.country import Country
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.genre import Genre
 from musigree.runtime.runtime_domain.relation import (
     RuntimeRelationDB,
 )
 from musigree.runtime.runtime_domain.role import RuntimeRole
+from musigree.runtime.runtime_domain.style import Style
 from musigree.transfer.transfer_worker_entity_inserter import (
     TransferWorkerEntityInserter,
 )
@@ -44,17 +46,8 @@ class TransferManager:
     BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
-    def transfer_entity(data_directory: Path) -> None:
+    def transfer_entity(entity_details_index: EntityDetailsIndex) -> None:
         log.debug(f"Running transfer_entity()")
-
-        entity_details_path = (
-            data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
-        )
-        entity_details_index = (
-            RuntimeEntityDataAccess.load_entity_details_index_from_file(
-                entity_details_path
-            )
-        )
 
         offline_entity_repository = EntityRepository()
         runtime_entity_repository = RuntimeEntityRepository()
@@ -74,8 +67,11 @@ class TransferManager:
         entities = offline_entity_repository.all()
 
         for entity in entities:
+            # TODO get from runtime countries table
             countries = entity_details_index.get_countries_for_id(entity.id)
+            # TODO get from runtime genres table
             genres = entity_details_index.get_genres_for_id(entity.id)
+            # TODO get from runtime styles table
             styles = entity_details_index.get_styles_for_id(entity.id)
 
             runtime_entity = RuntimeEntity(
@@ -236,6 +232,40 @@ class TransferManager:
                 runtime_role_repository.create(runtime_role)
 
     @staticmethod
+    def transfer_entity_details(entity_details_index: EntityDetailsIndex) -> None:
+        log.debug(f"Running transfer_entity_details()")
+
+        # Countries
+        sorted_countries = sorted(entity_details_index.countries_list)
+        runtime_country_repository = CountryRepository()
+
+        for _id, country_name in enumerate(sorted_countries):
+            with runtime_transaction():
+                country = Country(id=_id, country_name=country_name)
+                runtime_country_repository.create(country)
+                runtime_country_repository.commit()
+
+        # Genres
+        sorted_genres = sorted(entity_details_index.genres_list)
+        runtime_genre_repository = GenreRepository()
+
+        for _id, genre_name in enumerate(sorted_genres):
+            with runtime_transaction():
+                genre = Genre(id=_id, genre_name=genre_name)
+                runtime_genre_repository.create(genre)
+                runtime_genre_repository.commit()
+
+        # Styles
+        sorted_styles = sorted(entity_details_index.styles_list)
+        runtime_style_repository = StyleRepository()
+
+        for _id, style_name in enumerate(sorted_styles):
+            with runtime_transaction():
+                style = Style(id=_id, style_name=style_name)
+                runtime_style_repository.create(style)
+                runtime_style_repository.commit()
+
+    @staticmethod
     def transfer_all(data_directory: Path) -> None:
         log.debug(f"Running transfer_all()")
 
@@ -246,8 +276,12 @@ class TransferManager:
             ALL_RUNTIME_DATABASE_TABLE_NAMES
         )
 
+        offline_release_repository = ReleaseRepository()
+        entity_details_index = ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+
         TransferManager.transfer_role()
-        TransferManager.transfer_entity(data_directory)
+        TransferManager.transfer_entity_details(entity_details_index)
+        TransferManager.transfer_entity(entity_details_index)
         TransferManager.transfer_relation()
 
         log.debug(f"Transfer all done")

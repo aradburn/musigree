@@ -204,10 +204,6 @@ class TextSearchIndex:
         for key, words in self.index.items():
             reduced_set = set(words)
             self.index[key] = list(reduced_set)
-            # old_size = len(words)
-            # new_size = len(reduced_set)
-            # if old_size != new_size:
-            #     print(f"{key}: {old_size} -> {new_size}")
 
     def list_stop_words(self) -> list[str]:
         """
