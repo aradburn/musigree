@@ -1,5 +1,5 @@
 [project]
-name = "misigree"
+name = "musigree"
 version = "1.0.0"
 description = "Interactive visualization of the Discogs database"
 authors = [
@@ -27,8 +27,7 @@ dependencies = [
     "Unidecode~=1.3.8",
     "python-dotenv~=1.1.0",
     "fakeredis~=2.29.0",
-    "starlette~=0.46.2",
-    "uvicorn~=0.34.2",
+    "uvicorn~=0.34.3",
     "httpx~=0.28.1",
     "jinja2~=3.1.6",
 ]
@@ -50,7 +49,7 @@ dev = [
     "pg-temp>=0.9.1,<1.0.0",
     "fakeredis>=2.26.1,<3.0.0",
     "pytest>=8.3.5,<9.0.0",
-    "pytest-mock>=3.6.1,<4.0.0",
+    "pytest-mock~=3.14.1",
     "memray>=1.17.2,<2.0.0",
     "pytest-memray>=1.7.0,<2.0.0",
 ]
