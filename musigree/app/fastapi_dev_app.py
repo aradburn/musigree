@@ -25,37 +25,12 @@ from musigree.app.fastapi_app import create_app
 from musigree.config import SqliteDevelopmentConfiguration
 
 if __name__ == "__main__":
-    # Create SQLite development configuration
+    # Use the SQLite development configuration
     runtime_config = SqliteDevelopmentConfiguration()
-    """
-    Configuration object for the runtime environment.
 
-    Sets up the configuration for the runtime environment using SQLite.
-    """
-
-    # Create FastAPI app
+    # Create FastAPI app using the specified runtime configuration.
     app = create_app(runtime_config)
-    """
-    FastAPI application instance.
 
-    Creates a new FastAPI application instance using the specified runtime
-    configuration.
-    """
-
-    # Load data from tables
-    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
-    """
-    Loads initial data into the runtime database.
-
-    Populates the tables in the runtime database with initial data,
-    such as roles, from the pre-configured data sources.
-    """
-
-    # Run the Uvicorn development server
+    # Run the Uvicorn development server, which listens for incoming HTTP
+    # requests and serves the Musigree application.
     uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
-    """
-    Starts the Uvicorn development server.
-
-    Runs the Uvicorn development server, which listens for incoming HTTP
-    requests and serves the Musigree application.
-    """
