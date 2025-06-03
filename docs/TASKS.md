@@ -67,9 +67,12 @@
 -   [-] **Sidebar and Controls**
 
     -   [x] Create collapsible sidebar with filters and entity details
-    -   [-] Implement relationship type filter checkboxes
-    -   [-] Add entity information display panel
-    -   [-] Create network force settings controls (strength, distance)
+    -   [-] Implement roles and relationship type filter checkboxes, triggered by a button click
+    -   [-] Add entity details information display panel, triggered by a button click
+    -   [-] Create network force settings controls (node strength, link strength, gravity)
+    -   [-] Add a Print button to export the current network visualization
+    -   [-] Add start and stop layout buttons to control the network visualization
+    -   [ ] Implement responsive design for sidebar
     -   [x] Apply proper background colors and responsive width
     -   [x] Implement smooth sidebar transitions and animations
 
@@ -84,17 +87,16 @@
 
 -   [-] **Search Functionality**
 
-    -   [-] Implement real-time search with API integration
-    -   [-] Create autocomplete dropdown with search results
-    -   [-] Add search result ranking and relevance scoring
-    -   [-] Implement partial name matching and fuzzy search
+    -   [x] Implement real-time search with API integration
+    -   [x] Create autocomplete dropdown with search results
+    -   [x] Add search result ranking and relevance scoring
+    -   [x] Implement partial name matching and fuzzy search
     -   [x] Add entity type indicators in search results
-    -   [-] Create search history and suggestions
 
 -   [-] **Random Discovery**
     -   [x] Implement random entity selection endpoint
-    -   [-] Create random button functionality in navbar
-    -   [-] Add ability to start exploration from random entity
+    -   [x] Create random button functionality in navbar
+    -   [x] Add ability to start exploration from random entity
     -   [x] Ensure proper loading states and error handling
 
 ### Network Interaction
