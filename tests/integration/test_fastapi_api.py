@@ -184,3 +184,59 @@ class TestFastAPIAPI(AppTestCase):
         self.assertIsNotNone(actual["roles"])
         expected = 4119
         self.assertEqual(expected, len(actual["roles"]))
+
+    def test_entity_details_01(self):
+        """Test getting entity details for an artist."""
+        response = self.client.get("/api/artist/details/2239")
+        self.assertEqual(200, response.status_code)
+
+        actual = response.json()
+        self.assertIsNotNone(actual)
+        
+        # Verify required fields are present
+        self.assertIn("id", actual)
+        self.assertIn("type", actual)
+        self.assertIn("name", actual)
+        self.assertIn("metadata", actual)
+        self.assertIn("entities", actual)
+        self.assertIn("relation_counts", actual)
+        
+        # Verify correct types
+        self.assertEqual(actual["id"], 2239)
+        self.assertEqual(actual["type"], "artist")
+        self.assertIsInstance(actual["name"], str)
+        self.assertIsInstance(actual["metadata"], dict)
+        self.assertIsInstance(actual["entities"], dict)
+        self.assertIsInstance(actual["relation_counts"], dict)
+
+    def test_entity_details_02(self):
+        """Test getting entity details for a label."""
+        response = self.client.get("/api/label/details/1")
+        self.assertEqual(200, response.status_code)
+
+        actual = response.json()
+        self.assertIsNotNone(actual)
+        
+        # Verify required fields are present
+        self.assertIn("id", actual)
+        self.assertIn("type", actual)
+        self.assertIn("name", actual)
+        
+        # Verify correct types
+        self.assertEqual(actual["id"], 1)
+        self.assertEqual(actual["type"], "label")
+
+    def test_entity_details_03(self):
+        """Test entity details endpoint with invalid entity ID."""
+        response = self.client.get("/api/artist/details/999999999999")
+        self.assertEqual(404, response.status_code)
+
+    def test_entity_details_04(self):
+        """Test entity details endpoint with invalid entity type."""
+        response = self.client.get("/api/invalidtype/details/1")
+        self.assertEqual(400, response.status_code)
+
+    def test_entity_details_05(self):
+        """Test entity details endpoint with non-numeric entity ID."""
+        response = self.client.get("/api/artist/details/abc")
+        self.assertEqual(400, response.status_code)

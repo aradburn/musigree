@@ -218,6 +218,69 @@ async def route__api__search(
     return cast(Dict[str, List[Dict[str, Any]]], data)
 
 
+# noinspection PyUnusedLocal
+@router.get("/{entity_type_str}/details/{entity_id}")
+async def route__api__entity_type__details__entity_id(
+    entity_type_str: str,
+    entity_id: str,
+    request: Request,
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
+) -> Dict[str, Any]:
+    """
+    Retrieves detailed information for a specific entity.
+
+    This endpoint returns comprehensive details about an entity, including
+    its metadata, aliases, groups, members, countries, genres, and styles.
+
+    Args:
+        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_id: The ID of the entity.
+        request: The FastAPI request object.
+        _: Dependency injection for rate limiting.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the entity details.
+
+    Raises:
+        BadRequestError: If the entity type or entity ID is invalid.
+        NotFoundError: If no entity is found with the given ID and type.
+    """
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
+        raise BadRequestError(message="Bad Entity Type")
+
+    if not entity_id.isnumeric():
+        raise BadRequestError(message="Bad Entity Id")
+
+    entity_id_int = int(entity_id)
+
+    with runtime_transaction():
+        entity_repository = RuntimeEntityRepository()
+        entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity_id_int, entity_type
+        )
+
+    # Convert the entity to a dictionary format suitable for API response
+    entity_data = {
+        "id": entity.entity_id,
+        "type": entity.entity_type.name.lower(),
+        "name": entity.entity_name,
+        "metadata": entity.entity_metadata,
+        "entities": entity.entities,
+        "relation_counts": entity.relation_counts,
+        "countries": entity.countries,
+        "genres": entity.genres,
+        "styles": entity.styles,
+    }
+
+    return cast(Dict[str, Any], entity_data)
+
+
 @router.get("/random")
 async def route__api__random(
     _: None = Depends(rate_limiter(max_requests=60, period=60))
