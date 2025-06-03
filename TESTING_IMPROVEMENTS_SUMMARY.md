@@ -195,15 +195,15 @@ def test_get_success(self):
 **Usage Example**:
 
 ```python
-from tests.unit.runtime.runtime_database.role_cache_mock_helper import RoleCacheMockHelper
-
-def test_with_roles(self):
-    role_mappings = {"Producer": 3, "Engineer": 4}
-    with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.runtime_domain.relation",
-        role_mappings=role_mappings
-    ):
-        # Test code that uses role lookups
+    from tests.unit.runtime.runtime_database.role_cache_mock_helper import RoleCacheMockHelper
+    
+    def test_with_roles(self):
+        role_mappings = {"Producer": 3, "Engineer": 4}
+        with RoleCacheMockHelper.mock_role_cache_in_module(
+            "musigree.runtime.runtime_domain.relation",
+            role_mappings=role_mappings
+        ):
+            # Test code that uses role lookups
 ```
 
 ## Test Fixes Completed
