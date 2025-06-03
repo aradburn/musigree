@@ -1,5 +1,5 @@
-import pytest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, call
+
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 
