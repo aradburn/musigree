@@ -74,5 +74,12 @@ export default defineConfig({
             "Access-Control-Allow-Headers":
                 "X-Requested-With, content-type, Authorization",
         },
+        proxy: {
+            "/api": {
+                target: "http://localhost:5000",
+                changeOrigin: true,
+                secure: false,
+            },
+        },
     },
 });
