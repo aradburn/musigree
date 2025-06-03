@@ -38,11 +38,11 @@ The testing framework has been significantly improved to address common issues w
 **Example**:
 
 ```python
-    with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.runtime_database.runtime_relation_repository",
-        {"Producer": 1}
-    ):
-        # Test code here
+with RoleCacheMockHelper.mock_role_cache_in_module(
+    "musigree.runtime.runtime_database.runtime_relation_repository",
+    {"Producer": 1}
+):
+    # Test code here
 ```
 
 ### 3. Predefined Role Mappings
@@ -165,8 +165,8 @@ The testing framework has been significantly improved to address common issues w
 Always use the context manager approach for clean test code:
 
 ```python
-    with RoleCacheMockHelper.mock_role_cache(role_mappings):
-        # Test code here
+with RoleCacheMockHelper.mock_role_cache(role_mappings):
+    # Test code here
 ```
 
 ### 2. Module-Specific Mocking
@@ -174,8 +174,8 @@ Always use the context manager approach for clean test code:
 When modules import `RoleCache` directly, use module-specific mocking:
 
 ```python
-    with RoleCacheMockHelper.mock_role_cache_in_module(module_path, role_mappings):
-        # Test code here
+with RoleCacheMockHelper.mock_role_cache_in_module(module_path, role_mappings):
+    # Test code here
 ```
 
 ### 3. Use Predefined Mappings
@@ -183,8 +183,8 @@ When modules import `RoleCache` directly, use module-specific mocking:
 Prefer predefined role mappings for consistency:
 
 ```python
-    with RoleCacheMockHelper.mock_role_cache(COMMON_TEST_ROLES):
-        # Test code here
+with RoleCacheMockHelper.mock_role_cache(COMMON_TEST_ROLES):
+    # Test code here
 ```
 
 ### 4. Document Complex Setups
@@ -192,9 +192,9 @@ Prefer predefined role mappings for consistency:
 For complex tests, document the role mappings and their purpose:
 
 ```python
-    # Test multiselect mapping with production and technical roles
-    role_mappings = {"Producer": 1, "Engineer": 2}
-    role_categories = {1: "Production", 2: "Technical"}
+# Test multiselect mapping with production and technical roles
+role_mappings = {"Producer": 1, "Engineer": 2}
+role_categories = {1: "Production", 2: "Technical"}
 ```
 
 ## Future Recommendations
