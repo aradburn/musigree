@@ -33,8 +33,6 @@ from musigree.constants import (
     INSTRUMENTS_DATA,
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
-    ENTITY_DETAILS_DATA,
-    ENTITY_DETAILS_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
@@ -115,7 +113,6 @@ def get_load_offline_table_stages(
     is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
     is_analyze = OfflineDatabaseManager.offline_database_helper.is_vacuum_analyze()
     discogs_data_directory = data_directory / DISCOGS_DATA
-    entity_details_path = data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
     text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     stages = [
         partial(RoleDataAccess.load_all_roles),
@@ -174,10 +171,6 @@ def get_load_offline_table_stages(
             has_tablename,
             is_full,
             is_analyze,
-        ),
-        partial(
-            LoaderRelease().loader_create_entity_details_index,
-            entity_details_path,
         ),
         partial(
             LoaderEntity().loader_create_text_search_index,

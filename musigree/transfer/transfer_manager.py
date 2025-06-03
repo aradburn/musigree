@@ -266,7 +266,7 @@ class TransferManager:
                 runtime_style_repository.commit()
 
     @staticmethod
-    def transfer_all(data_directory: Path) -> None:
+    def transfer_all(_data_directory: Path) -> None:
         log.debug(f"Running transfer_all()")
 
         RuntimeDatabaseManager.runtime_database_helper.drop_tables(
