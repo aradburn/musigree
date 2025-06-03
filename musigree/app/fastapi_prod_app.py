@@ -57,15 +57,6 @@ def create_production_app() -> FastAPI:
     configuration, including settings for the database, cache, and logging.
     """
 
-    # Load data from tables
-    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
-    """
-    Loads initial data into the runtime database.
-
-    Populates the tables in the runtime database with initial data,
-    such as roles, from the pre-configured data sources.
-    """
-
     return _app
 
 

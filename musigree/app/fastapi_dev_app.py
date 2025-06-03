@@ -20,16 +20,51 @@ database with initial data.
 """
 
 import uvicorn
+from fastapi import FastAPI
 
 from musigree.app.fastapi_app import create_app
 from musigree.config import SqliteDevelopmentConfiguration
 
-if __name__ == "__main__":
-    # Use the SQLite development configuration
-    runtime_config = SqliteDevelopmentConfiguration()
 
-    # Create FastAPI app using the specified runtime configuration.
-    app = create_app(runtime_config)
+def create_development_app() -> FastAPI:
+    """
+    Creates and configures a FastAPI application for development.
+
+    This function sets up a FastAPI application instance using the
+    `SqliteProductionConfiguration` to ensure it is configured for a
+    production environment. It also loads initial data into the database
+    tables.
+
+    Returns:
+        FastAPI: A configured FastAPI application instance ready for development.
+    """
+    runtime_config = SqliteDevelopmentConfiguration()
+    """
+    Configuration object for the runtime environment.
+
+    Sets up the configuration for the runtime environment using SQLite,
+    suitable for development use.
+    """
+    _app = create_app(runtime_config)
+    """
+    FastAPI application instance.
+
+    Creates a new FastAPI application instance using the specified runtime
+    configuration, including settings for the database, cache, and logging.
+    """
+
+    return _app
+
+"""
+The main FastAPI application instance for development.
+
+This is the FastAPI application instance that should be used by ASGI servers
+like Uvicorn when running the application in development.
+"""
+
+if __name__ == "__main__":
+    # FastAPI instance for ASGI servers like Uvicorn
+    app = create_development_app()
 
     # Run the Uvicorn development server, which listens for incoming HTTP
     # requests and serves the Musigree application.
