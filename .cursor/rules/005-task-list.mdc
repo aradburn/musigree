@@ -1,6 +1,6 @@
 ---
-description: Task List Management
-globs: *
+description: Use for Task List Management
+globs:
 alwaysApply: false
 ---
 
