@@ -23,7 +23,7 @@ The `rate_limiter` dependency interacts with the following components:
 
 import logging
 import time
-from typing import Callable
+from typing import Callable, Any
 
 import fakeredis
 from fastapi import Request, Response
@@ -35,11 +35,31 @@ log = logging.getLogger(__name__)
 The logger for the dependencies module.
 """
 
-redis_client = fakeredis.FakeStrictRedis()
-# redis_client = redis.StrictRedis()
-"""
-The redis client, `fakeredis.FakeStrictRedis` is used for testing.
-"""
+# Global Redis client - will be initialized based on environment
+_redis_client: Any = None
+
+
+def get_redis_client() -> Any:
+    """
+    Get the Redis client, initializing it if necessary.
+    
+    Returns:
+        Redis client instance (real or fake based on configuration)
+    """
+    global _redis_client
+    
+    if _redis_client is None:
+        # For now, we'll use FakeRedis for development and testing
+        # In production, this should be replaced with real Redis configuration
+        _redis_client = fakeredis.FakeStrictRedis(
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True
+        )
+        log.info("Initialized FakeRedis for rate limiting")
+    
+    return _redis_client
 
 
 def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
@@ -88,7 +108,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         try:
             # Get current requests (handle Redis byte response)
             current_requests = 0
-            redis_value = redis_client.get(key)
+            redis_value = get_redis_client().get(key)
             if redis_value:
                 # Convert bytes to string and then to int
                 try:
@@ -102,18 +122,23 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
                 current_requests = 0
 
             remaining = max_requests - current_requests
-        except (ValueError, TypeError) as e:
-            log.debug(f"Redis error handling value: {e}")
+        except Exception as e:
+            log.warning(f"Redis error in rate limiter: {e}")
+            # Fallback: allow request but log the error
             remaining = max_requests
-            await redis_client.setex(key, period, 0)
+            current_requests = 0
 
         # Get TTL and handle Redis response
-        ttl_raw = redis_client.ttl(key)
-        ttl_value = period
+        try:
+            ttl_raw = get_redis_client().ttl(key)
+            ttl_value = period
 
-        # If TTL is a valid positive number, use it
-        if isinstance(ttl_raw, int) and ttl_raw > 0:
-            ttl_value = ttl_raw
+            # If TTL is a valid positive number, use it
+            if isinstance(ttl_raw, int) and ttl_raw > 0:
+                ttl_value = ttl_raw
+        except Exception as e:
+            log.warning(f"Redis TTL error in rate limiter: {e}")
+            ttl_value = period
 
         # Add rate limit headers to the response
         response.headers["X-RateLimit-Limit"] = str(max_requests)
@@ -122,8 +147,14 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
 
         if remaining > 0:
             # Increment the request count
-            # noinspection PyAsyncCall
-            redis_client.incr(key, 1)
+            try:
+                get_redis_client().incr(key, 1)
+                # Set expiration if this is a new key
+                if current_requests == 0:
+                    get_redis_client().expire(key, period)
+            except Exception as e:
+                log.warning(f"Redis incr/expire error in rate limiter: {e}")
+                # Continue without incrementing - graceful degradation
             log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl_value}")
         else:
             log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl_value}")

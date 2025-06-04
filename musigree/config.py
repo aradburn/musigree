@@ -62,7 +62,7 @@ class PostgresProductionConfiguration(Configuration):
     """Production configuration for PostgreSQL database."""
 
     PRODUCTION: bool = True
-    DEBUG: bool = True
+    DEBUG: bool = False
     TESTING: bool = False
     DATA_DIR: Path = ROOT_DIR / "musigree" / "data"
     DATABASE: DatabaseType = DatabaseType.POSTGRES

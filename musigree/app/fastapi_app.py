@@ -47,6 +47,7 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.loader import load_runtime_tables
 from musigree.logging_config import setup_logging, shutdown_logging
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+from musigree.app.fastapi_security import setup_security_middleware
 
 log = logging.getLogger(__name__)
 """The logger for the application module."""
@@ -104,13 +105,34 @@ def create_app(config: Configuration) -> FastAPI:
     # Add middleware
     # noinspection PyTypeChecker
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    # noinspection PyTypeChecker
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    
+    # Configure CORS based on environment
+    if config.PRODUCTION:
+        # Production: specific origins only
+        allowed_origins = [
+            "https://musigree.azurewebsites.net",
+            "https://www.musigree.com",  # Add your production domain
+        ]
+        # noinspection PyTypeChecker
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["Content-Type", "Authorization"],
+            allow_credentials=True,
+        )
+    else:
+        # Development: more permissive for local development
+        # noinspection PyTypeChecker
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    # Setup security middleware (should be added after CORS)
+    setup_security_middleware(app, config)
 
     # Create assets router
     assets_router, assets_templates = create_assets_router(config)

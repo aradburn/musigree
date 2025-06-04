@@ -1,0 +1,150 @@
+"""
+Security middleware and utilities for the Musigree FastAPI application.
+
+This module provides security-related middleware and functions to enhance
+the security posture of the application, including security headers,
+rate limiting enhancements, and other security best practices.
+"""
+
+import logging
+from typing import Callable
+
+from fastapi import Request, Response
+from starlette.types import ASGIApp, Scope, Receive, Send
+
+log = logging.getLogger(__name__)
+
+
+class SecurityHeadersMiddleware:
+    """
+    ASGI middleware to add security headers to all responses.
+    
+    This middleware adds various security headers to protect against
+    common web vulnerabilities such as XSS, clickjacking, and MIME
+    type sniffing attacks.
+    """
+
+    def __init__(self, app: ASGIApp, is_production: bool = False):
+        self.app = app
+        self.is_production = is_production
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        ASGI callable that processes HTTP requests and adds security headers.
+
+        Args:
+            scope: ASGI scope
+            receive: ASGI receive callable
+            send: ASGI send callable
+        """
+        if scope["type"] != "http":
+            # Pass through non-HTTP requests
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                # Add security headers to the response
+                headers = dict(message.get("headers", []))
+                
+                # Define security headers
+                security_headers = {
+                    # Prevent MIME type sniffing
+                    b"x-content-type-options": b"nosniff",
+                    
+                    # Prevent clickjacking
+                    b"x-frame-options": b"DENY",
+                    
+                    # Enable XSS protection
+                    b"x-xss-protection": b"1; mode=block",
+                    
+                    # Referrer policy
+                    b"referrer-policy": b"strict-origin-when-cross-origin",
+                    
+                    # Permissions policy (previously Feature-Policy)
+                    b"permissions-policy": b"camera=(), microphone=(), geolocation=(), interest-cohort=()",
+                }
+
+                if self.is_production:
+                    # Add HSTS header for production HTTPS
+                    security_headers[b"strict-transport-security"] = b"max-age=31536000; includeSubDomains; preload"
+                    
+                    # Content Security Policy for production
+                    security_headers[b"content-security-policy"] = (
+                        b"default-src 'self'; "
+                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+                        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+                        b"font-src 'self' https://fonts.gstatic.com; "
+                        b"img-src 'self' data: https:; "
+                        b"connect-src 'self' https://api.discogs.com; "
+                        b"frame-ancestors 'none';"
+                    )
+                else:
+                    # More permissive CSP for development
+                    security_headers[b"content-security-policy"] = (
+                        b"default-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                        b"connect-src 'self' http://localhost:* ws://localhost:*; "
+                        b"img-src 'self' data: https:;"
+                    )
+
+                # Merge security headers with existing headers
+                for header_name, header_value in security_headers.items():
+                    headers[header_name] = header_value
+
+                # Update message headers
+                message["headers"] = [(name, value) for name, value in headers.items()]
+
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+def validate_environment_variables(config) -> None:
+    """
+    Validate that required environment variables are set for production.
+    
+    Args:
+        config: The application configuration object
+        
+    Raises:
+        ValueError: If required environment variables are missing in production
+    """
+    if not config.PRODUCTION:
+        return
+    
+    missing_vars = []
+    
+    if config.DATABASE.value == "postgres":
+        required_postgres_vars = [
+            ("POSTGRES_DATABASE_USERNAME", config.POSTGRES_DATABASE_USERNAME),
+            ("POSTGRES_DATABASE_PASSWORD", config.POSTGRES_DATABASE_PASSWORD),
+            ("POSTGRES_DATABASE_HOST", config.POSTGRES_DATABASE_HOST),
+            ("POSTGRES_DATABASE_PORT", config.POSTGRES_DATABASE_PORT),
+            ("POSTGRES_OFFLINE_DATABASE_NAME", config.POSTGRES_OFFLINE_DATABASE_NAME),
+        ]
+        
+        for var_name, var_value in required_postgres_vars:
+            if not var_value:
+                missing_vars.append(var_name)
+    
+    if missing_vars:
+        raise ValueError(
+            f"Required environment variables for production are missing: {', '.join(missing_vars)}"
+        )
+
+
+def setup_security_middleware(app, config) -> None:
+    """
+    Set up security middleware for the FastAPI application.
+    
+    Args:
+        app: The FastAPI application instance
+        config: The application configuration object
+    """
+    # Validate environment variables for production
+    validate_environment_variables(config)
+    
+    # Add security headers middleware
+    app.add_middleware(SecurityHeadersMiddleware, is_production=config.PRODUCTION)
+    
+    log.info(f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment") 
