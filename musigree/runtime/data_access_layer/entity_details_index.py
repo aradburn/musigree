@@ -30,7 +30,7 @@ class EntityDetailsIndex:
             lookup table for style indexes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes an empty EntityDetailsIndex.
         """

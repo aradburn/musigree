@@ -17,8 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeRepositoryTestCase(unittest.TestCase):
-    runtime_config: Configuration = None
-    relation_grapher: Type[RelationGrapher] = None
+    runtime_config: Configuration | None = None
+    relation_grapher: Type[RelationGrapher] | None = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):

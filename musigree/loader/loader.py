@@ -107,6 +107,13 @@ def get_load_offline_table_stages(
     from musigree.offline.loader.loader_relation import LoaderRelation
     from musigree.offline.loader.loader_release import LoaderRelease
 
+    assert OfflineDatabaseManager.offline_database_helper is not None, (
+        "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_load_offline_table_stages()"
+    )
+    assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+        "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_load_offline_table_stages()"
+    )
+
     has_tablename = (
         OfflineDatabaseManager.offline_database_helper.has_vacuum_tablename()
     )
@@ -201,15 +208,20 @@ def load_offline_test_tables(
     This method is used for loading test data into the offline database.
     It is typically called during the setup phase of tests.
     """
+
+    assert OfflineDatabaseManager.offline_database_helper is not None, (
+        "OfflineDatabaseManager.offline_database_helper must be initialized before calling load_offline_test_tables()"
+    )
+
     roles_directory = data_directory / ROLES_DATA
     instruments_directory = data_directory / INSTRUMENTS_DATA
     LoaderRole.load_roles_into_database(roles_directory, instruments_directory)
     load_offline_tables(data_directory, date, is_bulk_inserts=is_bulk_inserts)
 
-    text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    OfflineDatabaseManager.offline_database_helper.text_search_index = (
-        TextSearchIndex.load_text_search_index_from_file(text_search_path)
-    )
+    # text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    # OfflineDatabaseManager.offline_database_helper.text_search_index = (
+    #     TextSearchIndex.load_text_search_index_from_file(text_search_path)
+    # )
 
 
 def load_runtime_test_tables(data_directory: Path) -> None:

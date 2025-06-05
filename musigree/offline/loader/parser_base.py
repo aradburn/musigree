@@ -55,7 +55,7 @@ class ParserBase:
             extracted from XML elements and processed.
     """
 
-    _tags_to_fields_mapping: dict = None
+    _tags_to_fields_mapping: dict | None = None
     """
     A mapping from XML tags to database fields and procedures.
 
@@ -128,7 +128,7 @@ class ParserBase:
                 yield new_instance
 
     @classmethod
-    def from_element(cls, element) -> Self:
+    def from_element(cls, element) -> Self:  # type: ignore
         """
         Creates an instance from an XML element.
 

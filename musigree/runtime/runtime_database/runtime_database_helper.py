@@ -170,10 +170,10 @@ class RuntimeDatabaseHelper(ABC):
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
         from musigree.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
 
-        for table in ALL_RUNTIME_DATABASE_TABLES:
-            log.debug(f"table definition for: {table.__tablename__}")
-        for table in RuntimeBase.metadata.tables:
-            log.debug(f"table in metadata: {table}")
+        for table_class in ALL_RUNTIME_DATABASE_TABLES:
+            log.debug(f"table definition for: {table_class.__tablename__}")
+        for table_name in RuntimeBase.metadata.tables:
+            log.debug(f"table in metadata: {table_name}")
         table_definitions: List[Table] = [
             RuntimeBase.metadata.tables[table_name] for table_name in tables
         ]
@@ -261,9 +261,9 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
-        values: List[dict],
+        values: list[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[RuntimeConcreteTable]]:
+    ) -> Insert:
         """
         Generates an SQL insert bulk query.
 
@@ -477,7 +477,7 @@ class RuntimeDatabaseHelper(ABC):
         data = []
         for relation in relations:
             # relation_release_years = relation_release_year_repository.get(relation.id)
-            relation_releases = {}
+            relation_releases: dict[int, int] = {}
             # for relation_release_year in relation_release_years:
             #     relation_releases[relation_release_year.release_id] = (
             #         relation_release_year.year
@@ -491,8 +491,8 @@ class RuntimeDatabaseHelper(ABC):
                 "releases": relation_releases,
             }
             data.append(datum)
-        data = {"results": tuple(data)}
-        return data
+        result = {"results": tuple(data)}
+        return result
 
     @classmethod
     def search_text_index(cls, search_text):

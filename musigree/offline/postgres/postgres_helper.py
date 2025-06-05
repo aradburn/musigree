@@ -1,10 +1,10 @@
 import logging
-import os
-import pathlib
 import shutil
+from pathlib import Path
 from typing import Type, List
 
-from pg_temp import TempDB
+# noinspection Mypy
+from pg_temp import TempDB  # type: ignore
 from sqlalchemy import Engine, URL, create_engine, text
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 class OfflinePostgresHelper(OfflineDatabaseHelper):
     postgres_test_db: TempDB | None = None
-    pg_offline_dirname: str | None = None
+    pg_offline_dirname: Path | None = None
     _is_test: bool = False
 
     @staticmethod
@@ -54,13 +54,12 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         else:
             if config.TESTING:
                 log.info("Using Postgres Test Offline Database")
-
+                assert config.POSTGRES_OFFLINE_DATA is not None, (
+                    "POSTGRES_OFFLINE_DATA must be set in the configuration for testing"
+                )
                 pg_offline_dirname = config.POSTGRES_OFFLINE_DATA
-                pg_data_dir = os.path.join(pg_offline_dirname, "data")
-                pg_socket_dir = os.path.join(pg_offline_dirname, "socket")
-
-                data_path = pathlib.Path(pg_data_dir)
-                socket_path = pathlib.Path(pg_socket_dir)
+                data_path = pg_offline_dirname / "data"
+                socket_path = pg_offline_dirname / "socket"
                 log.debug(f"data_path: {data_path}")
                 log.debug(f"socket_path: {socket_path}")
 
@@ -94,10 +93,10 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 OfflinePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_OFFLINE_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb",
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres",
-                    psql=config.POSTGRES_ROOT + "/bin/psql",
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser",
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
                     dirname=pg_offline_dirname,
                     options=options,
                 )
@@ -207,12 +206,12 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: List[str]) -> None:
         log.info("Create Offline Postgres tables")
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: List[str]) -> None:
         log.info("Drop Offline Postgres tables")
         super().drop_tables(tables=tables)
 
@@ -247,7 +246,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         schema_class: Type[ConcreteTable],
         values_list: List[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[ConcreteTable]]:
+    ) -> Insert:
         if on_conflict_do_nothing:
             return insert(schema_class).on_conflict_do_nothing().values(values_list)
         else:

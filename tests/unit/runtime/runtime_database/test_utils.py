@@ -41,9 +41,9 @@ Examples:
         pass
 """
 
-from unittest.mock import Mock, patch
-from typing import Dict, Optional, Any, List
 from contextlib import contextmanager
+from typing import Dict, Any, List
+from unittest.mock import Mock, patch
 
 
 class SessionMockHelper:
@@ -57,14 +57,14 @@ class SessionMockHelper:
     
     @staticmethod
     def create_mock_session(
-        execute_return_value: Optional[Any] = None,
-        flush_return_value: Optional[Any] = None,
-        commit_return_value: Optional[Any] = None,
-        rollback_return_value: Optional[Any] = None,
-        add_return_value: Optional[Any] = None,
-        add_all_return_value: Optional[Any] = None,
-        refresh_return_value: Optional[Any] = None,
-        close_return_value: Optional[Any] = None,
+        execute_return_value: Any | None = None,
+        flush_return_value: Any | None = None,
+        commit_return_value: Any | None = None,
+        rollback_return_value: Any | None = None,
+        add_return_value: Any | None = None,
+        add_all_return_value: Any | None = None,
+        refresh_return_value: Any | None = None,
+        close_return_value: Any | None = None,
         **additional_methods
     ) -> Mock:
         """
@@ -113,8 +113,8 @@ class SessionMockHelper:
     @staticmethod
     @contextmanager
     def mock_runtime_session(
-        execute_return_value: Optional[Any] = None,
-        flush_return_value: Optional[Any] = None,
+        execute_return_value: Any | None = None,
+        flush_return_value: Any | None = None,
         **session_kwargs
     ):
         """
@@ -144,8 +144,8 @@ class SessionMockHelper:
     @contextmanager
     def mock_runtime_session_in_module(
         module_path: str,
-        execute_return_value: Optional[Any] = None,
-        flush_return_value: Optional[Any] = None,
+        execute_return_value: Any | None = None,
+        flush_return_value: Any | None = None,
         **session_kwargs
     ):
         """
@@ -180,8 +180,8 @@ class SessionMockHelper:
     @contextmanager
     def mock_runtime_session_and_role_cache(
         role_mappings: Dict[str, int],
-        execute_return_value: Optional[Any] = None,
-        flush_return_value: Optional[Any] = None,
+        execute_return_value: Any | None = None,
+        flush_return_value: Any | None = None,
         **session_kwargs
     ):
         """

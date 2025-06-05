@@ -51,7 +51,6 @@ runtime operation.
 """
 
 import logging
-import pathlib
 from typing import Type, List
 
 from sqlalchemy import Engine, create_engine, text, NullPool
@@ -94,7 +93,12 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             Engine: The SQLAlchemy engine.
         """
         log.info("Using Sqlite Runtime Database")
-        target_path = pathlib.Path(config.SQLITE_RUNTIME_DATABASE_NAME)
+
+        assert config.SQLITE_RUNTIME_DATABASE_NAME is not None, (
+            "Configuration Error: SQLITE_RUNTIME_DATABASE_NAME is not set"
+        )
+
+        target_path = config.SQLITE_RUNTIME_DATABASE_NAME
         """Get the path to the database file."""
         target_parent = target_path.parent
         """Get the parent folder of the database file."""
@@ -168,7 +172,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: List[str]) -> None:
         """
         Creates tables in the SQLite database.
 
@@ -184,7 +188,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Create the table."""
 
     @classmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: List[str]) -> None:
         """
         Drops tables from the SQLite database.
 
@@ -268,7 +272,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         schema_class: Type[RuntimeConcreteTable],
         values_list: List[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[RuntimeConcreteTable]]:
+    ) -> Insert:
         """
         Generates an SQL bulk insert query for SQLite.
 

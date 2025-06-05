@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 
 
 class AppTestCase(OfflineDatabaseTestCase):
-    test_app: FastAPI = None
-    client: TestClient = None
+    test_app: FastAPI | None = None
+    client: TestClient | None = None
 
     @classmethod
     def setUpClass(cls):

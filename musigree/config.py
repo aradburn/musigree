@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,19 +42,19 @@ class Configuration(BaseSettings):
     CACHE_TYPE: CacheType = CacheType.FILESYSTEM
 
     # PostgreSQL settings
-    POSTGRES_DATABASE_USERNAME: Optional[str] = None
-    POSTGRES_DATABASE_PASSWORD: Optional[str] = None
-    POSTGRES_DATABASE_HOST: Optional[str] = None
-    POSTGRES_DATABASE_PORT: Optional[int] = None
-    POSTGRES_OFFLINE_DATABASE_NAME: Optional[str] = None
-    POSTGRES_RUNTIME_DATABASE_NAME: Optional[str] = None
-    POSTGRES_ROOT: Optional[str] = None
-    POSTGRES_OFFLINE_DATA: Optional[Path] = None
-    POSTGRES_RUNTIME_DATA: Optional[Path] = None
+    POSTGRES_DATABASE_USERNAME: str | None = None
+    POSTGRES_DATABASE_PASSWORD: str | None = None
+    POSTGRES_DATABASE_HOST: str | None = None
+    POSTGRES_DATABASE_PORT: int | None = None
+    POSTGRES_OFFLINE_DATABASE_NAME: str | None = None
+    POSTGRES_RUNTIME_DATABASE_NAME: str | None = None
+    POSTGRES_ROOT: str | None = None
+    POSTGRES_OFFLINE_DATA: Path | None = None
+    POSTGRES_RUNTIME_DATA: Path | None = None
 
     # SQLite settings
-    SQLITE_OFFLINE_DATABASE_NAME: Optional[Path] = None
-    SQLITE_RUNTIME_DATABASE_NAME: Optional[Path] = None
+    SQLITE_OFFLINE_DATABASE_NAME: Path | None = None
+    SQLITE_RUNTIME_DATABASE_NAME: Path | None = None
 
 
 class PostgresProductionConfiguration(Configuration):
@@ -72,21 +71,21 @@ class PostgresProductionConfiguration(Configuration):
 
     # Use default None values for tests, but prefer env vars when available
     # (modify Field default with default_factory to use os.getenv at runtime)
-    POSTGRES_DATABASE_USERNAME: Optional[str] = Field(
+    POSTGRES_DATABASE_USERNAME: str | None = Field(
         default=None,
         description="PostgreSQL database username from environment variable",
     )
-    POSTGRES_DATABASE_PASSWORD: Optional[str] = Field(
+    POSTGRES_DATABASE_PASSWORD: str | None = Field(
         default=None,
         description="PostgreSQL database password from environment variable",
     )
-    POSTGRES_DATABASE_HOST: Optional[str] = Field(
+    POSTGRES_DATABASE_HOST: str | None = Field(
         default=None, description="PostgreSQL database host from environment variable"
     )
-    POSTGRES_DATABASE_PORT: Optional[int] = Field(
+    POSTGRES_DATABASE_PORT: int | None = Field(
         default=None, description="PostgreSQL database port from environment variable"
     )
-    POSTGRES_OFFLINE_DATABASE_NAME: Optional[str] = Field(
+    POSTGRES_OFFLINE_DATABASE_NAME: str | None = Field(
         default=None,
         description="PostgreSQL offline database name from environment variable",
     )
@@ -218,12 +217,12 @@ class SqliteTestConfiguration(Configuration):
     CACHE_TYPE: CacheType = CacheType.MEMORY
 
     # Cache generated random strings
-    _offline_random_string: Optional[str] = None
-    _runtime_random_string: Optional[str] = None
+    _offline_random_string: str | None = None
+    _runtime_random_string: str | None = None
 
     # Generate placeholders to satisfy pydantic validation
-    SQLITE_OFFLINE_DATABASE_NAME: Path = None
-    SQLITE_RUNTIME_DATABASE_NAME: Path = None
+    SQLITE_OFFLINE_DATABASE_NAME: Path | None = None
+    SQLITE_RUNTIME_DATABASE_NAME: Path | None = None
 
     def __init__(self, **data):
         # Generate random strings before init

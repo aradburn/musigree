@@ -46,7 +46,7 @@ class RelationTable(Base):
     object: Mapped[int] = mapped_column(Integer)
     """The ID of the object entity in the relation."""
 
-    __table_args__ = (
+    __table_args__: tuple[Index, Index, Index, dict] = (
         Index(
             "idx_relation",
             subject,

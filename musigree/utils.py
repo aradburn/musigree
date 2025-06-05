@@ -18,7 +18,8 @@ from typing import List, Any, TypeVar, Dict
 
 import requests
 from dateutil.relativedelta import relativedelta
-from toolz import count
+# noinspection Mypy
+from toolz import count  # type: ignore
 from unidecode import unidecode
 
 log = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
+def parse_request_args(args) -> tuple[list[str], tuple[int, int] | int | None]:
     from musigree.library.cache.role_cache import RoleCache
     from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
 
@@ -76,7 +77,7 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
         if key == "year":
             year_arg = args[key]
             try:
-                if "-" in year:
+                if "-" in year_arg:
                     start, _, stop = year_arg.partition("-")
                     start_year = int(start)
                     stop_year = int(stop)
@@ -112,13 +113,13 @@ def parse_request_args(args) -> tuple[list[str], int | tuple[int, int]] | None:
                         roles.add(role)
 
     if len(roles) == 0:
-        roles = UI_DEFAULT_ROLES
-    roles = list(sorted(roles))
+        roles = set(UI_DEFAULT_ROLES)
+    roles_list = list(sorted(roles))
     # log.debug(f"Requested roles: {roles}")
-    return roles, year
+    return roles_list, year
 
 
-def batched(iterable: Sequence[T], n) -> Iterator[List[T]]:
+def batched(iterable: Sequence[T], n) -> Iterator[list[T]]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -139,7 +140,7 @@ def batched(iterable: Sequence[T], n) -> Iterator[List[T]]:
 #         yield itertools.chain([peek], slice_iter)
 
 
-def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[T]:
+def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
@@ -331,7 +332,7 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
     return base + path
 
 
-def get_discogs_dump_dates(start_date: date, end_date: date) -> List[date]:
+def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
     date_list = []
     curr_date = start_date
     while curr_date <= end_date:

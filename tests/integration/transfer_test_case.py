@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class TransferTestCase(OfflineDatabaseTestCase):
-    runtime_config: Configuration = None
+    runtime_config: Configuration | None = None
 
     @classmethod
     def setUpClass(cls):

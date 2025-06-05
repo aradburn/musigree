@@ -71,7 +71,7 @@ class RuntimeEntityTable(RuntimeBase):
     styles: Mapped[str] = mapped_column(String, nullable=True)
     """Styles associated with the entity."""
 
-    __table_args__ = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_runtime_entity_id_and_entity_type",
             entity_id,

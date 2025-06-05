@@ -63,21 +63,21 @@ class Release(InternalDomainObject):
 
     release_id: int
     """The unique identifier for the release."""
-    artists: List[Dict[str, Any]] | None = None
+    artists: list[dict[str, Any]] | None = None
     """A list of artists associated with the release."""
-    companies: List[Dict[str, Any]] | None = None
+    companies: list[dict[str, Any]] | None = None
     """A list of companies associated with the release."""
     country: str | None = None
     """The country where the release was made."""
-    extra_artists: List[Dict[str, Any]] | None = None
+    extra_artists: list[dict[str, Any]] | None = None
     """A list of additional artists associated with the release."""
-    formats: List[Dict[str, Any]] | None = None
+    formats: list[dict[str, Any]] | None = None
     """A list of formats in which the release is available."""
-    genres: List[str] | None = None
+    genres: list[str] | None = None
     """A list of genres associated with the release."""
-    identifiers: List[Dict[str, Any]] | None = None
+    identifiers: list[dict[str, Any]] | None = None
     """A list of identifiers for the release."""
-    labels: List[Dict[str, Any]] | None = None
+    labels: list[dict[str, Any]] | None = None
     """A list of labels associated with the release."""
     master_id: int | None = None
     """The master ID of the release."""
@@ -85,11 +85,11 @@ class Release(InternalDomainObject):
     """Additional notes about the release."""
     release_date: date | None = None
     """The release date."""
-    styles: List[str] | None = None
+    styles: list[str] | None = None
     """A list of styles associated with the release."""
     title: str
     """The title of the release."""
-    tracklist: List[Dict[str, Any]] | None = None
+    tracklist: list[dict[str, Any]] | None = None
     """The tracklist of the release."""
 
     def to_domain(self) -> Self:

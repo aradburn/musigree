@@ -38,12 +38,13 @@ def get_runtime_session() -> Session:
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
     if RuntimeDatabaseManager.get_concurrency_count() > 1:
-        session = scoped_session(
+        _scoped_session = scoped_session(
             RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
         )
+        return _scoped_session()
     else:
-        session = RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
-    return session()
+        _session = RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
+        return _session()
 
 
 CTX_RUNTIME_SESSION: ContextVar[Session] = ContextVar("runtime_session")
@@ -70,12 +71,10 @@ class RuntimeSession:
         _ctx_session (Session | None): an instance of a sqlAlchemy session stored in the
         context variable, if none is stored it will be none.
     """
+    _ctx_session: Session | None = None
 
     # All sqlalchemy errors that can be raised
     _ERRORS = (IntegrityError, InvalidRequestError)
-    """
-    A tuple of common SQLAlchemy errors that are handled by this class.
-    """
 
     def __init__(self) -> None:
         """
@@ -121,7 +120,7 @@ class RuntimeSession:
         """
         if not self._ctx_session:
             try:
-                self._ctx_session: Session = CTX_RUNTIME_SESSION.get()
+                self._ctx_session = CTX_RUNTIME_SESSION.get()
             except LookupError:
                 raise DatabaseError(message="Not in a transaction")
         return self._ctx_session

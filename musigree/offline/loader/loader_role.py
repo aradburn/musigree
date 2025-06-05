@@ -2,7 +2,6 @@ import csv
 import json
 import logging
 from pathlib import Path
-from typing import List
 
 from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
 from musigree.exceptions import NotFoundError
@@ -51,7 +50,7 @@ class LoaderRole(LoaderBase):
     @classmethod
     def load_wikipedia_instruments(
         cls, instruments_directory: Path
-    ) -> List[RoleUncommitted]:
+    ) -> list[RoleUncommitted]:
         log.info(f"Loading Wikipedia instruments")
 
         roles = []
@@ -67,9 +66,8 @@ class LoaderRole(LoaderBase):
                 csv_reader = csv.DictReader(csvfile, dialect=dialect)
 
                 for row in csv_reader:
-                    row: dict
-                    instrument_name = row["Instrument"]
-                    instrument_class = row["Classification"]
+                    instrument_name: str = row["Instrument"]
+                    instrument_class: str = row["Classification"]
                     normalised_role_name_list = RoleDataUtils.normalise_role_names(
                         instrument_name
                     )
@@ -97,7 +95,7 @@ class LoaderRole(LoaderBase):
     @classmethod
     def load_hornbostel_sachs_instruments(
         cls, instruments_directory: Path
-    ) -> List[RoleUncommitted]:
+    ) -> list[RoleUncommitted]:
         # Load Hornbostel Sachs instrument data
         log.info(f"Load Hornbostel Sachs instrument data")
 
@@ -111,7 +109,11 @@ class LoaderRole(LoaderBase):
 
             for key, instrument_entry in instruments_data.root.items():
                 instrument_class_key = key[0]
-                instrument_class = instruments_data.root.get(instrument_class_key).label
+                value = instruments_data.root.get(instrument_class_key)
+                if value is not None:
+                    instrument_class = value.label
+                else:
+                    instrument_class = "Unknown"
                 category_id = RoleType.Category.INSTRUMENTS
                 category_name = RoleType.category_names[category_id]
                 subcategory_id = RoleType.hornbostel_sachs_to_subcategory(
@@ -139,7 +141,7 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def load_roles_from_files(cls, roles_directory: Path) -> List[RoleUncommitted]:
+    def load_roles_from_files(cls, roles_directory: Path) -> list[RoleUncommitted]:
         log.info(f"Loading roles from files")
 
         roles = []
@@ -154,7 +156,7 @@ class LoaderRole(LoaderBase):
                 csv_reader = csv.DictReader(csvfile, dialect=dialect)
 
                 for row in csv_reader:
-                    row: dict
+                    # row: dict
                     role_name = row["name"]
                     normalised_role_name_list = RoleDataUtils.normalise_role_names(
                         role_name
@@ -189,7 +191,7 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def save_roles(cls, roles: List[RoleUncommitted]) -> int:
+    def save_roles(cls, roles: list[RoleUncommitted]) -> int:
         log.debug(f"Adding roles to RoleRepository")
 
         CacheManager.clear()

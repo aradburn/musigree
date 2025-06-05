@@ -63,7 +63,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def _get_all_by_query(
         self, query: Select[tuple[RelationTable]]
-    ) -> List[RelationInternal]:
+    ) -> list[RelationInternal]:
         """
         Executes a query that should return multiple Relations.
 
@@ -192,7 +192,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         )
         return self._get_one_by_query(query)
 
-    def find_by_entity(self, id_: int) -> List[RelationInternal]:
+    def find_by_entity(self, id_: int) -> list[RelationInternal]:
         """
         Retrieves all relations associated with a given entity ID.
 
@@ -225,7 +225,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     def find_by_entity_and_roles(
         self, id_: int, role_ids: list[int]
-    ) -> List[RelationInternal]:
+    ) -> list[RelationInternal]:
         """
         Retrieves all relations associated with a given entity ID and a set of roles.
 
@@ -283,6 +283,10 @@ class RelationRepository(BaseRepository[RelationTable]):
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create()"
+        )
+
         relation_dict = relation.model_dump(exclude={"role_name"})
         role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
         relation_dict.update(predicate=role_id)
@@ -301,7 +305,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         return relation_db.to_domain()
 
     def create_bulk(
-        self, relations: List[RelationUncommitted], on_conflict_do_nothing=False
+        self, relations: list[RelationUncommitted], on_conflict_do_nothing=False
     ) -> None:
         """
         Creates multiple new relations in the database.
@@ -312,6 +316,10 @@ class RelationRepository(BaseRepository[RelationTable]):
                 a unique constraint is violated.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_bulk()"
+        )
 
         relation_dicts = []
         for relation in relations:

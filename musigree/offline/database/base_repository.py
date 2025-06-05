@@ -234,8 +234,8 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Args:
             id_: The ID of the record to delete.
         """
-        # noinspection PyTypeChecker
-        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
+        # noinspection PyTypeChecker,Mypy
+        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
         self._session.flush()
 
     def commit(self) -> None:

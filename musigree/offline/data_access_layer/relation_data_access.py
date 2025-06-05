@@ -56,7 +56,7 @@ class RelationDataAccess:
     """
 
     @classmethod
-    def from_release(cls, release: Release) -> List[Dict[str, Any]]:
+    def from_release(cls, release: Release) -> list[dict[str, Any]]:
         """
         Extracts relations from a `Release` object.
 
@@ -87,13 +87,13 @@ class RelationDataAccess:
             )
         )
         """Update the triples with artist-label relations."""
-        aggregate_roles = {}
+        aggregate_roles: dict[str, Any] = {}
         """Dictionary to store aggregate roles and their associated artist IDs."""
 
         if is_compilation:
-            iterator = itertools.product(label_ids, release.extra_artists)
+            iterator = itertools.product(label_ids, release.extra_artists or [])
         else:
-            iterator = itertools.product(artist_ids, release.extra_artists)
+            iterator = itertools.product(artist_ids, release.extra_artists or [])
         """Determine the iterator based on whether the release is a compilation."""
         for object_id, credit in iterator:
             for roles in credit["roles"]:
@@ -115,15 +115,15 @@ class RelationDataAccess:
                                 triples.add((credit["id"], role_name, object_id))
 
         if is_compilation:
-            iterator = itertools.product(label_ids, release.companies)
+            iterator = itertools.product(label_ids, release.companies or [])
         else:
-            iterator = itertools.product(artist_ids, release.companies)
+            iterator = itertools.product(artist_ids, release.companies or [])
         """Determine the iterator based on whether the release is a compilation."""
         for subject_id, company in iterator:
-            input_role_str: str = company["entity_type_name"]
-            role_strs_list = RoleDataUtils.normalise_role_names(input_role_str)
+            company_role_str = company["entity_type_name"]
+            company_role_strs_list = RoleDataUtils.normalise_role_names(company_role_str)
             """Normalize the role names."""
-            for role_str in role_strs_list:
+            for role_str in company_role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
                 """Find the normalized role name."""
                 if role_name is not None:
@@ -136,23 +136,23 @@ class RelationDataAccess:
                             )
                         )
 
-        all_track_artist_ids = set()
+        all_track_artist_ids: set[int] = set()
         """Set to store all unique artist IDs from tracks."""
-        for track in release.tracklist:
-            track_artist_ids = set(
+        for track in release.tracklist or []:
+            track_artist_ids: set[int] = set(
                 artist["id"] for artist in track.get("artists", ()) if "id" in artist
             )
             all_track_artist_ids.update(track_artist_ids)
             if not track.get("extra_artists"):
                 continue
             track_artist_ids = track_artist_ids or artist_ids or label_ids
-            iterator = itertools.product(track_artist_ids, track["extra_artists"])
+            iterator = itertools.product(track_artist_ids, track["extra_artists"] or [])
             for object_id, credit in iterator:
                 for roles in credit.get("roles", ()):
-                    input_role_str: str = roles["name"]
-                    role_strs_list = RoleDataUtils.normalise_role_names(input_role_str)
+                    track_role_str: str = roles["name"]
+                    track_role_strs_list = RoleDataUtils.normalise_role_names(track_role_str)
                     """Normalize the role names."""
-                    for role_str in role_strs_list:
+                    for role_str in track_role_strs_list:
                         role_name = RoleDataAccess.find_role(role_str)
                         """Find the normalized role name."""
                         if role_name is not None:
@@ -167,10 +167,10 @@ class RelationDataAccess:
                 object_id = track_artist_id
                 triples.add((subject_id, role_name, object_id))
         # log.debug(f"triples3: {triples}")
-        triples = sorted(triples)
+        triples_list = sorted(triples)
         """Sort the triples for consistency."""
         # log.debug(f"      triples: {triples}")
-        relations = cls.from_triples(triples, release=release)
+        relations = cls.from_triples(triples_list, release=release)
         """Convert the triples to a list of relations."""
         # log.debug(f"      relations: {relations}")
         return relations
@@ -229,20 +229,20 @@ class RelationDataAccess:
         """Boolean to indicate if a release is a compilation."""
         # log.debug(f"get_release_setup release: {release}")
         artist_ids: set[int] = set(
-            artist["id"] for artist in release.artists if "id" in artist
+            artist["id"] for artist in (release.artists or []) if "id" in artist
         )
         """Set to store unique artist IDs."""
         # log.debug(f"get_release_setup artists: {artist_ids}")
         label_ids: set[int] = set(
-            label["id"] for label in release.labels if "id" in label
+            label["id"] for label in (release.labels or []) if "id" in label
         )
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
-        if len(artist_ids) == 1 and release.artists[0]["name"] == "Various":
+        if len(artist_ids) == 1 and release.artists and release.artists[0]["name"] == "Various":
             is_compilation = True
             artist_ids.clear()
-            for track in release.tracklist:
+            for track in release.tracklist or []:
                 artist_ids.update(
                     artist["id"]
                     for artist in track.get("artists", ())
@@ -284,9 +284,9 @@ class RelationDataAccess:
     def find_relation_by_key(
         cls,
         *,
-        entity_repository: EntityRepository,
-        relation_repository: RelationRepository,
-        key: dict[str, Any],
+        _entity_repository: EntityRepository,
+        _relation_repository: RelationRepository,
+        _key: dict[str, Any],
     ) -> list[Relation]:
         """
         Finds relations based on a key.
@@ -295,14 +295,14 @@ class RelationDataAccess:
         based on specific criteria (e.g., subject, role, object).
 
         Args:
-            entity_repository (EntityRepository): The entity repository.
-            relation_repository (RelationRepository): The relation repository.
-            key (dict[str, Any]): The key to search for.
+            _entity_repository (EntityRepository): The entity repository.
+            _relation_repository (RelationRepository): The relation repository.
+            _key (dict[str, Any]): The key to search for.
 
         Returns:
             list[Relation]: A list of relations matching the key.
         """
-        pass
+        return []
 
     @classmethod
     def relation_internal_dict_to_relation_external_dict(

@@ -25,7 +25,7 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 
 import json
 import logging
-from typing import List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
@@ -33,7 +33,6 @@ from fastapi.responses import HTMLResponse
 import musigree.utils
 from musigree.exceptions import BadRequestError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
-
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 
 log = logging.getLogger(__name__)
@@ -62,8 +61,8 @@ Default roles to display if none are specified in the request.
 @router.get("/", response_class=HTMLResponse)
 async def route__index(
     request: Request,
-    roles: Optional[List[str]] = Query(None),
-    year: Optional[int] = Query(None),
+    roles: list[str] | None = Query(None),
+    year: int | None = Query(None),
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -99,7 +98,7 @@ async def route__index(
     # log.debug(f"initial_js: {initial_js}")
 
     # Convert query parameters to the format expected by the existing code
-    query_params = {}
+    query_params: dict[str, Any] = {}
     if roles:
         query_params["roles"] = roles
     if year is not None:
@@ -149,8 +148,8 @@ async def route__entity_type__entity_id(
     request: Request,
     entity_type_str: str,
     entity_id: str,
-    roles: Optional[List[str]] = Query(None),
-    year: Optional[int] = Query(None),
+    roles: list[str] | None = Query(None),
+    year: int | None = Query(None),
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -186,7 +185,7 @@ async def route__entity_type__entity_id(
     from musigree.app.fastapi_app import templates
 
     # Convert query parameters to the format expected by the existing code
-    query_params = {}
+    query_params: dict[str, Any] = {}
     if roles:
         query_params["roles"] = roles
     if year is not None:

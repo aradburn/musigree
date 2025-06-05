@@ -46,7 +46,7 @@ class MetadataTable(Base):
         Specifies that `version_id` column should be used for versioning.
     """
 
-    __table_args__ = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_metadata",
             metadata_key,

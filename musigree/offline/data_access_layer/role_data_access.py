@@ -49,7 +49,7 @@ class RoleDataAccess:
         top_score = 0
 
         # Using a breadth-first breakdown of words in role_name
-        queue = deque()
+        queue: deque = deque()
         queue.append(role_name)
 
         while queue:

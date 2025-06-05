@@ -57,7 +57,7 @@ class TransferTask(luigi.Task):
         luigi.Task: The base class for defining Luigi tasks.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
     def output(self):
         """
@@ -106,7 +106,7 @@ class TransferTask(luigi.Task):
         """
         log.debug(f"Running transfer task: {self.task_id}")
         """Log the start of the task."""
-        TransferManager.transfer_all(Path(self.data_directory))
+        TransferManager.transfer_all(Path(str(self.data_directory)))
         """Transfer all data."""
         self.output().done()
         """Mark the task as complete."""

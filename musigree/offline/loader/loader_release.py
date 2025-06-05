@@ -91,17 +91,17 @@ class LoaderRelease(LoaderBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping = {}
+    _artists_mapping: dict[str, Any] = {}
     """
     A mapping for artists, not currently used
     """
 
-    _companies_mapping = {}
+    _companies_mapping: dict[str, Any] = {}
     """
     A mapping for companies, not currently used
     """
 
-    _tracks_mapping = {}
+    _tracks_mapping: dict[str, Any] = {}
     """
     A mapping for tracks, not currently used
     """

@@ -55,7 +55,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         release_db = Release.model_validate(instance)
         return release_db.to_domain()
 
-    def _get_all_by_query(self, query: Select[tuple[ReleaseTable]]) -> List[Release]:
+    def _get_all_by_query(self, query: Select[tuple[ReleaseTable]]) -> list[Release]:
         """
         Executes a query that should return multiple Releases.
 

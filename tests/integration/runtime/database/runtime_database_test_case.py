@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseTestCase(OfflineDatabaseTestCase):
-    runtime_config: Configuration = None
+    runtime_config: Configuration | None = None
 
     # noinspection PyPep8Naming
     def __init__(self, methodName="runTest"):

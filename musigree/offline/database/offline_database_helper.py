@@ -66,7 +66,12 @@ class OfflineDatabaseHelper(ABC):
         the new connection pool.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
-
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling initialize()"
+        )
+        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling initialize()"
+        )
         OfflineDatabaseManager.offline_database_helper.offline_engine.dispose(
             close=False
         )
@@ -85,7 +90,7 @@ class OfflineDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: list[str]) -> None:
         """
         Creates tables in the database.
 
@@ -94,15 +99,23 @@ class OfflineDatabaseHelper(ABC):
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
-        # for table in ALL_OFFLINE_DATABASE_TABLES:
-        #     log.debug(f"table definition for: {table.__tablename__}")
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
+        )
+        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
+        )
+
+        if tables is None:
+            return
+
         for table in Base.metadata.tables:
             log.debug(f"table in metadata: {table}")
-        table_definitions: List[Table] = [
+        table_definitions: list[Table] = [
             Base.metadata.tables[table_name] for table_name in tables
         ]
-        for table in table_definitions:
-            log.debug(f"creating table: {table.name}")
+        for table_def in table_definitions:
+            log.debug(f"creating table: {table_def.name}")
 
         Base.metadata.create_all(
             OfflineDatabaseManager.offline_database_helper.offline_engine,
@@ -112,7 +125,7 @@ class OfflineDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: List[str]) -> None:
         """
         Drops tables from the database.
 
@@ -121,8 +134,15 @@ class OfflineDatabaseHelper(ABC):
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
+        )
+        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
+        )
+
         if tables is not None:
-            table_definitions: List[Table] = [
+            table_definitions: list[Table] = [
                 Base.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
@@ -192,9 +212,9 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
-        values: List[dict],
+        values: list[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[ConcreteTable]]:
+    ) -> Insert:
         """
         Abstract method to generate a bulk insert query.
 
@@ -248,7 +268,7 @@ class OfflineDatabaseHelper(ABC):
         relation_repository: RelationRepository,
         relation_release_year_repository: RelationReleaseYearRepository,
         key: dict[str, Any],
-    ) -> Relation:
+    ) -> Relation | None:
         """
         Retrieves a relation by its key.
 
@@ -263,10 +283,11 @@ class OfflineDatabaseHelper(ABC):
         relation_internal = relation_repository.find_by_key(key)
         relation = relation_internal.to_relation()
 
-        relation_release_years = relation_release_year_repository.get(relation.id)
-        relation.releases = {}
-        for relation_release_year in relation_release_years:
-            relation.releases[str(relation_release_year.release_id)] = (
-                relation_release_year.year
-            )
+        if relation is not None:
+            relation_release_years = relation_release_year_repository.get(relation.id)
+            relation.releases = {}
+            for relation_release_year in relation_release_years:
+                relation.releases[str(relation_release_year.release_id)] = (
+                    relation_release_year.year
+                )
         return relation

@@ -31,6 +31,7 @@ import collections
 from xml.etree.ElementTree import Element
 
 from musigree.library.cache.role_cache import RoleCache
+from musigree.library.fields.role_type import RoleType
 
 
 class RoleEntry:
@@ -86,7 +87,7 @@ class RoleEntry:
         Returns:
             list[RoleEntry]: A list of RoleEntry instances parsed from the XML text.
         """
-        credit_roles = []
+        credit_roles: list[RoleEntry] = []
         """List to store the created RoleEntry objects."""
         if element is None or not element.text:
             return credit_roles
@@ -172,9 +173,9 @@ class RoleEntry:
         role_name = role_name.strip()
         role_detail = ", ".join(_.strip() for _ in details)
         """Join the details with comma."""
-        role_detail = role_detail or None
+        role_detail_opt = role_detail or None
         """If no detail use None."""
-        return cls(name=role_name, detail=role_detail)
+        return cls(name=role_name, detail=role_detail_opt)
 
     @classmethod
     def get_multiselect_mapping(cls) -> collections.OrderedDict:
@@ -189,7 +190,7 @@ class RoleEntry:
             collections.OrderedDict: An ordered dictionary mapping role categories to
                 lists of role names.
         """
-        mapping = collections.OrderedDict()
+        mapping: collections.OrderedDict[RoleType.Category, list[str]] = collections.OrderedDict()
         """Ordered dictionary to store the mapping."""
         for role_name in sorted(RoleCache.role_name_to_role_id_lookup.keys()):
             """Iterate over all role names."""

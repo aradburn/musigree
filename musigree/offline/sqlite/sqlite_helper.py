@@ -1,6 +1,5 @@
 import logging
-import pathlib
-from typing import Type, List
+from typing import Type
 
 from sqlalchemy import Engine, create_engine, text, StaticPool
 from sqlalchemy.dialects.sqlite import insert, Insert
@@ -30,7 +29,12 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         #         poolclass=StaticPool,
         #     )
         # else:
-        target_path = pathlib.Path(config.SQLITE_OFFLINE_DATABASE_NAME)
+
+        assert config.SQLITE_OFFLINE_DATABASE_NAME is not None, (
+            "Configuration Error: SQLITE_OFFLINE_DATABASE_NAME is not set"
+        )
+
+        target_path = config.SQLITE_OFFLINE_DATABASE_NAME
         target_parent = target_path.parent
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
@@ -92,12 +96,12 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
             log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: list[str]) -> None:
         log.info("Create Offline Sqlite tables")
         super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: list[str]) -> None:
         log.info("Drop Offline Sqlite tables")
         super().drop_tables(tables=tables)
 
@@ -130,9 +134,9 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
-        values_list: List[dict],
+        values_list: list[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[ConcreteTable]]:
+    ) -> Insert:
         if on_conflict_do_nothing:
             return insert(schema_class).on_conflict_do_nothing().values(values_list)
         else:

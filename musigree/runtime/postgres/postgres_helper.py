@@ -62,12 +62,12 @@ and runtime operation.
 """
 
 import logging
-import os
-import pathlib
 import shutil
 from typing import Type, List
 
-from pg_temp import TempDB
+from pathlib import Path
+# noinspection Mypy
+from pg_temp import TempDB  # type: ignore
 from sqlalchemy import Engine, URL, create_engine, text, SingletonThreadPool
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
@@ -98,7 +98,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
     postgres_test_db: TempDB | None = None
     """Instance of the test database."""
-    pg_runtime_dirname: str | None = None
+    pg_runtime_dirname: Path | None = None
     """Directory used for storing temp database files."""
     _is_test: bool = False
     """Flag to indicate if it is a test database."""
@@ -157,18 +157,15 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             if config.TESTING:
                 """Handle the testing configuration."""
                 log.info("Using Test Postgres Runtime Database")
-
+                assert config.POSTGRES_RUNTIME_DATA is not None, (
+                    "POSTGRES_RUNTIME_DATA must be set in the configuration for testing"
+                )
                 pg_runtime_dirname = config.POSTGRES_RUNTIME_DATA
                 """Get the path to the data folder."""
-                pg_data_dir = os.path.join(pg_runtime_dirname, "data")
+                data_path = pg_runtime_dirname / "data"
                 """Create the path to the data folder."""
-                pg_socket_dir = os.path.join(pg_runtime_dirname, "socket")
+                socket_path = pg_runtime_dirname / "socket"
                 """Create the path to the socket folder."""
-
-                data_path = pathlib.Path(pg_data_dir)
-                """Create the path object."""
-                socket_path = pathlib.Path(pg_socket_dir)
-                """Create the path object."""
                 log.debug(f"data_path: {data_path}")
                 log.debug(f"socket_path: {socket_path}")
 
@@ -197,10 +194,10 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 RuntimePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_RUNTIME_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb",
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres",
-                    psql=config.POSTGRES_ROOT + "/bin/psql",
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser",
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
                     dirname=pg_runtime_dirname,
                     options=options,
                 )
@@ -320,7 +317,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str] = None) -> None:
+    def create_tables(cls, tables: List[str]) -> None:
         """
         Creates tables in the PostgreSQL database.
 
@@ -336,7 +333,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """Create the tables."""
 
     @classmethod
-    def drop_tables(cls, tables: List[str] = None) -> None:
+    def drop_tables(cls, tables: list[str]) -> None:
         """
         Drops tables from the PostgreSQL database.
 
@@ -420,7 +417,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         schema_class: Type[RuntimeConcreteTable],
         values_list: List[dict],
         on_conflict_do_nothing=False,
-    ) -> Insert[tuple[RuntimeConcreteTable]]:
+    ) -> Insert:
         """
         Generates an SQL bulk insert query for PostgreSQL.
 

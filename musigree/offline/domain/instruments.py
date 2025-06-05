@@ -19,7 +19,6 @@ __all__ = [
 ]
 
 import logging
-from collections.abc import Iterator
 from typing import List, Dict
 
 from pydantic import ConfigDict, RootModel
@@ -55,7 +54,7 @@ class Instrument(InternalDomainObject):
 
     label: str
     """The label or common name of the instrument."""
-    instruments: List[str]
+    instruments: list[str]
     """
     A list of instrument names associated with this instrument.
     This can include variations or synonyms.
@@ -64,7 +63,6 @@ class Instrument(InternalDomainObject):
     """
     A detailed description of the instrument, including its characteristics and usage.
     """
-    # mimopage: str
 
 
 class HornbostelSachs(RootModel):
@@ -82,19 +80,7 @@ class HornbostelSachs(RootModel):
             details about the instruments within that category.
     """
 
-    root: Dict[str, Instrument]
+    root: dict[str, Instrument]
     """
     A dictionary mapping instrument categories to their corresponding `Instrument` objects.
     """
-
-    def __iter__(self) -> Iterator[str]:
-        """
-        Returns an iterator over the root dictionary's keys (instrument categories).
-
-        This allows for convenient iteration over the instrument categories in the
-        Hornbostel-Sachs classification.
-
-        Returns:
-            Iterator[str]: An iterator over the instrument categories.
-        """
-        return iter(self.root)

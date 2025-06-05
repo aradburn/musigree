@@ -101,6 +101,12 @@ class OfflineDatabaseManager:
         log.info("Shutting down offline database connections")
 
         close_all_sessions()
-        OfflineDatabaseManager.offline_database_helper.offline_engine.dispose()
+
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling shutdown_database()"
+        )
+
+        if OfflineDatabaseManager.offline_database_helper.offline_engine is not None:
+            OfflineDatabaseManager.offline_database_helper.offline_engine.dispose()
 
         OfflineDatabaseManager.offline_database_helper.shutdown_database()

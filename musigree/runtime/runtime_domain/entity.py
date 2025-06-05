@@ -230,7 +230,7 @@ class RuntimeEntityDB(InternalDomainObject):
         aliases: dict = entity_dict.pop("aliases")
         groups: dict = entity_dict.pop("groups")
         members: dict = entity_dict.pop("members")
-        entities = {}
+        entities: dict[str, Any] = {}
         if aliases is not None:
             entities.update(aliases=aliases)
         if groups is not None:

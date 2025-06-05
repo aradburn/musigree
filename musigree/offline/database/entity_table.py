@@ -66,7 +66,7 @@ class EntityTable(Base):
      Content used for full-text search operations.
     """
 
-    __table_args__ = (
+    __table_args__: tuple[Index, Index, dict] = (
         Index(
             "idx_entity_id_and_entity_type",
             entity_id,

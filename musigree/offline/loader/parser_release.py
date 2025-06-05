@@ -52,6 +52,7 @@ It uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from typing import Any
 
 from musigree.offline.domain.release import Release
 from musigree.offline.loader.parser_base import ParserBase
@@ -74,17 +75,17 @@ class ParserRelease(ParserBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping = {}
+    _artists_mapping: dict[str, Any] = {}
     """
     Mapping for artist credit XML elements to their corresponding fields.
     """
 
-    _companies_mapping = {}
+    _companies_mapping: dict[str, Any] = {}
     """
     Mapping for company credit XML elements to their corresponding fields.
     """
 
-    _tracks_mapping = {}
+    _tracks_mapping: dict[str, Any] = {}
     """
     Mapping for track XML elements to their corresponding fields.
     """
@@ -232,7 +233,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def element_to_roles(cls, element):
+    def element_to_roles(cls, element) -> list[dict[str, str]] | None:
         """
         Extracts role information from an XML element.
 
@@ -247,7 +248,7 @@ class ParserRelease(ParserBase):
             list: A list of dictionaries, each representing a role.
         """
 
-        def from_text(text):
+        def from_text(text: str) -> dict[str, str]:
             """
             Helper function to parse role text.
 
@@ -340,7 +341,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element) -> Release:
+    def from_element(cls, element) -> Release:  # type: ignore
         """
         Creates a `Release` domain object from an XML element.
 

@@ -169,7 +169,8 @@ class WorkerEntityPassThree(multiprocessing.Process):
             relation_repository (RelationRepository): The repository for relation operations.
             id_ (int): The ID of the entity to process.
         """
-        _relation_counts = {}
+        _relation_counts: dict[str, set[tuple[int, int]]] = {}
+        _relation_count_totals: dict[str, int] = {}
         """Dictionary to store the relation counts."""
 
         # Get all relations for this entity, where the entity is the subject or object of the relation
@@ -189,13 +190,15 @@ class WorkerEntityPassThree(multiprocessing.Process):
                 relation.object,
             )
             """Create a key from the subject and the object."""
-            _relation_counts.get(relation.role).add(key)
+            set_entry = _relation_counts.get(relation.role)
+            if set_entry is not None:
+                set_entry.add(key)
             """Add the key to the set for this role."""
         # log.debug(f"_relation_counts: {_relation_counts}")
 
         for role, keys in _relation_counts.items():
             """Iterate over the roles and the sets of keys."""
-            _relation_counts[role] = len(keys)
+            _relation_count_totals[role] = len(keys)
             """Count the unique keys in the set."""
         # log.debug(f"_relation_counts counted: {_relation_counts}")
 
@@ -203,7 +206,7 @@ class WorkerEntityPassThree(multiprocessing.Process):
             """Attempt to update the relation counts."""
             # Update the relation counts for this entity
             entity_repository.update(
-                id_, {EntityTable.relation_counts.key: _relation_counts}
+                id_, {EntityTable.relation_counts.key: _relation_count_totals}
             )
             """Update the entity."""
 

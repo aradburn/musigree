@@ -41,7 +41,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
 
     def _get_all_by_query(
         self, query: Select[tuple[RelationReleaseYearTable]]
-    ) -> List[RelationReleaseYear]:
+    ) -> list[RelationReleaseYear]:
         """
         Executes a query that should return multiple RelationReleaseYear objects.
 
@@ -76,7 +76,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
             # async for instance in self._all():
             yield RelationReleaseYear.model_validate(instance)
 
-    def get(self, relation_id: int) -> List[RelationReleaseYear]:
+    def get(self, relation_id: int) -> list[RelationReleaseYear]:
         """
         Retrieves all relation-release-year pairs associated with a given relation ID.
 
@@ -118,6 +118,10 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create()"
+        )
+
         relation_release_year_dict = relation_release_year.model_dump()
         query = OfflineDatabaseManager.offline_database_helper.generate_insert_query(
             self.schema_class, relation_release_year_dict, on_conflict_do_nothing
@@ -148,6 +152,10 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
                 a unique constraint is violated.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_bulk()"
+        )
 
         relation_release_year_dicts = []
         for relation_release_year in relation_release_years:

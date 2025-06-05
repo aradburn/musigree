@@ -30,7 +30,7 @@ operations, `re` for regular expressions, `Optional` for type hinting,
 import datetime
 import logging
 import re
-from typing import Optional, List
+from typing import List
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -101,7 +101,7 @@ class ParserUtils:
             yield element
 
     @staticmethod
-    def parse_release_date(date_string: Optional[str]) -> Optional[datetime.datetime]:
+    def parse_release_date(date_string: str | None) -> datetime.datetime | None:
         """
         Parses a release date string into a datetime object.
 
@@ -139,7 +139,7 @@ class ParserUtils:
     @staticmethod
     def validate_release_date(
         year_str: str, month_str: str, day_str: str
-    ) -> datetime.datetime:
+    ) -> datetime.datetime | None:
         """
         Validates and creates a datetime object from year, month, and day strings.
 
@@ -178,7 +178,7 @@ class ParserUtils:
         return date
 
     @staticmethod
-    def element_to_datetime(element: Element | None) -> Optional[datetime.datetime]:
+    def element_to_datetime(element: Element | None) -> datetime.datetime | None:
         """
         Converts an XML element's text to a datetime object.
 
@@ -198,7 +198,7 @@ class ParserUtils:
         return ParserUtils.parse_release_date(date_string)
 
     @staticmethod
-    def element_to_integer(element: Element | None) -> Optional[int]:
+    def element_to_integer(element: Element | None) -> int | None:
         """
         Converts an XML element's text to an integer.
 
@@ -217,7 +217,7 @@ class ParserUtils:
         return None
 
     @staticmethod
-    def element_to_string(element: Element | None) -> Optional[str]:
+    def element_to_string(element: Element | None) -> str | None:
         """
         Converts an XML element's text to a string.
 
@@ -234,7 +234,7 @@ class ParserUtils:
         return None
 
     @staticmethod
-    def element_to_strings(element: Element | None) -> Optional[list[str]]:
+    def element_to_strings(element: Element | None) -> list[str] | None:
         """
         Converts an XML element with multiple child elements to a list of strings.
 
@@ -248,12 +248,12 @@ class ParserUtils:
             list[str], optional: A list of strings, or None if the element is None or has no children.
         """
         if element is not None and len(element):
-            return [_.text for _ in element]
+            return [_.text for _ in element if _.text is not None]
         return None
 
     # noinspection PyUnusedLocal
     @staticmethod
-    def element_to_none(element: Element | None) -> Optional[str]:
+    def element_to_none(element: Element | None) -> str | None:
         """
         Returns None.
 
@@ -285,8 +285,8 @@ class ParserUtils:
             Element: An XML element with the specified tag.
         """
         context = ElementTree.iterparse(source, events=("start", "end"))
-        context = iter(context)
-        _, root = next(context)
+        context_iter = iter(context)
+        _, root = next(context_iter)  # Get the root element and advance the iterator
         depth = 0
         for event, element in context:
             if element.tag == tag:

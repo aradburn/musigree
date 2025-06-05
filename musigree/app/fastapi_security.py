@@ -7,10 +7,13 @@ rate limiting enhancements, and other security best practices.
 """
 
 import logging
-from typing import Callable
+from typing import Union, TYPE_CHECKING
 
-from fastapi import Request, Response
-from starlette.types import ASGIApp, Scope, Receive, Send
+from starlette.types import ASGIApp, Scope, Receive, Send, Message
+from fastapi import FastAPI
+
+if TYPE_CHECKING:
+    from musigree.config import Configuration
 
 log = logging.getLogger(__name__)
 
@@ -42,13 +45,13 @@ class SecurityHeadersMiddleware:
             await self.app(scope, receive, send)
             return
 
-        async def send_wrapper(message):
+        async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":
                 # Add security headers to the response
-                headers = dict(message.get("headers", []))
+                headers: dict[Union[str, bytes], Union[str, bytes]] = dict(message.get("headers", []))
                 
                 # Define security headers
-                security_headers = {
+                security_headers: dict[bytes, bytes] = {
                     # Prevent MIME type sniffing
                     b"x-content-type-options": b"nosniff",
                     
@@ -91,15 +94,17 @@ class SecurityHeadersMiddleware:
                 for header_name, header_value in security_headers.items():
                     headers[header_name] = header_value
 
-                # Update message headers
-                message["headers"] = [(name, value) for name, value in headers.items()]
+                # Update message headers (convert back to list of byte tuples)
+                message["headers"] = [(name.encode() if isinstance(name, str) else name, 
+                                     value.encode() if isinstance(value, str) else value) 
+                                    for name, value in headers.items()]
 
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
 
 
-def validate_environment_variables(config) -> None:
+def validate_environment_variables(config: "Configuration") -> None:
     """
     Validate that required environment variables are set for production.
     
@@ -133,7 +138,7 @@ def validate_environment_variables(config) -> None:
         )
 
 
-def setup_security_middleware(app, config) -> None:
+def setup_security_middleware(app: "FastAPI", config: "Configuration") -> None:
     """
     Set up security middleware for the FastAPI application.
     
@@ -145,6 +150,7 @@ def setup_security_middleware(app, config) -> None:
     validate_environment_variables(config)
     
     # Add security headers middleware
+    # noinspection PyTypeChecker
     app.add_middleware(SecurityHeadersMiddleware, is_production=config.PRODUCTION)
     
     log.info(f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment") 

@@ -112,8 +112,9 @@ class RelationDB(_RelationBase):
         Returns:
             RelationInternal: The internal representation of the relation.
         """
-        relation_db_dict: dict = self.model_dump()
-        role_id: int = relation_db_dict.get("predicate")
+        relation_db_dict: dict[str, Any] = self.model_dump()
+        _role_id = relation_db_dict.get("predicate")
+        role_id: int = _role_id if _role_id is not None and isinstance(_role_id, int) else 0
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RelationInternal.model_validate(relation_db_dict)
@@ -150,7 +151,7 @@ class Relation(_RelationBase):
     """The type of the second entity."""
     role: str
     """The role of the relation."""
-    releases: Dict[str, int | None] | None = None
+    releases: dict[str, int | None] | None = None
     """The releases associated with the relation."""
 
     @property

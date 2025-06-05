@@ -7,7 +7,6 @@ handling database errors, and using context variables to manage sessions in
 concurrent environments.
 """
 
-# noinspection PyPackageRequirements
 from contextvars import ContextVar
 
 from sqlalchemy.engine import ResultProxy
@@ -31,13 +30,21 @@ def get_offline_session() -> Session:
     """
     from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
+    assert OfflineDatabaseManager.offline_database_helper is not None, (
+        "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_offline_session()"
+    )
+    assert OfflineDatabaseManager.offline_database_helper.offline_session_factory is not None, (
+        "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_offline_session()"
+    )
+
     if OfflineDatabaseManager.get_concurrency_count() > 1:
-        session = scoped_session(
+        _scoped_session = scoped_session(
             OfflineDatabaseManager.offline_database_helper.offline_session_factory
         )
+        return _scoped_session()
     else:
-        session = OfflineDatabaseManager.offline_database_helper.offline_session_factory
-    return session()
+        _session = OfflineDatabaseManager.offline_database_helper.offline_session_factory
+        return _session()
 
 
 CTX_OFFLINE_SESSION: ContextVar[Session] = ContextVar("offline_session")
@@ -60,10 +67,10 @@ class OfflineSession:
     Attributes:
         _ERRORS (tuple): A tuple of SQLAlchemy exceptions to catch and handle as DatabaseError.
     """
+    _ctx_session: Session | None = None
 
     # All sqlalchemy errors that can be raised
     _ERRORS = (IntegrityError, InvalidRequestError)
-    """A tuple of SQLAlchemy exceptions to catch and handle as DatabaseError."""
 
     def __init__(self) -> None:
         """
@@ -73,7 +80,6 @@ class OfflineSession:
         session is accessed via the `_session` property.
         """
         self._ctx_session = None
-        # self._session: Session = CTX_SESSION.get()
 
     def execute(self, query) -> ResultProxy:
         """
@@ -112,7 +118,7 @@ class OfflineSession:
         """
         if not self._ctx_session:
             try:
-                self._ctx_session: Session = CTX_OFFLINE_SESSION.get()
+                self._ctx_session = CTX_OFFLINE_SESSION.get()
             except LookupError:
                 raise DatabaseError(message="Not in a transaction")
         return self._ctx_session

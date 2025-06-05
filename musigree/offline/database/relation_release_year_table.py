@@ -52,7 +52,7 @@ class RelationReleaseYearTable(Base):
     The year of the release.
     """
 
-    __table_args__ = (
+    __table_args__: tuple[Index, dict]  = (
         Index(
             "idx_relation_release_year_relation_ids",
             relation_id,

@@ -25,7 +25,7 @@ role information.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Query, Request
 
@@ -57,7 +57,7 @@ async def route__api__entity_type__relations__entity_id(
     entity_id: str,
     request: Request,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves relations for a specific entity.
 
@@ -108,7 +108,7 @@ async def route__api__entity_type__relations__entity_id(
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(Dict[str, Any], data)
+    return cast(dict[str, Any], data)
 
 
 # noinspection PyUnusedLocal
@@ -117,10 +117,10 @@ async def route__api__entity_type__network__entity_id(
     entity_type_str: str,
     entity_id: str,
     request: Request,
-    roles: Optional[List[str]] = Query(None),
-    year: Optional[int] = Query(None),
+    roles: list[str] | None = Query(None),
+    year: int | None = Query(None),
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves the network graph for a specific entity.
 
@@ -161,7 +161,7 @@ async def route__api__entity_type__network__entity_id(
     entity_id_int = int(entity_id)
 
     # Convert query parameters to the format expected by the existing code
-    query_params = {}
+    query_params: dict[str, Any] = {}
     if roles:
         query_params["roles"] = roles
     if year is not None:
@@ -190,13 +190,13 @@ async def route__api__entity_type__network__entity_id(
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(Dict[str, Any], data)
+    return cast(dict[str, Any], data)
 
 
 @router.get("/search/{search_string}")
 async def route__api__search(
     search_string: str, _: None = Depends(rate_limiter(max_requests=120, period=60))
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Searches for entities based on a search string.
 
@@ -215,7 +215,7 @@ async def route__api__search(
 
     log.debug(f"search_string: {search_string}")
     data = RuntimeEntitySearch.search_entities(search_string)
-    return cast(Dict[str, List[Dict[str, Any]]], data)
+    return cast(dict[str, list[dict[str, Any]]], data)
 
 
 # noinspection PyUnusedLocal
@@ -225,7 +225,7 @@ async def route__api__entity_type__details__entity_id(
     entity_id: str,
     request: Request,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves detailed information for a specific entity.
 
@@ -278,13 +278,13 @@ async def route__api__entity_type__details__entity_id(
         "styles": entity.styles,
     }
 
-    return cast(Dict[str, Any], entity_data)
+    return cast(dict[str, Any], entity_data)
 
 
 @router.get("/random")
 async def route__api__random(
     _: None = Depends(rate_limiter(max_requests=60, period=60))
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Retrieves a random entity.
 
@@ -324,7 +324,7 @@ async def route__api__random(
 @router.get("/roles")
 async def route__api__role(
     _: None = Depends(rate_limiter(max_requests=60, period=60))
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves all available roles.
 

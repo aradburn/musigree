@@ -79,7 +79,7 @@ class LoaderBase:
     # BULK_REPORTING_SIZE = 10000
     MAX_RETRYS = 10
     """The maximum number of retries for database operations."""
-    _tags_to_fields_mapping: dict = None
+    _tags_to_fields_mapping: dict[str, Any] | None = None
     """A mapping from XML tags to database fields and procedures."""
 
     @classmethod
@@ -91,7 +91,7 @@ class LoaderBase:
         date: str,
         xml_tag: str,
         id_attr: str,
-        skip_without: List[str],
+        skip_without: list[str],
         is_bulk_inserts=False,
     ) -> int:
         """

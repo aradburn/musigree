@@ -6,7 +6,7 @@ from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_domain.relation import RuntimeRelation
+from musigree.runtime.runtime_domain.relation import RuntimeRelation, RuntimeRelationInternal
 
 log = logging.getLogger(__name__)
 
@@ -23,9 +23,9 @@ class RuntimeRelationDataAccess:
         assert entity_keys
         assert role_names
 
-        relation_internals = []
+        relation_internals: list[RuntimeRelationInternal] = []
 
-        role_ids = [
+        role_ids: list[int] = [
             RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names
         ]
 
@@ -41,9 +41,12 @@ class RuntimeRelationDataAccess:
             # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)
 
-        relations = [
-            relation_internal.to_relation() for relation_internal in relation_internals
-        ]
+        relations = []
+        for relation_internal in relation_internals:
+            if relation_internal is not None:
+                relation = relation_internal.to_relation()
+                if relation is not None:
+                    relations.append(relation)
         # log.debug(f"    -> relations: {relations}")
         return relations
 

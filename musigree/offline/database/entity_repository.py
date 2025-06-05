@@ -58,7 +58,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         entity_db = Entity.model_validate(instance)
         return entity_db.to_domain()
 
-    def _get_all_by_query(self, query: Select[tuple[EntityTable]]) -> List[Entity]:
+    def _get_all_by_query(self, query: Select[tuple[EntityTable]]) -> list[Entity]:
         """
         Executes a query that should return multiple Entities.
 
@@ -275,7 +275,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             )
         ).scalar_one_or_none()
 
-    def get_batched_ids(self, num_in_batch: int) -> Iterator[List[int]]:
+    def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
         """
         Retrieves all entity IDs in batches.
 
@@ -287,7 +287,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         """
         return utils.batched(self.get_ids(), num_in_batch)
 
-    def find_by_search_content(self, search_string: str) -> List[Entity]:
+    def find_by_search_content(self, search_string: str) -> list[Entity]:
         """
         Finds entities whose search content matches the given string.
 
@@ -387,7 +387,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         # self._session.flush()
         # await self._session.flush()
 
-    def search_multi(self, entity_keys) -> List[Entity]:
+    def search_multi(self, entity_keys) -> list[Entity]:
         """
         Searches for multiple entities by their entity keys (entity ID and type).
 
@@ -398,8 +398,8 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             List[Entity]: A list of found entities.
         """
-        artist_ids: List[int] = []
-        label_ids: List[int] = []
+        artist_ids: list[int] = []
+        label_ids: list[int] = []
         for entity_id, entity_type in entity_keys:
             if entity_type == EntityType.ARTIST:
                 artist_ids.append(entity_id)

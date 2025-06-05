@@ -49,7 +49,7 @@ class TestFastAPIIntegration:
     def test_security_headers_in_response_production(self, production_test_config, mock_redis_client):
         """Test that security headers are properly added to responses in production mode."""
         # Mock the manifest file loading
-        mock_manifest = {"main.js": {"file": "assets/main-abc123.js"}}
+        _mock_manifest = {"main.js": {"file": "assets/main-abc123.js"}}
         
         with patch('musigree.app.fastapi_dependencies.get_redis_client', return_value=mock_redis_client), \
              patch('builtins.open', mock_open(read_data='{"main.js": {"file": "assets/main-abc123.js"}}')), \

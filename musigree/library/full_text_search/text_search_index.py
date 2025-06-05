@@ -4,7 +4,7 @@ import pickle
 import random
 from collections import Counter
 from pathlib import Path
-from typing import Self, Dict, List
+from typing import Self
 
 from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
@@ -46,15 +46,15 @@ class TextSearchIndex:
         A set of common words (stop words) to be ignored during indexing and search.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes an empty TextSearchIndex.
         """
-        self.index: Dict[str, List[int]] = {}
+        self.index: dict[str, list[int]] = {}
         """The inverted index mapping tokens to sets of document IDs."""
-        self.documents: Dict[int, str] = {}
+        self.documents: dict[int, str] = {}
         """A mapping of document IDs to their original text content."""
-        self.keys: List[int] = []
+        self.keys: list[int] = []
         """A list of all document IDs in the index."""
 
     def index_entry(self, id_: int, text: str) -> None:
@@ -124,7 +124,7 @@ class TextSearchIndex:
         # https://nlp.stanford.edu/IR-book/html/htmledition/inverse-document-frequency-1.html
         return math.log10(len(self.documents) / self.document_frequency(token))
 
-    def _results(self, analyzed_query: List[str]) -> List[List[int]]:
+    def _results(self, analyzed_query: list[str]) -> list[list[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
 
@@ -137,7 +137,7 @@ class TextSearchIndex:
         """
         return [self.index.get(token, list[int]()) for token in analyzed_query]
 
-    def search(self, query: str) -> List[tuple[int, str]]:
+    def search(self, query: str) -> list[tuple[int, str]]:
         """
         Searches the index for documents matching the query.
 
@@ -157,10 +157,11 @@ class TextSearchIndex:
         results = self._results(analyzed_query)
         result_sets = [set[int](result) for result in results]
         # all tokens must be in the document
-        documents = [
-            (doc_id, self.documents[doc_id])
-            for doc_id in set[int].intersection(*result_sets)
-        ]
+        documents: list[tuple[int, str]] = []
+        document_results: set[int] = set.intersection(*result_sets)
+        for doc_id in document_results:
+            document_entry = (doc_id, self.documents[doc_id])
+            documents.append(document_entry)
         return self.rank(analyzed_query, documents)
 
     def rank(
@@ -266,4 +267,5 @@ class TextSearchIndex:
             # read pickle dump information from that file
             text_search_index: TextSearchIndex = pickle.load(file)
 
-        return text_search_index
+        # noinspection Mypy
+        return text_search_index  # type: ignore

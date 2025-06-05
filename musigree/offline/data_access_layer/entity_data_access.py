@@ -98,6 +98,8 @@ class EntityDataAccess:
         if entity.entity_type == EntityType.ARTIST:
             is_resolved = False
             for section in ("aliases", "groups", "members"):
+                if not isinstance(entity.entities, dict):
+                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
@@ -111,6 +113,8 @@ class EntityDataAccess:
         elif entity.entity_type == EntityType.LABEL:
             is_resolved = False
             for section in ("parent_label", "sublabels"):
+                if not isinstance(entity.entities, dict):
+                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
@@ -195,36 +199,39 @@ class EntityDataAccess:
         #                 extra_artist_entry["id"] = -entity_id
         #             changed = True
 
-        for entry in release.labels:
-            if "id" in entry:
-                old_id = entry["id"]
-                entry["id"] = to_entity_label_internal_id(old_id)
-                if old_id != entry["id"]:
+        # Resolve labels and companies
+        if release.labels is not None:
+            for entry in release.labels:
+                if "id" in entry:
+                    old_id = entry["id"]
+                    entry["id"] = to_entity_label_internal_id(old_id)
+                    if old_id != entry["id"]:
+                        changed = True
+                else:
+                    # Look up label name to get the id
+                    entity_type = EntityType.LABEL
+                    entity_name = entry["name"]
+                    id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
+                    entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
-            else:
-                # Look up label name to get the id
-                entity_type = EntityType.LABEL
-                entity_name = entry["name"]
-                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
-                entry["id"] = to_entity_label_internal_id(id_)
-                changed = True
 
-        for entry in release.companies:
-            if "id" in entry:
-                old_id = entry["id"]
-                entry["id"] = to_entity_label_internal_id(old_id)
-                if old_id != entry["id"]:
+        if release.companies is not None:
+            for entry in release.companies:
+                if "id" in entry:
+                    old_id = entry["id"]
+                    entry["id"] = to_entity_label_internal_id(old_id)
+                    if old_id != entry["id"]:
+                        changed = True
+                else:
+                    entity_type = EntityType.LABEL
+                    entity_name = entry["name"]
+                    id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
+                    entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
-            else:
-                entity_type = EntityType.LABEL
-                entity_name = entry["name"]
-                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
-                entry["id"] = to_entity_label_internal_id(id_)
-                changed = True
 
         return changed
 

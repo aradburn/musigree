@@ -20,12 +20,8 @@ class TestRedisClient:
 
     def test_get_redis_client_initialization(self):
         """Test that Redis client is properly initialized."""
-        # Reset global client
-        global _redis_client
-        original_client = _redis_client
-        _redis_client = None
-        
-        try:
+        # Patch the global client to None to test initialization
+        with patch('musigree.app.fastapi_dependencies._redis_client', None):
             client = get_redis_client()
             assert client is not None
             assert isinstance(client, fakeredis.FakeStrictRedis)
@@ -33,31 +29,19 @@ class TestRedisClient:
             # Subsequent calls should return the same client
             client2 = get_redis_client()
             assert client is client2
-        finally:
-            # Restore original client
-            _redis_client = original_client
 
     def test_redis_client_configuration(self):
         """Test that Redis client is configured with proper settings."""
-        # Reset global client
-        global _redis_client
-        original_client = _redis_client
-        _redis_client = None
+        client = get_redis_client()
         
-        try:
-            client = get_redis_client()
-            
-            # Test that the client can perform basic operations
-            client.set("test_key", "test_value")
-            assert client.get("test_key") == "test_value"
-            
-            # Test TTL functionality
-            client.setex("ttl_test", 60, "value")
-            ttl = client.ttl("ttl_test")
-            assert ttl > 0
-        finally:
-            # Restore original client
-            _redis_client = original_client
+        # Test that the client can perform basic operations
+        client.set("test_key", "test_value")
+        assert client.get("test_key") == "test_value"
+        
+        # Test TTL functionality
+        client.setex("ttl_test", 60, "value")
+        ttl = client.ttl("ttl_test")
+        assert ttl > 0
 
 
 class TestRateLimiter:

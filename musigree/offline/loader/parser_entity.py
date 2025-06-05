@@ -44,6 +44,7 @@ also uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from typing import Any
 from xml.etree.ElementTree import Element
 
 from musigree.library.fields.entity_id import to_entity_internal_id
@@ -110,14 +111,19 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where keys are names and values are their Discogs IDs.
         """
-        result = {}
+        result: dict[str, Any] = {}
         if names_and_ids is None or not len(names_and_ids):
             return result
         current_discogs_id = 0
         for item in names_and_ids:
             if item.tag == "id":
+                if item.text is None or not item.text.strip():
+                    continue
                 current_discogs_id = int(item.text)
             elif item.tag == "name":
+                if item.text is None or not item.text.strip():
+                    continue
+                # noinspection Mypy
                 result[item.text] = current_discogs_id
                 current_discogs_id = 0
         return result
@@ -173,7 +179,7 @@ class ParserEntity(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element) -> Entity:
+    def from_element(cls, element) -> Entity:  # type: ignore
         """
         Creates an `Entity` domain object from an XML element.
 

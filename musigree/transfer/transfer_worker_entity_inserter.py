@@ -50,7 +50,7 @@ import logging
 import multiprocessing
 from typing import Any
 
-from retrying import retry
+from retrying import retry  # type: ignore
 from sqlalchemy.exc import DatabaseError
 
 from musigree.runtime.runtime_database.runtime_database_helper import (

@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 import logging
-from typing import Self
+from typing import Self, Any
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
@@ -54,9 +54,9 @@ class _EntityBase(InternalDomainObject):
     entity_id: int
     entity_type: EntityType
     entity_name: str
-    relation_counts: dict | list
-    entity_metadata: dict | list
-    entities: dict | list
+    relation_counts: dict[str, Any] | list[str]
+    entity_metadata: dict[str, Any] | list[str]
+    entities: dict[str, Any] | list[str]
     search_content: str
 
     @property
@@ -97,13 +97,17 @@ class _EntityBase(InternalDomainObject):
         Returns:
             int: The size of the entity.
         """
-        members = []
+        members: list[str] = []
         if self.entity_type == EntityType.ARTIST:
-            if "members" in self.entities:
-                members = self.entities["members"]
+            if isinstance(self.entities, dict):
+                members = self.entities.get("members", [])
+            elif isinstance(self.entities, list):
+                members = self.entities
         elif self.entity_type == EntityType.LABEL:
-            if "sublabels" in self.entities:
-                members = self.entities["sublabels"]
+            if isinstance(self.entities, dict):
+                members = self.entities.get("sublabels", [])
+            elif isinstance(self.entities, list):
+                members = self.entities
         return len(members)
 
     @staticmethod

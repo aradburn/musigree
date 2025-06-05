@@ -1,7 +1,6 @@
 import functools
 import logging
 import re
-from typing import List
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ class RoleDataUtils:
     }
 
     @staticmethod
-    def normalise_role_names(input_name: str) -> List[str]:
+    def normalise_role_names(input_name: str) -> list[str]:
 
         # Remove anything in brackets, quotes and parenthesis
         input_name = re.sub(RoleDataUtils.BRACKETS, "", input_name)
