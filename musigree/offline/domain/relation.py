@@ -31,7 +31,7 @@ __all__ = [
 ]
 
 import logging
-from typing import Dict, Any, Self, List
+from typing import Any, Self
 
 from musigree import utils
 from musigree.exceptions import NotFoundError
@@ -70,7 +70,7 @@ class RelationUncommitted(_RelationBase):
     """The object entity ID."""
 
     @staticmethod
-    def from_dicts(relation_dicts: list[dict[str, Any]]) -> List["RelationUncommitted"]:
+    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list["RelationUncommitted"]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RelationUncommitted(
@@ -135,7 +135,7 @@ class Relation(_RelationBase):
         entity_two_id (int): The ID of the second entity.
         entity_two_type (EntityType): The type of the second entity.
         role (str): The role of the relation.
-        releases (Dict[str, int | None] | None): The releases associated with
+        releases (dict[str, int | None] | None): The releases associated with
             the relation.
     """
 
@@ -320,14 +320,14 @@ class RelationResult(Relation):
     distance: int | None = None
     """The distance of the relation, if applicable."""
 
-    def as_json(self) -> Dict[str, Any]:
+    def as_json(self) -> dict[str, Any]:
         """
         Returns the JSON representation of the relation result.
 
         Returns:
-            Dict[str, Any]: The JSON representation of the relation result.
+            dict[str, Any]: The JSON representation of the relation result.
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "key": self.link_key,
             "role": self.role,
             "source": self.json_entity_one_key,

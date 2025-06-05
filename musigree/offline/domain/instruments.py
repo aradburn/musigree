@@ -19,7 +19,6 @@ __all__ = [
 ]
 
 import logging
-from typing import List, Dict
 
 from pydantic import ConfigDict, RootModel
 
@@ -74,7 +73,7 @@ class HornbostelSachs(RootModel):
     way to represent the hierarchy of instrument categories defined by this system.
 
     Attributes:
-        root (Dict[str, Instrument]): A dictionary mapping instrument categories
+        root (dict[str, Instrument]): A dictionary mapping instrument categories
             (e.g., 'Aerophones', 'Chordophones') to their corresponding
             `Instrument` objects. Each `Instrument` object contains further
             details about the instruments within that category.

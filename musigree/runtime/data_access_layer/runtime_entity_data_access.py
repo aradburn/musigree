@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, cast
+from typing import cast
 
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
@@ -25,17 +25,17 @@ class RuntimeEntityDataAccess:
         for role in roles:
             if role == "Alias":
                 if "aliases" in entity.entities:
-                    count += len(cast(Dict, entity.entities["aliases"]))
+                    count += len(cast(dict, entity.entities["aliases"]))
             elif role == "Member Of":
                 if "groups" in entity.entities:
-                    count += len(cast(Dict, entity.entities["groups"]))
+                    count += len(cast(dict, entity.entities["groups"]))
                 if "members" in entity.entities:
-                    count += len(cast(Dict, entity.entities["members"]))
+                    count += len(cast(dict, entity.entities["members"]))
             elif role == "Sublabel Of":
                 if "parent_label" in entity.entities:
-                    count += len(cast(Dict, entity.entities["parent_label"]))
+                    count += len(cast(dict, entity.entities["parent_label"]))
                 if "sublabels" in entity.entities:
-                    count += len(cast(Dict, entity.entities["sublabels"]))
+                    count += len(cast(dict, entity.entities["sublabels"]))
             else:
                 count += relation_counts.get(role, 0)
         # log.debug(
@@ -46,13 +46,13 @@ class RuntimeEntityDataAccess:
     @staticmethod
     def structural_roles_to_relations(
         entity: RuntimeEntity, roles
-    ) -> Dict[str, RuntimeRelationResult]:
+    ) -> dict[str, RuntimeRelationResult]:
         # log.debug(f"            structural_roles_to_relations entity: {self}")
         # log.debug(
         #     f"            structural_roles_to_relations entities: {self.entities}"
         # )
         # log.debug(f"            structural_roles_to_relations roles: {roles}")
-        relations: Dict[str, RuntimeRelationResult] = {}
+        relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
             role = "Alias"
             if role in roles and "aliases" in entity.entities:

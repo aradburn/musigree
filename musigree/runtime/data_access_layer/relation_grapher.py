@@ -1,7 +1,6 @@
 import logging
 from abc import ABC
 from collections import OrderedDict
-from typing import List, Dict, Tuple
 
 from musigree import utils
 from musigree.library.cache.role_cache import RoleCache
@@ -65,7 +64,7 @@ class RelationGrapher(ABC):
         degree: int,
         link_ratio: int,
         max_nodes: int,
-        role_names: List[str],
+        role_names: list[str],
     ):
         from musigree.runtime.runtime_database.runtime_database_helper import (
             RuntimeDatabaseHelper,
@@ -90,8 +89,8 @@ class RelationGrapher(ABC):
         else:
             link_ratio = RuntimeDatabaseHelper.LINK_RATIO
         self.link_ratio = link_ratio
-        self.structural_role_names: List[str] = []
-        self.relational_role_names: List[str] = []
+        self.structural_role_names: list[str] = []
+        self.relational_role_names: list[str] = []
         if role_names:
             # if isinstance(role_names, str):
             #     role_names = (role_names,)
@@ -108,8 +107,8 @@ class RelationGrapher(ABC):
                     self.relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = OrderedDict()
-        self.links: Dict[str, RuntimeRelationResult] = {}
+        self.nodes: OrderedDict[tuple[int, EntityType], TrellisNode] = OrderedDict()
+        self.links: dict[str, RuntimeRelationResult] = {}
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
 
@@ -135,7 +134,7 @@ class RelationGrapher(ABC):
                 entity_repository, self.entity_keys_to_visit
             )
             log.debug(f"        Search found {len(entities)} entities")
-            relations: Dict[str, RuntimeRelationResult] = {}
+            relations: dict[str, RuntimeRelationResult] = {}
             self.process_entities(distance, entities)
             if (
                 not self.entity_keys_to_visit
@@ -192,9 +191,9 @@ class RelationGrapher(ABC):
     def search_entities(
         entity_repository: RuntimeEntityRepository,
         entity_keys_to_visit: set[tuple[int, EntityType]],
-    ) -> List[RuntimeEntity]:
+    ) -> list[RuntimeEntity]:
         # log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
-        entities: List[RuntimeEntity] = []
+        entities: list[RuntimeEntity] = []
         entity_keys_to_visit_list = list(entity_keys_to_visit)
         stop = len(entity_keys_to_visit_list)
         step = 1000
@@ -211,7 +210,7 @@ class RelationGrapher(ABC):
         relation_repository: RuntimeRelationRepository,
         distance: int,
         provisional_roles: list[str],
-        relation_links: Dict[str, RuntimeRelationResult],
+        relation_links: dict[str, RuntimeRelationResult],
     ):
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
@@ -356,7 +355,7 @@ class RelationGrapher(ABC):
         self.entity_keys_to_visit.clear()
         self.should_break_loop = False
 
-    def prune_roles(self, distance: int, provisional_role_names: List[str]) -> None:
+    def prune_roles(self, distance: int, provisional_role_names: list[str]) -> None:
         if distance > 0 and len(self.nodes) > self.max_nodes / 4:
             for role_name in self.roles_to_prune:
                 if role_name in provisional_role_names:
@@ -367,7 +366,7 @@ class RelationGrapher(ABC):
                     log.debug(f'            Pruned "Sublabel Of" role')
                     provisional_role_names.remove("Sublabel Of")
 
-    def process_entities(self, distance: int, entities: List[RuntimeEntity]):
+    def process_entities(self, distance: int, entities: list[RuntimeEntity]):
         for entity in sorted(entities, key=lambda x: x.entity_key):
             if not all([entity.entity_id, entity.entity_name]):
                 self.entity_keys_to_visit.remove(entity.entity_key)
@@ -384,7 +383,7 @@ class RelationGrapher(ABC):
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def process_relations(
-        self, relation_links: Dict[str, RuntimeRelationResult]
+        self, relation_links: dict[str, RuntimeRelationResult]
     ) -> None:
         log.debug(f"    process {len(relation_links)} relation_links")
         for link_key, relation in sorted(relation_links.items()):
@@ -431,7 +430,7 @@ class RelationGrapher(ABC):
         self,
         distance,
         provisional_roles,
-        relation_links: Dict[str, RuntimeRelationResult],
+        relation_links: dict[str, RuntimeRelationResult],
     ) -> None:
         if not self.structural_role_names:
             return
@@ -500,7 +499,7 @@ class RelationGrapher(ABC):
     # PUBLIC PROPERTIES
 
     @property
-    def all_roles(self) -> List[str]:
+    def all_roles(self) -> list[str]:
         return self.structural_role_names + self.relational_role_names
 
     # @property

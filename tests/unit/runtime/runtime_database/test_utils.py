@@ -42,7 +42,7 @@ Examples:
 """
 
 from contextlib import contextmanager
-from typing import Dict, Any, List
+from typing import Any
 from unittest.mock import Mock, patch
 
 
@@ -179,7 +179,7 @@ class SessionMockHelper:
     @staticmethod
     @contextmanager
     def mock_runtime_session_and_role_cache(
-        role_mappings: Dict[str, int],
+        role_mappings: dict[str, int],
         execute_return_value: Any | None = None,
         flush_return_value: Any | None = None,
         **session_kwargs
@@ -216,15 +216,15 @@ class RoleCacheMockHelper:
     with role lookups.
     
     The RoleCache class has several important attributes that need to be mocked:
-    - role_name_to_role_id_lookup: Dict[str, int] - Maps role names to IDs
-    - role_id_to_role_name_lookup: Dict[int, str] - Maps role IDs to names  
-    - role_name_set: Set[str] - Set of all role names
-    - role_id_to_role_category_lookup: Dict[int, RoleType.Category] - Maps IDs to categories
-    - role_category_to_role_name_lookup: Dict[str, list[str]] - Maps categories to role lists
+    - role_name_to_role_id_lookup: dict[str, int] - Maps role names to IDs
+    - role_id_to_role_name_lookup: dict[int, str] - Maps role IDs to names
+    - role_name_set: set[str] - Set of all role names
+    - role_id_to_role_category_lookup: dict[int, RoleType.Category] - Maps IDs to categories
+    - role_category_to_role_name_lookup: dict[str, list[str]] - Maps categories to role lists
     """
     
     @staticmethod
-    def create_role_cache_data(role_mappings: Dict[str, int]) -> Dict[str, Any]:
+    def create_role_cache_data(role_mappings: dict[str, int]) -> dict[str, Any]:
         """
         Create mock data for RoleCache with proper bidirectional mappings.
         
@@ -248,7 +248,7 @@ class RoleCacheMockHelper:
     
     @staticmethod
     @contextmanager
-    def mock_role_cache(role_mappings: Dict[str, int]):
+    def mock_role_cache(role_mappings: dict[str, int]):
         """
         Context manager for mocking RoleCache with specified role mappings.
         
@@ -275,7 +275,7 @@ class RoleCacheMockHelper:
     
     @staticmethod
     @contextmanager
-    def mock_role_cache_in_module(module_path: str, role_mappings: Dict[str, int]):
+    def mock_role_cache_in_module(module_path: str, role_mappings: dict[str, int]):
         """
         Context manager for mocking RoleCache in a specific module.
         
@@ -307,8 +307,8 @@ class RoleCacheMockHelper:
     @staticmethod
     @contextmanager
     def mock_role_cache_multiple_modules(
-        module_paths: List[str], 
-        role_mappings: Dict[str, int]
+        module_paths: list[str],
+        role_mappings: dict[str, int]
     ):
         """
         Context manager for mocking RoleCache in multiple modules simultaneously.
@@ -354,7 +354,7 @@ class RoleCacheMockHelper:
                 p.__exit__(None, None, None)
     
     @staticmethod
-    def setup_role_cache_mock(mock_role_cache: Mock, role_mappings: Dict[str, int]):
+    def setup_role_cache_mock(mock_role_cache: Mock, role_mappings: dict[str, int]):
         """
         Set up a RoleCache mock with the specified role mappings.
         
@@ -381,9 +381,9 @@ class RoleCacheMockHelper:
     
     @staticmethod
     def create_role_cache_with_categories(
-        role_mappings: Dict[str, int], 
-        role_categories: Dict[int, Any]
-    ) -> Dict[str, Any]:
+        role_mappings: dict[str, int],
+        role_categories: dict[int, Any]
+    ) -> dict[str, Any]:
         """
         Create mock data for RoleCache including role categories.
         
@@ -401,8 +401,8 @@ class RoleCacheMockHelper:
     @staticmethod
     @contextmanager
     def mock_role_cache_with_categories(
-        role_mappings: Dict[str, int], 
-        role_categories: Dict[int, Any]
+        role_mappings: dict[str, int],
+        role_categories: dict[int, Any]
     ):
         """
         Context manager for mocking RoleCache with role mappings and categories.

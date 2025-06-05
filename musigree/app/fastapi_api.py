@@ -71,7 +71,7 @@ async def route__api__entity_type__relations__entity_id(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the relations data.
+        dict[str, Any]: A dictionary containing the relations data.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
@@ -136,7 +136,7 @@ async def route__api__entity_type__network__entity_id(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the network graph data.
+        dict[str, Any]: A dictionary containing the network graph data.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
@@ -207,7 +207,7 @@ async def route__api__search(
         _: Dependency injection for rate limiting.
 
     Returns:
-        List[Dict[str, Any]]: A list of entities matching the search string.
+        List[dict[str, Any]]: A list of entities matching the search string.
     """
     from musigree.runtime.data_access_layer.runtime_entity_search import (
         RuntimeEntitySearch,
@@ -239,7 +239,7 @@ async def route__api__entity_type__details__entity_id(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the entity details.
+        dict[str, Any]: A dictionary containing the entity details.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
@@ -294,7 +294,7 @@ async def route__api__random(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, str]: A dictionary containing the random entity's type and ID.
+        dict[str, str]: A dictionary containing the random entity's type and ID.
 
     Raises:
         DatabaseError: If there is an error retrieving the random entity.
@@ -334,7 +334,7 @@ async def route__api__role(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dict containing an entry with a list of all the roles.
+        dict[str, Any]: A dict containing an entry with a list of all the roles.
     """
     from musigree.library.cache.role_cache import RoleCache
 

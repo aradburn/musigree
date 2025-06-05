@@ -30,7 +30,7 @@ The module utilizes logging for debugging and error reporting.
 
 import itertools
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
@@ -70,7 +70,7 @@ class RelationDataAccess:
             release (Release): The release object to extract relations from.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries, where each dictionary
+            list[dict[str, Any]]: A list of dictionaries, where each dictionary
                 represents a relation.
         """
         # log.debug(f"      release: {release}")
@@ -252,7 +252,7 @@ class RelationDataAccess:
         return artist_ids, label_ids, is_compilation
 
     @classmethod
-    def from_triples(cls, triples, release=None) -> List[Dict[str, Any]]:
+    def from_triples(cls, triples, release=None) -> list[dict[str, Any]]:
         """
         Converts triples to a list of relations.
 
@@ -264,7 +264,7 @@ class RelationDataAccess:
             release: The release object (optional).
 
         Returns:
-            List[Dict[str, Any]]: A list of relation dictionaries.
+            list[dict[str, Any]]: A list of relation dictionaries.
         """
         relations = []
         for subject_id, role, object_id in triples:

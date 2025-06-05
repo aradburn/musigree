@@ -14,7 +14,7 @@ from collections.abc import Mapping, Sequence, Iterator
 from datetime import datetime, date
 from functools import wraps
 import random
-from typing import List, Any, TypeVar, Dict
+from typing import Any, TypeVar
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -174,7 +174,7 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
     return _string
 
 
-# def normalize_dict(obj: Dict) -> str:
+# def normalize_dict(obj: dict) -> str:
 #     s = normalize(json.dumps(obj, indent=4, sort_keys=True, default=str))
 #     return s
 
@@ -221,7 +221,7 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
     return s
 
 
-def normalize_dict_list(list_obj: List[Dict[str, Any]]) -> str:
+def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
     def sorted_itemgetter(*items):
         if len(items) == 1:
             item = items[0]

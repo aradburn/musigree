@@ -19,7 +19,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.staticfiles import StaticFiles
@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 """The logger for the assets module."""
 
 
-def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templates]:
+def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templates]:
     """
     Creates a FastAPI router for serving static assets.
 
@@ -77,7 +77,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
     # templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
     @assets_router.get("/context")
-    async def get_template_context(request: Request) -> Dict[str, Any]:
+    async def get_template_context(request: Request) -> dict[str, Any]:
         """
         Provides template context for assets.
 
@@ -88,7 +88,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
             request: The FastAPI request object.
 
         Returns:
-            Dict[str, Any]: The template context.
+            dict[str, Any]: The template context.
         """
         return {"request": request}
 
