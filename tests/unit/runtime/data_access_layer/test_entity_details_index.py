@@ -243,12 +243,15 @@ class TestEntityDetailsIndex:
         self.index.print_details()
         
         # Verify that log.debug was called with expected content
-        mock_log.debug.assert_any_call("\nCountries")
-        mock_log.debug.assert_any_call("=========\n")
+        mock_log.debug.assert_any_call("")
+        mock_log.debug.assert_any_call("Countries")
+        mock_log.debug.assert_any_call("=========")
         mock_log.debug.assert_any_call("USA")
-        mock_log.debug.assert_any_call("\nGenres")
+        mock_log.debug.assert_any_call("")
+        mock_log.debug.assert_any_call("Genres")
         mock_log.debug.assert_any_call("Rock")
-        mock_log.debug.assert_any_call("\nStyles")
+        mock_log.debug.assert_any_call("")
+        mock_log.debug.assert_any_call("Styles")
         mock_log.debug.assert_any_call("Alternative")
 
     def test_comprehensive_workflow(self):
