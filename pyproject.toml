@@ -51,6 +51,7 @@ dev = [
     "pytest~=8.4.0",
     "pytest-mock~=3.14.1",
     "pytest-asyncio~=1.0.0",
+    "pytest-cov~=6.1.1",
     "mypy~=1.16.0",
     "memray>=1.17.2,<2.0.0",
     "pytest-memray>=1.7.0,<2.0.0",
