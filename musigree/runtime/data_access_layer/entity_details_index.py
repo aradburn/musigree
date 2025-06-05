@@ -202,20 +202,23 @@ class EntityDetailsIndex:
         """
         Prints the contents of the various indexes in the class.
         """
-        log.debug("\nCountries")
-        log.debug("=========\n")
+        log.debug("")
+        log.debug("Countries")
+        log.debug("=========")
         for country in self.countries_list:
             log.debug(country)
         # for entry in self.entity_countries.items():
         #     print(entry)
-        log.debug("\nGenres")
-        log.debug("=========\n")
+        log.debug("")
+        log.debug("Genres")
+        log.debug("=========")
         for genre in self.genres_list:
             log.debug(genre)
         # for entry in self.entity_genres.items():
         #     print(entry)
-        log.debug("\nStyles")
-        log.debug("=========\n")
+        log.debug("")
+        log.debug("Styles")
+        log.debug("=========")
         for style in self.styles_list:
             log.debug(style)
         log.debug("\n")

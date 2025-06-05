@@ -95,7 +95,7 @@ class TestTransfer(TransferTestCase):
             actual_style_count = runtime_style_repository.count()
 
         expected_country_count = 30
-        expected_genre_count = 15
+        expected_genre_count = 16
         expected_style_count = 122
 
         self.assertEqual(expected_country_count, actual_country_count)

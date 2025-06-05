@@ -18,7 +18,6 @@ The module uses the following components:
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -27,6 +26,7 @@ from fastapi.templating import Jinja2Templates
 
 from musigree.app.fastapi_app import templates
 from musigree.config import Configuration
+from musigree.constants import FRONTEND_DIR
 
 log = logging.getLogger(__name__)
 """The logger for the assets module."""
@@ -56,15 +56,15 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
     # Mount static files
     if is_production:
         # In production, serve the bundled assets directly
+        assets_path = FRONTEND_DIR / "dist"
         assets_router.mount(
-            "/assets", StaticFiles(directory="frontend/dist"), name="assets"
+            "/assets", StaticFiles(directory=assets_path), name="assets"
         )
 
     # Load manifest file in the production environment
     manifest = {}
     if is_production:
-        project_path = Path(os.path.dirname(os.path.abspath(__file__)))
-        manifest_path = project_path / "../frontend/dist/manifest.json"
+        manifest_path = FRONTEND_DIR / "dist" / "manifest.json"
         try:
             with open(manifest_path, "r") as content:
                 manifest = json.load(content)

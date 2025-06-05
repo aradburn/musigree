@@ -52,8 +52,7 @@ class TestFastAPIIntegration:
         _mock_manifest = {"main.js": {"file": "assets/main-abc123.js"}}
         
         with patch('musigree.app.fastapi_dependencies.get_redis_client', return_value=mock_redis_client), \
-             patch('builtins.open', mock_open(read_data='{"main.js": {"file": "assets/main-abc123.js"}}')), \
-             patch('musigree.app.fastapi_assets.Path.exists', return_value=True):
+             patch('builtins.open', mock_open(read_data='{"main.js": {"file": "assets/main-abc123.js"}}')):
             
             from musigree.app.fastapi_app import create_app
             app = create_app(production_test_config)
