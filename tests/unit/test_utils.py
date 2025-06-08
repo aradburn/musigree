@@ -1,5 +1,8 @@
 import datetime
 import unittest
+from unittest.mock import patch, mock_open, MagicMock
+import json
+from collections.abc import Mapping
 
 from musigree import utils
 from musigree.constants import (
@@ -289,3 +292,219 @@ class TestUtils(unittest.TestCase):
             datetime.date(2024, 6, 1),
         ]
         self.assertEqual(expected, result)
+
+    def test_batched(self):
+        # Test normal batching
+        result = list(utils.batched([1, 2, 3, 4, 5, 6, 7], 3))
+        expected = [[1, 2, 3], [4, 5, 6], [7]]
+        self.assertEqual(expected, result)
+
+    def test_batched_exact_division(self):
+        # Test when sequence divides evenly
+        result = list(utils.batched([1, 2, 3, 4, 5, 6], 2))
+        expected = [[1, 2], [3, 4], [5, 6]]
+        self.assertEqual(expected, result)
+
+    def test_batched_invalid_n(self):
+        # Test with invalid n value
+        with self.assertRaises(ValueError):
+            list(utils.batched([1, 2, 3], 0))
+
+    def test_batched_empty_sequence(self):
+        # Test with empty sequence
+        result = list(utils.batched([], 3))
+        expected = []
+        self.assertEqual(expected, result)
+
+    def test_normalize_with_indent_string(self):
+        input_text = "line1\nline2\nline3"
+        result = utils.normalize(input_text, indent="  ")
+        expected = "  line1\n  line2\n  line3\n"
+        self.assertEqual(expected, result)
+
+    def test_normalize_with_indent_int(self):
+        input_text = "line1\nline2"
+        result = utils.normalize(input_text, indent=4)
+        expected = "    line1\n    line2\n"
+        self.assertEqual(expected, result)
+
+    def test_normalize_with_tabs(self):
+        input_text = "\tline1\n\tline2"
+        result = utils.normalize(input_text)
+        expected = "line1\nline2\n"
+        self.assertEqual(expected, result)
+
+    def test_normalize_with_empty_lines(self):
+        input_text = "\n\nline1\nline2\n\n"
+        result = utils.normalize(input_text)
+        expected = "line1\nline2\n"
+        self.assertEqual(expected, result)
+
+    def test_parse_request_args_with_year_range(self):
+        args = {"year": "2020-2023"}
+        roles, year = utils.parse_request_args(args)
+        self.assertEqual((2020, 2023), year)
+
+    def test_parse_request_args_with_single_year(self):
+        args = {"year": "2020"}
+        roles, year = utils.parse_request_args(args)
+        self.assertEqual(2020, year)
+
+    def test_parse_request_args_with_invalid_year(self):
+        args = {"year": "invalid"}
+        roles, year = utils.parse_request_args(args)
+        self.assertIsNone(year)
+
+    def test_parse_request_args_with_reversed_year_range(self):
+        args = {"year": "2023-2020"}
+        roles, year = utils.parse_request_args(args)
+        self.assertEqual((2020, 2023), year)
+
+    def test_skip_filter_basic(self):
+        filter_obj = utils.SkipFilter(keys=["skip_me"])
+        data = {"keep": "value", "skip_me": "ignore"}
+        result = filter_obj.filter(data)
+        expected = {"keep": "value"}
+        self.assertEqual(expected, result)
+
+    def test_skip_filter_with_types(self):
+        filter_obj = utils.SkipFilter(types=(int,))
+        data = {"keep": "value", "skip": 123}
+        result = filter_obj.filter(data)
+        expected = {"keep": "value"}
+        self.assertEqual(expected, result)
+
+    def test_skip_filter_allow_empty(self):
+        filter_obj = utils.SkipFilter(keys=["all"], allow_empty=True)
+        data = {"all": "skip"}
+        result = filter_obj.filter(data)
+        expected = {}
+        self.assertEqual(expected, result)
+
+    def test_skip_filter_non_mapping(self):
+        filter_obj = utils.SkipFilter()
+        data = "not a mapping"
+        result = filter_obj.filter(data)
+        self.assertEqual("not a mapping", result)
+
+    def test_row2dict(self):
+        # Mock a database row-like object with __table__ attribute
+        class MockColumn:
+            def __init__(self, name):
+                self.name = name
+        
+        class MockTable:
+            def __init__(self):
+                self.columns = [MockColumn("id"), MockColumn("name")]
+        
+        class MockRow:
+            def __init__(self):
+                self.id = 1
+                self.name = "test"
+                self.__table__ = MockTable()
+            
+            def keys(self):
+                return ["id", "name"]
+            
+            def __getitem__(self, key):
+                return getattr(self, key)
+
+        row = MockRow()
+        result = utils.row2dict(row)
+        expected = {"id": 1, "name": "test"}
+        self.assertEqual(expected, result)
+
+    def test_is_latin_true(self):
+        result = utils.is_latin("Hello World")
+        self.assertFalse(result)  # Space character is not in LATIN category
+
+    def test_is_latin_false(self):
+        result = utils.is_latin("Здравствуй мир")  # Russian text
+        self.assertFalse(result)
+
+    def test_is_latin_mixed(self):
+        result = utils.is_latin("Hello мир")  # Mixed text
+        self.assertFalse(result)
+
+    def test_to_ascii_basic(self):
+        result = utils.to_ascii("café")
+        self.assertEqual("cafe", result)
+
+    def test_to_ascii_with_accents(self):
+        result = utils.to_ascii("naïve résumé")
+        self.assertEqual("naïve résumé", result)  # Function preserves non-ASCII when is_latin is False
+
+    def test_to_ascii_non_latin(self):
+        result = utils.to_ascii("Здравствуй")
+        self.assertEqual("Здравствуй", result)  # Function doesn't transliterate non-latin
+
+    @patch('time.sleep')
+    def test_sleep_with_backoff(self, mock_sleep):
+        utils.sleep_with_backoff(2)
+        mock_sleep.assert_called_once()
+        # Check that it sleeps for a reasonable duration
+        call_args = mock_sleep.call_args[0][0]
+        self.assertGreater(call_args, 0)
+        self.assertLessEqual(call_args, 20)  # 2 * 10 maximum
+
+    @patch('requests.get')
+    @patch('builtins.open', new_callable=mock_open)
+    def test_download_file(self, mock_file, mock_get):
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = [b'test data']
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=None)
+        mock_get.return_value = mock_response
+        
+        # Mock file object
+        mock_file_obj = MagicMock()
+        mock_file.return_value.__enter__.return_value = mock_file_obj
+
+        utils.download_file("http://example.com/file", mock_file_obj)
+        
+        mock_get.assert_called_once_with("http://example.com/file", stream=True)
+        mock_file_obj.flush.assert_called_once()
+        mock_file_obj.close.assert_called_once()
+
+    def test_get_random_string(self):
+        result = utils.get_random_string(10)
+        self.assertEqual(10, len(result))
+        # Check it only contains valid characters
+        valid_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        self.assertTrue(set(result).issubset(valid_chars))
+
+    def test_get_random_string_different_calls(self):
+        result1 = utils.get_random_string(10)
+        result2 = utils.get_random_string(10)
+        # Very unlikely to be the same
+        self.assertNotEqual(result1, result2)
+
+    def test_calculate_size_dict(self):
+        test_dict = {"key1": "value1", "key2": "value2"}
+        result = utils.calculate_size(test_dict)
+        self.assertGreater(result, 0)
+
+    def test_calculate_size_list(self):
+        test_list = [1, 2, 3, 4, 5]
+        result = utils.calculate_size(test_list)
+        self.assertGreater(result, 0)
+
+    def test_calculate_size_string(self):
+        test_string = "Hello, World!"
+        result = utils.calculate_size(test_string)
+        self.assertGreater(result, 0)
+
+    @patch('time.time')
+    def test_timeit_decorator(self, mock_time):
+        # Mock time to return predictable values
+        mock_time.side_effect = [1.0, 2.0]  # 1 second difference
+        
+        @utils.timeit
+        def test_function():
+            return "result"
+        
+        with patch('musigree.utils.log') as mock_log:
+            result = test_function()
+            self.assertEqual("result", result)
+            mock_log.debug.assert_called()
