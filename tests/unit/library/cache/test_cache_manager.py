@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
+from musigree.constants import CacheType
 from musigree.library.cache.cache_manager import (
     BaseCache,
     SimpleCache,
@@ -10,8 +11,6 @@ from musigree.library.cache.cache_manager import (
     RedisCache,
     CacheManager,
 )
-from musigree.config import Configuration
-from musigree.constants import CacheType
 
 
 class TestBaseCache(unittest.TestCase):
@@ -126,7 +125,7 @@ class TestFileSystemCache(unittest.TestCase):
         new_dir = os.path.join(self.temp_dir, "new_cache_dir")
         self.assertFalse(os.path.exists(new_dir))
         
-        cache = FileSystemCache(new_dir)
+        _cache = FileSystemCache(new_dir)
         self.assertTrue(os.path.exists(new_dir))
 
     def test_filesystem_cache_set_and_get(self):
@@ -168,13 +167,13 @@ class TestFileSystemCache(unittest.TestCase):
         self.assertNotEqual(filename1, filename3)
 
     @patch('builtins.open', side_effect=IOError())
-    def test_filesystem_cache_io_error_on_set(self, mock_open):
+    def test_filesystem_cache_io_error_on_set(self, _mock_open):
         """Test that IOError on set doesn't raise exception."""
         # Should not raise an exception
         self.cache.set("key1", "value1")
 
     @patch('builtins.open', side_effect=IOError())
-    def test_filesystem_cache_io_error_on_get(self, mock_open):
+    def test_filesystem_cache_io_error_on_get(self, _mock_open):
         """Test that IOError on get returns None."""
         # Create a file first
         with patch('os.path.exists', return_value=True):
