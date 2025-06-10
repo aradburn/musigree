@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import patch
 
 from starlette import status
 
@@ -244,6 +243,7 @@ class TestExceptionModule(unittest.TestCase):
 
     def test_all_exceptions_defined(self):
         """Test that all exceptions from __all__ are properly defined."""
+        # noinspection PyProtectedMember
         from musigree.exceptions import __all__
         
         expected_exceptions = [
