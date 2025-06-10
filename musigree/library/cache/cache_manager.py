@@ -267,7 +267,7 @@ class CacheManager:
         cache (BaseCache | None): The active cache instance. It can be None if the cache is not yet initialized.
     """
 
-    cache: BaseCache
+    cache: BaseCache | None = None
 
     @classmethod
     def setup_cache(cls, config: Configuration) -> None:
@@ -346,6 +346,8 @@ class CacheManager:
         Returns:
             BaseCache | None: The current cache instance, or None if not initialized.
         """
+        if cls.cache is None:
+            raise ValueError("Invalid cache")
         return cls.cache
 
     @classmethod
