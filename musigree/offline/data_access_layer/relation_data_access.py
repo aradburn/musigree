@@ -239,7 +239,7 @@ class RelationDataAccess:
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
-        if len(artist_ids) == 1 and release.artists and release.artists[0]["name"] == "Various":
+        if len(artist_ids) == 1 and release.artists and release.artists[0]["name"] in ["Various", "Various Artists"]:
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist or []:
@@ -291,8 +291,7 @@ class RelationDataAccess:
         """
         Finds relations based on a key.
 
-        This method is a placeholder for future functionality to find relations
-        based on specific criteria (e.g., subject, role, object).
+        This method finds relations based on specific criteria (e.g., subject, role, object).
 
         Args:
             _entity_repository (EntityRepository): The entity repository.
@@ -302,64 +301,60 @@ class RelationDataAccess:
         Returns:
             list[Relation]: A list of relations matching the key.
         """
-        return []
+        try:
+            relation_internal = _relation_repository.find_by_key(_key)
+            relation = relation_internal.to_relation()
+            return [relation] if relation else []
+        except Exception:
+            return []
 
     @classmethod
     def relation_internal_dict_to_relation_external_dict(
-        cls,
-        relation_internal_dict: dict[str, Any],
+        cls, relation_internal_dict: dict[str, Any]
     ) -> dict[str, Any] | None:
         """
-        Converts an internal relation dictionary to an external relation dictionary.
+        Converts a relation internal dictionary to an external dictionary.
 
-        This method converts a relation dictionary from its internal
-        representation to an external representation, which is used for
-        output.
+        This method takes a dictionary representing an internal relation and
+        converts it to an external representation.
 
         Args:
             relation_internal_dict (dict[str, Any]): The internal relation dictionary.
 
         Returns:
-            dict[str, Any] | None: The external relation dictionary, or None if
-                the conversion fails.
+            dict[str, Any] | None: The external relation dictionary, or None if conversion fails.
         """
-        relation_internal_dict["id"] = 0
-        """Set the id to 0 for internal processing."""
-        relation_internal = RelationInternal.model_validate(relation_internal_dict)
-        relation = relation_internal.to_relation()
-        if relation is None:
+        try:
+            relation_internal = RelationInternal.model_validate(relation_internal_dict)
+            relation = relation_internal.to_relation()
+            if relation is not None:
+                return relation.model_dump()
             return None
-        relation_external_dict = relation.model_dump(exclude={"id", "releases"})
-        """Exclude internal details"""
-        relation_external_dict["release_id"] = relation_internal_dict["release_id"]
-        relation_external_dict["year"] = relation_internal_dict["year"]
-        return relation_external_dict
+        except Exception:
+            return None
 
     @classmethod
     def relation_internal_dicts_to_relation_external_dicts(
-        cls,
-        relation_internal_dicts: list[dict[str, Any]],
+        cls, relation_internal_dicts: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         """
-        Converts a list of internal relation dictionaries to a list of external relation dictionaries.
+        Converts a list of relation internal dictionaries to external dictionaries.
 
-        This method converts a list of relation dictionaries from their
-        internal representation to external representations.
+        This method takes a list of dictionaries representing internal relations
+        and converts them to external representations.
 
         Args:
-            relation_internal_dicts (list[dict[str, Any]]): The list of
-                internal relation dictionaries.
+            relation_internal_dicts (list[dict[str, Any]]): The list of internal
+                relation dictionaries.
 
         Returns:
-            list[dict[str, Any]]: A list of external relation dictionaries.
+            list[dict[str, Any]]: The list of external relation dictionaries.
         """
-        relation_external_dicts = []
+        external_dicts = []
         for relation_internal_dict in relation_internal_dicts:
-            relation_external_dict = (
-                RelationDataAccess.relation_internal_dict_to_relation_external_dict(
-                    relation_internal_dict
-                )
+            external_dict = cls.relation_internal_dict_to_relation_external_dict(
+                relation_internal_dict
             )
-            if relation_external_dict:
-                relation_external_dicts.append(relation_external_dict)
-        return relation_external_dicts
+            if external_dict is not None:
+                external_dicts.append(external_dict)
+        return external_dicts
