@@ -72,7 +72,7 @@ def runtime_transaction() -> Iterator[Session]:
         """Log the error that happened during the session."""
         session.rollback()
         """Rollback all the change made in this session."""
-        raise DatabaseError
+        raise error
     except (IntegrityError, InvalidRequestError) as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
