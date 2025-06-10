@@ -7,6 +7,7 @@ from musigree.library.fields.entity_type import EntityType
 
 
 def test_creates_runtime_relation_with_valid_data():
+    # noinspection PyTypeChecker
     relation = RuntimeRelation(
         id=1,
         entity_one_id=100,
