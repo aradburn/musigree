@@ -69,6 +69,8 @@ class IntEnum(TypeDecorator):
         Returns:
             int: The integer value to bind to the SQL query.
         """
+        if value is None:
+            return None
         if isinstance(value, int):
             return value
 
@@ -89,4 +91,6 @@ class IntEnum(TypeDecorator):
         Returns:
             The corresponding enum member.
         """
+        if value is None:
+            return None
         return self._enumtype(value)
