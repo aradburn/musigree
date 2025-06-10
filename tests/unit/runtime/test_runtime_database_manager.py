@@ -4,7 +4,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
-from sqlalchemy import Engine, exc
+from sqlalchemy import Engine
 
 from musigree.constants import DatabaseType, ThreadingModel
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
@@ -13,12 +13,14 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 class TestRuntimeDatabaseManager:
     """Test suite for RuntimeDatabaseManager."""
 
-    def setup_method(self, method):
+    @staticmethod
+    def setup_method(_method):
         """Reset class variables before each test."""
         RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
         RuntimeDatabaseManager._threading_model = None  # type: ignore
 
-    def teardown_method(self, method):
+    @staticmethod
+    def teardown_method(_method):
         """Clean up after each test."""
         RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
         RuntimeDatabaseManager._threading_model = None  # type: ignore
@@ -63,7 +65,7 @@ class TestRuntimeDatabaseManager:
     @patch('musigree.runtime.runtime_database_manager.sessionmaker')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_postgres_success(self, mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
+    def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
         """Test successful database setup for PostgreSQL."""
         # Arrange
         mock_config = Mock()
@@ -83,7 +85,7 @@ class TestRuntimeDatabaseManager:
         mock_sessionmaker.return_value = mock_session_factory
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=4):
-            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as mock_runtime_helper_class:
+            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
                 RuntimeDatabaseManager.setup_database(mock_config)
 
@@ -102,7 +104,7 @@ class TestRuntimeDatabaseManager:
     @patch('musigree.runtime.sqlite.sqlite_helper.RuntimeSqliteHelper')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_registers_event_listeners_for_multiprocessing(self, mock_logger, mock_listen, mock_sqlite_helper, mock_getpid):
+    def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
         """Test that event listeners are registered when concurrency count > 1."""
         # Arrange
         mock_config = Mock()
@@ -118,7 +120,7 @@ class TestRuntimeDatabaseManager:
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=4):
-            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as mock_runtime_helper_class:
+            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
                 RuntimeDatabaseManager.setup_database(mock_config)
 
@@ -132,7 +134,7 @@ class TestRuntimeDatabaseManager:
     @patch('musigree.runtime.sqlite.sqlite_helper.RuntimeSqliteHelper')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_no_event_listeners_for_single_thread(self, mock_logger, mock_listen, mock_sqlite_helper):
+    def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
         """Test that no event listeners are registered when concurrency count = 1."""
         # Arrange
         mock_config = Mock()
@@ -145,7 +147,7 @@ class TestRuntimeDatabaseManager:
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=1):
-            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as mock_runtime_helper_class:
+            with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
                 RuntimeDatabaseManager.setup_database(mock_config)
 

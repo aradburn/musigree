@@ -1,7 +1,4 @@
 import os
-from typing import Any
-
-import pytest
 
 from musigree.config import (
     SqliteTestConfiguration,

@@ -301,6 +301,7 @@ class RelationDataAccess:
         Returns:
             list[Relation]: A list of relations matching the key.
         """
+        # noinspection PyBroadException
         try:
             relation_internal = _relation_repository.find_by_key(_key)
             relation = relation_internal.to_relation()
@@ -324,6 +325,7 @@ class RelationDataAccess:
         Returns:
             dict[str, Any] | None: The external relation dictionary, or None if conversion fails.
         """
+        # noinspection PyBroadException
         try:
             relation_internal = RelationInternal.model_validate(relation_internal_dict)
             relation = relation_internal.to_relation()

@@ -1,9 +1,10 @@
 """
 Unit tests for musigree.app.fastapi_api module.
 """
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -15,17 +16,17 @@ from musigree.library.fields.entity_type import EntityType
 
 
 # Exception handlers for the test FastAPI app
-async def bad_request_handler(request: Request, exc: Exception) -> JSONResponse:
+async def bad_request_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle BadRequestError exceptions."""
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+async def not_found_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle NotFoundError exceptions."""
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
-async def database_error_handler(request: Request, exc: Exception) -> JSONResponse:
+async def database_error_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle DatabaseError exceptions."""
     return JSONResponse(status_code=500, content={"detail": str(exc)})
 

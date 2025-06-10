@@ -4,7 +4,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
-from sqlalchemy import Engine, exc
+from sqlalchemy import Engine
 
 from musigree.constants import DatabaseType, ThreadingModel
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
@@ -13,12 +13,14 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 class TestOfflineDatabaseManager:
     """Test suite for OfflineDatabaseManager."""
 
-    def setup_method(self, method):
+    @staticmethod
+    def setup_method(_method):
         """Reset class variables before each test."""
         OfflineDatabaseManager.offline_database_helper = None
         OfflineDatabaseManager._threading_model = None
 
-    def teardown_method(self, method):
+    @staticmethod
+    def teardown_method(_method):
         """Clean up after each test."""
         OfflineDatabaseManager.offline_database_helper = None
         OfflineDatabaseManager._threading_model = None
@@ -63,7 +65,7 @@ class TestOfflineDatabaseManager:
     @patch('musigree.offline.offline_database_manager.sessionmaker')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_postgres_success(self, mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
+    def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
         """Test successful database setup for PostgreSQL."""
         # Arrange
         mock_config = Mock()
@@ -108,7 +110,7 @@ class TestOfflineDatabaseManager:
     @patch('musigree.offline.sqlite.sqlite_helper.OfflineSqliteHelper')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_registers_event_listeners_for_multiprocessing(self, mock_logger, mock_listen, mock_sqlite_helper, mock_getpid):
+    def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
         """Test that event listeners are registered when concurrency count > 1."""
         # Arrange
         mock_config = Mock()
@@ -137,7 +139,7 @@ class TestOfflineDatabaseManager:
     @patch('musigree.offline.sqlite.sqlite_helper.OfflineSqliteHelper')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_no_event_listeners_for_single_thread(self, mock_logger, mock_listen, mock_sqlite_helper):
+    def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
         """Test that no event listeners are registered when concurrency count = 1."""
         # Arrange
         mock_config = Mock()

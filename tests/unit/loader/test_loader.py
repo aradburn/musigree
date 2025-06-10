@@ -77,7 +77,7 @@ class TestLoaderFunctions:
     @patch('musigree.loader.loader.RoleDataAccess')
     def test_get_load_offline_table_stages_success(
         self,
-        mock_role_data_access,
+        _mock_role_data_access,
         mock_loader_relation,
         mock_loader_release,
         mock_loader_entity,
@@ -224,7 +224,7 @@ class TestLoaderFunctions:
     @patch('musigree.loader.loader.sys')
     def test_loader_main_success(
         self,
-        mock_sys,
+        _mock_sys,
         mock_setup_logging,
         mock_cache_manager,
         mock_offline_db_manager,
@@ -277,8 +277,8 @@ class TestLoaderFunctions:
         mock_cache_manager,
         mock_offline_db_manager,
         mock_runtime_db_manager,
-        mock_atexit,
-        mock_luigi
+        _mock_atexit,
+        _mock_luigi
     ):
         """Test loader_main when cache is not set."""
         # Arrange
@@ -403,7 +403,7 @@ class TestLoaderEdgeCases:
             assert len(stages) > 0
 
     @patch('musigree.loader.loader.RuntimeRoleDataAccess')
-    def test_load_runtime_tables_missing_text_search(self, mock_runtime_role_data_access):
+    def test_load_runtime_tables_missing_text_search(self, _mock_runtime_role_data_access):
         """Test load_runtime_tables when text search file is missing."""
         # Arrange
         missing_directory = Path("/missing")
