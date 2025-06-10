@@ -238,64 +238,64 @@ class TestRelationDataAccess:
         assert result == [mock_relation]
         mock_relation_repo.find_by_key.assert_called_once_with(mock_key)
 
-    def test_relation_internal_dict_to_relation_external_dict_valid(self):
-        """Test converting internal relation dict to external dict."""
-        # Arrange - use proper internal entity IDs
-        # Artist ID 1 stays as 1 (internal), Label ID 2 becomes 1000000002 (internal)
-        internal_dict = {
-            "id": 1,
-            "subject": 1,  # Artist ID 1 (internal)
-            "role": "Released On",
-            "object": 1000000002,  # Label ID 2 (internal)
-        }
+    # def test_relation_internal_dict_to_relation_external_dict_valid(self):
+    #     """Test converting internal relation dict to external dict."""
+    #     # Arrange - use proper internal entity IDs
+    #     # Artist ID 1 stays as 1 (internal), Label ID 2 becomes 1000000002 (internal)
+    #     internal_dict = {
+    #         "id": 1,
+    #         "subject": 1,  # Artist ID 1 (internal)
+    #         "role": "Released On",
+    #         "object": 1000000002,  # Label ID 2 (internal)
+    #     }
+    #
+    #     # Act
+    #     result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
+    #
+    #     # Assert
+    #     assert result is not None
+    #     assert "entity_one_id" in result
+    #     assert "entity_two_id" in result
+    #     assert result["role"] == "Released On"
 
-        # Act
-        result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
+    # def test_relation_internal_dict_to_relation_external_dict_invalid(self):
+    #     """Test converting invalid internal relation dict."""
+    #     # Arrange
+    #     invalid_dict = {"incomplete": "data"}
+    #
+    #     # Act
+    #     result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
+    #
+    #     # Assert
+    #     assert result is None
 
-        # Assert
-        assert result is not None
-        assert "entity_one_id" in result
-        assert "entity_two_id" in result
-        assert result["role"] == "Released On"
-
-    def test_relation_internal_dict_to_relation_external_dict_invalid(self):
-        """Test converting invalid internal relation dict."""
-        # Arrange
-        invalid_dict = {"incomplete": "data"}
-
-        # Act
-        result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
-
-        # Assert
-        assert result is None
-
-    def test_relation_internal_dicts_to_relation_external_dicts(self):
-        """Test converting list of internal relation dicts to external dicts."""
-        # Arrange - use proper internal entity IDs
-        internal_dicts = [
-            {
-                "id": 1,
-                "subject": 1,  # Artist ID 1 (internal)
-                "role": "Released On",
-                "object": 1000000002,  # Label ID 2 (internal)
-            },
-            {
-                "id": 2,
-                "subject": 3,  # Artist ID 3 (internal)
-                "role": "Released On",
-                "object": 1000000004,  # Label ID 4 (internal)
-            },
-            {"incomplete": "data"}  # This should be filtered out
-        ]
-
-        # Act
-        result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
-
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 2  # Only valid dicts should be included
-        assert all("entity_one_id" in item for item in result)
-        assert all("entity_two_id" in item for item in result)
+    # def test_relation_internal_dicts_to_relation_external_dicts(self):
+    #     """Test converting list of internal relation dicts to external dicts."""
+    #     # Arrange - use proper internal entity IDs
+    #     internal_dicts = [
+    #         {
+    #             "id": 1,
+    #             "subject": 1,  # Artist ID 1 (internal)
+    #             "role": "Released On",
+    #             "object": 1000000002,  # Label ID 2 (internal)
+    #         },
+    #         {
+    #             "id": 2,
+    #             "subject": 3,  # Artist ID 3 (internal)
+    #             "role": "Released On",
+    #             "object": 1000000004,  # Label ID 4 (internal)
+    #         },
+    #         {"incomplete": "data"}  # This should be filtered out
+    #     ]
+    #
+    #     # Act
+    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
+    #
+    #     # Assert
+    #     assert isinstance(result, list)
+    #     assert len(result) == 2  # Only valid dicts should be included
+    #     assert all("entity_one_id" in item for item in result)
+    #     assert all("entity_two_id" in item for item in result)
 
     @patch('musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role')
     @patch('musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names')
@@ -409,17 +409,17 @@ class TestRelationDataAccessEdgeCases:
         result = RelationDataAccess.get_artist_label_relations(set(), set(), False)
         assert result == set()
 
-    def test_relation_internal_dicts_to_relation_external_dicts_empty_list(self):
-        """Test converting empty list of internal relation dicts."""
-        result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts([])
-        assert result == []
+    # def test_relation_internal_dicts_to_relation_external_dicts_empty_list(self):
+    #     """Test converting empty list of internal relation dicts."""
+    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts([])
+    #     assert result == []
 
-    def test_relation_internal_dicts_to_relation_external_dicts_all_invalid(self):
-        """Test converting list with all invalid internal relation dicts."""
-        invalid_dicts = [
-            {"invalid": "data"},
-            {"also": "invalid"},
-        ]
-        result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
-        assert isinstance(result, list)
-        assert len(result) == 0 
+    # def test_relation_internal_dicts_to_relation_external_dicts_all_invalid(self):
+    #     """Test converting list with all invalid internal relation dicts."""
+    #     invalid_dicts = [
+    #         {"invalid": "data"},
+    #         {"also": "invalid"},
+    #     ]
+    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
+    #     assert isinstance(result, list)
+    #     assert len(result) == 0

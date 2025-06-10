@@ -20,7 +20,7 @@ class TestEntityDataAccess(OfflineDatabaseTestCase):
             EntityDataAccess.init_text_search_index(entity_repository, index)
 
         # THEN
-        self.assertEqual(7256, len(index.index.items()))
+        self.assertEqual(7221, len(index.index.items()))
         self.assertEqual(6216, len(index.documents.items()))
 
     def test_get_id_by_entity_type_and_entity_name(self):

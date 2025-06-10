@@ -104,8 +104,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
-                    "postgresql",
-                    # "postgresql+psycopg2",
+                    "postgresql", # uses psycopg2
                     username=OfflinePostgresHelper.postgres_test_db.current_user,
                     # password=config[POSTGRES_DATABASE_PASSWORD_KEY],
                     host=OfflinePostgresHelper.postgres_test_db.pg_socket_dir,

@@ -37,7 +37,7 @@ from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.domain.relation import Relation, RelationInternal
+from musigree.offline.domain.relation import Relation, RelationUncommitted
 from musigree.offline.domain.release import Release
 
 log = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class RelationDataAccess:
     """
 
     @classmethod
-    def from_release(cls, release: Release) -> list[dict[str, Any]]:
+    def from_release(cls, release: Release) -> list[RelationUncommitted]:
         """
         Extracts relations from a `Release` object.
 
@@ -70,8 +70,7 @@ class RelationDataAccess:
             release (Release): The release object to extract relations from.
 
         Returns:
-            list[dict[str, Any]]: A list of dictionaries, where each dictionary
-                represents a relation.
+            list[RelationUncommitted]: A list of uncommitted relations.
         """
         # log.debug(f"      release: {release}")
         triples = set()
@@ -170,9 +169,11 @@ class RelationDataAccess:
         triples_list = sorted(triples)
         """Sort the triples for consistency."""
         # log.debug(f"      triples: {triples}")
-        relations = cls.from_triples(triples_list, release=release)
+        relation_dicts = cls.from_triples(triples_list, release=release)
         """Convert the triples to a list of relations."""
         # log.debug(f"      relations: {relations}")
+        relations = RelationUncommitted.from_dicts(relation_dicts)
+
         return relations
 
     @classmethod
@@ -309,54 +310,56 @@ class RelationDataAccess:
         except Exception:
             return []
 
-    @classmethod
-    def relation_internal_dict_to_relation_external_dict(
-        cls, relation_internal_dict: dict[str, Any]
-    ) -> dict[str, Any] | None:
-        """
-        Converts a relation internal dictionary to an external dictionary.
+    # @classmethod
+    # def relation_internal_dict_to_relation_external_dict(
+    #     cls, relation_internal_dict: dict[str, Any]
+    # ) -> dict[str, Any] | None:
+    #     """
+    #     Converts a relation internal dictionary to an external dictionary.
+    #
+    #     This method takes a dictionary representing an internal relation and
+    #     converts it to an external representation.
+    #
+    #     Args:
+    #         relation_internal_dict (dict[str, Any]): The internal relation dictionary.
+    #
+    #     Returns:
+    #         dict[str, Any] | None: The external relation dictionary, or None if conversion fails.
+    #     """
+    #     relation_internal_dict["id"] = 0
+    #     """Set the id to 0 for internal processing."""
+    #     relation_internal = RelationInternal.model_validate(relation_internal_dict)
+    #     relation = relation_internal.to_relation()
+    #     if relation is None:
+    #         return None
+    #     relation_external_dict = relation.model_dump(exclude={"id", "releases"})
+    #     """Exclude internal details"""
+    #     relation_external_dict["release_id"] = relation_internal_dict["release_id"]
+    #     relation_external_dict["year"] = relation_internal_dict["year"]
+    #     return relation_external_dict
 
-        This method takes a dictionary representing an internal relation and
-        converts it to an external representation.
-
-        Args:
-            relation_internal_dict (dict[str, Any]): The internal relation dictionary.
-
-        Returns:
-            dict[str, Any] | None: The external relation dictionary, or None if conversion fails.
-        """
-        # noinspection PyBroadException
-        try:
-            relation_internal = RelationInternal.model_validate(relation_internal_dict)
-            relation = relation_internal.to_relation()
-            if relation is not None:
-                return relation.model_dump()
-            return None
-        except Exception:
-            return None
-
-    @classmethod
-    def relation_internal_dicts_to_relation_external_dicts(
-        cls, relation_internal_dicts: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
-        """
-        Converts a list of relation internal dictionaries to external dictionaries.
-
-        This method takes a list of dictionaries representing internal relations
-        and converts them to external representations.
-
-        Args:
-            relation_internal_dicts (list[dict[str, Any]]): The list of internal
-                relation dictionaries.
-
-        Returns:
-            list[dict[str, Any]]: The list of external relation dictionaries.
-        """
-        external_dicts = []
-        for relation_internal_dict in relation_internal_dicts:
-            external_dict = cls.relation_internal_dict_to_relation_external_dict(
-                relation_internal_dict
-            )
-            if external_dict is not None:
-                external_dicts.append(external_dict)
-        return external_dicts
+    # @classmethod
+    # def relation_internal_dicts_to_relation_external_dicts(
+    #     cls, relation_internal_dicts: list[dict[str, Any]]
+    # ) -> list[dict[str, Any]]:
+    #     """
+    #     Converts a list of relation internal dictionaries to external dictionaries.
+    #
+    #     This method takes a list of dictionaries representing internal relations
+    #     and converts them to external representations.
+    #
+    #     Args:
+    #         relation_internal_dicts (list[dict[str, Any]]): The list of internal
+    #             relation dictionaries.
+    #
+    #     Returns:
+    #         list[dict[str, Any]]: The list of external relation dictionaries.
+    #     """
+    #     external_dicts = []
+    #     for relation_internal_dict in relation_internal_dicts:
+    #         external_dict = cls.relation_internal_dict_to_relation_external_dict(
+    #             relation_internal_dict
+    #         )
+    #         if external_dict is not None:
+    #             external_dicts.append(external_dict)
+    #     return external_dicts

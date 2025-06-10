@@ -18,6 +18,7 @@ from musigree.offline.domain.relation import RelationUncommitted
 from musigree.offline.domain.relation_release_year import (
     RelationReleaseYearUncommitted,
 )
+from musigree.offline.domain.release import Release
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
@@ -32,7 +33,7 @@ class WorkerRelationPassOne(multiprocessing.Process):
         self.current_total = current_total
         self.total_count = total_count
 
-    def run(self):
+    def run(self) -> None:
         proc_name = self.name
 
         relation_release_years = []
@@ -49,11 +50,11 @@ class WorkerRelationPassOne(multiprocessing.Process):
             relation_release_year_repository = RelationReleaseYearRepository()
 
             for id_ in self.release_ids:
-
+                release: Release | None = None
                 try:
                     # log.debug(f"loader_pass_one ({annotation}): {release_id}")
                     release = release_repository.get(id_)
-                    relation_dicts = RelationDataAccess.from_release(release)
+                    relations = RelationDataAccess.from_release(release)
                     if LOGGING_TRACE:
                         log.debug(
                             f"WorkerRelationPassOne [{proc_name}]\t"
@@ -66,19 +67,19 @@ class WorkerRelationPassOne(multiprocessing.Process):
                     # log.exception("Error in WorkerRelationPassOne worker", exc_info=True)
                     raise
 
-                relations = RelationUncommitted.from_dicts(relation_dicts)
+                # relations = RelationUncommitted.from_dicts(relation_dicts)
 
-                if len(relations) > 0:
+                if len(relations) > 0 and release is not None:
                     self.create_relation_bulk(
                         relation_repository,
                         relations,
                     )
 
-                    for relation_dict in relation_dicts:
-                        year = relation_dict.get("year")
+                    for relation in relations:
+                        year = release.release_date.year if release.release_date is not None and release.release_date.year is not None else None
                         new_relation_release_years = self.to_relation_release_years(
                             relation_repository=relation_repository,
-                            relation_dict=relation_dict,
+                            relation=relation,
                             release_id=id_,
                             year=year,
                         )
@@ -151,19 +152,18 @@ class WorkerRelationPassOne(multiprocessing.Process):
     def to_relation_release_years(
         cls,
         relation_repository: RelationRepository,
-        relation_dict: dict,
+        relation: RelationUncommitted,
         release_id: int,
-        year: int,
+        year: int | None,
     ) -> List[RelationReleaseYearUncommitted]:
         relation_release_years = []
         try:
-            role_name = relation_dict["role"]
-            role_id = RoleCache.role_name_to_role_id_lookup[role_name]
+            role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
 
             key = {
-                "subject": relation_dict["subject"],
+                "subject": relation.subject,
                 "role_id": role_id,
-                "object": relation_dict["object"],
+                "object": relation.object,
             }
             relation_id = relation_repository.get_id_by_key(key)
             # log.debug(f"v: {relation_db.version_id}")
