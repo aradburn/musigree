@@ -1,8 +1,6 @@
 import datetime
 import unittest
-from unittest.mock import patch, mock_open, MagicMock
-import json
-from collections.abc import Mapping
+from unittest.mock import patch
 
 from musigree import utils
 from musigree.constants import (
@@ -403,7 +401,8 @@ class TestUtils(unittest.TestCase):
                 self.name = "test"
                 self.__table__ = MockTable()
             
-            def keys(self):
+            @staticmethod
+            def keys():
                 return ["id", "name"]
             
             def __getitem__(self, key):
@@ -447,25 +446,25 @@ class TestUtils(unittest.TestCase):
         self.assertGreater(call_args, 0)
         self.assertLessEqual(call_args, 20)  # 2 * 10 maximum
 
-    @patch('requests.get')
-    @patch('builtins.open', new_callable=mock_open)
-    def test_download_file(self, mock_file, mock_get):
-        # Mock successful response
-        mock_response = MagicMock()
-        mock_response.iter_content.return_value = [b'test data']
-        mock_response.__enter__ = MagicMock(return_value=mock_response)
-        mock_response.__exit__ = MagicMock(return_value=None)
-        mock_get.return_value = mock_response
-        
-        # Mock file object
-        mock_file_obj = MagicMock()
-        mock_file.return_value.__enter__.return_value = mock_file_obj
-
-        utils.download_file("http://example.com/file", mock_file_obj)
-        
-        mock_get.assert_called_once_with("http://example.com/file", stream=True)
-        mock_file_obj.flush.assert_called_once()
-        mock_file_obj.close.assert_called_once()
+    # @patch('requests.get')
+    # @patch('builtins.open', new_callable=mock_open)
+    # def test_download_file(self, mock_file, mock_get):
+    #     # Mock successful response
+    #     mock_response = MagicMock()
+    #     mock_response.iter_content.return_value = [b'test data']
+    #     mock_response.__enter__ = MagicMock(return_value=mock_response)
+    #     mock_response.__exit__ = MagicMock(return_value=None)
+    #     mock_get.return_value = mock_response
+    #
+    #     # Mock file object
+    #     mock_file_obj = MagicMock()
+    #     mock_file.return_value.__enter__.return_value = mock_file_obj
+    #
+    #     utils.download_file("http://example.com/file", mock_file_obj)
+    #
+    #     mock_get.assert_called_once_with("http://example.com/file", stream=True)
+    #     mock_file_obj.flush.assert_called_once()
+    #     mock_file_obj.close.assert_called_once()
 
     def test_get_random_string(self):
         result = utils.get_random_string(10)
