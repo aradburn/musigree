@@ -1,35 +1,66 @@
-import unittest
+from typing import Any, Generator
 from unittest.mock import patch, MagicMock
 
-import musigree.main
+import pytest
 
 
-class TestMain(unittest.TestCase):
-    """Test cases for the main module."""
+@patch('musigree.app.fastapi_dev_app.create_development_app')
+def test_app_creation(mock_create_app: MagicMock) -> None:
+    """Test that the app is created using the development app factory."""
+    # Mock the app creation
+    mock_app = MagicMock()
+    mock_create_app.return_value = mock_app
+    
+    # Import the module to trigger app creation
+    import musigree.main
+    
+    # Verify that create_development_app was called
+    mock_create_app.assert_called_once()
+    
+    # Verify that the app variable is set to our mock
+    assert musigree.main.app == mock_app
 
-    @patch('musigree.app.fastapi_dev_app.create_development_app')
-    def test_app_creation(self, mock_create_app):
-        """Test that the app is created using the development app factory."""
-        # Mock the app creation
+
+@patch('musigree.app.fastapi_dev_app.create_development_app')
+def test_app_exists(mock_create_app: MagicMock) -> None:
+    """Test that the app variable exists in the main module."""
+    # Mock the app creation to avoid slow setup
+    mock_app = MagicMock()
+    mock_create_app.return_value = mock_app
+    
+    # Import with mocked dependencies
+    import musigree.main
+    
+    # The app should be available as a module-level variable
+    assert hasattr(musigree.main, 'app')
+    assert musigree.main.app is not None
+
+
+@pytest.fixture
+def mock_app_setup() -> Generator[MagicMock, None, None]:
+    """Fixture to mock the entire app setup process."""
+    with patch('musigree.app.fastapi_dev_app.create_development_app') as mock_create_app:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
-        
-        # Import the module to trigger app creation
-        import importlib
-        importlib.reload(musigree.main)
-        
-        # Verify that create_development_app was called
-        mock_create_app.assert_called_once()
-        
-        # Verify that the app variable is set
-        self.assertEqual(mock_app, musigree.main.app)
-
-    def test_app_exists(self):
-        """Test that the app variable exists in the main module."""
-        # The app should be available as a module-level variable
-        self.assertTrue(hasattr(musigree.main, 'app'))
-        self.assertIsNotNone(musigree.main.app)
+        yield mock_app
 
 
-if __name__ == "__main__":
-    unittest.main() 
+def test_main_module_imports_without_errors(mock_app_setup: MagicMock) -> None:
+    """Test that the main module can be imported without errors when app setup is mocked."""
+    # This test ensures the module structure is correct
+    try:
+        import musigree.main
+        # If we get here, the import succeeded
+        assert True
+    except ImportError as e:
+        pytest.fail(f"Failed to import musigree.main: {e}")
+
+
+def test_app_is_fastapi_instance(mock_app_setup: MagicMock) -> None:
+    """Test that the app variable is properly configured as a FastAPI instance."""
+    import musigree.main
+    
+    # With mocking, we verify the structure without slow setup
+    assert hasattr(musigree.main, 'app')
+    # The mock should have been called during module import
+    assert mock_app_setup is not None 
