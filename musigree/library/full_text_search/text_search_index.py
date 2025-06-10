@@ -84,8 +84,10 @@ class TextSearchIndex:
 
         # Handle cases like hyphens in surnames
         if "-" in normalised_text:
-            normalised_text = normalised_text.replace("-", " ")
-            for token in normalised_text.split():
+            normalised_text_no_hyphens = normalised_text.replace("-", " ")
+            for token in normalised_text_no_hyphens.split():
+                if token in TextSearchIndex.STOP_WORDS:
+                    continue
                 if token not in self.index:
                     self.index[token] = list[int]()
                 self.index[token].append(id_)
@@ -103,7 +105,8 @@ class TextSearchIndex:
         Returns:
             int: The document frequency of the token.
         """
-        return len(self.index.get(token, list[int]()))
+        token_occurrences = self.index.get(token, list[int]())
+        return len(set(token_occurrences))
 
     def inverse_document_frequency(self, token: str) -> float:
         """
@@ -151,7 +154,15 @@ class TextSearchIndex:
             list[tuple[int, str]]: A list of tuples, where each tuple contains a
                 document ID and the corresponding document text, ordered by relevance.
         """
-        analyzed_query = query.split()
+        # Normalize the query and filter out stop words
+        normalized_query = normalise_search_content(query)
+        analyzed_query = [token for token in normalized_query.split() 
+                         if token not in TextSearchIndex.STOP_WORDS]
+        
+        # Handle empty query after filtering stop words
+        if not analyzed_query:
+            return []
+        
         # log.debug(f"search analyzed_query: {analyzed_query}")
 
         results = self._results(analyzed_query)
@@ -206,7 +217,7 @@ class TextSearchIndex:
             reduced_set = set(words)
             self.index[key] = list(reduced_set)
 
-    def list_stop_words(self) -> list[str]:
+    def generate_list_of_stop_words(self) -> list[str]:
         """
         Identifies and lists potential stop words based on their frequency.
 
@@ -246,7 +257,7 @@ class TextSearchIndex:
             int: A random document ID.
         """
         count = len(self.keys)
-        random_index = random.randint(0, count)
+        random_index = random.randint(0, count - 1)
         return self.keys[random_index]
 
     @classmethod
