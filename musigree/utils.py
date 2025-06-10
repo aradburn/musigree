@@ -26,7 +26,11 @@ log = logging.getLogger(__name__)
 
 URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
 # ARG_ROLES_REGEX = re.compile(r"^roles(\[\d*\])?$")
-STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[ -]released|[()&\".,]")
+
+# Remove unwanted characters from the string.
+# Any digits in round brackets are removed, and
+# any "not on label" or "self-released are removed.
+STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[\s\- ]+released|[^\w \-]+|_")
 # STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")
