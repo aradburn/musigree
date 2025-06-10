@@ -23,6 +23,11 @@ log = logging.getLogger(__name__)
 
 __all__ = [
     "CacheManager",
+    "BaseCache",
+    "SimpleCache",
+    "FileSystemCache",
+    "RedisCache",
+    "CacheType",
 ]
 
 
