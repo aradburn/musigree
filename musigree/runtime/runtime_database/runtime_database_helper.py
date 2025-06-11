@@ -215,9 +215,14 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def has_vacuum_tablename() -> bool:
+    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
         """
-        Indicates whether the database supports vacuuming a specific table.
+        Abstract method to initate a vacuum on a table.
+        Args:
+            table_name: The name of the table to vacuum.
+            is_full: If True, performs a full vacuum.
+            is_analyze: If True, performs an analyze operation.
+            engine: The SQLAlchemy engine connected to the database.
         """
         pass
 

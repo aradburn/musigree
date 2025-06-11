@@ -134,16 +134,6 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_entity_vacuum(
-        cls, has_tablename: bool, is_full: bool, is_analyze: bool
-    ) -> None:
-        log.debug(f"loader entity vacuum")
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            entity_repository.vacuum(has_tablename, is_full, is_analyze)
-
-    @classmethod
-    @timeit
     def loader_create_text_search_index(cls, text_search_path: Path) -> None:
         log.debug(f"loader entity create text search index")
         if not text_search_path.exists():

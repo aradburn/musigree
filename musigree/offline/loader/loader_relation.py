@@ -41,9 +41,8 @@ The module utilizes `logging` for logging operations.
 
 import logging
 
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.worker_relation_pass_one import WorkerRelationPassOne
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
@@ -182,28 +181,3 @@ class LoaderRelation(LoaderBase):
             entity_type: The type of entity to get the IDs for.
         """
         pass
-
-    @classmethod
-    @timeit
-    def loader_relation_vacuum(
-        cls, has_tablename: bool, is_full: bool, is_analyze: bool
-    ) -> None:
-        """
-        Performs database cleanup on the relations table.
-
-        This method executes the `VACUUM` command on the
-        `RelationRepository`, which can help to defragment and optimize the
-        database.
-
-        Args:
-            has_tablename (bool): Whether to include table names in the output.
-            is_full (bool): Whether to perform a full vacuum.
-            is_analyze (bool): Whether to perform database analysis.
-        """
-        log.debug(f"loader relation vacuum")
-        with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            relation_repository = RelationRepository()
-            """Instance of RelationRepository for database operations on relations."""
-            relation_repository.vacuum(has_tablename, is_full, is_analyze)
-            """Execute the vacuum command on the relation repository."""

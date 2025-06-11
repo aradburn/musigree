@@ -2,7 +2,7 @@ import logging
 from collections.abc import Iterator
 from typing import Any, Generic, Type
 
-from sqlalchemy import asc, delete, desc, func, select, update, text
+from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 
 __all__ = ("RuntimeBaseRepository",)
@@ -274,30 +274,3 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         database within the current transaction.
         """
         self._session.rollback()
-
-    def vacuum(self, has_tablename=False, is_full=False, is_analyze=False) -> None:
-        """
-        Performs a VACUUM operation on the database.
-
-        This method optimizes the database by reclaiming storage space and
-        optionally analyzing tables.
-
-        Args:
-            has_tablename (bool): If True, the table name will be included in
-                the VACUUM query.
-            is_full (bool): If True, a "FULL" vacuum operation will be performed,
-                which reclaims more storage space but can take longer.
-            is_analyze (bool): If True, the database will be analyzed after the
-                vacuum operation to update the query planner's statistics.
-        """
-        query = "VACUUM"
-        if is_full:
-            query += " FULL"
-        if is_analyze:
-            query += " ANALYZE"
-        if has_tablename:
-            query += " " + self.schema_class.__tablename__
-        query += ";"
-        if has_tablename:
-            self._session.execute(text("COMMIT"))
-        self._session.execute(text(query))

@@ -11,6 +11,7 @@ from sqlalchemy.exc import DatabaseError
 from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
+from musigree.constants import POSTGRESQL_DRIVER_NAME
 from musigree.offline.database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
@@ -35,7 +36,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
             # Create a database engine and pool that will manage connections and execute queries
             url_object = URL.create(
-                "postgresql+psycopg2",
+                POSTGRESQL_DRIVER_NAME,
                 username=config.POSTGRES_DATABASE_USERNAME,
                 password=config.POSTGRES_DATABASE_PASSWORD,
                 host=config.POSTGRES_DATABASE_HOST,
@@ -104,7 +105,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
-                    "postgresql", # uses psycopg2
+                    POSTGRESQL_DRIVER_NAME,
                     username=OfflinePostgresHelper.postgres_test_db.current_user,
                     # password=config[POSTGRES_DATABASE_PASSWORD_KEY],
                     host=OfflinePostgresHelper.postgres_test_db.pg_socket_dir,
@@ -136,7 +137,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
                 # Create a database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
-                    "postgresql+psycopg2",
+                    POSTGRESQL_DRIVER_NAME,
                     username=config.POSTGRES_DATABASE_USERNAME,
                     password=config.POSTGRES_DATABASE_PASSWORD,
                     host=config.POSTGRES_DATABASE_HOST,
@@ -215,8 +216,28 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         super().drop_tables(tables=tables)
 
     @staticmethod
-    def has_vacuum_tablename() -> bool:
-        return True
+    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+        """
+        Initate a vacuum on a table.
+        Args:
+            table_name: The name of the table to vacuum.
+            is_full: If True, performs a full vacuum.
+            is_analyze: If True, performs an analyze operation.
+            engine: The SQLAlchemy engine connected to the database.
+        """
+        log.debug(f"VACUUM {table_name}")
+
+        query = "VACUUM"
+        if is_full:
+            query += " FULL"
+        if is_analyze:
+            query += " ANALYZE"
+        query += " " + table_name
+        query += ";"
+
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
+            connection.execute(text(query))
+            connection.commit()
 
     @staticmethod
     def is_vacuum_full() -> bool:

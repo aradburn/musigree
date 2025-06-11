@@ -15,7 +15,7 @@ The `rate_limiter` dependency interacts with the following components:
       such as the endpoint and remote address.
     - `fastapi.Response`: For adding headers to the response.
     - `fakeredis.FakeStrictRedis`: A fake Redis client used for testing,
-      providing a in-memory implementation of the Redis API.
+      providing an in-memory implementation of the Redis API.
     - `exceptions.RateLimitError`: A custom exception raised when the rate
       limit is exceeded.
     - `logging`: For logging operations.

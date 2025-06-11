@@ -20,15 +20,6 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def setup_database(config: Configuration) -> Engine:
         log.info("Using Sqlite Offline Database")
-        # if config[TESTING_KEY]:
-        #     engine = create_engine(
-        #         "sqlite://",
-        #         connect_args={
-        #             "check_same_thread": False,
-        #         },
-        #         poolclass=StaticPool,
-        #     )
-        # else:
 
         assert config.SQLITE_OFFLINE_DATABASE_NAME is not None, (
             "Configuration Error: SQLITE_OFFLINE_DATABASE_NAME is not set"
@@ -106,8 +97,27 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         super().drop_tables(tables=tables)
 
     @staticmethod
-    def has_vacuum_tablename() -> bool:
-        return False
+    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+        """
+        Performs a VACUUM operation on the database.
+
+        Args:
+            table_name: The name of the table to vacuum. Not used in SQLite.
+            is_full: If True, performs a `VACUUM FULL` operation.
+            is_analyze: If True, performs a `VACUUM ANALYZE` operation.
+            engine: The SQLAlchemy engine connected to the database.
+        """
+        log.debug(f"VACUUM {table_name}")
+
+        query = "VACUUM"
+        if is_full:
+            query += " FULL"
+        if is_analyze:
+            query += " ANALYZE"
+        query += ";"
+
+        with engine.connect() as connection:
+            connection.execute(text(query))
 
     @staticmethod
     def is_vacuum_full() -> bool:

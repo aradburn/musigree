@@ -2,7 +2,7 @@ import logging
 from collections.abc import Iterator
 from typing import Any, Generic, Type
 
-from sqlalchemy import asc, delete, desc, func, select, update, text
+from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
@@ -249,25 +249,3 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Rolls back the current transaction.
         """
         self._session.rollback()
-
-    def vacuum(self, has_tablename=False, is_full=False, is_analyze=False) -> None:
-        """
-        Performs a VACUUM operation on the database or a specific table.
-
-        Args:
-            has_tablename: If True, perform VACUUM on the table in `schema_class`.
-            is_full: If True, performs a `VACUUM FULL` operation.
-            is_analyze: If True, performs a `VACUUM ANALYZE` operation.
-        """
-        query = "VACUUM"
-        if is_full:
-            query += " FULL"
-        if is_analyze:
-            query += " ANALYZE"
-        if has_tablename:
-            query += " " + self.schema_class.__tablename__
-        query += ";"
-        if has_tablename:
-            # log.debug("vacuum close transaction")
-            self._session.execute(text("COMMIT"))
-        self._session.execute(text(query))

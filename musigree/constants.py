@@ -61,7 +61,7 @@ ALL_RUNTIME_DATABASE_TABLE_NAMES = [
     "style",
     "genre",
 ]
-
+POSTGRESQL_DRIVER_NAME= "postgresql+psycopg"  # uses psycopg3
 
 class DatabaseType(enum.Enum):
     POSTGRES = 1

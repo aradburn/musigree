@@ -38,6 +38,7 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.logging_config import setup_logging
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.database import ReleaseTable, EntityTable, RelationTable
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
@@ -114,9 +115,6 @@ def get_load_offline_table_stages(
         "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_load_offline_table_stages()"
     )
 
-    has_tablename = (
-        OfflineDatabaseManager.offline_database_helper.has_vacuum_tablename()
-    )
     is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
     is_analyze = OfflineDatabaseManager.offline_database_helper.is_vacuum_analyze()
     discogs_data_directory = data_directory / DISCOGS_DATA
@@ -130,7 +128,11 @@ def get_load_offline_table_stages(
             is_bulk_inserts,
         ),
         partial(
-            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            EntityTable.__tablename__,
+            is_full,
+            is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(
             LoaderRelease().loader_release_pass_one,
@@ -139,45 +141,58 @@ def get_load_offline_table_stages(
             is_bulk_inserts,
         ),
         partial(
-            LoaderRelease().loader_release_vacuum,
-            has_tablename,
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            ReleaseTable.__tablename__,
             is_full,
             is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(LoaderEntity().loader_entity_pass_two),
         partial(LoaderRelease().loader_release_pass_two),
         partial(LoaderRelation().loader_relation_pass_one, date),
         # partial(LoaderRelation().loader_relation_pass_two, date),
         partial(
-            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
-        ),
-        partial(
-            LoaderRelease().loader_release_vacuum,
-            has_tablename,
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            EntityTable.__tablename__,
             is_full,
             is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(
-            LoaderRelation().loader_relation_vacuum,
-            has_tablename,
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            ReleaseTable.__tablename__,
             is_full,
             is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
+        ),
+        partial(
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            RelationTable.__tablename__,
+            is_full,
+            is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(LoaderEntity().loader_entity_pass_three),
         partial(
-            LoaderEntity().loader_entity_vacuum, has_tablename, is_full, is_analyze
-        ),
-        partial(
-            LoaderRelease().loader_release_vacuum,
-            has_tablename,
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            EntityTable.__tablename__,
             is_full,
             is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(
-            LoaderRelation().loader_relation_vacuum,
-            has_tablename,
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            ReleaseTable.__tablename__,
             is_full,
             is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
+        ),
+        partial(
+            OfflineDatabaseManager.offline_database_helper.vacuum,
+            RelationTable.__tablename__,
+            is_full,
+            is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_engine,
         ),
         partial(
             LoaderEntity().loader_create_text_search_index,

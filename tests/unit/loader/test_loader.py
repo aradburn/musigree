@@ -88,7 +88,6 @@ class TestLoaderFunctions:
         """Test successful creation of load offline table stages."""
         # Arrange
         mock_helper = Mock()
-        mock_helper.has_vacuum_tablename.return_value = True
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = True
         mock_helper.offline_engine = Mock()
@@ -110,7 +109,6 @@ class TestLoaderFunctions:
         assert all(isinstance(stage, partial) for stage in result)
         
         # Verify that database helper methods were called
-        mock_helper.has_vacuum_tablename.assert_called_once()
         mock_helper.is_vacuum_full.assert_called_once()
         mock_helper.is_vacuum_analyze.assert_called_once()
 
@@ -324,7 +322,6 @@ class TestLoaderIntegration:
         """Test integration of load_offline_tables with actual stage execution."""
         # Arrange
         mock_helper = Mock()
-        mock_helper.has_vacuum_tablename.return_value = True
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = True
         mock_helper.offline_engine = Mock()
@@ -351,17 +348,14 @@ class TestLoaderIntegration:
         mock_entity_instance.loader_entity_pass_one.assert_called()
         mock_entity_instance.loader_entity_pass_two.assert_called()
         mock_entity_instance.loader_entity_pass_three.assert_called()
-        mock_entity_instance.loader_entity_vacuum.assert_called()
         mock_entity_instance.loader_create_text_search_index.assert_called()
         
         # Verify that release loader methods were called
         mock_release_instance.loader_release_pass_one.assert_called()
         mock_release_instance.loader_release_pass_two.assert_called()
-        mock_release_instance.loader_release_vacuum.assert_called()
-        
+
         # Verify that relation loader methods were called
         mock_relation_instance.loader_relation_pass_one.assert_called()
-        mock_relation_instance.loader_relation_vacuum.assert_called()
 
     def test_load_offline_table_stage_bounds_checking(self):
         """Test bounds checking for stage parameter."""
@@ -391,7 +385,6 @@ class TestLoaderEdgeCases:
         
         with patch('musigree.loader.loader.OfflineDatabaseManager') as mock_db_manager:
             mock_helper = Mock()
-            mock_helper.has_vacuum_tablename.return_value = False
             mock_helper.is_vacuum_full.return_value = False
             mock_helper.is_vacuum_analyze.return_value = False
             mock_helper.offline_engine = Mock()

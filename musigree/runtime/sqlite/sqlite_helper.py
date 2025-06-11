@@ -204,14 +204,27 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    def has_vacuum_tablename() -> bool:
+    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
         """
-        Indicates whether SQLite supports vacuuming a specific table.
+        Performs a VACUUM operation on the database.
 
-        Returns:
-            bool: False, as SQLite does not support this operation.
+        Args:
+            table_name: The name of the table to vacuum. Not used in SQLite.
+            is_full: If True, performs a `VACUUM FULL` operation.
+            is_analyze: If True, performs a `VACUUM ANALYZE` operation.
+            engine: The SQLAlchemy engine connected to the database.
         """
-        return False
+        log.debug(f"VACUUM {table_name}")
+
+        query = "VACUUM"
+        if is_full:
+            query += " FULL"
+        if is_analyze:
+            query += " ANALYZE"
+        query += ";"
+
+        with engine.connect() as connection:
+            connection.execute(text(query))
 
     @staticmethod
     def is_vacuum_full() -> bool:

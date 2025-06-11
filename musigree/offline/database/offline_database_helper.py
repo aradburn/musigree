@@ -159,12 +159,14 @@ class OfflineDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def has_vacuum_tablename() -> bool:
+    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
         """
-        Abstract method to indicate whether vacuum should be performed on a table.
-
-        Returns:
-            bool: True if vacuum should be performed on a table, False otherwise.
+        Abstract method to initate a vacuum on a table.
+        Args:
+            table_name: The name of the table to vacuum.
+            is_full: If True, performs a full vacuum.
+            is_analyze: If True, performs an analyze operation.
+            engine: The SQLAlchemy engine connected to the database.
         """
         pass
 
