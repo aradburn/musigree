@@ -51,6 +51,9 @@ def get_redis_client() -> Any:
     if _redis_client is None:
         # For now, we'll use FakeRedis for development and testing
         # In production, this should be replaced with real Redis configuration
+        # TODO: ASYNC IMPROVEMENT - Use aioredis for async operations:
+        # import aioredis
+        # _redis_client = aioredis.from_url("redis://localhost", decode_responses=True)
         _redis_client = fakeredis.FakeStrictRedis(
             decode_responses=True,
             socket_connect_timeout=5,
@@ -108,6 +111,8 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         try:
             # Get current requests (handle Redis byte response)
             current_requests = 0
+            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+            # redis_value = await get_redis_client().get(key)
             redis_value = get_redis_client().get(key)
             if redis_value:
                 # Convert bytes to string and then to int
@@ -130,6 +135,8 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
 
         # Get TTL and handle Redis response
         try:
+            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+            # ttl_raw = await get_redis_client().ttl(key)
             ttl_raw = get_redis_client().ttl(key)
             ttl_value = period
 
@@ -148,6 +155,10 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         if remaining > 0:
             # Increment the request count
             try:
+                # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+                # await get_redis_client().incr(key, 1)
+                # if current_requests == 0:
+                #     await get_redis_client().expire(key, period)
                 get_redis_client().incr(key, 1)
                 # Set expiration if this is a new key
                 if current_requests == 0:

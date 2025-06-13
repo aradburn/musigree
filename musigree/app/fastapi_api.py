@@ -95,6 +95,11 @@ async def route__api__entity_type__relations__entity_id(
 
     entity_id_int = int(entity_id)
 
+    # TODO: ASYNC IMPROVEMENT - Replace with async transaction and await database operations
+    # Example: async with async_runtime_transaction():
+    #     entity_repository = await AsyncRuntimeEntityRepository()
+    #     relation_repository = await AsyncRuntimeRelationRepository()
+    #     data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(...)
     with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
