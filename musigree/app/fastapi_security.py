@@ -74,10 +74,10 @@ class SecurityHeadersMiddleware:
                     
                     # Content Security Policy for production
                     security_headers[b"content-security-policy"] = (
-                        b"default-src 'self'; "
+                        b"default-src 'self' data:; "
                         b"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-                        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
-                        b"font-src 'self' https://fonts.gstatic.com; "
+                        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                        b"font-src 'self'; "
                         b"img-src 'self' data: https:; "
                         b"connect-src 'self' https://api.discogs.com; "
                         b"frame-ancestors 'none';"
@@ -85,7 +85,8 @@ class SecurityHeadersMiddleware:
                 else:
                     # More permissive CSP for development
                     security_headers[b"content-security-policy"] = (
-                        b"default-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                        b"default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; "
+                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:5173; "
                         b"connect-src 'self' http://localhost:* ws://localhost:*; "
                         b"img-src 'self' data: https:;"
                     )

@@ -203,10 +203,11 @@ def shutdown_application():
 
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
-    log.info("######## APPLICATION SHUTDOWN ########")
+    log.info("######## APPLICATION SHUTDOWN START ########")
     RuntimeDatabaseManager.shutdown_database()
     CacheManager.shutdown_cache()
     shutdown_logging()
+    log.info("######## APPLICATION SHUTDOWN DONE ########")
 
 
 def init_app(config: Configuration):
