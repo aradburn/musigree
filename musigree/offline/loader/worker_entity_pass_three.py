@@ -48,6 +48,7 @@ concurrency.
 
 import logging
 import multiprocessing
+import asyncio
 
 from sqlalchemy.exc import DatabaseError
 
@@ -93,19 +94,24 @@ class WorkerEntityPassThree(multiprocessing.Process):
 
     def run(self):
         """
-        Executes the entity processing logic.
+        Executes the third pass of the loading process for the assigned entity IDs.
 
-        This method performs the following steps:
-            1. Initializes the database helper if concurrency is enabled.
-            2. Iterates through the list of entity IDs.
-            3. For each ID, starts a database transaction.
-            4. Calls `loader_pass_three_single` to process the entity.
-            5. Handles `DatabaseError` exceptions during the process.
-            6. Logs the progress of the processing.
+        This method processes each entity ID in the worker's assigned list,
+        calculating and updating relation counts for each entity. It handles
+        database transactions and provides progress logging.
+
+        The method:
+        1. Initializes database connections if concurrency is enabled
+        2. Processes each entity ID within a database transaction
+        3. Calculates relation counts for the entity
+        4. Updates the entity record with the counts
+        5. Provides periodic progress logging
+
+        Raises:
+            DatabaseError: If there's an error during database operations.
         """
-        proc_name = self.name
-        """Get the name of the current process."""
-
+        proc_name = multiprocessing.current_process().name
+        """Get the current process name for logging."""
         count = self.current_total
         """Counter for the number of entities processed."""
         end_count = count + len(self.ids)
@@ -118,28 +124,32 @@ class WorkerEntityPassThree(multiprocessing.Process):
 
         for id_ in self.ids:
             """Iterate over the entity IDs."""
-            with offline_transaction():
-                """Ensure that database operations are performed within a transaction."""
-                entity_repository = EntityRepository()
-                """Instance of EntityRepository for database operations on entities."""
-                relation_repository = RelationRepository()
-                """Instance of RelationRepository for database operations on relations."""
-                try:
-                    """Attempt to process the entity."""
-                    self.loader_pass_three_single(
-                        entity_repository,
-                        relation_repository,
-                        id_=id_,
-                    )
-                    """Process the entity."""
+            async def process_entity():
+                async with offline_transaction():
+                    """Ensure that database operations are performed within a transaction."""
+                    entity_repository = EntityRepository()
+                    """Instance of EntityRepository for database operations on entities."""
+                    relation_repository = RelationRepository()
+                    """Instance of RelationRepository for database operations on relations."""
+                    try:
+                        """Attempt to process the entity."""
+                        await self.loader_pass_three_single(
+                            entity_repository,
+                            relation_repository,
+                            id_=id_,
+                        )
+                        """Process the entity."""
 
-                except DatabaseError as e:
-                    """Handle potential database errors."""
-                    log.exception(
-                        f"Database Error for entity id: {id_} in process {proc_name}",
-                        exc_info=True,
-                    )
-                    raise e
+                    except DatabaseError as e:
+                        """Handle potential database errors."""
+                        log.exception(
+                            f"Database Error for entity id: {id_} in process {proc_name}",
+                            exc_info=True,
+                        )
+                        raise e
+            
+            # Run the async function
+            asyncio.run(process_entity())
 
             count += 1
             """Increment the processed counter."""
@@ -151,31 +161,35 @@ class WorkerEntityPassThree(multiprocessing.Process):
         """Log the total number of entities processed."""
 
     @staticmethod
-    def loader_pass_three_single(
+    async def loader_pass_three_single(
         entity_repository: EntityRepository,
         relation_repository: RelationRepository,
         id_: int,
     ):
         """
-        Processes a single entity record in the third pass.
+        Processes a single entity for pass three of the loading process.
 
-        This method performs the following steps:
-            1. Retrieves all relations for the entity.
-            2. Counts the number of unique relations for each role.
-            3. Updates the entity record with the relation counts.
+        This method calculates and updates the relation counts for a given entity.
+        It retrieves all relations where the entity is either the subject or object,
+        counts the unique relations for each role, and updates the entity's
+        relation_counts field.
 
         Args:
-            entity_repository (EntityRepository): The repository for entity operations.
-            relation_repository (RelationRepository): The repository for relation operations.
-            id_ (int): The ID of the entity to process.
+            entity_repository (EntityRepository): The repository for entity database operations.
+            relation_repository (RelationRepository): The repository for relation database operations.
+            id_ (int): The internal ID of the entity to process.
+
+        Raises:
+            DatabaseError: If there's an error updating the entity in the database.
         """
         _relation_counts: dict[str, set[tuple[int, int]]] = {}
+        """A dictionary to store relation counts by role."""
         _relation_count_totals: dict[str, int] = {}
-        """Dictionary to store the relation counts."""
+        """A dictionary to store the total counts for each role."""
 
         # Get all relations for this entity, where the entity is the subject or object of the relation
         # log.debug(f"id_: {id_}")
-        relations = relation_repository.find_by_entity(id_)
+        relations = await relation_repository.find_by_entity(id_)
         # log.debug(f"relations count: {len(relations)}")
 
         for relation in relations:
@@ -205,12 +219,12 @@ class WorkerEntityPassThree(multiprocessing.Process):
         try:
             """Attempt to update the relation counts."""
             # Update the relation counts for this entity
-            entity_repository.update(
+            await entity_repository.update(
                 id_, {EntityTable.relation_counts.key: _relation_count_totals}
             )
             """Update the entity."""
 
-            entity_repository.commit()
+            await entity_repository.commit()
             """Commit the transaction."""
         except DatabaseError as e:
             """Handle potential database errors."""
