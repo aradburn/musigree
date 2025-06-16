@@ -41,12 +41,16 @@ The module utilizes `logging` for logging operations, `typing` for type
 hinting and interacts with `musigree` library for specific cache and type.
 """
 
+import asyncio
 import logging
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
 from musigree.logging_config import LOGGING_TRACE
 
+from musigree.runtime.runtime_database.runtime_role_repository import (
+    RuntimeRoleRepository,
+)
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.role import (
     RuntimeRole,
@@ -179,33 +183,44 @@ class RuntimeRoleDataAccess:
             - role name to role ID
             - set of role names
 
-        It then calls `build_role_tree` to create the role tree structure
-        and logs the number of roles loaded.
+        The method populates the following cache structures:
+        - role_id_to_role_name_lookup: Maps role IDs to role names
+        - role_id_to_role_category_lookup: Maps role IDs to role categories
+        - role_name_to_role_id_lookup: Maps role names to role IDs
+        - role_name_set: Set of all role names
+
+        After loading the roles, it builds the role tree structure and logs
+        the number of roles loaded.
         """
-        from musigree.runtime.runtime_database.runtime_role_repository import (
-            RuntimeRoleRepository,
-        )
-
-        log.info(f"Loading all roles from runtime database")
-
+        
+        async def _load_roles_async():
+            """Async helper function to load roles using async transaction."""
+            async with runtime_transaction():
+                """Ensure that database operations are performed within a transaction."""
+                role_repository = RuntimeRoleRepository()
+                """Get the instance of the `RuntimeRoleRepository`."""
+                _roles = []
+                async for _role in role_repository.all():
+                    _roles.append(_role)
+                """Get all the roles."""
+                return _roles
+        
+        log.debug("Loading roles from RoleRepository")
         RoleCache.role_id_to_role_name_lookup.clear()
         RoleCache.role_id_to_role_category_lookup.clear()
         RoleCache.role_name_to_role_id_lookup.clear()
         RoleCache.role_name_set.clear()
         """Clear the cache."""
 
-        with runtime_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            role_repository = RuntimeRoleRepository()
-            """Get the instance of the `RuntimeRoleRepository`."""
-            roles = list(role_repository.all())
-            """Get all the roles."""
-            for role in roles:
-                """Iterate over the roles."""
-                RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
-                """Add the mapping from id to name."""
-                RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category
-                """Add the mapping from id to category."""
+        # Run the async operation
+        roles = asyncio.run(_load_roles_async())
+        
+        for role in roles:
+            """Iterate over the roles."""
+            RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
+            """Add the mapping from id to name."""
+            RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category
+            """Add the mapping from id to category."""
 
         cls.build_role_tree(roles)
         """Build the role tree."""
