@@ -129,7 +129,7 @@ class EntityDataAccess:
             raise ValueError("Bad entity_type")
 
     @staticmethod
-    def resolve_release_references(
+    async def resolve_release_references(
         entity_repository: EntityRepository, release: Release
     ):
         """
@@ -211,7 +211,7 @@ class EntityDataAccess:
                     # Look up label name to get the id
                     entity_type = EntityType.LABEL
                     entity_name = entry["name"]
-                    id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
                         entity_type, entity_name
                     )
                     entry["id"] = to_entity_label_internal_id(id_)
@@ -227,7 +227,7 @@ class EntityDataAccess:
                 else:
                     entity_type = EntityType.LABEL
                     entity_name = entry["name"]
-                    id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
                         entity_type, entity_name
                     )
                     entry["id"] = to_entity_label_internal_id(id_)
@@ -236,7 +236,7 @@ class EntityDataAccess:
         return changed
 
     @staticmethod
-    def get_id_by_entity_type_and_entity_name(
+    async def get_id_by_entity_type_and_entity_name(
         entity_repository: EntityRepository,
         entity_type: EntityType,
         entity_name: str,
@@ -271,7 +271,7 @@ class EntityDataAccess:
 
         if id_ is None:
             try:
-                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
+                int_id = await entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
                 """Get the internal id from the db."""
@@ -292,7 +292,7 @@ class EntityDataAccess:
         return id_
 
     @staticmethod
-    def init_text_search_index(
+    async def init_text_search_index(
         entity_repository: EntityRepository, index: TextSearchIndex
     ) -> None:
         """
@@ -306,7 +306,7 @@ class EntityDataAccess:
             index (TextSearchIndex): The text search index to initialize.
         """
         count = 0
-        for id_, entity_name in entity_repository.all_ids_and_names():
+        async for id_, entity_name in entity_repository.all_ids_and_names():
             index.index_entry(id_, entity_name)
             count += 1
             if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
