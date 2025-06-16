@@ -83,7 +83,7 @@ class LoaderBase:
     """A mapping from XML tags to database fields and procedures."""
 
     @classmethod
-    def loader_pass_one_manager(
+    async def loader_pass_one_manager(
         cls,
         repository: BaseRepository,
         parser: ParserBase,
@@ -123,8 +123,8 @@ class LoaderBase:
         set_of_updated_ids: SortedSet[int] = SortedSet()
         """A sorted set to keep track of updated IDs."""
 
-        initial_count = repository.count()
-        """The initial count of records in the database."""
+        initial_count = await repository.count()
+        log.debug(f"initial_count: {initial_count}")
 
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
@@ -194,7 +194,7 @@ class LoaderBase:
                 worker = workers.pop(0)
                 cls.loader_wait_for_worker(worker)
 
-            repository_count = repository.count()
+            repository_count = await repository.count()
             log.debug(f"repository_count: {repository_count}")
 
             new_inserts_count = repository_count - initial_count
@@ -207,7 +207,7 @@ class LoaderBase:
                 entity_type = EntityType.LABEL
             elif xml_tag == "release":
                 entity_type = None
-            set_of_database_ids = cls.get_set_of_ids(entity_type)
+            set_of_database_ids = await cls.get_set_of_ids(entity_type)
 
             # Check if any records need to be deleted
             # (present in database and not present in the xml dump)
@@ -293,7 +293,7 @@ class LoaderBase:
 
     @classmethod
     @abstractmethod
-    def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type):
         """
         Retrieves a set of IDs from the database.
 
