@@ -265,7 +265,7 @@ class OfflineDatabaseHelper(ABC):
     #     return data
 
     @classmethod
-    def get_relation_by_key(
+    async def get_relation_by_key(
         cls,
         relation_repository: RelationRepository,
         relation_release_year_repository: RelationReleaseYearRepository,
@@ -282,11 +282,11 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             Relation: The found relation.
         """
-        relation_internal = relation_repository.find_by_key(key)
+        relation_internal = await relation_repository.find_by_key(key)
         relation = relation_internal.to_relation()
 
         if relation is not None:
-            relation_release_years = relation_release_year_repository.get(relation.id)
+            relation_release_years = await relation_release_year_repository.get(relation.id)
             relation.releases = {}
             for relation_release_year in relation_release_years:
                 relation.releases[str(relation_release_year.release_id)] = (
