@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 
 from musigree.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
@@ -46,15 +47,15 @@ class TransferManager:
     BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
-    def transfer_entity(entity_details_index: EntityDetailsIndex) -> None:
+    async def transfer_entity(entity_details_index: EntityDetailsIndex) -> None:
         log.debug(f"Running transfer_entity()")
 
         offline_entity_repository = EntityRepository()
         runtime_entity_repository = RuntimeEntityRepository()
 
         total_count = offline_entity_repository.count()
-        with runtime_transaction():
-            initial_count = runtime_entity_repository.count()
+        async with runtime_transaction():
+            initial_count = await runtime_entity_repository.count()
         if initial_count > 0:
             error_msg = "Error in transfer_entity, runtime_entity table not empty"
             log.exception(error_msg, exc_info=True)
@@ -64,7 +65,7 @@ class TransferManager:
         bulk_records = []
         workers = []
 
-        entities = offline_entity_repository.all()
+        entities = await offline_entity_repository.all()
 
         for entity in entities:
             # TODO get from runtime countries table
@@ -99,10 +100,10 @@ class TransferManager:
                         worker = workers.pop(0)
                         TransferManager.transfer_wait_for_worker(worker)
                 else:
-                    with runtime_transaction():
+                    async with runtime_transaction():
                         try:
-                            runtime_entity_repository.save_all(bulk_records)
-                            runtime_entity_repository.commit()
+                            await runtime_entity_repository.save_all(bulk_records)
+                            await runtime_entity_repository.commit()
                             log.info(f"processed: {processed_count} of {total_count}")
                             bulk_records.clear()
                         except DatabaseError:
@@ -122,10 +123,10 @@ class TransferManager:
                 workers.append(worker)
                 bulk_records.clear()
             else:
-                with runtime_transaction():
+                async with runtime_transaction():
                     try:
-                        runtime_entity_repository.save_all(bulk_records)
-                        runtime_entity_repository.commit()
+                        await runtime_entity_repository.save_all(bulk_records)
+                        await runtime_entity_repository.commit()
                         log.info(f"processed: {processed_count} of {total_count}")
                         bulk_records.clear()
                     except DatabaseError:
@@ -137,18 +138,18 @@ class TransferManager:
             worker = workers.pop(0)
             TransferManager.transfer_wait_for_worker(worker)
 
-        repository_count = runtime_entity_repository.count()
+        repository_count = await runtime_entity_repository.count()
         log.debug(f"repository_count: {repository_count}")
 
     @staticmethod
-    def transfer_relation() -> None:
+    async def transfer_relation() -> None:
         log.debug(f"Running transfer_relation()")
         offline_relation_repository = RelationRepository()
         runtime_relation_repository = RuntimeRelationRepository()
 
         total_count = offline_relation_repository.count()
-        with runtime_transaction():
-            initial_count = runtime_relation_repository.count()
+        async with runtime_transaction():
+            initial_count = await runtime_relation_repository.count()
         if initial_count > 0:
             error_msg = "Error in transfer_relation, runtime_relation table not empty"
             log.exception(error_msg, exc_info=True)
@@ -158,7 +159,7 @@ class TransferManager:
         bulk_records = []
         workers = []
 
-        relations = offline_relation_repository.all()
+        relations = await offline_relation_repository.all()
 
         for relation in relations:
             runtime_relation = RuntimeRelationDB(**relation.model_dump())
@@ -179,10 +180,10 @@ class TransferManager:
                         worker = workers.pop(0)
                         TransferManager.transfer_wait_for_worker(worker)
                 else:
-                    with runtime_transaction():
+                    async with runtime_transaction():
                         try:
-                            runtime_relation_repository.save_all(bulk_records)
-                            runtime_relation_repository.commit()
+                            await runtime_relation_repository.save_all(bulk_records)
+                            await runtime_relation_repository.commit()
                             log.info(f"processed: {processed_count} of {total_count}")
                             bulk_records.clear()
                         except DatabaseError:
@@ -202,10 +203,10 @@ class TransferManager:
                 workers.append(worker)
                 bulk_records.clear()
             else:
-                with runtime_transaction():
+                async with runtime_transaction():
                     try:
-                        runtime_relation_repository.save_all(bulk_records)
-                        runtime_relation_repository.commit()
+                        await runtime_relation_repository.save_all(bulk_records)
+                        await runtime_relation_repository.commit()
                         log.info(f"processed: {processed_count} of {total_count}")
                         bulk_records.clear()
                     except DatabaseError:
@@ -217,22 +218,22 @@ class TransferManager:
             worker = workers.pop(0)
             TransferManager.transfer_wait_for_worker(worker)
 
-        repository_count = runtime_relation_repository.count()
+        repository_count = await runtime_relation_repository.count()
         log.debug(f"repository_count: {repository_count}")
 
     @staticmethod
-    def transfer_role() -> None:
+    async def transfer_role() -> None:
         log.debug(f"Running transfer_role()")
         roles = RoleRepository().all()
         runtime_role_repository = RuntimeRoleRepository()
 
-        with runtime_transaction():
+        async with runtime_transaction():
             for role in roles:
                 runtime_role = RuntimeRole(**role.model_dump())
-                runtime_role_repository.create(runtime_role)
+                await runtime_role_repository.create(runtime_role)
 
     @staticmethod
-    def transfer_entity_details(entity_details_index: EntityDetailsIndex) -> None:
+    async def transfer_entity_details(entity_details_index: EntityDetailsIndex) -> None:
         log.debug(f"Running transfer_entity_details()")
 
         # Countries
@@ -240,51 +241,52 @@ class TransferManager:
         runtime_country_repository = CountryRepository()
 
         for _id, country_name in enumerate(sorted_countries):
-            with runtime_transaction():
+            async with runtime_transaction():
                 country = Country(id=_id, country_name=country_name)
-                runtime_country_repository.create(country)
-                runtime_country_repository.commit()
+                await runtime_country_repository.create(country)
+                await runtime_country_repository.commit()
 
         # Genres
         sorted_genres = sorted(entity_details_index.genres_list)
         runtime_genre_repository = GenreRepository()
 
         for _id, genre_name in enumerate(sorted_genres):
-            with runtime_transaction():
+            async with runtime_transaction():
                 genre = Genre(id=_id, genre_name=genre_name)
-                runtime_genre_repository.create(genre)
-                runtime_genre_repository.commit()
+                await runtime_genre_repository.create(genre)
+                await runtime_genre_repository.commit()
 
         # Styles
         sorted_styles = sorted(entity_details_index.styles_list)
         runtime_style_repository = StyleRepository()
 
         for _id, style_name in enumerate(sorted_styles):
-            with runtime_transaction():
+            async with runtime_transaction():
                 style = Style(id=_id, style_name=style_name)
-                runtime_style_repository.create(style)
-                runtime_style_repository.commit()
+                await runtime_style_repository.create(style)
+                await runtime_style_repository.commit()
 
     @staticmethod
     def transfer_all(_data_directory: Path) -> None:
         log.debug(f"Running transfer_all()")
-
-        RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-            ALL_RUNTIME_DATABASE_TABLE_NAMES
-        )
-        RuntimeDatabaseManager.runtime_database_helper.create_tables(
-            ALL_RUNTIME_DATABASE_TABLE_NAMES
-        )
-
-        offline_release_repository = ReleaseRepository()
-        entity_details_index = ReleaseDataAccess.create_entity_details_index(offline_release_repository)
-
-        TransferManager.transfer_role()
-        TransferManager.transfer_entity_details(entity_details_index)
-        TransferManager.transfer_entity(entity_details_index)
-        TransferManager.transfer_relation()
-
-        log.debug(f"Transfer all done")
+        log.error(f"BANG!!!! running transfer_all()")
+        sys.exit(1)
+        # RuntimeDatabaseManager.runtime_database_helper.drop_tables(
+        #     ALL_RUNTIME_DATABASE_TABLE_NAMES
+        # )
+        # RuntimeDatabaseManager.runtime_database_helper.create_tables(
+        #     ALL_RUNTIME_DATABASE_TABLE_NAMES
+        # )
+        #
+        # offline_release_repository = ReleaseRepository()
+        # entity_details_index = ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+        #
+        # TransferManager.transfer_role()
+        # TransferManager.transfer_entity_details(entity_details_index)
+        # TransferManager.transfer_entity(entity_details_index)
+        # TransferManager.transfer_relation()
+        #
+        # log.debug(f"Transfer all done")
 
     @staticmethod
     def transfer_wait_for_worker(worker) -> None:
