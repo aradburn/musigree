@@ -207,10 +207,10 @@ async def route__entity_type__entity_id(
     """Validate the entity ID."""
     entity_id_int = int(entity_id)
 
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        network_data = RuntimeDatabaseManager.runtime_database_helper.get_network(
+        network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id_int,
