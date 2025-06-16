@@ -3,10 +3,9 @@ from collections.abc import AsyncIterator
 from typing import List, Any, Sequence, Iterator
 
 from sqlalchemy import select, Result, update, delete
-from sqlalchemy.exc import DatabaseError
 
 from musigree import utils
-from musigree.exceptions import NotFoundError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.domain.release import Release
