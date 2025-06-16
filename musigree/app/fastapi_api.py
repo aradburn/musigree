@@ -95,15 +95,10 @@ async def route__api__entity_type__relations__entity_id(
 
     entity_id_int = int(entity_id)
 
-    # TODO: ASYNC IMPROVEMENT - Replace with async transaction and await database operations
-    # Example: async with async_runtime_transaction():
-    #     entity_repository = await AsyncRuntimeEntityRepository()
-    #     relation_repository = await AsyncRuntimeRelationRepository()
-    #     data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(...)
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
+        data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
             entity_repository,
             relation_repository,
             entity_id_int,
@@ -180,10 +175,10 @@ async def route__api__entity_type__network__entity_id(
 
     on_mobile = False
 
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = RuntimeDatabaseManager.runtime_database_helper.get_network(
+        data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id_int,
@@ -264,9 +259,9 @@ async def route__api__entity_type__details__entity_id(
 
     entity_id_int = int(entity_id)
 
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
-        entity = entity_repository.get_by_entity_id_and_entity_type(
+        entity = await entity_repository.get_by_entity_id_and_entity_type(
             entity_id_int, entity_type
         )
 
@@ -309,10 +304,10 @@ async def route__api__random(
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         try:
-            entity_id, entity_type = (
+            entity_id, entity_type = await (
                 RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
                     entity_repository
                 )
