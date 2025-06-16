@@ -112,11 +112,30 @@ class RelationGrapher(ABC):
         self.should_break_loop = False
         self.entity_keys_to_visit = set[tuple[int, EntityType]]()
 
-    def get_relation_graph(
+    async def get_relation_graph(
         self,
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
     ):
+        """
+        Generates a relation graph for the center entity.
+
+        This method performs a breadth-first search starting from the center entity,
+        exploring relationships up to the specified degree. It builds a network of
+        nodes (entities) and links (relationships) that can be used for visualization
+        or analysis.
+
+        Args:
+            entity_repository: Repository for entity database operations.
+            relation_repository: Repository for relation database operations.
+
+        Returns:
+            dict: A dictionary containing the network structure with:
+                - center: Information about the center entity
+                - nodes: List of entity nodes in the network
+                - links: List of relationship links between entities
+        """
+        
         log.debug(f"Searching around {self.center_entity.entity_name}...")
         log.debug(f"  {len(self.structural_role_names)} structural_role_names")
         log.debug(f"  {len(self.relational_role_names)}relational_role_names")
@@ -130,7 +149,7 @@ class RelationGrapher(ABC):
             if len(self.entity_keys_to_visit) > self.max_nodes:
                 break
             log.debug(f"        Search for {len(self.entity_keys_to_visit)} entities")
-            entities = self.search_entities(
+            entities = await self.search_entities(
                 entity_repository, self.entity_keys_to_visit
             )
             log.debug(f"        Search found {len(entities)} entities")
@@ -148,7 +167,7 @@ class RelationGrapher(ABC):
                 self.search_via_structural_roles(
                     distance, provisional_role_names, relations
                 )
-                self.search_via_relational_roles(
+                await self.search_via_relational_roles(
                     relation_repository=relation_repository,
                     distance=distance,
                     provisional_roles=provisional_role_names,
@@ -188,7 +207,7 @@ class RelationGrapher(ABC):
         return network
 
     @staticmethod
-    def search_entities(
+    async def search_entities(
         entity_repository: RuntimeEntityRepository,
         entity_keys_to_visit: set[tuple[int, EntityType]],
     ) -> list[RuntimeEntity]:
@@ -199,12 +218,12 @@ class RelationGrapher(ABC):
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit_list[start : start + step]
-            found = entity_repository.search_multi(entity_key_slice)
+            found = await entity_repository.search_multi(entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
-    def search_via_relational_roles(
+    async def search_via_relational_roles(
         self,
         *,
         relation_repository: RuntimeRelationRepository,
@@ -235,7 +254,7 @@ class RelationGrapher(ABC):
                 # log.debug(
                 #     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 # )
-                relation_results = RuntimeRelationDataAccess.search_multi(
+                relation_results = await RuntimeRelationDataAccess.search_multi(
                     relation_repository=relation_repository,
                     entity_keys=key_slice,
                     role_names=provisional_roles,
