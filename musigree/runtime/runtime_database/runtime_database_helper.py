@@ -46,6 +46,9 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
+from musigree.runtime.data_access_layer.relation_grapher import (
+    RelationGrapher,
+)
 
 log = logging.getLogger(__name__)
 
@@ -283,7 +286,7 @@ class RuntimeDatabaseHelper(ABC):
         pass
 
     @staticmethod
-    def get_network(
+    async def get_network(
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
         entity_id: int,
@@ -292,7 +295,7 @@ class RuntimeDatabaseHelper(ABC):
         roles: List[str],
     ):
         """
-        Retrieves network data for an entity.
+        Retrieves a network of entities and relations.
 
         Args:
             entity_repository: The entity repository.
@@ -300,15 +303,11 @@ class RuntimeDatabaseHelper(ABC):
             entity_id: The ID of the entity.
             entity_type: The type of the entity.
             on_mobile: Whether the request is from a mobile device.
-            roles: An optional list of roles to filter by.
+            roles: A list of role names to filter by.
 
         Returns:
-            Any: The network data.
+            dict: The network data.
         """
-        from musigree.runtime.data_access_layer.relation_grapher import (
-            RelationGrapher,
-        )
-
         cache = CacheManager.get_cache()
 
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
@@ -322,15 +321,14 @@ class RuntimeDatabaseHelper(ABC):
             entity_type,
             roles=roles,
         )
-        # cache_key = cache_key.format(entity_type, entity_id)
         if cache_key is not None and len(cache_key) < 200:
             log.debug(f"  get cache_key: {cache_key}")
-            data = cache.get(cache_key)
-            if data is not None:
-                return data
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return cached_data
 
         try:
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
         except NotFoundError:
@@ -350,7 +348,7 @@ class RuntimeDatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = relation_grapher.get_relation_graph(
+        data = await relation_grapher.get_relation_graph(
             entity_repository, relation_repository
         )
         if cache_key is not None and len(cache_key) < 200:
@@ -358,7 +356,7 @@ class RuntimeDatabaseHelper(ABC):
         return data
 
     @staticmethod
-    def get_random_entity(
+    async def get_random_entity(
         entity_repository: RuntimeEntityRepository,
     ) -> tuple[int, EntityType]:
         """
@@ -396,7 +394,7 @@ class RuntimeDatabaseHelper(ABC):
                 entity = None
                 continue
             try:
-                entity = entity_repository.get_by_id(random_id)
+                entity = await entity_repository.get_by_id(random_id)
             except NotFoundError:
                 log.debug("random not found")
                 counter += 1
@@ -453,7 +451,7 @@ class RuntimeDatabaseHelper(ABC):
         return entity_id, entity_type
 
     @classmethod
-    def get_relations_by_entity_id_and_entity_type(
+    async def get_relations_by_entity_id_and_entity_type(
         cls,
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
@@ -473,11 +471,10 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             dict[str, Any]: The relations data.
         """
-        # TODO Add info on releases back in one day
-        entity = entity_repository.get_by_entity_id_and_entity_type(
+        entity = await entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
         )
-        relations = relation_repository.find_by_entity(entity.id)
+        relations = await relation_repository.find_by_entity(entity.id)
 
         data = []
         for relation in relations:
