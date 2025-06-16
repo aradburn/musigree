@@ -69,24 +69,24 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_relation_pass_one(cls, date: str):
+    async def loader_relation_pass_one(cls, date: str):
         """
-        Performs the first pass of loading relationship data.
+        Performs the first pass of loading relation data.
 
-        This method processes all releases in the database in batches,
-        creating `WorkerRelationPassOne` workers to handle the extraction
-        and storage of relations. It uses concurrency to speed up the process.
+        This method processes release data to create relations between entities.
+        It divides the work into batches and uses worker processes to handle
+        the processing in parallel.
 
         Args:
             date (str): The date of the data dump being processed.
         """
         log.debug(f"loader relation pass one - date: {date}")
 
-        with offline_transaction():
+        async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
             release_repository = ReleaseRepository()
             """Instance of ReleaseRepository for database operations on releases."""
-            total_count = release_repository.count()
+            total_count = await release_repository.count()
             """Total number of releases in the database."""
             if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
                 number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
@@ -94,7 +94,7 @@ class LoaderRelation(LoaderBase):
                 number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
             """Determine the number of releases to process in each batch."""
 
-            batched_release_ids = release_repository.get_batched_ids(number_in_batch)
+            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
         """Get the release ids in batches."""
 
         current_total = 0
