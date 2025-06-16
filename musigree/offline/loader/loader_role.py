@@ -25,26 +25,26 @@ class LoaderRole(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    def load_roles_into_database(
+    async def load_roles_into_database(
         cls, roles_directory: Path, instruments_directory: Path
     ) -> None:
         log.info(f"Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
         file_roles = cls.load_roles_from_files(roles_directory)
-        cls.save_roles(file_roles)
+        await cls.save_roles(file_roles)
 
         hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments(
             instruments_directory
         )
-        cls.save_roles(hornbostel_sachs_roles)
+        await cls.save_roles(hornbostel_sachs_roles)
 
         wikipedia_roles = cls.load_wikipedia_instruments(instruments_directory)
-        cls.save_roles(wikipedia_roles)
+        await cls.save_roles(wikipedia_roles)
 
         # Load back in all roles from database
         # TODO check if needed
-        RoleDataAccess.load_all_roles()
+        await RoleDataAccess.load_all_roles()
         log.debug(f"Initial roles loaded OK")
 
     @classmethod
@@ -191,22 +191,20 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def save_roles(cls, roles: list[RoleUncommitted]) -> int:
+    async def save_roles(cls, roles: list[RoleUncommitted]) -> int:
         log.debug(f"Adding roles to RoleRepository")
 
-        CacheManager.clear()
-
-        with offline_transaction():
+        async with offline_transaction():
             added_count = 0
             role_repository = RoleRepository()
 
             for role_uncommitted in roles:
                 try:
-                    role_repository.get_by_name(name=role_uncommitted.role_name)
+                    await role_repository.get_by_name(name=role_uncommitted.role_name)
                 except NotFoundError:
                     # Add new role
-                    role_repository.create(role_uncommitted)
-                    role_repository.commit()
+                    await role_repository.create(role_uncommitted)
+                    await role_repository.commit()
                     added_count += 1
 
         log.debug(f"Added {added_count} roles")
