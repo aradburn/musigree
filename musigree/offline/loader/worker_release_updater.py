@@ -97,7 +97,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
         self.processed_count = processed_count
         """The number of releases processed so far."""
 
-    def run(self):
+    async def run(self):
         """
         Executes the release update/insert process.
 
@@ -173,7 +173,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         log.debug(f"release diff: {diff}")
 
                         # Update release
-                        release_repository.update(
+                        await release_repository.update(
                             db_release.release_id,
                             {
                                 ReleaseTable.release_id.key: updated_release.release_id,
@@ -195,7 +195,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         )
                         """Update the release fields."""
 
-                        release_repository.commit()
+                        await release_repository.commit()
                         """Commit the transaction."""
                         updated_count += 1
                         """Increment the updated count."""
@@ -208,9 +208,9 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                         )
                     try:
                         """Attempt to create a new release."""
-                        release_repository.create(updated_release)
+                        await release_repository.create(updated_release)
                         """Create the release."""
-                        release_repository.commit()
+                        await release_repository.commit()
                         """Commit the transaction."""
                         inserted_count += 1
                         """Increment the inserted count."""
