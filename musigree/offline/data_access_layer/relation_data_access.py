@@ -282,7 +282,7 @@ class RelationDataAccess:
         return relations
 
     @classmethod
-    def find_relation_by_key(
+    async def find_relation_by_key(
         cls,
         *,
         _entity_repository: EntityRepository,
@@ -290,13 +290,14 @@ class RelationDataAccess:
         _key: dict[str, Any],
     ) -> list[Relation]:
         """
-        Finds relations based on a key.
+        Finds relations by a given key.
 
-        This method finds relations based on specific criteria (e.g., subject, role, object).
+        This method searches for relations using a specific key and returns
+        a list of matching relations.
 
         Args:
-            _entity_repository (EntityRepository): The entity repository.
-            _relation_repository (RelationRepository): The relation repository.
+            _entity_repository (EntityRepository): The entity repository (unused in current implementation).
+            _relation_repository (RelationRepository): The relation repository for database operations.
             _key (dict[str, Any]): The key to search for.
 
         Returns:
@@ -304,7 +305,7 @@ class RelationDataAccess:
         """
         # noinspection PyBroadException
         try:
-            relation_internal = _relation_repository.find_by_key(_key)
+            relation_internal = await _relation_repository.find_by_key(_key)
             relation = relation_internal.to_relation()
             return [relation] if relation else []
         except Exception:
