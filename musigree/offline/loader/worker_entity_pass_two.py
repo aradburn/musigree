@@ -55,6 +55,7 @@ related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
 """
 
+import asyncio
 import logging
 import multiprocessing
 
@@ -138,45 +139,63 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                 """Retry loop."""
                 error = False
                 """Reset the error flag."""
-                with offline_transaction():
-                    """Ensure that database operations are performed within a transaction."""
-                    entity_repository = EntityRepository()
-                    """Instance of EntityRepository for database operations on entities."""
-                    try:
-                        """Attempt to process the entity."""
-                        entity = entity_repository.get_by_id(id_)
-                        """Retrieve the entity."""
-                        self.worker_pass_two_single(
-                            entity_repository, entity, proc_name
-                        )
-                        """Process the entity."""
-                    except NotFoundError:
-                        """Handle the case where the entity is not found."""
-                        log.warning(
-                            f"Database NotFoundError: {entity.entity_id}-{entity.entity_type} in process: {proc_name}"
-                        )
-                        entity_repository.rollback()
-                        """Rollback the transaction."""
-                        max_attempts -= 1
-                        """Decrement the number of attempts."""
-                        error = True
-                        """Set the error flag."""
-                    except DatabaseError as e:
-                        """Handle potential database errors."""
-                        log.exception(
-                            f"Database Error for entity_id: {entity.entity_id}-{entity.entity_type} "
-                            + f"in process: {proc_name}",
-                            exc_info=True,
-                        )
-                        raise e
+                
+                async def process_entity():
+                    nonlocal error, max_attempts
+                    entity = None  # Initialize entity variable
+                    async with offline_transaction():
+                        """Ensure that database operations are performed within a transaction."""
+                        entity_repository = EntityRepository()
+                        """Instance of EntityRepository for database operations on entities."""
+                        try:
+                            """Attempt to process the entity."""
+                            entity = await entity_repository.get_by_id(id_)
+                            """Retrieve the entity."""
+                            await self.worker_pass_two_single(
+                                entity_repository, entity, proc_name
+                            )
+                            """Process the entity."""
+                        except NotFoundError:
+                            """Handle the case where the entity is not found."""
+                            if entity:
+                                log.warning(
+                                    f"Database NotFoundError: {entity.entity_id}-{entity.entity_type} in process: {proc_name}"
+                                )
+                            else:
+                                log.warning(
+                                    f"Database NotFoundError: entity with id {id_} in process: {proc_name}"
+                                )
+                            await entity_repository.rollback()
+                            """Rollback the transaction."""
+                            max_attempts -= 1
+                            """Decrement the number of attempts."""
+                            error = True
+                            """Set the error flag."""
+                        except DatabaseError as e:
+                            """Handle potential database errors."""
+                            if entity:
+                                log.exception(
+                                    f"Database Error for entity_id: {entity.entity_id}-{entity.entity_type} "
+                                    + f"in process: {proc_name}",
+                                    exc_info=True,
+                                )
+                            else:
+                                log.exception(
+                                    f"Database Error for entity with id {id_} in process: {proc_name}",
+                                    exc_info=True,
+                                )
+                            raise e
+                
+                # Run the async function
+                asyncio.run(process_entity())
 
             if error:
                 """If the entity could not be processed after multiple attempts."""
                 log.debug(
-                    f"Error in updating references for entity_id: {entity.entity_id}"
+                    f"Error in updating references for entity_id: {id_}"
                 )
                 raise Exception(
-                    f"Error in updating references for entity_id: {entity.entity_id}"
+                    f"Error in updating references for entity_id: {id_}"
                 )
 
             count += 1
@@ -191,7 +210,7 @@ class WorkerEntityPassTwo(multiprocessing.Process):
     # PUBLIC METHODS
 
     @staticmethod
-    def worker_pass_two_single(
+    async def worker_pass_two_single(
         entity_repository: EntityRepository, entity: Entity, proc_name: str
     ):
         """
@@ -217,10 +236,10 @@ class WorkerEntityPassTwo(multiprocessing.Process):
                     f"Entity (Pass 2) [{proc_name}]\t"
                     + f"          (id: {entity.entity_id}-{entity.entity_type}): {entity.entity_name}"
                 )
-            entity_repository.update(
+            await entity_repository.update(
                 entity.id,
                 {EntityTable.entities.key: entity.entities},
             )
             """Update the entity in the database."""
-            entity_repository.commit()
+            await entity_repository.commit()
             """Commit the transaction."""
