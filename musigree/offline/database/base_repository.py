@@ -129,50 +129,6 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return value
 
-    async def _first(self, by: str = "id") -> ConcreteTable:
-        """
-        Retrieves the first record from the table, ordered by the specified column.
-
-        Args:
-            by: The name of the column to order by (defaults to "id").
-
-        Returns:
-            ConcreteTable: The first database row as an object.
-
-        Raises:
-            NotFoundError: If no records are found.
-        """
-        result: Result = await self.execute(
-            select(self.schema_class).order_by(asc(by)).limit(1)
-        )
-
-        if not (_result := result.scalar_one_or_none()):
-            raise NotFoundError
-
-        return _result
-
-    async def _last(self, by: str = "id") -> ConcreteTable:
-        """
-        Retrieves the last record from the table, ordered by the specified column.
-
-        Args:
-            by: The name of the column to order by (defaults to "id").
-
-        Returns:
-            ConcreteTable: The last database row as an object.
-
-        Raises:
-            NotFoundError: If no records are found.
-        """
-        result: Result = await self.execute(
-            select(self.schema_class).order_by(desc(by)).limit(1)
-        )
-
-        if not (_result := result.scalar_one_or_none()):
-            raise NotFoundError
-
-        return _result
-
     async def _save(self, payload: dict[str, Any]) -> ConcreteTable:
         """
         Saves a new record to the database.
