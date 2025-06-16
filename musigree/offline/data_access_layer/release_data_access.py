@@ -44,19 +44,18 @@ class ReleaseDataAccess:
     """
 
     @staticmethod
-    def create_entity_details_index(
+    async def create_entity_details_index(
         release_repository: ReleaseRepository,
     ) -> EntityDetailsIndex:
         """
-        Creates an `EntityDetailsIndex` by iterating through all releases.
+        Creates and populates an `EntityDetailsIndex` from release data.
 
-        This method processes all releases in the database, extracting
-        information about the countries, genres, and styles associated with
-        each release. It then indexes this information for each artist and
-        label involved in the release.
+        This method iterates through all releases in the repository and extracts
+        country, genre, and style information for artists and labels, indexing
+        them in the `EntityDetailsIndex`.
 
         Args:
-            release_repository (ReleaseRepository): The repository for release database operations.
+            release_repository (ReleaseRepository): The repository containing release data.
 
         Returns:
             EntityDetailsIndex: The created and populated `EntityDetailsIndex`.
@@ -65,7 +64,7 @@ class ReleaseDataAccess:
         entity_details_index = EntityDetailsIndex()
         """Create the entity details index instance."""
         count = 0
-        for release in release_repository.all():
+        async for release in release_repository.all():
             """Iterate through all the releases."""
             country = release.country
             """Get the country of the release."""
