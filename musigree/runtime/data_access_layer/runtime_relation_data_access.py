@@ -13,13 +13,28 @@ log = logging.getLogger(__name__)
 
 class RuntimeRelationDataAccess:
     @classmethod
-    def search_multi(
+    async def search_multi(
         cls,
         *,
         relation_repository: RuntimeRelationRepository,
         entity_keys: list[tuple[int, EntityType]],
         role_names: list[str],
     ) -> list[RuntimeRelation]:
+        """
+        Searches for relations involving multiple entities and specific roles.
+
+        This method takes a list of entity keys and role names, and returns
+        all relations that involve any of the specified entities in any of
+        the specified roles.
+
+        Args:
+            relation_repository: The repository to use for database operations.
+            entity_keys: List of (entity_id, entity_type) tuples to search for.
+            role_names: List of role names to filter by.
+
+        Returns:
+            list[RuntimeRelation]: List of relations matching the criteria.
+        """
         assert entity_keys
         assert role_names
 
@@ -35,7 +50,7 @@ class RuntimeRelationDataAccess:
             #     entity_id, entity_type
             # )
             # log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
-            entity_relations = relation_repository.find_by_entity_and_roles(
+            entity_relations = await relation_repository.find_by_entity_and_roles(
                 _id, role_ids
             )
             # log.debug(f"    found entity_relations: {entity_relations}")
