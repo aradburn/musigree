@@ -51,24 +51,23 @@ related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
 """
 
+import asyncio
 import logging
 import multiprocessing
 
-from musigree.exceptions import DatabaseError
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
+from sqlalchemy.exc import DatabaseError
+
+from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.entity_repository import EntityRepository
+from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
-"""
-The logger for the WorkerReleasePassTwo module.
-"""
 
 
 class WorkerReleasePassTwo(multiprocessing.Process):
@@ -124,27 +123,31 @@ class WorkerReleasePassTwo(multiprocessing.Process):
 
         for id_ in self.release_ids:
             """Iterate over the release IDs."""
-            with offline_transaction():
-                """Ensure that database operations are performed within a transaction."""
-                entity_repository = EntityRepository()
-                """Instance of EntityRepository for database operations on entities."""
-                release_repository = ReleaseRepository()
-                """Instance of ReleaseRepository for database operations on releases."""
-                try:
-                    """Attempt to process the release."""
-                    self.loader_pass_two_single(
-                        entity_repository=entity_repository,
-                        release_repository=release_repository,
-                        id_=id_,
-                        annotation=proc_name,
-                    )
-                    """Process the release."""
-                except DatabaseError as e:
-                    """Handle potential database errors."""
-                    log.exception(
-                        "Database Error in WorkerReleasePassTwo worker", exc_info=True
-                    )
-                    raise e
+            async def process_release() -> None:
+                async with offline_transaction():
+                    """Ensure that database operations are performed within a transaction."""
+                    entity_repository = EntityRepository()
+                    """Instance of EntityRepository for database operations on entities."""
+                    release_repository = ReleaseRepository()
+                    """Instance of ReleaseRepository for database operations on releases."""
+                    try:
+                        """Attempt to process the release."""
+                        await self.loader_pass_two_single(
+                            entity_repository=entity_repository,
+                            release_repository=release_repository,
+                            id_=id_,
+                            annotation=proc_name,
+                        )
+                        """Process the release."""
+                    except DatabaseError as e:
+                        """Handle potential database errors."""
+                        log.exception(
+                            "Database Error in WorkerReleasePassTwo worker", exc_info=True
+                        )
+                        raise e
+            
+            # Run the async function
+            asyncio.run(process_release())
 
             count += 1
             """Increment the processed counter."""
@@ -156,13 +159,13 @@ class WorkerReleasePassTwo(multiprocessing.Process):
         """Log the total number of releases processed."""
 
     @staticmethod
-    def loader_pass_two_single(
+    async def loader_pass_two_single(
         *,
         entity_repository: EntityRepository,
         release_repository: ReleaseRepository,
         id_,
         annotation="",
-    ):
+    ) -> None:
         """
         Processes a single release record in the second pass.
 
@@ -178,7 +181,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
             annotation (str, optional): An annotation for logging purposes.
                 Defaults to "".
         """
-        release = release_repository.get(id_)
+        release = await release_repository.get_by_id(id_)
         """Retrieve the release."""
         changed = EntityDataAccess.resolve_release_references(
             entity_repository, release
@@ -192,7 +195,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                     f"Release (Pass 2) [{annotation}]\t"
                     + f"          (id:{release.release_id}): {release.title}"
                 )
-            release_repository.update(
+            await release_repository.update(
                 id_,
                 {
                     ReleaseTable.labels.key: release.labels,
@@ -200,7 +203,7 @@ class WorkerReleasePassTwo(multiprocessing.Process):
                 },
             )
             """Update the release in the database."""
-            release_repository.commit()
+            await release_repository.commit()
             """Commit the transaction."""
         elif LOGGING_TRACE:
             """Log if trace logging is enabled."""
