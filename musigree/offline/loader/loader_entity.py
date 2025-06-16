@@ -28,14 +28,14 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_entity_pass_one(
+    async def loader_entity_pass_one(
         cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts=False
     ) -> int:
         log.debug(f"loader entity pass one - artist - date: {data_date}")
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             entity_parser = ParserEntity()
-            artists_loaded = cls.loader_pass_one_manager(
+            artists_loaded = await cls.loader_pass_one_manager(
                 repository=entity_repository,
                 parser=entity_parser,
                 discogs_data_directory=discogs_data_directory,
@@ -46,10 +46,10 @@ class LoaderEntity(LoaderBase):
                 is_bulk_inserts=is_bulk_inserts,
             )
         log.debug(f"loader entity pass one - label - date: {data_date}")
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             entity_parser = ParserEntity()
-            labels_loaded = cls.loader_pass_one_manager(
+            labels_loaded = await cls.loader_pass_one_manager(
                 repository=entity_repository,
                 parser=entity_parser,
                 discogs_data_directory=discogs_data_directory,
@@ -86,33 +86,33 @@ class LoaderEntity(LoaderBase):
         return worker
 
     @classmethod
-    def get_set_of_ids(cls, entity_type):
-        with offline_transaction():
+    async def get_set_of_ids(cls, entity_type):
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            ids = entity_repository.get_ids_by_type(entity_type)
+            ids = await entity_repository.get_ids_by_type(entity_type)
         set_of_entity_ids = SortedSet(ids)
         return set_of_entity_ids
 
     @classmethod
     @timeit
-    def loader_entity_pass_two(cls) -> None:
+    async def loader_entity_pass_two(cls) -> None:
         log.debug("loader entity pass two")
-        cls.loader_start_workers(WorkerEntityPassTwo)
+        await cls.loader_start_workers(WorkerEntityPassTwo)
 
     @classmethod
     @timeit
-    def loader_entity_pass_three(cls):
+    async def loader_entity_pass_three(cls):
         log.debug("loader entity pass three")
-        cls.loader_start_workers(WorkerEntityPassThree)
+        await cls.loader_start_workers(WorkerEntityPassThree)
 
     @classmethod
-    def loader_start_workers(cls, worker_class) -> None:
+    async def loader_start_workers(cls, worker_class) -> None:
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            total_count = entity_repository.count()
-            batched_ids = entity_repository.get_batched_ids(number_in_batch)
+            total_count = await entity_repository.count()
+            batched_ids = await entity_repository.get_batched_ids(number_in_batch)
 
         current_total = 0
 
@@ -134,23 +134,23 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_create_text_search_index(cls, text_search_path: Path) -> None:
+    async def loader_create_text_search_index(cls, text_search_path: Path) -> None:
         log.debug(f"loader entity create text search index")
         if not text_search_path.exists():
-            text_search_index = cls.loader_init_text_search_index_from_database()
+            text_search_index = await cls.loader_init_text_search_index_from_database()
             cls.save_text_search_index_to_file(text_search_path, text_search_index)
         else:
             log.debug("create text search index - skipping...")
 
     @classmethod
     @timeit
-    def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
+    async def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
         log.debug(f"loader entity init text search index from database")
         text_search_index = TextSearchIndex()
 
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess.init_text_search_index(
+            await EntityDataAccess.init_text_search_index(
                 entity_repository, text_search_index
             )
         return text_search_index
