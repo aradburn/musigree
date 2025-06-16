@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from typing import Any, Generic, Type
 
 from sqlalchemy import asc, delete, desc, func, select, update
@@ -17,10 +17,10 @@ log = logging.getLogger(__name__)
 class BaseRepository(OfflineSession, Generic[ConcreteTable]):
     """
     This class implements the base interface for working with a database and provides
-    a set of common database operations. It's designed to be subclassed by more specific
+    a set of common async database operations. It's designed to be subclassed by more specific
     repository classes, allowing for type-safe interactions with the database.
 
-    The Session class implements the database interaction layer.
+    The Session class implements the async database interaction layer.
 
     Attributes:
         schema_class (Type[ConcreteTable]): The SQLAlchemy table class that this
@@ -43,7 +43,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 message="Can not initiate the class without schema_class attribute"
             )
 
-    def _update(self, key: str, value: Any, payload: dict[str, Any]) -> ConcreteTable:
+    async def _update(self, key: str, value: Any, payload: dict[str, Any]) -> ConcreteTable:
         """
         Updates an existing instance of the model in the related table.
 
@@ -70,7 +70,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 .values(payload)
                 .returning(self.schema_class)
             )
-            result: Result = self.execute(query)
+            result: Result = await self.execute(query)
         except self._ERRORS:
             raise DatabaseError
 
@@ -79,7 +79,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return schema
 
-    def _get(self, key: str, value: Any) -> ConcreteTable:
+    async def _get(self, key: str, value: Any) -> ConcreteTable:
         """
         Retrieves a single record from the database that matches the given criteria.
 
@@ -98,14 +98,14 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         query = select(self.schema_class).where(
             getattr(self.schema_class, key) == value
         )
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
 
         return _result
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """
         Counts the total number of records in the table.
 
@@ -116,7 +116,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             UnprocessableError: If the count function returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -129,7 +129,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return value
 
-    def _first(self, by: str = "id") -> ConcreteTable:
+    async def _first(self, by: str = "id") -> ConcreteTable:
         """
         Retrieves the first record from the table, ordered by the specified column.
 
@@ -142,7 +142,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Raises:
             NotFoundError: If no records are found.
         """
-        result: Result = self.execute(
+        result: Result = await self.execute(
             select(self.schema_class).order_by(asc(by)).limit(1)
         )
 
@@ -151,7 +151,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return _result
 
-    def _last(self, by: str = "id") -> ConcreteTable:
+    async def _last(self, by: str = "id") -> ConcreteTable:
         """
         Retrieves the last record from the table, ordered by the specified column.
 
@@ -164,7 +164,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Raises:
             NotFoundError: If no records are found.
         """
-        result: Result = self.execute(
+        result: Result = await self.execute(
             select(self.schema_class).order_by(desc(by)).limit(1)
         )
 
@@ -173,7 +173,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return _result
 
-    def _save(self, payload: dict[str, Any]) -> ConcreteTable:
+    async def _save(self, payload: dict[str, Any]) -> ConcreteTable:
         """
         Saves a new record to the database.
 
@@ -189,13 +189,13 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         try:
             schema = self.schema_class(**payload)
             self._session.add(schema)
-            self._session.flush()
-            self._session.refresh(schema)
+            await self._session.flush()
+            await self._session.refresh(schema)
             return schema
         except self._ERRORS:
             raise DatabaseError
 
-    def save_all(self, payloads: list[dict[str, Any]]) -> None:
+    async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
         Saves multiple new records to the database in a single transaction.
 
@@ -209,25 +209,25 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         try:
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
-            self._session.flush()
+            await self._session.flush()
         except self._ERRORS:
             raise DatabaseError
 
-    def _all(self) -> Iterator[ConcreteTable]:
+    async def _all(self) -> AsyncIterator[ConcreteTable]:
         """
         Retrieves all records from the table.
 
         Yields:
-            Iterator[ConcreteTable]: A iterator that yields each
+            AsyncIterator[ConcreteTable]: An async iterator that yields each
                 database row as an object.
         """
-        result: Result = self.execute(select(self.schema_class))
+        result: Result = await self.execute(select(self.schema_class))
         schemas = result.scalars().all()
 
         for schema in schemas:
             yield schema
 
-    def delete(self, id_: int) -> None:
+    async def delete(self, id_: int) -> None:
         """
         Deletes a record from the table by its ID.
 
@@ -235,17 +235,17 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             id_: The ID of the record to delete.
         """
         # noinspection PyTypeChecker,Mypy
-        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
-        self._session.flush()
+        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
+        await self._session.flush()
 
-    def commit(self) -> None:
+    async def commit(self) -> None:
         """
         Commits the current transaction.
         """
-        self._session.commit()
+        await self._session.commit()
 
-    def rollback(self) -> None:
+    async def rollback(self) -> None:
         """
         Rolls back the current transaction.
         """
-        self._session.rollback()
+        await self._session.rollback()
