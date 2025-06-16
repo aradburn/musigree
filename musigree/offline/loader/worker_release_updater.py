@@ -126,7 +126,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
 
         for data in self.bulk_updates:
             """Iterate over the release data."""
-            with offline_transaction():
+            async with offline_transaction():
                 """Ensure that database operations are performed within a transaction."""
                 release_repository = ReleaseRepository()
                 """Instance of ReleaseRepository for database operations on releases."""
@@ -146,7 +146,7 @@ class WorkerReleaseUpdater(multiprocessing.Process):
                 """Create a new Release object from the data."""
                 try:
                     """Attempt to update the release."""
-                    db_release = release_repository.get(updated_release.release_id)
+                    db_release = await release_repository.get_by_id(updated_release.release_id)
                     """Retrieve the existing release from the database."""
 
                     differences = DeepDiff(
