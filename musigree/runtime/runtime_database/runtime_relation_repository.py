@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterator, AsyncIterator
 from typing import List
 
 from sqlalchemy import Result, select, Select, delete
@@ -23,7 +23,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
     """
     Repository for managing RuntimeRelation objects in the runtime database.
 
-    This class provides methods for interacting with the RuntimeRelationTable
+    This class provides async methods for interacting with the RuntimeRelationTable
     in the runtime database, including creating, retrieving, and deleting
     relations. It supports various query operations, such as finding relations
     by ID, key, or associated entity. It also includes bulk creation and
@@ -41,7 +41,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
     schema_class = RuntimeRelationTable
     """The SQLAlchemy table class for runtime relations."""
 
-    def _get_one_by_query(
+    async def _get_one_by_query(
         self, query: Select[tuple[RuntimeRelationTable]]
     ) -> RuntimeRelationInternal:
         """
@@ -56,8 +56,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         Raises:
             NotFoundError: If no relation is found matching the query.
         """
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -65,7 +64,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         relation_db = RuntimeRelationDB.model_validate(instance)
         return relation_db.to_domain()
 
-    def _get_all_by_query(
+    async def _get_all_by_query(
         self, query: Select[tuple[RuntimeRelationTable]]
     ) -> List[RuntimeRelationInternal]:
         """
@@ -77,8 +76,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         Returns:
             List[RuntimeRelationInternal]: A list of retrieved relations.
         """
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self._session.execute(query)
 
         instances = result.scalars().all()
         relation_dbs = [
@@ -87,20 +85,19 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    def all(self) -> Iterator[RuntimeRelationInternal]:
+    async def all(self) -> AsyncIterator[RuntimeRelationInternal]:
         """
         Retrieves all relations from the runtime database.
 
         Yields:
-            Iterator[RuntimeRelationInternal]: An iterator yielding
+            AsyncIterator[RuntimeRelationInternal]: An async iterator yielding
                 each relation.
         """
-        for instance in self._all():
-            # async for instance in self._all():
+        async for instance in self._all():
             relation_db = RuntimeRelationDB.model_validate(instance)
             yield relation_db.to_domain()
 
-    def get(self, relation_id: int) -> RuntimeRelationDB:
+    async def get(self, relation_id: int) -> RuntimeRelationDB:
         """
         Retrieves a relation by its ID.
 
@@ -116,14 +113,13 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         query = select(RuntimeRelationTable).where(
             RuntimeRelationTable.id == relation_id
         )
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
         return RuntimeRelationDB.model_validate(instance)
 
-    def get_id_by_key(self, key: dict) -> int:
+    async def get_id_by_key(self, key: dict) -> int:
         """
         Retrieves the ID of a relation by its key.
 
@@ -142,14 +138,13 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             & (RuntimeRelationTable.predicate == key["role_id"])
             & (RuntimeRelationTable.object == key["object"])
         )
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self._session.execute(query)
 
         if not (instance := result.scalar()):
             raise NotFoundError
         return instance
 
-    def find_by_id(self, relation_id: int) -> RuntimeRelationInternal:
+    async def find_by_id(self, relation_id: int) -> RuntimeRelationInternal:
         """
         Retrieves a relation by its ID, with an option to lock the row for update.
 
@@ -167,9 +162,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             .with_for_update(of=RuntimeRelationTable, nowait=True)
             .where(RuntimeRelationTable.id == relation_id)
         )
-        return self._get_one_by_query(query)
+        return await self._get_one_by_query(query)
 
-    def find_by_key(self, key: dict) -> RuntimeRelationInternal:
+    async def find_by_key(self, key: dict) -> RuntimeRelationInternal:
         """
         Retrieves a relation by its key components (subject, role, object).
 
@@ -195,9 +190,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             & (RuntimeRelationTable.predicate == key["role_id"])
             & (RuntimeRelationTable.object == key["object"])
         )
-        return self._get_one_by_query(query)
+        return await self._get_one_by_query(query)
 
-    def find_by_entity(self, id_: int) -> List[RuntimeRelationInternal]:
+    async def find_by_entity(self, id_: int) -> List[RuntimeRelationInternal]:
         """
         Retrieves all relations associated with a given entity ID.
 
@@ -208,57 +203,29 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             List[RuntimeRelationInternal]: A list of relations associated with
                 the entity.
         """
-        # if roles:
-        #     where_clause &= RelationTable.role.in_(roles)
-        # TODO search by year
-        # if year is not None:
-        #     year_clause = cls.year.is_null(True)
-        #     if isinstance(year, int):
-        #         year_clause |= cls.year == year
-        #     else:
-        #         year_clause |= cls.year.between(year[0], year[1])
-        #     where_clause &= year_clause
-        query = (
-            select(RuntimeRelationTable)
-            .where(
-                (RuntimeRelationTable.subject == id_)
-                | (RuntimeRelationTable.object == id_)
-            )
-            .order_by(
-                RuntimeRelationTable.predicate,
-                RuntimeRelationTable.subject,
-                RuntimeRelationTable.object,
-            )
+        query = select(RuntimeRelationTable).where(
+            (RuntimeRelationTable.subject == id_)
+            | (RuntimeRelationTable.object == id_)
         )
-        return self._get_all_by_query(query)
+        return await self._get_all_by_query(query)
 
-    def find_by_entity_and_roles(
+    async def find_by_entity_and_roles(
         self, id_: int, role_ids: list[int]
     ) -> List[RuntimeRelationInternal]:
         """
-        Retrieves all relations associated with a given entity ID and a set of roles.
+        Retrieves all relations associated with a given entity ID and specific roles.
 
         Args:
             id_: The ID of the entity.
-            role_ids: A list of role IDs.
+            role_ids: A list of role IDs to filter by.
 
         Returns:
             List[RuntimeRelationInternal]: A list of relations associated with
-                the entity and the specified roles.
+                the entity and matching the specified roles.
         """
-        if id_ is None:
+        if not role_ids:
             return []
 
-        # if roles:
-        #     where_clause &= RelationTable.role.in_(roles)
-        # TODO search by year
-        # if year is not None:
-        #     year_clause = cls.year.is_null(True)
-        #     if isinstance(year, int):
-        #         year_clause |= cls.year == year
-        #     else:
-        #         year_clause |= cls.year.between(year[0], year[1])
-        #     where_clause &= year_clause
         query = (
             select(RuntimeRelationTable)
             .where(
@@ -274,9 +241,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
                 RuntimeRelationTable.object,
             )
         )
-        return self._get_all_by_query(query)
+        return await self._get_all_by_query(query)
 
-    def create(
+    async def create(
         self, relation: RuntimeRelationUncommitted, on_conflict_do_nothing=False
     ) -> RuntimeRelationInternal:
         """
@@ -284,14 +251,10 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
         Args:
             relation: The RuntimeRelationUncommitted object to create.
-            on_conflict_do_nothing: If True, prevents the operation from
-                failing if a unique constraint is violated.
+            on_conflict_do_nothing: If True, ignore conflicts during insertion.
 
         Returns:
             RuntimeRelationInternal: The created relation.
-
-        Raises:
-            DatabaseError: If there is an error during the database operation.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -301,9 +264,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         query = RuntimeDatabaseManager.runtime_database_helper.generate_insert_query(
             self.schema_class, relation_dict, on_conflict_do_nothing
         )
-        result: Result = self._session.execute(query)
+        result: Result = await self._session.execute(query)
         # result: Result = await self.execute(query)
-        self._session.flush()
+        await self._session.flush()
         # await self._session.flush()
 
         if not (instance := result.scalar_one_or_none()):
@@ -312,16 +275,15 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         relation_db = RuntimeRelationDB.model_validate(instance)
         return relation_db.to_domain()
 
-    def create_bulk(
+    async def create_bulk(
         self, relations: List[RuntimeRelationUncommitted], on_conflict_do_nothing=False
     ) -> None:
         """
-        Creates multiple new relations in the runtime database.
+        Creates multiple relations in the runtime database in bulk.
 
         Args:
             relations: A list of RuntimeRelationUncommitted objects to create.
-            on_conflict_do_nothing: If True, prevents the operation from
-                failing if a unique constraint is violated.
+            on_conflict_do_nothing: If True, ignore conflicts during insertion.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -336,21 +298,18 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
                 self.schema_class, relation_dicts, on_conflict_do_nothing
             )
         )
-        self._session.execute(query)
+        await self._session.execute(query)
 
-    def delete_by_entitys(self, id_: int) -> None:
+    async def delete_by_entitys(self, id_: int) -> None:
         """
-        Deletes all relations associated with a given entity ID.
+        Deletes all relations associated with a specific entity.
 
         Args:
-            id_: The ID of the entity.
+            id_: The ID of the entity whose relations should be deleted.
         """
-        self.execute(
-            delete(self.schema_class).where(
-                (RuntimeRelationTable.predicate == id_)
-                | (RuntimeRelationTable.object == id_)
-            )
+        query = delete(RuntimeRelationTable).where(
+            (RuntimeRelationTable.subject == id_)
+            | (RuntimeRelationTable.object == id_)
         )
-        # await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
-        # self._session.flush()
-        # await self._session.flush()
+        await self._session.execute(query)
+        await self._session.flush()
