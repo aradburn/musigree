@@ -110,33 +110,32 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     @timeit
-    def loader_release_pass_one(
+    async def loader_release_pass_one(
         cls, discogs_data_directory: Path, date: str, is_bulk_inserts=False
     ) -> int:
         """
         Performs the first pass of loading release data.
 
-        This method reads release data from XML files, parses it using
-        `ParserRelease`, and performs bulk insert or update operations
-        in the database. It manages the process of skipping records without
-        required fields.
+        This method loads release data from the specified directory and date,
+        parsing and inserting the data into the database. It uses the
+        `loader_pass_one_manager` method to handle the loading process.
 
         Args:
-            discogs_data_directory (Path): The directory containing the XML files.
-            date (str): The date of the data dump being processed.
-            is_bulk_inserts (bool): Whether to perform bulk inserts or updates.
+            discogs_data_directory (Path): The directory containing the Discogs data files.
+            date (str): The date of the data to load.
+            is_bulk_inserts (bool): Whether to use bulk inserts for better performance.
 
         Returns:
             int: The number of releases loaded.
         """
         log.debug(f"loader release pass one - date: {date}")
-        with offline_transaction():
+        async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
             release_repository = ReleaseRepository()
             """Instance of ReleaseRepository for database operations on releases."""
             release_parser = ParserRelease()
             """Instance of ParserRelease for parsing release data."""
-            releases_loaded = cls.loader_pass_one_manager(
+            releases_loaded = await cls.loader_pass_one_manager(
                 repository=release_repository,
                 parser=release_parser,
                 discogs_data_directory=discogs_data_directory,
@@ -212,7 +211,7 @@ class LoaderRelease(LoaderBase):
         return worker
 
     @classmethod
-    def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type):
         """
         Retrieves a set of release IDs from the database.
 
@@ -223,16 +222,16 @@ class LoaderRelease(LoaderBase):
         Returns:
             SortedSet: The set of release IDs.
         """
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
             """Instance of ReleaseRepository for database operations on releases."""
-            ids = release_repository.get_ids()
+            ids = await release_repository.get_ids()
         set_of_ids = SortedSet(ids)
         return set_of_ids
 
     @classmethod
     @timeit
-    def loader_release_pass_two(cls):
+    async def loader_release_pass_two(cls):
         """
         Performs the second pass of loading release data.
 
@@ -244,13 +243,13 @@ class LoaderRelease(LoaderBase):
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
         """Determine the number of releases to process in each batch."""
 
-        with offline_transaction():
+        async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
             release_repository = ReleaseRepository()
             """Instance of ReleaseRepository for database operations on releases."""
-            total_count = release_repository.count()
+            total_count = await release_repository.count()
             """Total number of releases in the database."""
-            batched_release_ids = release_repository.get_batched_ids(number_in_batch)
+            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
         """Get the release ids in batches."""
 
         current_total = 0
