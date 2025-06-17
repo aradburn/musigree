@@ -173,7 +173,7 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
             if line:
                 lines[i] = f"{indent_string}{line}"
         _string = "\n".join(lines)
-    if not _string.endswith("\n"):
+    if _string != "" and not _string.endswith("\n"):
         _string += "\n"
     return _string
 
@@ -201,9 +201,9 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
         def as_dict(self):
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-        from musigree.offline.database.base_table import Base
+        from musigree.offline.database.base_table import OfflineBase
 
-        if isinstance(o, Base):
+        if isinstance(o, OfflineBase):
             return list_public_attributes(preprocessor.filter(as_dict(o)))
         elif isinstance(o, enum.Enum):
             return str(o)
