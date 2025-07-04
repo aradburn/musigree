@@ -1,5 +1,7 @@
 from xml.etree import ElementTree
 
+import pytest
+
 from musigree import utils
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
@@ -11,17 +13,15 @@ from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
-    def test_relation_from_release_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestDatabaseRelationFromRelease(NotATest):
+    @pytest.mark.asyncio
+    async def test_relation_from_release_01(self, offline_database_setup, offline_config):
         # GIVEN
-        disocogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        disocogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             disocogs_data_directory,
             "release",
@@ -31,9 +31,9 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_document = ParserRelease().from_element(release_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             actual = RelationDataAccess.from_release(release_document)
@@ -61,9 +61,10 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
                 role_name="Design",
             ),
         ]
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_from_release_02(self):
+    @pytest.mark.asyncio
+    async def test_relation_from_release_02(self, offline_database_setup):
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -174,9 +175,9 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             actual = RelationDataAccess.from_release(release_document)
@@ -198,9 +199,10 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
                 role_name="Compiled On",
             ),
         ]
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_03(self):
+    @pytest.mark.asyncio
+    async def test_03(self, offline_database_setup):
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -339,9 +341,9 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             actual = RelationDataAccess.from_release(release_document)
@@ -398,9 +400,10 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
                 role_name="Design",
             ),
         ]
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_04(self):
+    @pytest.mark.asyncio
+    async def test_04(self, offline_database_setup):
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -651,9 +654,9 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             actual = RelationDataAccess.from_release(release_document)
@@ -730,9 +733,10 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
                 role_name="Featuring",
             ),
         ]
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_05(self):
+    @pytest.mark.asyncio
+    async def test_05(self, offline_database_setup):
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -1299,9 +1303,9 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
         print(f"release_document: {release_document}")
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             print(f"release_document: {release_document}")
@@ -1505,4 +1509,4 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
             ),
         ]
         self.maxDiff = None
-        self.assertEqual(expected, actual)
+        assert actual == expected

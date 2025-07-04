@@ -1,4 +1,3 @@
-from tests.integration.app_test_case import AppTestCase
 
 
 class TestFastAPIAPI(AppTestCase):

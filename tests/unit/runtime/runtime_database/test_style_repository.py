@@ -1,4 +1,4 @@
-import unittest
+import pytest
 from unittest.mock import Mock, patch
 
 from sqlalchemy import Result
@@ -9,50 +9,56 @@ from musigree.runtime.runtime_database.style_table import StyleTable
 from musigree.runtime.runtime_domain.style import Style
 
 
-class TestStyleRepository(unittest.TestCase):
+class TestStyleRepository:
     """Unit tests for StyleRepository class."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.repository = StyleRepository()
 
     def test_schema_class(self):
         """Test that schema_class is correctly set."""
         # GIVEN/WHEN/THEN
-        self.assertEqual(self.repository.schema_class, StyleTable)
+        assert self.repository.schema_class == StyleTable
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, '_all')
-    def test_all(self, mock_all):
+    async def test_all(self, mock_all):
         """Test retrieving all styles."""
         # GIVEN
-        mock_instance1 = Mock()
-        mock_instance1.id = 1
-        mock_instance1.style_name = "Electronic"
+        mock_result1 = Mock()
+        mock_result1.id = 1
+        mock_result1.style_name = "Electronic"
         
-        mock_instance2 = Mock()
-        mock_instance2.id = 2
-        mock_instance2.style_name = "Rock"
+        mock_result2 = Mock()
+        mock_result2.id = 2
+        mock_result2.style_name = "Jazz"
         
-        mock_all.return_value = [mock_instance1, mock_instance2]
+        # Mock async generator
+        async def async_generator():
+            yield mock_result1
+            yield mock_result2
+        
+        mock_all.return_value = async_generator()
         
         with patch.object(Style, 'model_validate') as mock_validate:
-            mock_validate.side_effect = [
-                Style(id=1, style_name="Electronic"),
-                Style(id=2, style_name="Rock")
-            ]
+            style1 = Style(id=1, style_name="Electronic")
+            style2 = Style(id=2, style_name="Jazz")
+            mock_validate.side_effect = [style1, style2]
             
             # WHEN
-            result = list(self.repository.all())
+            result = []
+            async for style in self.repository.all():
+                result.append(style)
             
             # THEN
-            self.assertEqual(len(result), 2)
-            self.assertIsInstance(result[0], Style)
-            self.assertIsInstance(result[1], Style)
-            self.assertEqual(result[0].style_name, "Electronic")
-            self.assertEqual(result[1].style_name, "Rock")
+            assert len(result) == 2
+            assert result[0] == style1
+            assert result[1] == style2
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, 'execute')
-    def test_get_success(self, mock_execute):
+    async def test_get_success(self, mock_execute):
         """Test successfully retrieving a style by ID."""
         # GIVEN
         style_id = 1
@@ -71,14 +77,15 @@ class TestStyleRepository(unittest.TestCase):
             mock_validate.return_value = expected_style
             
             # WHEN
-            result = self.repository.get(style_id)
+            result = await self.repository.get_by_id(style_id)
             
             # THEN
-            self.assertEqual(result, expected_style)
+            assert result == expected_style
             mock_validate.assert_called_once_with(mock_instance)
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, 'execute')
-    def test_get_not_found(self, mock_execute):
+    async def test_get_not_found(self, mock_execute):
         """Test retrieving a style by ID when not found."""
         # GIVEN
         style_id = 999
@@ -90,11 +97,12 @@ class TestStyleRepository(unittest.TestCase):
         mock_execute.return_value = mock_result
         
         # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get(style_id)
+        with pytest.raises(NotFoundError):
+            await self.repository.get_by_id(style_id)
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, 'execute')
-    def test_get_by_name_success(self, mock_execute):
+    async def test_get_by_name_success(self, mock_execute):
         """Test successfully retrieving a style by name."""
         # GIVEN
         style_name = "Electronic"
@@ -113,14 +121,15 @@ class TestStyleRepository(unittest.TestCase):
             mock_validate.return_value = expected_style
             
             # WHEN
-            result = self.repository.get_by_name(style_name)
+            result = await self.repository.get_by_name(style_name)
             
             # THEN
-            self.assertEqual(result, expected_style)
+            assert result == expected_style
             mock_validate.assert_called_once_with(mock_instance)
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, 'execute')
-    def test_get_by_name_not_found(self, mock_execute):
+    async def test_get_by_name_not_found(self, mock_execute):
         """Test retrieving a style by name when not found."""
         # GIVEN
         style_name = "NonexistentStyle"
@@ -132,11 +141,12 @@ class TestStyleRepository(unittest.TestCase):
         mock_execute.return_value = mock_result
         
         # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get_by_name(style_name)
+        with pytest.raises(NotFoundError):
+            await self.repository.get_by_name(style_name)
 
+    @pytest.mark.asyncio
     @patch.object(StyleRepository, '_save')
-    def test_create(self, mock_save):
+    async def test_create(self, mock_save):
         """Test creating a new style."""
         # GIVEN
         style = Style(id=1, style_name="Electronic")
@@ -150,9 +160,9 @@ class TestStyleRepository(unittest.TestCase):
             mock_validate.return_value = expected_style
             
             # WHEN
-            result = self.repository.create(style)
+            result = await self.repository.create(style)
             
             # THEN
-            self.assertEqual(result, expected_style)
+            assert result == expected_style
             mock_save.assert_called_once_with(style.model_dump())
             mock_validate.assert_called_once_with(mock_instance) 

@@ -1,20 +1,20 @@
+import pytest
+
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
-from tests.integration.offline.database.offline_repository_test_case import (
-    OfflineRepositoryTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestRepositoryEntity(OfflineRepositoryTestCase):
-    def test_create_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
+class TestRepositoryEntity(NotATest):
+    @pytest.mark.asyncio
+    async def test_create_01(self, offline_database_setup, offline_config) -> None:
         # GIVEN
-        discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
         )
@@ -22,18 +22,17 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
         entity = ParserEntity().from_element(entity_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = EntityRepository()
-            created_entity = repository.create(entity)
+            created_entity = await repository.create(entity)
 
         # THEN
-        self.assertEqual(entity, created_entity)
+        assert entity == created_entity
 
-    def test_get_01(self):
+    @pytest.mark.asyncio
+    async def test_get_01(self, offline_database_setup, offline_config) -> None:
         # GIVEN
-        discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "label", "testinsert"
         )
@@ -41,13 +40,13 @@ class TestRepositoryEntity(OfflineRepositoryTestCase):
         entity = ParserEntity().from_element(entity_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = EntityRepository()
-            created_entity = repository.create(entity)
+            created_entity = await repository.create(entity)
 
-            retrieved_entity = repository.get_by_entity_id_and_entity_type(
+            retrieved_entity = await repository.get_by_entity_id_and_entity_type(
                 1, EntityType.LABEL
             )
 
         # THEN
-        self.assertEqual(created_entity, retrieved_entity)
+        assert created_entity == retrieved_entity

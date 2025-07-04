@@ -2,7 +2,7 @@
 Unit tests for musigree.loader.create_search_index module.
 """
 from pathlib import Path
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, AsyncMock, patch, call
 
 import pytest
 
@@ -18,7 +18,7 @@ class TestCreateSearchIndex:
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_create_search_index_success(
+    async def test_create_search_index_success(
         self,
         mock_atexit,
         mock_setup_logging,
@@ -34,13 +34,17 @@ class TestCreateSearchIndex:
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
         
+        # Mock async methods
+        mock_offline_db_manager.setup_database = AsyncMock()
+        
         mock_loader_entity = Mock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
         mock_loader_entity_class.return_value = mock_loader_entity
         
         expected_text_search_path = mock_config.DATA_DIR / "text_search" / "text_search.data"
 
         # Act
-        create_search_index(mock_config)
+        await create_search_index(mock_config)
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -63,14 +67,14 @@ class TestCreateSearchIndex:
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
     @patch('musigree.loader.create_search_index.sys')
-    def test_create_search_index_cache_not_set(
+    async def test_create_search_index_cache_not_set(
         self,
         mock_sys,
-        _mock_atexit,
+        mock_atexit,
         mock_setup_logging,
         mock_cache_manager,
-        _mock_offline_db_manager,
-        _mock_loader_entity_class
+        mock_offline_db_manager,
+        mock_loader_entity_class
     ):
         """Test behavior when cache is not set (None)."""
         # Arrange
@@ -78,9 +82,17 @@ class TestCreateSearchIndex:
         mock_config.DATA_DIR = Path("/test/data")
         
         mock_cache_manager.get_cache.return_value = None
+        
+        # Mock async method
+        mock_offline_db_manager.setup_database = AsyncMock()
+        
+        # Mock LoaderEntity instance and its async method
+        mock_loader_entity = Mock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
+        mock_loader_entity_class.return_value = mock_loader_entity
 
         # Act
-        create_search_index(mock_config)
+        await create_search_index(mock_config)
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -94,12 +106,12 @@ class TestCreateSearchIndex:
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_create_search_index_text_search_path_construction(
+    async def test_create_search_index_text_search_path_construction(
         self,
-        _mock_atexit,
-        _mock_setup_logging,
+        mock_atexit,
+        mock_setup_logging,
         mock_cache_manager,
-        _mock_offline_db_manager,
+        mock_offline_db_manager,
         mock_loader_entity_class
     ):
         """Test that text search path is constructed correctly."""
@@ -111,11 +123,15 @@ class TestCreateSearchIndex:
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
         
+        # Mock async methods
+        mock_offline_db_manager.setup_database = AsyncMock()
+        
         mock_loader_entity = Mock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
         mock_loader_entity_class.return_value = mock_loader_entity
 
         # Act
-        create_search_index(mock_config)
+        await create_search_index(mock_config)
 
         # Assert
         expected_path = test_data_dir / "text_search" / "text_search.data"
@@ -126,12 +142,12 @@ class TestCreateSearchIndex:
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_create_search_index_exception_handling(
+    async def test_create_search_index_exception_handling(
         self,
-        _mock_atexit,
-        _mock_setup_logging,
+        mock_atexit,
+        mock_setup_logging,
         mock_cache_manager,
-        _mock_offline_db_manager,
+        mock_offline_db_manager,
         mock_loader_entity_class
     ):
         """Test exception handling in create_search_index."""
@@ -142,26 +158,29 @@ class TestCreateSearchIndex:
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
         
+        # Mock async methods
+        mock_offline_db_manager.setup_database = AsyncMock()
+        
         mock_loader_entity = Mock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock(side_effect=RuntimeError("Index creation failed"))
         mock_loader_entity_class.return_value = mock_loader_entity
-        mock_loader_entity.loader_create_text_search_index.side_effect = RuntimeError("Index creation failed")
 
         # Act & Assert
         with pytest.raises(RuntimeError, match="Index creation failed"):
-            create_search_index(mock_config)
+            await create_search_index(mock_config)
 
     @patch('musigree.loader.create_search_index.LoaderEntity')
     @patch('musigree.loader.create_search_index.OfflineDatabaseManager')
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_create_search_index_cache_manager_exception(
+    async def test_create_search_index_cache_manager_exception(
         self,
-        _mock_atexit,
-        _mock_setup_logging,
+        mock_atexit,
+        mock_setup_logging,
         mock_cache_manager,
-        _mock_offline_db_manager,
-        _mock_loader_entity_class
+        mock_offline_db_manager,
+        mock_loader_entity_class
     ):
         """Test exception handling when CacheManager setup fails."""
         # Arrange
@@ -170,20 +189,20 @@ class TestCreateSearchIndex:
 
         # Act & Assert
         with pytest.raises(RuntimeError, match="Cache setup failed"):
-            create_search_index(mock_config)
+            await create_search_index(mock_config)
 
     @patch('musigree.loader.create_search_index.LoaderEntity')
     @patch('musigree.loader.create_search_index.OfflineDatabaseManager')
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_create_search_index_database_manager_exception(
+    async def test_create_search_index_database_manager_exception(
         self,
-        _mock_atexit,
-        _mock_setup_logging,
+        mock_atexit,
+        mock_setup_logging,
         mock_cache_manager,
         mock_offline_db_manager,
-        _mock_loader_entity_class
+        mock_loader_entity_class
     ):
         """Test exception handling when OfflineDatabaseManager setup fails."""
         # Arrange
@@ -193,11 +212,12 @@ class TestCreateSearchIndex:
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
         
-        mock_offline_db_manager.setup_database.side_effect = RuntimeError("Database setup failed")
+        # Mock async method with exception
+        mock_offline_db_manager.setup_database = AsyncMock(side_effect=RuntimeError("Database setup failed"))
 
         # Act & Assert
         with pytest.raises(RuntimeError, match="Database setup failed"):
-            create_search_index(mock_config)
+            await create_search_index(mock_config)
 
 
 class TestIntegration:
@@ -208,9 +228,9 @@ class TestIntegration:
     @patch('musigree.loader.create_search_index.CacheManager')
     @patch('musigree.loader.create_search_index.setup_logging')
     @patch('musigree.loader.create_search_index.atexit')
-    def test_integration_with_real_config(
+    async def test_integration_with_real_config(
         self,
-        _mock_atexit,
+        mock_atexit,
         mock_setup_logging,
         mock_cache_manager,
         mock_offline_db_manager,
@@ -223,11 +243,15 @@ class TestIntegration:
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
         
+        # Mock async methods
+        mock_offline_db_manager.setup_database = AsyncMock()
+        
         mock_loader_entity = Mock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
         mock_loader_entity_class.return_value = mock_loader_entity
 
         # Act
-        create_search_index(real_config)
+        await create_search_index(real_config)
 
         # Assert
         mock_setup_logging.assert_called_once()

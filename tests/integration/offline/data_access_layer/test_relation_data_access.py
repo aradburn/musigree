@@ -1,31 +1,31 @@
+import pytest
+
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
-from tests import utils
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests import id_utils
+from tests.conftest import NotATest
 
 
-class TestRelationDataAccess(OfflineDatabaseTestCase):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestRelationDataAccess(NotATest):
 
-    def test_from_release(self):
+    @pytest.mark.asyncio
+    async def test_from_release(self, offline_database_setup, offline_config):
         # GIVEN
         release_id = 1700
-        discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
-        with offline_transaction():
+        release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(entity_repository, release)
+            await EntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        result = RelationDataAccess.from_release(release)
+        actual = RelationDataAccess.from_release(release)
 
         # THEN
         expected = [
@@ -200,22 +200,20 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
                 subject=1000023528,
             ),
         ]
-        self.assertEqual(expected, result)
+        assert actual == expected
 
-    def test_get_release_setup(self):
+    @pytest.mark.asyncio
+    async def test_get_release_setup(self, offline_database_setup, offline_config):
         # GIVEN
         release_id = 1700
-        discogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
-
-        release = utils.get_test_release_by_id(discogs_data_directory, release_id)
-        with offline_transaction():
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
+        release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(entity_repository, release)
+            await EntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        result = RelationDataAccess.from_release(release)
+        actual = RelationDataAccess.from_release(release)
 
         # THEN
         expected = [
@@ -390,4 +388,4 @@ class TestRelationDataAccess(OfflineDatabaseTestCase):
                 subject=1000023528,
             ),
         ]
-        self.assertEqual(expected, result)
+        assert actual == expected

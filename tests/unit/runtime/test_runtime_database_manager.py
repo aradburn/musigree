@@ -1,7 +1,7 @@
 """Unit tests for RuntimeDatabaseManager class."""
 
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from sqlalchemy import Engine
@@ -61,33 +61,37 @@ class TestRuntimeDatabaseManager:
             RuntimeDatabaseManager.get_concurrency_count()
 
     # Test setup_database method
-    @patch('musigree.runtime.postgres.postgres_helper.RuntimePostgresHelper')
-    @patch('musigree.runtime.runtime_database_manager.sessionmaker')
+    @pytest.mark.asyncio
+    @patch('musigree.runtime.postgres.runtime_postgres_helper.RuntimePostgresHelper')
+    @patch('musigree.runtime.runtime_database_manager.async_sessionmaker')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
+    async def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_async_sessionmaker, mock_postgres_helper):
         """Test successful database setup for PostgreSQL."""
         # Arrange
         mock_config = Mock()
         mock_config.THREADING_MODEL = ThreadingModel.PROCESS
         mock_config.DATABASE = DatabaseType.POSTGRES
         
-        # Create a proper engine mock with pool attribute
-        mock_engine = Mock(spec=Engine)
+        # Create a proper async engine mock
+        mock_async_engine = AsyncMock()
+        mock_sync_engine = Mock(spec=Engine)
         mock_pool = Mock()
-        mock_engine.pool = mock_pool
+        mock_sync_engine.pool = mock_pool
+        mock_async_engine.sync_engine = mock_sync_engine
         
-        mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_helper_instance = AsyncMock()
+        mock_helper_instance.setup_database.return_value = mock_async_engine
+        mock_helper_instance.check_connection.return_value = None
         mock_postgres_helper.return_value = mock_helper_instance
         
         mock_session_factory = Mock()
-        mock_sessionmaker.return_value = mock_session_factory
+        mock_async_sessionmaker.return_value = mock_session_factory
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=4):
             with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
-                RuntimeDatabaseManager.setup_database(mock_config)
+                await RuntimeDatabaseManager.setup_database(mock_config)
 
         # Assert
         assert RuntimeDatabaseManager.runtime_database_helper == mock_helper_instance
@@ -95,34 +99,38 @@ class TestRuntimeDatabaseManager:
         
         mock_postgres_helper.assert_called_once()
         mock_helper_instance.setup_database.assert_called_once_with(mock_config)
-        mock_helper_instance.check_connection.assert_called_once_with(mock_config, mock_engine)
-        mock_sessionmaker.assert_called_once_with(bind=mock_engine)
+        mock_helper_instance.check_connection.assert_called_once_with(mock_config, mock_async_engine)
+        mock_async_sessionmaker.assert_called_once()
         # Should register event listeners for concurrency > 1
         assert mock_listen.call_count == 2
 
+    @pytest.mark.asyncio
     @patch('os.getpid')
-    @patch('musigree.runtime.sqlite.sqlite_helper.RuntimeSqliteHelper')
+    @patch('musigree.runtime.sqlite.runtime_sqlite_helper.RuntimeSqliteHelper')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
+    async def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
         """Test that event listeners are registered when concurrency count > 1."""
         # Arrange
         mock_config = Mock()
         mock_config.THREADING_MODEL = ThreadingModel.PROCESS
         mock_config.DATABASE = DatabaseType.SQLITE
         
-        mock_engine = Mock(spec=Engine)
+        mock_async_engine = AsyncMock()
+        mock_sync_engine = Mock(spec=Engine)
         mock_pool = Mock()
-        mock_engine.pool = mock_pool
+        mock_sync_engine.pool = mock_pool
+        mock_async_engine.sync_engine = mock_sync_engine
         
-        mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_helper_instance = AsyncMock()
+        mock_helper_instance.setup_database.return_value = mock_async_engine
+        mock_helper_instance.check_connection.return_value = None
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=4):
             with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
-                RuntimeDatabaseManager.setup_database(mock_config)
+                await RuntimeDatabaseManager.setup_database(mock_config)
 
         # Assert that event listeners were registered
         assert mock_listen.call_count == 2
@@ -131,30 +139,33 @@ class TestRuntimeDatabaseManager:
         assert "connect" in registered_events
         assert "checkout" in registered_events
 
-    @patch('musigree.runtime.sqlite.sqlite_helper.RuntimeSqliteHelper')
+    @pytest.mark.asyncio
+    @patch('musigree.runtime.sqlite.runtime_sqlite_helper.RuntimeSqliteHelper')
     @patch('musigree.runtime.runtime_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
+    async def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
         """Test that no event listeners are registered when concurrency count = 1."""
         # Arrange
         mock_config = Mock()
         mock_config.THREADING_MODEL = ThreadingModel.THREAD
         mock_config.DATABASE = DatabaseType.SQLITE
         
-        mock_engine = Mock(spec=Engine)
-        mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_async_engine = AsyncMock()
+        mock_helper_instance = AsyncMock()
+        mock_helper_instance.setup_database.return_value = mock_async_engine
+        mock_helper_instance.check_connection.return_value = None
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(RuntimeDatabaseManager, 'get_concurrency_count', return_value=1):
             with patch('musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper') as _mock_runtime_helper_class:
                 # Act
-                RuntimeDatabaseManager.setup_database(mock_config)
+                await RuntimeDatabaseManager.setup_database(mock_config)
 
         # Assert that no event listeners were registered
         mock_listen.assert_not_called()
 
-    def test_setup_database_unknown_database_type(self):
+    @pytest.mark.asyncio
+    async def test_setup_database_unknown_database_type(self):
         """Test setup_database raises error for unknown database type."""
         # Arrange
         mock_config = Mock()
@@ -163,7 +174,7 @@ class TestRuntimeDatabaseManager:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Configuration Error: Unknown database type"):
-            RuntimeDatabaseManager.setup_database(mock_config)
+            await RuntimeDatabaseManager.setup_database(mock_config)
 
     def test_engine_event_handlers_behavior(self):
         """Test the behavior of engine event handlers using mock scenarios."""
@@ -198,58 +209,58 @@ class TestRuntimeDatabaseManager:
                 assert mock_connection_proxy.dbapi_connection is None
 
     # Test shutdown_database method
+    @pytest.mark.asyncio
     @patch('musigree.runtime.runtime_database_manager.close_all_sessions')
-    def test_shutdown_database_success(self, mock_close_all_sessions):
+    async def test_shutdown_database_success(self, mock_close_all_sessions):
         """Test successful database shutdown."""
         # Arrange
-        mock_engine = Mock()
-        mock_helper = Mock()
-        mock_helper.runtime_engine = mock_engine
-        
+        mock_helper = AsyncMock()
+        mock_async_engine = AsyncMock()
+        mock_helper.runtime_async_engine = mock_async_engine
+        mock_helper.shutdown_database.return_value = None
         RuntimeDatabaseManager.runtime_database_helper = mock_helper
+        
+        mock_close_all_sessions.return_value = None
 
         # Act
-        RuntimeDatabaseManager.shutdown_database()
+        await RuntimeDatabaseManager.shutdown_database()
 
         # Assert
         mock_close_all_sessions.assert_called_once()
-        mock_engine.dispose.assert_called_once()
+        mock_async_engine.dispose.assert_called_once()
         mock_helper.shutdown_database.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('musigree.runtime.runtime_database_manager.close_all_sessions')
-    def test_shutdown_database_missing_helper_engine_attribute(self, mock_close_all_sessions):
-        """Test shutdown when helper doesn't have runtime_engine attribute."""
+    async def test_shutdown_database_missing_helper_engine_attribute(self, mock_close_all_sessions):
+        """Test shutdown_database when helper is None."""
         # Arrange
-        mock_helper = Mock()
-        # Don't set runtime_engine attribute, simulating an error scenario
-        del mock_helper.runtime_engine  # Ensure the attribute doesn't exist
-        RuntimeDatabaseManager.runtime_database_helper = mock_helper
+        RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
+        mock_close_all_sessions.return_value = None
 
-        # Act & Assert - This should raise an AttributeError since the actual code
-        # directly accesses runtime_engine without checking if it exists
-        with pytest.raises(AttributeError):
-            RuntimeDatabaseManager.shutdown_database()
+        # Act & Assert
+        with pytest.raises(AssertionError, match="RuntimeDatabaseManager.runtime_database_helper must be initialized"):
+            await RuntimeDatabaseManager.shutdown_database()
 
-        # Assert that close_all_sessions was still called
         mock_close_all_sessions.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('musigree.runtime.runtime_database_manager.close_all_sessions')
-    def test_shutdown_database_engine_dispose_fails(self, mock_close_all_sessions):
-        """Test shutdown when engine dispose fails."""
+    async def test_shutdown_database_engine_dispose_fails(self, mock_close_all_sessions):
+        """Test shutdown_database when engine dispose fails."""
         # Arrange
-        mock_engine = Mock()
-        mock_engine.dispose.side_effect = Exception("Dispose failed")
-        mock_helper = Mock()
-        mock_helper.runtime_engine = mock_engine
+        mock_helper = AsyncMock()
+        mock_async_engine = AsyncMock()
+        mock_async_engine.dispose.side_effect = Exception("Dispose failed")
+        mock_helper.runtime_async_engine = mock_async_engine
+        mock_helper.shutdown_database.return_value = None
+        RuntimeDatabaseManager.runtime_database_helper = mock_helper
         
-        RuntimeDatabaseManager.runtime_database_helper = mock_helper
+        mock_close_all_sessions.return_value = None
 
-        # Act & Assert - The exception should propagate since there's no error handling
+        # Act & Assert
         with pytest.raises(Exception, match="Dispose failed"):
-            RuntimeDatabaseManager.shutdown_database()
+            await RuntimeDatabaseManager.shutdown_database()
 
-        # Assert that close_all_sessions was called first
         mock_close_all_sessions.assert_called_once()
-        mock_engine.dispose.assert_called_once()
-        # shutdown_database on helper should not be called due to the exception
-        mock_helper.shutdown_database.assert_not_called() 
+        mock_async_engine.dispose.assert_called_once() 

@@ -1,3 +1,5 @@
+import pytest
+
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
@@ -7,23 +9,26 @@ from musigree.offline.database.relation_release_year_repository import (
 )
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
-    def test_loader_relation_pass_one(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestLoaderRelationPassOne(NotATest):
+    @pytest.mark.asyncio
+    async def test_loader_relation_pass_one(self, offline_database_setup):
         # GIVEN
 
         # WHEN
-        actual = RelationRepository().count()
+        async with offline_transaction():
+            relation_repository = RelationRepository()
+            actual = await relation_repository.count()
 
         # THEN
         expected = 16550
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_01(self):
+    @pytest.mark.asyncio
+    async def test_relation_01(self, offline_database_setup):
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -40,10 +45,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -134,9 +139,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_02(self):
+    @pytest.mark.asyncio
+    async def test_relation_02(self, offline_database_setup):
         # GIVEN
         entity_one_id = 49
         entity_one_type = EntityType.ARTIST
@@ -153,10 +159,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -177,9 +183,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_03(self):
+    @pytest.mark.asyncio
+    async def test_relation_03(self, offline_database_setup):
         # GIVEN
         entity_one_id = 300407
         entity_one_type = EntityType.ARTIST
@@ -196,10 +203,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -289,9 +296,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_04(self):
+    @pytest.mark.asyncio
+    async def test_relation_04(self, offline_database_setup):
         # GIVEN
         entity_one_id = 586589
         entity_one_type = EntityType.ARTIST
@@ -308,10 +316,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -338,9 +346,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_05(self):
+    @pytest.mark.asyncio
+    async def test_relation_05(self, offline_database_setup):
         # GIVEN
         key = dict(
             subject=661,
@@ -349,10 +358,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -377,9 +386,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_06(self):
+    @pytest.mark.asyncio
+    async def test_relation_06(self, offline_database_setup):
         # GIVEN
         key = dict(
             subject=21209,
@@ -388,10 +398,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -414,9 +424,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_07(self):
+    @pytest.mark.asyncio
+    async def test_relation_07(self, offline_database_setup):
         # GIVEN
         key = dict(
             subject=335173,
@@ -425,10 +436,10 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -469,4 +480,4 @@ class TestLoaderRelationPassOne(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected

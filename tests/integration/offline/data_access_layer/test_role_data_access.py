@@ -1,9 +1,9 @@
 import os
 
+import pytest
+
 from musigree.constants import ROOT_DIR
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 TEST_DATA_ROLES_DIR = os.path.join(ROOT_DIR, "tests", "data_roles")
 TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")
@@ -15,7 +15,8 @@ TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
 )
 
 
-class TestRoleDataAccess(OfflineDatabaseTestCase):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestRoleDataAccess(NotATest):
     pass
 
     # @pytest.mark.skip(reason="Skip for now")

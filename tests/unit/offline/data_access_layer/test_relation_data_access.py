@@ -1,7 +1,7 @@
 """
 Unit tests for musigree.offline.data_access_layer.relation_data_access module.
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 
@@ -215,11 +215,12 @@ class TestRelationDataAccess:
         assert "release_id" in relation
         assert relation["release_id"] == 123
 
-    def test_find_relation_by_key(self):
+    @pytest.mark.asyncio
+    async def test_find_relation_by_key(self):
         """Test finding relation by key."""
         # Arrange
         mock_entity_repo = Mock()
-        mock_relation_repo = Mock()
+        mock_relation_repo = AsyncMock()
         mock_key = {"subject": 1, "role": "producer", "object": 2}
         
         mock_relation_internal = Mock()
@@ -228,7 +229,7 @@ class TestRelationDataAccess:
         mock_relation_repo.find_by_key.return_value = mock_relation_internal
         
         # Act
-        result = RelationDataAccess.find_relation_by_key(
+        result = await RelationDataAccess.find_relation_by_key(
             _entity_repository=mock_entity_repo,
             _relation_repository=mock_relation_repo,
             _key=mock_key

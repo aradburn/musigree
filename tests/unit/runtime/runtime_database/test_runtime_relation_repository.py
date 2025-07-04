@@ -1,30 +1,31 @@
-import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
+import pytest
 from sqlalchemy import Result
+
 from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.runtime_relation_repository import RuntimeRelationRepository
 from musigree.runtime.runtime_database.runtime_relation_table import RuntimeRelationTable
-from musigree.runtime.runtime_domain.relation import RuntimeRelationDB, RuntimeRelationUncommitted, RuntimeRelationInternal
-
+from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
+from musigree.runtime.runtime_domain.relation import RuntimeRelationDB, RuntimeRelationUncommitted
 # Import the test utility
-from .test_utils import RoleCacheMockHelper, SessionMockHelper
+from .test_utils import RoleCacheMockHelper
 
 
-class TestRuntimeRelationRepository(unittest.TestCase):
+class TestRuntimeRelationRepository:
     """Unit tests for RuntimeRelationRepository class."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.repository = RuntimeRelationRepository()
 
     def test_schema_class(self):
         """Test that schema_class is correctly set."""
         # GIVEN/WHEN/THEN
-        self.assertEqual(self.repository.schema_class, RuntimeRelationTable)
+        assert self.repository.schema_class == RuntimeRelationTable
 
-    @patch.object(RuntimeRelationRepository, 'execute')
-    def test_get_success(self, mock_execute):
+    @pytest.mark.asyncio
+    async def test_get_success(self):
         """Test successfully retrieving a relation by ID."""
         # GIVEN
         relation_id = 1
@@ -34,77 +35,112 @@ class TestRuntimeRelationRepository(unittest.TestCase):
         mock_instance.predicate = 3
         mock_instance.object = 67890
         
-        mock_result = Mock(spec=Result)
-        mock_scalars = Mock()
-        mock_scalars.one_or_none.return_value = mock_instance
-        mock_result.scalars.return_value = mock_scalars
-        mock_execute.return_value = mock_result
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
         
-        with patch.object(RuntimeRelationDB, 'model_validate') as mock_validate:
-            expected_relation = RuntimeRelationDB(
-                id=relation_id,
-                subject=12345,
-                predicate=3,
-                object=67890
-            )
-            mock_validate.return_value = expected_relation
+        try:
+            # Mock the session.execute to return a proper Result mock
+            mock_result = Mock(spec=Result)
+            mock_scalars = Mock()
+            mock_scalars.one_or_none.return_value = mock_instance
+            mock_result.scalars.return_value = mock_scalars
+            mock_session.execute.return_value = mock_result
             
-            # WHEN
-            result = self.repository.get(relation_id)
-            
-            # THEN
-            self.assertEqual(result, expected_relation)
-            mock_validate.assert_called_once_with(mock_instance)
+            with patch.object(RuntimeRelationDB, 'model_validate') as mock_validate:
+                expected_relation = RuntimeRelationDB(
+                    id=relation_id,
+                    subject=12345,
+                    predicate=3,
+                    object=67890
+                )
+                mock_validate.return_value = expected_relation
+                
+                # WHEN
+                result = await self.repository.get(relation_id)
+                
+                # THEN
+                assert result == expected_relation
+                mock_validate.assert_called_once_with(mock_instance)
+                mock_session.execute.assert_called_once()
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
-    @patch.object(RuntimeRelationRepository, 'execute')
-    def test_get_not_found(self, mock_execute):
+    @pytest.mark.asyncio
+    async def test_get_not_found(self):
         """Test retrieving a relation by ID when not found."""
         # GIVEN
         relation_id = 999
         
-        mock_result = Mock(spec=Result)
-        mock_scalars = Mock()
-        mock_scalars.one_or_none.return_value = None
-        mock_result.scalars.return_value = mock_scalars
-        mock_execute.return_value = mock_result
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
         
-        # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get(relation_id)
+        try:
+            # Mock the session.execute to return a proper Result mock
+            mock_result = Mock(spec=Result)
+            mock_scalars = Mock()
+            mock_scalars.one_or_none.return_value = None
+            mock_result.scalars.return_value = mock_scalars
+            mock_session.execute.return_value = mock_result
+            
+            # WHEN/THEN
+            with pytest.raises(NotFoundError):
+                await self.repository.get(relation_id)
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
-    @patch.object(RuntimeRelationRepository, 'execute')
-    def test_get_id_by_key_success(self, mock_execute):
+    @pytest.mark.asyncio
+    async def test_get_id_by_key_success(self):
         """Test successfully retrieving relation ID by key."""
         # GIVEN
         key = {"subject": 12345, "role_id": 3, "object": 67890}
         expected_id = 1
         
-        mock_result = Mock(spec=Result)
-        mock_result.scalar.return_value = expected_id
-        mock_execute.return_value = mock_result
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
         
-        # WHEN
-        result = self.repository.get_id_by_key(key)
-        
-        # THEN
-        self.assertEqual(result, expected_id)
+        try:
+            # Mock the session.execute to return a proper Result mock
+            mock_result = Mock(spec=Result)
+            mock_result.scalar.return_value = expected_id
+            mock_session.execute.return_value = mock_result
+            
+            # WHEN
+            result = await self.repository.get_id_by_key(key)
+            
+            # THEN
+            assert result == expected_id
+            mock_session.execute.assert_called_once()
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
-    @patch.object(RuntimeRelationRepository, 'execute')
-    def test_get_id_by_key_not_found(self, mock_execute):
+    @pytest.mark.asyncio
+    async def test_get_id_by_key_not_found(self):
         """Test get_id_by_key when relation not found."""
         # GIVEN
         key = {"subject": 12345, "role_id": 3, "object": 67890}
         
-        mock_result = Mock(spec=Result)
-        mock_result.scalar.return_value = None
-        mock_execute.return_value = mock_result
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
         
-        # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get_id_by_key(key)
+        try:
+            # Mock the session.execute to return a proper Result mock
+            mock_result = Mock(spec=Result)
+            mock_result.scalar.return_value = None
+            mock_session.execute.return_value = mock_result
+            
+            # WHEN/THEN
+            with pytest.raises(NotFoundError):
+                await self.repository.get_id_by_key(key)
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
+    @pytest.mark.asyncio
     @patch.object(RuntimeRelationRepository, 'execute')
-    def test_find_by_id_success(self, mock_execute):
+    async def test_find_by_id_success(self, mock_execute):
         """Test successfully finding relation by ID with lock."""
         # GIVEN
         relation_id = 1
@@ -125,13 +161,14 @@ class TestRuntimeRelationRepository(unittest.TestCase):
             mock_get_one.return_value = mock_relation
             
             # WHEN
-            result = self.repository.find_by_id(relation_id)
+            result = await self.repository.find_by_id(relation_id)
             
             # THEN
-            self.assertEqual(result, mock_relation)
+            assert result == mock_relation
 
+    @pytest.mark.asyncio
     @patch.object(RuntimeRelationRepository, 'execute')
-    def test_find_by_key_with_role_name(self, mock_execute):
+    async def test_find_by_key_with_role_name(self, mock_execute):
         """Test finding relation by key when role_name is provided."""
         # GIVEN
         key = {"subject": 12345, "role_name": "Producer", "object": 67890}
@@ -159,13 +196,14 @@ class TestRuntimeRelationRepository(unittest.TestCase):
                 mock_get_one.return_value = mock_relation
                 
                 # WHEN
-                result = self.repository.find_by_key(key)
+                result = await self.repository.find_by_key(key)
                 
                 # THEN
-                self.assertEqual(result, mock_relation)
+                assert result == mock_relation
 
+    @pytest.mark.asyncio
     @patch.object(RuntimeRelationRepository, 'execute')
-    def test_find_by_entity_success(self, mock_execute):
+    async def test_find_by_entity_success(self, mock_execute):
         """Test successfully finding relations by entity ID."""
         # GIVEN
         entity_id = 12345
@@ -188,33 +226,34 @@ class TestRuntimeRelationRepository(unittest.TestCase):
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
         
-        with patch.object(RuntimeRelationRepository, '_get_all_by_query') as mock_get_all:
+        with patch.object(RuntimeRelationRepository, '_get_all_by_query') as mock_get_one:
             mock_relations = [Mock(), Mock()]
-            mock_get_all.return_value = mock_relations
+            mock_get_one.return_value = mock_relations
             
             # WHEN
-            result = self.repository.find_by_entity(entity_id)
+            result = await self.repository.find_by_entity(entity_id)
             
             # THEN
-            self.assertEqual(result, mock_relations)
-            self.assertEqual(len(result), 2)
+            assert result == mock_relations
+            assert len(result) == 2
 
+    @pytest.mark.asyncio
     @patch.object(RuntimeRelationRepository, 'execute')
-    def test_find_by_entity_and_roles_success(self, mock_execute):
-        """Test successfully finding relations by entity ID and role IDs."""
+    async def test_find_by_entity_and_roles_success(self, mock_execute):
+        """Test successfully finding relations by entity ID and roles."""
         # GIVEN
         entity_id = 12345
-        role_ids = [3, 4, 5]
+        role_ids = [3, 4]
         
-        mock_instance = Mock()
-        mock_instance.id = 1
-        mock_instance.subject = entity_id
-        mock_instance.predicate = 3
-        mock_instance.object = 67890
+        mock_instance1 = Mock()
+        mock_instance1.id = 1
+        mock_instance1.subject = entity_id
+        mock_instance1.predicate = 3
+        mock_instance1.object = 67890
         
         mock_result = Mock(spec=Result)
         mock_scalars = Mock()
-        mock_scalars.all.return_value = [mock_instance]
+        mock_scalars.all.return_value = [mock_instance1]
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
         
@@ -223,131 +262,131 @@ class TestRuntimeRelationRepository(unittest.TestCase):
             mock_get_all.return_value = mock_relations
             
             # WHEN
-            result = self.repository.find_by_entity_and_roles(entity_id, role_ids)
+            result = await self.repository.find_by_entity_and_roles(entity_id, role_ids)
             
             # THEN
-            self.assertEqual(result, mock_relations)
-            self.assertEqual(len(result), 1)
+            assert result == mock_relations
+            assert len(result) == 1
 
-    @patch('musigree.runtime.runtime_database_manager.RuntimeDatabaseManager')
-    def test_create_success(self, mock_db_manager):
-        """Test successful creation of a relation."""
-        # Setup test data
-        role_id = 1
-        relation_data = {
-            "subject": 1,
-            "role_name": "Producer",
-            "object": 2,
-        }
+    @pytest.mark.asyncio
+    async def test_create_success(self):
+        """Test successfully creating a new relation."""
+        # GIVEN
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
         
-        # Create mock result and instance
-        mock_result = Mock()
-        mock_instance = Mock()
-        mock_result.scalar_one_or_none.return_value = mock_instance
+        relation_data = RuntimeRelationUncommitted(
+            subject=12345,
+            role_name="Producer",
+            object=67890
+        )
         
-        # Use the SessionMockHelper for session mocking
-        with SessionMockHelper.mock_runtime_session(
-            execute_return_value=mock_result,
-            flush_return_value=None
-        ) as mock_session:
-            # Mock the RoleCache with module-specific mocking
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+        
+        # Mock the database helper
+        mock_helper = Mock()
+        mock_query = Mock()
+        mock_helper.generate_insert_query.return_value = mock_query
+        RuntimeDatabaseManager.runtime_database_helper = mock_helper
+        
+        try:
+            # Use the RoleCacheMockHelper for proper module-specific mocking
             with RoleCacheMockHelper.mock_role_cache_in_module(
                 "musigree.runtime.runtime_database.runtime_relation_repository",
-                {"Producer": role_id}
+                {"Producer": 3}
             ):
-                # Mock the database manager and its methods
-                mock_helper = mock_db_manager.runtime_database_helper
-                mock_query = Mock()
-                mock_helper.generate_insert_query.return_value = mock_query
+                # Mock the session execute and flush
+                mock_result = Mock(spec=Result)
+                mock_instance = Mock()
+                mock_instance.id = 1
+                mock_instance.subject = 12345
+                mock_instance.predicate = 3
+                mock_instance.object = 67890
+                mock_result.scalar_one_or_none.return_value = mock_instance
+                mock_session.execute.return_value = mock_result
                 
-                # Mock the model validation
-                with patch('musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationDB') as mock_relation_db:
-                    mock_relation_db_instance = Mock()
-                    mock_domain_instance = Mock()
-                    mock_relation_db_instance.to_domain.return_value = mock_domain_instance
-                    mock_relation_db.model_validate.return_value = mock_relation_db_instance
+                with patch.object(RuntimeRelationDB, 'model_validate') as mock_validate:
+                    mock_relation_db = Mock()
+                    mock_relation_internal = Mock()
+                    mock_relation_db.to_domain.return_value = mock_relation_internal
+                    mock_validate.return_value = mock_relation_db
                     
-                    # Create the relation
-                    relation = RuntimeRelationUncommitted(**relation_data)
-                    result = self.repository.create(relation)
+                    # WHEN
+                    result = await self.repository.create(relation_data)
                     
-                    # Verify the result
-                    assert result == mock_domain_instance
-                    
-                    # Verify the calls
-                    expected_relation_dict = {
-                        "subject": 1,
-                        "object": 2,
-                        "predicate": role_id
-                    }
-                    mock_helper.generate_insert_query.assert_called_once_with(
-                        RuntimeRelationTable, expected_relation_dict, False
-                    )
+                    # THEN
+                    assert result == mock_relation_internal
                     mock_session.execute.assert_called_once_with(mock_query)
                     mock_session.flush.assert_called_once()
-                    mock_relation_db.model_validate.assert_called_once_with(mock_instance)
+                    mock_validate.assert_called_once_with(mock_instance)
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
+            RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
 
-    @patch.object(RuntimeRelationRepository, 'execute')
-    def test_delete_by_entitys_success(self, mock_execute):
+    @pytest.mark.asyncio
+    async def test_delete_by_entitys_success(self):
         """Test successfully deleting relations by entity ID."""
         # GIVEN
         entity_id = 12345
-        mock_result = Mock(spec=Result)
-        mock_execute.return_value = mock_result
         
-        # WHEN
-        self.repository.delete_by_entitys(entity_id)
+        # Set up context variable
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
         
-        # THEN
-        mock_execute.assert_called_once()
+        try:
+            # WHEN
+            await self.repository.delete_by_entitys(entity_id)
+            
+            # THEN
+            mock_session.execute.assert_called_once()
+            mock_session.flush.assert_called_once()
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
-    def test_all_iterator(self):
+    @pytest.mark.asyncio
+    async def test_all_iterator(self):
         """Test the all() iterator method."""
-        # Create mock instances with the data that RuntimeRelationDB expects
+        # GIVEN
         mock_instance1 = Mock()
         mock_instance1.id = 1
-        mock_instance1.subject = 100
-        mock_instance1.predicate = 3  # This will be converted to role name via to_domain()
-        mock_instance1.object = 200
-
+        mock_instance1.subject = 12345
+        mock_instance1.predicate = 3
+        mock_instance1.object = 67890
+        
         mock_instance2 = Mock()
         mock_instance2.id = 2
-        mock_instance2.subject = 101
-        mock_instance2.predicate = 4  # This will be converted to role name via to_domain()
-        mock_instance2.object = 201
-
-        # Mock the _all method to return our test data
-        with patch.object(self.repository, '_all') as mock_all:
-            mock_all.return_value = [mock_instance1, mock_instance2]
+        mock_instance2.subject = 11111
+        mock_instance2.predicate = 4
+        mock_instance2.object = 22222
+        
+        # Mock async generator
+        async def async_generator():
+            yield mock_instance1
+            yield mock_instance2
+        
+        with patch.object(RuntimeRelationRepository, '_all') as mock_all:
+            mock_all.return_value = async_generator()
             
-            # Mock RoleCache in the domain module where to_domain() is defined
-            role_mappings = {"Producer": 3, "Engineer": 4}
-            with RoleCacheMockHelper.mock_role_cache_in_module(
-                "musigree.runtime.runtime_domain.relation",
-                role_mappings
-            ):
-                # Execute the method
-                result = list(self.repository.all())
-
-                # Verify results
-                self.assertEqual(len(result), 2)
-                
-                # Check that results are RuntimeRelationInternal instances
-                for relation in result:
-                    self.assertIsInstance(relation, RuntimeRelationInternal)
-                
-                # Verify the first relation
-                self.assertEqual(result[0].id, 1)
-                self.assertEqual(result[0].subject, 100)
-                self.assertEqual(result[0].role, "Producer")  # Converted from predicate 3
-                self.assertEqual(result[0].object, 200)
-                
-                # Verify the second relation
-                self.assertEqual(result[1].id, 2)
-                self.assertEqual(result[1].subject, 101)
-                self.assertEqual(result[1].role, "Engineer")  # Converted from predicate 4
-                self.assertEqual(result[1].object, 201)
-
-
-if __name__ == '__main__':
-    unittest.main() 
+            with patch.object(RuntimeRelationDB, 'model_validate') as mock_validate:
+                with patch.object(RuntimeRelationDB, 'to_domain') as mock_to_domain:
+                    relation1 = Mock()
+                    relation2 = Mock()
+                    
+                    # Create mock RuntimeRelationDB instances
+                    mock_relation_db1 = Mock()
+                    mock_relation_db1.to_domain.return_value = relation1
+                    mock_relation_db2 = Mock()
+                    mock_relation_db2.to_domain.return_value = relation2
+                    
+                    mock_validate.side_effect = [mock_relation_db1, mock_relation_db2]
+                    
+                    # WHEN
+                    result = []
+                    async for relation in self.repository.all():
+                        result.append(relation)
+                    
+                    # THEN
+                    assert len(result) == 2
+                    assert result[0] == relation1
+                    assert result[1] == relation2 

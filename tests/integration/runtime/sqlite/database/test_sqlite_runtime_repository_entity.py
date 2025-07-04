@@ -1,13 +1,6 @@
-from tests.integration.runtime.database.test_runtime_repository_entity import (
-    TestRuntimeRepositoryEntity,
-)
-from tests.integration.runtime.sqlite.sqlite_runtime_repository_test_case import (
-    SqliteRuntimeRepositoryTestCase,
-)
+from tests.integration.runtime.database.test_runtime_repository_entity import TestRuntimeRepositoryEntity
 
 
-class TestSqliteRuntimeRepositoryEntity(
-    SqliteRuntimeRepositoryTestCase, TestRuntimeRepositoryEntity
-):
+class TestSqliteRuntimeRepositoryEntity(TestRuntimeRepositoryEntity):
     # Run all tests in TestRuntimeRepositoryEntity
     pass

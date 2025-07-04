@@ -1,13 +1,6 @@
-from tests.integration.runtime.data_access_layer.test_runtime_entity_search import (
-    TestRuntimeEntitySearch,
-)
-from tests.integration.runtime.sqlite.sqlite_runtime_database_test_case import (
-    SqliteRuntimeDatabaseTestCase,
-)
+from tests.integration.runtime.data_access_layer.test_runtime_entity_search import TestRuntimeEntitySearch
 
 
-class TestSqliteRuntimeEntitySearch(
-    SqliteRuntimeDatabaseTestCase, TestRuntimeEntitySearch
-):
+class TestSqliteRuntimeEntitySearch(TestRuntimeEntitySearch):
     # Run all tests in TestRuntimeEntitySearch
     pass

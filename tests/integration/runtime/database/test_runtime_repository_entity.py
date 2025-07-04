@@ -1,3 +1,4 @@
+import pytest
 import pydantic
 
 from musigree.constants import DISCOGS_DATA
@@ -9,23 +10,21 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from tests.integration.runtime.database.runtime_repository_test_case import (
-    RuntimeRepositoryTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
-    def test_create_01(self):
+@pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
+class TestRuntimeRepositoryEntity(NotATest):
+    @pytest.mark.asyncio
+    async def test_create_01(self, runtime_database_setup, runtime_config):
+        """Test creating a runtime entity."""
         # GIVEN
-        discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
         )
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
-        print(f"entity: {entity}")
 
         countries = "UK"
         genres = "Rock"
@@ -38,24 +37,24 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         )
 
         # WHEN
-        with runtime_transaction():
+        async with runtime_transaction():
             repository = RuntimeEntityRepository()
-            created_entity = repository.create(runtime_entity)
+            created_entity = await repository.create(runtime_entity)
 
         # THEN
-        self.assertEqual(runtime_entity, created_entity)
+        assert runtime_entity == created_entity
 
-    def test_get_01(self):
+
+    @pytest.mark.asyncio
+    async def test_get_01(self, runtime_database_setup, runtime_config):
+        """Test retrieving a runtime entity by ID and type."""
         # GIVEN
-        discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "label", "testinsert"
         )
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
-        print(f"entity: {entity}")
         countries = "US"
         genres = "Electronic"
         styles = "Psy-trance"
@@ -67,39 +66,34 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         )
 
         # WHEN
-        with runtime_transaction():
+        async with runtime_transaction():
             repository = RuntimeEntityRepository()
             try:
-                created_entity = repository.create(runtime_entity)
+                created_entity = await repository.create(runtime_entity)
             except pydantic.ValidationError as validation_error:
                 print(f"{validation_error.errors()}")
 
-            retrieved_entity = repository.get_by_entity_id_and_entity_type(
+            retrieved_entity = await repository.get_by_entity_id_and_entity_type(
                 1, EntityType.LABEL
             )
 
         # THEN
-        self.assertEqual(created_entity, retrieved_entity)
+        assert created_entity == retrieved_entity
 
-    def test_create_02(self):
+
+    @pytest.mark.asyncio
+    async def test_create_02(self, runtime_database_setup, runtime_config):
+        """Test creating a more complex runtime entity with members."""
         # GIVEN
-        discogs_data_directory = (
-            RuntimeRepositoryTestCase.runtime_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "artist", "testinsert"
         )
-        next(iterator)
-        next(iterator)
-        next(iterator)
-        next(iterator)
-        next(iterator)
-        next(iterator)
-        next(iterator)
-        next(iterator)
+        # Skip to the 9th element
+        for _ in range(8):
+            next(iterator)
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
-        print(f"entity: {entity}")
 
         countries = "UK"
         genres = "Rock"
@@ -112,14 +106,14 @@ class TestRuntimeRepositoryEntity(RuntimeRepositoryTestCase):
         )
 
         # WHEN
-        with runtime_transaction():
+        async with runtime_transaction():
             repository = RuntimeEntityRepository()
-            created_entity = repository.create(runtime_entity)
+            created_entity = await repository.create(runtime_entity)
 
         # THEN
-        self.assertEqual(runtime_entity, created_entity)
+        assert runtime_entity == created_entity
         expected_members = {"Chris Duckenfield": 8783, "Richard Brown": 11454}
-        self.assertEqual(expected_members, created_entity.entities.get("members"))
-        self.assertEqual(countries, created_entity.countries)
-        self.assertEqual(genres, created_entity.genres)
-        self.assertEqual(styles, created_entity.styles)
+        assert expected_members == created_entity.entities.get("members")
+        assert countries == created_entity.countries
+        assert genres == created_entity.genres
+        assert styles == created_entity.styles

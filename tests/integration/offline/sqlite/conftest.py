@@ -1,11 +1,11 @@
-import pytest_asyncio
+import pytest
 from musigree.config import SqliteTestConfiguration
 from musigree.logging_config import setup_logging
 
 
-@pytest_asyncio.fixture(scope="session")
-async def offline_config():
+@pytest.fixture(scope="class")
+def offline_config():
     """Provide the SQLite offline database configuration for tests."""
-    config = SqliteTestConfiguration()
+    offline_config = SqliteTestConfiguration()
     setup_logging(is_testing=True)
-    return config 
+    return offline_config

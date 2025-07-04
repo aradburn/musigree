@@ -1,11 +1,8 @@
-from tests.integration.offline.database.test_repository_metadata import (
-    TestRepositoryMetadata,
-)
-from tests.integration.offline.sqlite.sqlite_repository_test_case import (
-    SqliteRepositoryTestCase,
-)
+"""Tests for MetadataRepository with SQLite backend using pytest fixtures."""
+
+from tests.integration.offline.database.test_repository_metadata import TestRepositoryMetadata
 
 
-class TestSqliteRepositoryMetadata(SqliteRepositoryTestCase, TestRepositoryMetadata):
+class TestSqliteRepositoryMetadata(TestRepositoryMetadata):
     # Run all tests in TestRepositoryMetadata
     pass

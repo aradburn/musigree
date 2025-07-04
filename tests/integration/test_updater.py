@@ -14,15 +14,15 @@ from tests.integration.updater_test_case import UpdaterTestCase
 
 
 class TestUpdater(UpdaterTestCase):
-    def test_artist_record_updated(self):
+    async def test_artist_record_updated(self):
         # GIVEN
         entity_id = 20702
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -63,17 +63,17 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "linton kwesi johnson",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_record_not_updated(self):
+    async def test_artist_record_not_updated(self):
         # GIVEN
         entity_id = 2239
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -123,17 +123,17 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_record_inserted(self):
+    async def test_artist_record_inserted(self):
         # GIVEN
         entity_id = 9999999
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -154,35 +154,35 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "new test artist",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_record_deleted(self):
+    async def test_artist_record_deleted(self):
         # GIVEN
         entity_id = 12589
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity = await entity_repository.get_by_entity_id_and_entity_type(
                     entity_id, entity_type
                 )
             except NotFoundError:
                 entity = None
 
         # THEN
-        self.assertIsNone(entity)
+        assert entity is None
 
-    def test_label_record_updated(self):
+    async def test_label_record_updated(self):
         # GIVEN
         entity_id = 1
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -208,17 +208,17 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "planet e test update",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_not_updated(self):
+    async def test_label_record_not_updated(self):
         # GIVEN
         entity_id = 264170
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -240,17 +240,17 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "west west side music",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_inserted(self):
+    async def test_label_record_inserted(self):
         # GIVEN
         entity_id = 99999999
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -269,34 +269,34 @@ class TestUpdater(UpdaterTestCase):
             "search_content": "new label test",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_deleted(self):
+    async def test_label_record_deleted(self):
         # GIVEN
         entity_id = 2529
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity = await entity_repository.get_by_entity_id_and_entity_type(
                     entity_id, entity_type
                 )
             except NotFoundError:
                 entity = None
 
         # THEN
-        self.assertIsNone(entity)
+        assert entity is None
 
-    def test_release_updated(self):
+    async def test_release_updated(self):
         # GIVEN
         release_id = 157
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
+            release = await release_repository.get_by_id(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
@@ -361,16 +361,16 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_not_updated(self):
+    async def test_release_not_updated(self):
         # GIVEN
         release_id = 635
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
+            release = await release_repository.get_by_id(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
@@ -454,16 +454,16 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_inserted(self):
+    async def test_release_inserted(self):
         # GIVEN
         release_id = 99999999
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
+            release = await release_repository.get_by_id(release_id)
             actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
 
         # THEN
@@ -535,24 +535,24 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_deleted(self):
+    async def test_release_deleted(self):
         # GIVEN
         release_id = 61930
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
             try:
-                release = release_repository.get(release_id)
+                release = await release_repository.get_by_id(release_id)
             except NotFoundError:
                 release = None
 
         # THEN
-        self.assertIsNone(release)
+        assert release is None
 
-    def test_relation_updated_01(self):
+    async def test_relation_updated_01(self):
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -569,10 +569,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -590,9 +590,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_updated_02(self):
+    async def test_relation_updated_02(self):
         # GIVEN
         entity_one_id = 49
         entity_one_type = EntityType.ARTIST
@@ -609,10 +609,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -630,9 +630,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_updated_03(self):
+    async def test_relation_updated_03(self):
         # GIVEN
         entity_one_id = 300407
         entity_one_type = EntityType.ARTIST
@@ -649,10 +649,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -670,9 +670,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_updated_04(self):
+    async def test_relation_updated_04(self):
         # GIVEN
         entity_one_id = 445854
         entity_one_type = EntityType.ARTIST
@@ -689,10 +689,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -710,9 +710,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_not_updated_01(self):
+    async def test_relation_not_updated_01(self):
         # GIVEN
         key = dict(
             subject=42,
@@ -721,10 +721,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -815,9 +815,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_not_updated_02(self):
+    async def test_relation_not_updated_02(self):
         # GIVEN
         key = dict(
             subject=21209,
@@ -826,10 +826,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -852,9 +852,9 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_not_updated_03(self):
+    async def test_relation_not_updated_03(self):
         # GIVEN
         key = dict(
             subject=335173,
@@ -863,10 +863,10 @@ class TestUpdater(UpdaterTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relation_release_year_repository = RelationReleaseYearRepository()
-            relation = OfflineDatabaseHelper.get_relation_by_key(
+            relation = await OfflineDatabaseHelper.get_relation_by_key(
                 relation_repository,
                 relation_release_year_repository,
                 key,
@@ -907,4 +907,4 @@ class TestUpdater(UpdaterTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected

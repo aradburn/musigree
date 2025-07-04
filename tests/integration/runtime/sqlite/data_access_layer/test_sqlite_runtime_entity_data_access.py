@@ -1,13 +1,6 @@
-from tests.integration.runtime.data_access_layer.test_runtime_entity_data_access import (
-    TestRuntimeEntityDataAccess,
-)
-from tests.integration.runtime.sqlite.sqlite_runtime_database_test_case import (
-    SqliteRuntimeDatabaseTestCase,
-)
+from tests.integration.runtime.data_access_layer.test_runtime_entity_data_access import TestRuntimeEntityDataAccess
 
 
-class TestSqliteRuntimeEntityDataAccess(
-    SqliteRuntimeDatabaseTestCase, TestRuntimeEntityDataAccess
-):
+class TestSqliteRuntimeEntityDataAccess(TestRuntimeEntityDataAccess):
     # Run all tests in TestRuntimeEntityDataAccess
     pass

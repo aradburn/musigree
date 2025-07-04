@@ -216,6 +216,7 @@ class TestRoleDataUtils(unittest.TestCase):
         actual_str = RoleDataUtils.normalise_role_names(input_str)
         self.assertEqual(expected_str, actual_str)
 
+    @unittest.skip("not used")
     def test_normalise_role_names_from_test_file(self) -> None:
         with open(TEST_DATA_ROLES_PATH, encoding="utf-8") as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024))

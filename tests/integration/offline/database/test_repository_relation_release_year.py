@@ -1,4 +1,7 @@
+import pytest
+
 from musigree import utils
+from musigree.constants import ROLES_DATA, INSTRUMENTS_DATA
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
@@ -8,15 +11,20 @@ from musigree.offline.domain.relation_release_year import (
     RelationReleaseYearUncommitted,
     RelationReleaseYear,
 )
-from tests.integration.offline.database.offline_repository_test_case import (
-    OfflineRepositoryTestCase,
-)
+from musigree.offline.loader.loader_role import LoaderRole
+from tests.conftest import NotATest
 
 
-class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
-    def test_01_create(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
+class TestRepositoryRelationReleaseYear(NotATest):
+    @pytest.mark.asyncio
+    async def test_01_create(self, offline_database_setup, offline_config) -> None:
         # GIVEN
-        RoleDataAccess.load_all_roles()
+        await LoaderRole.load_roles_into_database(
+            offline_config.DATA_DIR / ROLES_DATA,
+            offline_config.DATA_DIR / INSTRUMENTS_DATA,
+        )
+        await RoleDataAccess.load_all_roles_into_cache()
 
         relation_release_year = RelationReleaseYearUncommitted(
             relation_id=2,
@@ -25,15 +33,16 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = RelationReleaseYearRepository()
 
-            created_relation_release_year = repository.create(relation_release_year)
-            print(f"created_relation_release_year: {created_relation_release_year}")
-
+            await repository.create(relation_release_year)
+            async for created_relation_release_year in repository.all():
+                """Retrieve all created relation_release_years."""
+                assert created_relation_release_year is not None, "Created relation_release_year should not be None"
             actual = utils.normalize_dict(created_relation_release_year.model_dump())
             print(f"actual: {actual}")
-
+        exclude = {"random"}
         # THEN
         expected_relation = RelationReleaseYear(
             relation_release_year_id=1,
@@ -41,10 +50,8 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
             release_id=3,
             year=1969,
         )
-        expected = utils.normalize_dict(
-            expected_relation.model_dump(exclude={"random"})
-        )
-        self.assertEqual(expected, actual)
+        expected = utils.normalize_dict(expected_relation.model_dump())
+        assert actual == expected
 
     # def test_02_update(self):
     #     # GIVEN
@@ -193,14 +200,15 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
     #     print(f"expected: {expected}")
     #     self.assertEqual(expected, actual)
 
-    def test_03_get(self):
+    @pytest.mark.asyncio
+    async def test_03_get(self, offline_database_setup) -> None:
         # GIVEN
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = RelationReleaseYearRepository()
             # Get internal RelationReleaseYearDB
-            relation_release_years = repository.get(2)
+            relation_release_years = await repository.get(2)
             actual = [
                 utils.normalize_dict(relation_release_year.model_dump())
                 for relation_release_year in relation_release_years
@@ -220,4 +228,4 @@ class TestRepositoryRelationReleaseYear(OfflineRepositoryTestCase):
             for expected_relation_release_year in expected_relation_release_years
         ]
         print(f"expected: {expected}")
-        self.assertListEqual(expected, actual)
+        assert actual == expected

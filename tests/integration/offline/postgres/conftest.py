@@ -1,11 +1,11 @@
-import pytest_asyncio
+import pytest
 from musigree.config import PostgresTestConfiguration
 from musigree.logging_config import setup_logging
 
 
-@pytest_asyncio.fixture(scope="session")
-async def offline_config():
+@pytest.fixture(scope="class")
+def offline_config():
     """Provide the Postgres offline database configuration for tests."""
-    config = PostgresTestConfiguration()
+    offline_config = PostgresTestConfiguration()
     setup_logging(is_testing=True)
-    return config 
+    return offline_config

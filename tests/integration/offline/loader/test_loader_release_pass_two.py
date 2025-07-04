@@ -1,32 +1,36 @@
+import pytest
+
 from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
-    def test_loader_release_pass_two(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestLoaderReleasePassTwo(NotATest):
+    @pytest.mark.asyncio
+    async def test_loader_release_pass_two(self, offline_database_setup):
         # GIVEN
 
         # WHEN
-        actual = ReleaseRepository().count()
+        async with offline_transaction():
+            actual = await ReleaseRepository().count()
 
         # THEN
         expected = 1700
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_157(self):
+    @pytest.mark.asyncio
+    async def test_release_157(self, offline_database_setup):
         # GIVEN
         release_id = 157
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
+            release = await release_repository.get_by_id(release_id)
+            actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected_release = {
@@ -90,17 +94,18 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_635(self):
+    @pytest.mark.asyncio
+    async def test_release_635(self, offline_database_setup):
         # GIVEN
         release_id = 635
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
+            release = await release_repository.get_by_id(release_id)
+            actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected_release = {
@@ -183,32 +188,34 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_99999999(self):
+    @pytest.mark.asyncio
+    async def test_release_99999999(self, offline_database_setup):
         # GIVEN
         release_id = 99999999
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
             try:
-                release = release_repository.get(release_id)
+                release = await release_repository.get_by_id(release_id)
             except NotFoundError:
                 release = None
 
         # THEN
-        self.assertIsNone(release)
+        assert release is None, f"Release with ID {release_id} should not exist."
 
-    def test_release_61930(self):
+    @pytest.mark.asyncio
+    async def test_release_61930(self, offline_database_setup):
         # GIVEN
         release_id = 61930
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
-            actual = utils.normalize_dict(release.model_dump(exclude={"id"}))
+            release = await release_repository.get_by_id(release_id)
+            actual = utils.normalize_dict(release.model_dump())
 
         # THEN
         expected_release = {
@@ -525,4 +532,4 @@ class TestLoaderReleasePassTwo(OfflineDatabaseTestCase):
 
         expected = utils.normalize_dict(expected_release)
         self.maxDiff = None
-        self.assertEqual(expected, actual)
+        assert actual == expected

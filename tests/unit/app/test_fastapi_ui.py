@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from fastapi import Request
@@ -95,20 +95,20 @@ class TestFastAPIUI:
     @pytest.mark.asyncio
     async def test_route_entity_type_entity_id_success(self, mock_parse_args, mock_db_manager, 
                                                        mock_multiselect, mock_roles_json, mock_templates):
-        """Test the entity-specific route with valid parameters."""
+        """Test the entity route with valid parameters."""
         # Setup mocks
         mock_parse_args.return_value = (["Artist"], 2000)
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
         
-        # Mock network data
         mock_network_data = {
             "center": {"name": "The Beatles"},
             "nodes": [],
             "edges": []
         }
-        mock_db_manager.runtime_database_helper.get_network.return_value = mock_network_data
+        # Make the get_network method an AsyncMock that returns the mock data
+        mock_db_manager.runtime_database_helper.get_network = AsyncMock(return_value=mock_network_data)
         
         # Create mock request
         mock_request = Mock(spec=Request)
@@ -164,7 +164,7 @@ class TestFastAPIUI:
         """Test the entity route when no network data is found."""
         # Setup mocks
         mock_parse_args.return_value = (None, None)
-        mock_db_manager.runtime_database_helper.get_network.return_value = None
+        mock_db_manager.runtime_database_helper.get_network = AsyncMock(return_value=None)
         
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
@@ -227,7 +227,7 @@ class TestFastAPIUI:
             "nodes": [],
             "edges": []
         }
-        mock_db_manager.runtime_database_helper.get_network.return_value = mock_network_data
+        mock_db_manager.runtime_database_helper.get_network = AsyncMock(return_value=mock_network_data)
         
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"

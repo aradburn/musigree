@@ -1,16 +1,18 @@
+import pytest
+
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestDatabaseRelation(OfflineDatabaseTestCase):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestDatabaseRelation(NotATest):
 
-    def test_from_db_01(self):
+    @pytest.mark.asyncio
+    async def test_from_db_01(self, offline_database_setup) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -18,7 +20,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
@@ -31,7 +33,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
                 object=id_2,
             )
 
-            relation = relation_repository.find_by_key(key)
+            relation = await relation_repository.find_by_key(key)
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -116,9 +118,10 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_db_02(self):
+    @pytest.mark.asyncio
+    async def test_from_db_02(self, offline_database_setup) -> None:
         # GIVEN
         entity_one_id = 21209
         entity_one_type = EntityType.ARTIST
@@ -126,7 +129,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
@@ -137,7 +140,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
                 object=id_2,
             )
 
-            relation = relation_repository.find_by_key(key)
+            relation = await relation_repository.find_by_key(key)
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -154,9 +157,10 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_db_03(self):
+    @pytest.mark.asyncio
+    async def test_from_db_03(self, offline_database_setup) -> None:
         # GIVEN
         entity_one_id = 335173
         entity_one_type = EntityType.ARTIST
@@ -164,7 +168,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         entity_two_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             relation_repository = RelationRepository()
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
@@ -175,7 +179,7 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
                 object=id_2,
             )
 
-            relation = relation_repository.find_by_key(key)
+            relation = await relation_repository.find_by_key(key)
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         expected_relation = {
@@ -209,4 +213,4 @@ class TestDatabaseRelation(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_relation)
-        self.assertEqual(expected, actual)
+        assert actual == expected

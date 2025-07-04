@@ -1,4 +1,4 @@
-import unittest
+import pytest
 
 from musigree import utils
 from musigree.config import SqliteTestConfiguration
@@ -8,8 +8,9 @@ from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
 
 
-class TestLoaderEntity(unittest.TestCase):
-    def test_from_element_01(self):
+class TestLoaderEntity:
+    @pytest.mark.asyncio
+    async def test_from_element_01(self):
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -75,9 +76,10 @@ class TestLoaderEntity(unittest.TestCase):
             "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_element_02(self):
+    @pytest.mark.asyncio
+    async def test_from_element_02(self):
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -119,9 +121,10 @@ class TestLoaderEntity(unittest.TestCase):
             "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_element_03(self):
+    @pytest.mark.asyncio
+    async def test_from_element_03(self):
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -150,7 +153,7 @@ class TestLoaderEntity(unittest.TestCase):
             "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
     def test_load_artists_from_xml_file(self):
         offline_config = SqliteTestConfiguration()
@@ -165,8 +168,9 @@ class TestLoaderEntity(unittest.TestCase):
             id_attr="entity_id",
             skip_without=["entity_name"],
         )
-        count = sum(1 for _ in entity_generator)
-        self.assertEqual(5560, count)
+        actual = sum(1 for _ in entity_generator)
+        expected = 5560
+        assert actual == expected
 
     def test_load_labels_from_xml_file(self):
         offline_config = SqliteTestConfiguration()
@@ -181,5 +185,6 @@ class TestLoaderEntity(unittest.TestCase):
             id_attr="entity_id",
             skip_without=["entity_name"],
         )
-        count = sum(1 for _ in entity_generator)
-        self.assertEqual(656, count)
+        actual = sum(1 for _ in entity_generator)
+        expected = 656
+        assert actual == expected

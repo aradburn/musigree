@@ -1,6 +1,6 @@
-import unittest
 from unittest.mock import Mock, patch
 
+import pytest
 from sqlalchemy import Result
 from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.genre_repository import GenreRepository
@@ -8,20 +8,21 @@ from musigree.runtime.runtime_database.genre_table import GenreTable
 from musigree.runtime.runtime_domain.genre import Genre
 
 
-class TestGenreRepository(unittest.TestCase):
+class TestGenreRepository:
     """Unit tests for GenreRepository class."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.repository = GenreRepository()
 
     def test_schema_class(self):
         """Test that schema_class is correctly set."""
         # GIVEN/WHEN/THEN
-        self.assertEqual(self.repository.schema_class, GenreTable)
+        assert self.repository.schema_class == GenreTable
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, '_all')
-    def test_all(self, mock_all):
+    async def test_all(self, mock_all):
         """Test retrieving all genres."""
         # GIVEN
         mock_instance1 = Mock()
@@ -32,7 +33,12 @@ class TestGenreRepository(unittest.TestCase):
         mock_instance2.id = 2
         mock_instance2.genre_name = "Rock"
         
-        mock_all.return_value = [mock_instance1, mock_instance2]
+        # Create an async generator for the mock
+        async def async_generator():
+            for item in [mock_instance1, mock_instance2]:
+                yield item
+        
+        mock_all.return_value = async_generator()
         
         with patch.object(Genre, 'model_validate') as mock_validate:
             mock_validate.side_effect = [
@@ -41,17 +47,20 @@ class TestGenreRepository(unittest.TestCase):
             ]
             
             # WHEN
-            result = list(self.repository.all())
+            result = []
+            async for genre in self.repository.all():
+                result.append(genre)
             
             # THEN
-            self.assertEqual(len(result), 2)
-            self.assertIsInstance(result[0], Genre)
-            self.assertIsInstance(result[1], Genre)
-            self.assertEqual(result[0].genre_name, "Electronic")
-            self.assertEqual(result[1].genre_name, "Rock")
+            assert len(result) == 2
+            assert isinstance(result[0], Genre)
+            assert isinstance(result[1], Genre)
+            assert result[0].genre_name == "Electronic"
+            assert result[1].genre_name == "Rock"
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, 'execute')
-    def test_get_success(self, mock_execute):
+    async def test_get_success(self, mock_execute):
         """Test successfully retrieving a genre by ID."""
         # GIVEN
         genre_id = 1
@@ -70,14 +79,15 @@ class TestGenreRepository(unittest.TestCase):
             mock_validate.return_value = expected_genre
             
             # WHEN
-            result = self.repository.get(genre_id)
+            result = await self.repository.get_by_id(genre_id)
             
             # THEN
-            self.assertEqual(result, expected_genre)
+            assert result == expected_genre
             mock_validate.assert_called_once_with(mock_instance)
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, 'execute')
-    def test_get_not_found(self, mock_execute):
+    async def test_get_not_found(self, mock_execute):
         """Test retrieving a genre by ID when not found."""
         # GIVEN
         genre_id = 999
@@ -89,11 +99,12 @@ class TestGenreRepository(unittest.TestCase):
         mock_execute.return_value = mock_result
         
         # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get(genre_id)
+        with pytest.raises(NotFoundError):
+            await self.repository.get_by_id(genre_id)
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, 'execute')
-    def test_get_by_name_success(self, mock_execute):
+    async def test_get_by_name_success(self, mock_execute):
         """Test successfully retrieving a genre by name."""
         # GIVEN
         genre_name = "Electronic"
@@ -112,14 +123,15 @@ class TestGenreRepository(unittest.TestCase):
             mock_validate.return_value = expected_genre
             
             # WHEN
-            result = self.repository.get_by_name(genre_name)
+            result = await self.repository.get_by_name(genre_name)
             
             # THEN
-            self.assertEqual(result, expected_genre)
+            assert result == expected_genre
             mock_validate.assert_called_once_with(mock_instance)
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, 'execute')
-    def test_get_by_name_not_found(self, mock_execute):
+    async def test_get_by_name_not_found(self, mock_execute):
         """Test retrieving a genre by name when not found."""
         # GIVEN
         genre_name = "NonexistentGenre"
@@ -131,11 +143,12 @@ class TestGenreRepository(unittest.TestCase):
         mock_execute.return_value = mock_result
         
         # WHEN/THEN
-        with self.assertRaises(NotFoundError):
-            self.repository.get_by_name(genre_name)
+        with pytest.raises(NotFoundError):
+            await self.repository.get_by_name(genre_name)
 
+    @pytest.mark.asyncio
     @patch.object(GenreRepository, '_save')
-    def test_create(self, mock_save):
+    async def test_create(self, mock_save):
         """Test creating a new genre."""
         # GIVEN
         genre = Genre(id=1, genre_name="Electronic")
@@ -149,9 +162,9 @@ class TestGenreRepository(unittest.TestCase):
             mock_validate.return_value = expected_genre
             
             # WHEN
-            result = self.repository.create(genre)
+            result = await self.repository.create(genre)
             
             # THEN
-            self.assertEqual(result, expected_genre)
+            assert result == expected_genre
             mock_save.assert_called_once_with(genre.model_dump())
             mock_validate.assert_called_once_with(mock_instance) 

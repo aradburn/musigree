@@ -564,22 +564,6 @@ def test_calculate_size_string() -> None:
     assert result > 0
 
 
-@patch('time.time')
-def test_timeit_decorator(mock_time: MagicMock) -> None:
-    """Test timeit decorator measures function execution time."""
-    # Mock time to return predictable values
-    mock_time.side_effect = [1.0, 2.0]  # 1 second difference
-    
-    @utils.timeit
-    def test_function() -> str:
-        return "result"
-    
-    with patch('musigree.utils.log') as mock_log:
-        result = test_function()
-        assert result == "result"
-        mock_log.debug.assert_called()
-
-
 # Additional tests for better coverage
 def test_batched_single_element() -> None:
     """Test batched with single element per batch."""

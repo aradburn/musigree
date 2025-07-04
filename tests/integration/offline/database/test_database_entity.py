@@ -1,25 +1,27 @@
+import pytest
+
 from musigree import utils
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.library.fields.entity_type import EntityType
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestDatabaseEntity(OfflineDatabaseTestCase):
-    def test_from_db_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestDatabaseEntity(NotATest):
+    @pytest.mark.asyncio
+    async def test_from_db_01(self, offline_database_setup) -> None:
         # GIVEN
         entity_id = 3
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
+            actual = utils.normalize_dict(entity.model_dump())
 
         # THEN
         expected_entity = {
@@ -74,6 +76,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
                 ],
             },
             "entity_name": "Josh Wink",
+            "id": 3,
             "relation_counts": {
                 "Featuring": 1,
                 "Producer": 3,
@@ -84,20 +87,21 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
             "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_db_02(self):
+    @pytest.mark.asyncio
+    async def test_from_db_02(self, offline_database_setup) -> None:
         # GIVEN
         entity_id = 2239
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
+            actual = utils.normalize_dict(entity.model_dump())
 
         expected_entity = {
             "entities": {
@@ -125,6 +129,7 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
                 ],
             },
             "entity_name": "Seefeel",
+            "id": 2239,
             "relation_counts": {
                 "Compiled On": 15,
                 "Copyright": 2,
@@ -143,20 +148,21 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
             "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_db_03(self):
+    @pytest.mark.asyncio
+    async def test_from_db_03(self, offline_database_setup) -> None:
         # GIVEN
         entity_id = 1
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
-            actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
+            actual = utils.normalize_dict(entity.model_dump())
 
         expected_entity = {
             "entities": {},
@@ -173,8 +179,55 @@ class TestDatabaseEntity(OfflineDatabaseTestCase):
                 ],
             },
             "entity_name": "Planet E",
+            "id": 1000000001,
             "relation_counts": {"Released On": 1},
             "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
+
+    @pytest.mark.asyncio
+    async def test_from_db_04(self, offline_database_setup) -> None:
+        # GIVEN
+        entity_id = 138147
+        entity_type = EntityType.LABEL
+
+        # WHEN
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+            actual = utils.normalize_dict(entity.model_dump())
+
+        expected_entity = {
+                               "entities": {
+                                   "parent_label": {
+                                       "Warner Music Group": None
+                                   }
+                               },
+                               "entity_id": 138147,
+                               "entity_metadata": {
+                                   "profile": "Music publishing company, and a division of the Warner "
+                           + "Music Group. \r\n[b]Pre 1987 issues - please use [l51877][/b]\r\nThe "
+                           + "company traces its origins back to 1811 and the founding of Chappell & "
+                           + "Company, a music publishing company and instrument shop on London\u2019s "
+                           + "Bond Street.\r\nWarner/Chappell was created in 1987 when Warner "
+                           + "Communications purchased Chappell & Co. and is one of the largest music "
+                           + "publishers with a catalog of more than one million songs and a roster of "
+                           + "more than 65,000 songwriters.\r\n\r\nAlso credited as \"Warner "
+                           + "Chappell\".\r\n",
+                                   "urls": [
+                                       "http://www.warnerchappell.com/"
+                                   ]
+                               },
+                               "entity_name": "Warner/Chappell",
+                               "entity_type": "EntityType.LABEL",
+                               "id": 1000138147,
+                               "relation_counts": {
+                                   "Published By": 2
+                               },
+                               "search_content": "warnerchappell"
+                           }
+        expected = utils.normalize_dict(expected_entity)
+        assert actual == expected

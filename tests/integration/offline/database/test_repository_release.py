@@ -1,19 +1,19 @@
+import pytest
+
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.integration.offline.database.offline_repository_test_case import (
-    OfflineRepositoryTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestRepositoryRelease(OfflineRepositoryTestCase):
-    def test_create_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
+class TestRepositoryRelease(NotATest):
+    @pytest.mark.asyncio
+    async def test_create_01(self, offline_database_setup, offline_config) -> None:
         # GIVEN
-        discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"
         )
@@ -21,18 +21,17 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
         release = ParserRelease().from_element(release_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = ReleaseRepository()
-            created_release = repository.create(release)
+            created_release = await repository.create(release)
 
         # THEN
-        self.assertEqual(release, created_release)
+        assert release == created_release
 
-    def test_get_01(self):
+    @pytest.mark.asyncio
+    async def test_get_01(self, offline_database_setup, offline_config) -> None:
         # GIVEN
-        discogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             discogs_data_directory, "release", "testinsert"
         )
@@ -46,11 +45,11 @@ class TestRepositoryRelease(OfflineRepositoryTestCase):
         release = ParserRelease().from_element(release_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = ReleaseRepository()
-            created_release = repository.create(release)
+            created_release = await repository.create(release)
 
-            retrieved_release = repository.get(635)
+            retrieved_release = await repository.get_by_id(635)
 
         # THEN
-        self.assertEqual(created_release, retrieved_release)
+        assert created_release == retrieved_release

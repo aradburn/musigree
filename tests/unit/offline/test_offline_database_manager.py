@@ -1,7 +1,7 @@
 """Unit tests for OfflineDatabaseManager class."""
 
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from sqlalchemy import Engine
@@ -61,11 +61,12 @@ class TestOfflineDatabaseManager:
             OfflineDatabaseManager.get_concurrency_count()
 
     # Test setup_database method
-    @patch('musigree.offline.postgres.postgres_helper.OfflinePostgresHelper')
-    @patch('musigree.offline.offline_database_manager.sessionmaker')
+    @patch('musigree.offline.postgres.offline_postgres_helper.OfflinePostgresHelper')
+    @patch('musigree.offline.offline_database_manager.async_sessionmaker')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
+    @pytest.mark.asyncio
+    async def test_setup_database_postgres_success(self, _mock_logger, mock_listen, mock_sessionmaker, mock_postgres_helper):
         """Test successful database setup for PostgreSQL."""
         # Arrange
         mock_config = Mock()
@@ -76,9 +77,11 @@ class TestOfflineDatabaseManager:
         mock_engine = Mock(spec=Engine)
         mock_pool = Mock()
         mock_engine.pool = mock_pool
+        mock_engine.sync_engine = Mock()
         
         mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_helper_instance.setup_database = AsyncMock(return_value=mock_engine)
+        mock_helper_instance.check_connection = AsyncMock()
         mock_postgres_helper.return_value = mock_helper_instance
         
         mock_session_factory = Mock()
@@ -86,7 +89,7 @@ class TestOfflineDatabaseManager:
 
         with patch.object(OfflineDatabaseManager, 'get_concurrency_count', return_value=4):
             # Act
-            OfflineDatabaseManager.setup_database(mock_config)
+            await OfflineDatabaseManager.setup_database(mock_config)
 
         # Assert
         assert OfflineDatabaseManager.offline_database_helper == mock_helper_instance
@@ -96,21 +99,22 @@ class TestOfflineDatabaseManager:
         assert helper is not None
         assert hasattr(helper, 'offline_engine')
         assert hasattr(helper, 'offline_session_factory')
-        assert helper.offline_engine == mock_engine
-        assert helper.offline_session_factory == mock_session_factory
+        assert helper.offline_async_engine == mock_engine
+        assert helper.offline_async_session_factory == mock_session_factory
         
         mock_postgres_helper.assert_called_once()
         mock_helper_instance.setup_database.assert_called_once_with(mock_config)
         mock_helper_instance.check_connection.assert_called_once_with(mock_config, mock_engine)
-        mock_sessionmaker.assert_called_once_with(bind=mock_engine)
+        mock_sessionmaker.assert_called_once_with(bind=mock_engine, expire_on_commit=False)
         # Should register event listeners for concurrency > 1
         assert mock_listen.call_count == 2
 
     @patch('os.getpid')
-    @patch('musigree.offline.sqlite.sqlite_helper.OfflineSqliteHelper')
+    @patch('musigree.offline.sqlite.offline_sqlite_helper.OfflineSqliteHelper')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
+    @pytest.mark.asyncio
+    async def test_setup_database_registers_event_listeners_for_multiprocessing(self, _mock_logger, mock_listen, mock_sqlite_helper, _mock_getpid):
         """Test that event listeners are registered when concurrency count > 1."""
         # Arrange
         mock_config = Mock()
@@ -120,14 +124,16 @@ class TestOfflineDatabaseManager:
         mock_engine = Mock(spec=Engine)
         mock_pool = Mock()
         mock_engine.pool = mock_pool
+        mock_engine.sync_engine = Mock()
         
         mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_helper_instance.setup_database = AsyncMock(return_value=mock_engine)
+        mock_helper_instance.check_connection = AsyncMock()
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(OfflineDatabaseManager, 'get_concurrency_count', return_value=4):
             # Act
-            OfflineDatabaseManager.setup_database(mock_config)
+            await OfflineDatabaseManager.setup_database(mock_config)
 
         # Assert that event listeners were registered
         assert mock_listen.call_count == 2
@@ -136,10 +142,11 @@ class TestOfflineDatabaseManager:
         assert "connect" in registered_events
         assert "checkout" in registered_events
 
-    @patch('musigree.offline.sqlite.sqlite_helper.OfflineSqliteHelper')
+    @patch('musigree.offline.sqlite.offline_sqlite_helper.OfflineSqliteHelper')
     @patch('musigree.offline.offline_database_manager.listen')
     @patch('logging.getLogger')
-    def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
+    @pytest.mark.asyncio
+    async def test_setup_database_no_event_listeners_for_single_thread(self, _mock_logger, mock_listen, mock_sqlite_helper):
         """Test that no event listeners are registered when concurrency count = 1."""
         # Arrange
         mock_config = Mock()
@@ -148,17 +155,19 @@ class TestOfflineDatabaseManager:
         
         mock_engine = Mock(spec=Engine)
         mock_helper_instance = Mock()
-        mock_helper_instance.setup_database.return_value = mock_engine
+        mock_helper_instance.setup_database = AsyncMock(return_value=mock_engine)
+        mock_helper_instance.check_connection = AsyncMock()
         mock_sqlite_helper.return_value = mock_helper_instance
 
         with patch.object(OfflineDatabaseManager, 'get_concurrency_count', return_value=1):
             # Act
-            OfflineDatabaseManager.setup_database(mock_config)
+            await OfflineDatabaseManager.setup_database(mock_config)
 
         # Assert that no event listeners were registered
         mock_listen.assert_not_called()
 
-    def test_setup_database_unknown_database_type(self):
+    @pytest.mark.asyncio
+    async def test_setup_database_unknown_database_type(self):
         """Test setup_database raises error for unknown database type."""
         # Arrange
         mock_config = Mock()
@@ -167,7 +176,7 @@ class TestOfflineDatabaseManager:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Configuration Error: Unknown database type"):
-            OfflineDatabaseManager.setup_database(mock_config)
+            await OfflineDatabaseManager.setup_database(mock_config)
 
     def test_engine_event_handlers_behavior(self):
         """Test the behavior of engine event handlers using mock scenarios."""
@@ -202,48 +211,46 @@ class TestOfflineDatabaseManager:
                 assert mock_connection_proxy.dbapi_connection is None
 
     # Test shutdown_database method
-    @patch('musigree.offline.offline_database_manager.close_all_sessions')
-    def test_shutdown_database_success(self, mock_close_all_sessions):
+    @pytest.mark.asyncio
+    async def test_shutdown_database_success(self):
         """Test successful database shutdown."""
         # Arrange
-        mock_engine = Mock()
+        mock_engine = AsyncMock()
         mock_helper = Mock()
-        mock_helper.offline_engine = mock_engine
+        mock_helper.offline_async_engine = mock_engine
+        mock_helper.shutdown_database = AsyncMock()
         
         OfflineDatabaseManager.offline_database_helper = mock_helper
 
         # Act
-        OfflineDatabaseManager.shutdown_database()
+        await OfflineDatabaseManager.shutdown_database()
 
         # Assert
-        mock_close_all_sessions.assert_called_once()
         mock_engine.dispose.assert_called_once()
         mock_helper.shutdown_database.assert_called_once()
 
-    @patch('musigree.offline.offline_database_manager.close_all_sessions')
-    def test_shutdown_database_no_engine(self, mock_close_all_sessions):
-        """Test shutdown when no engine is present."""
+    @pytest.mark.asyncio
+    async def test_shutdown_database_no_engine(self):
+        """Test database shutdown when no engine exists."""
         # Arrange
         mock_helper = Mock()
-        mock_helper.offline_engine = None
+        mock_helper.offline_async_engine = None
+        mock_helper.shutdown_database = AsyncMock()
         
         OfflineDatabaseManager.offline_database_helper = mock_helper
 
         # Act
-        OfflineDatabaseManager.shutdown_database()
+        await OfflineDatabaseManager.shutdown_database()
 
         # Assert
-        mock_close_all_sessions.assert_called_once()
         mock_helper.shutdown_database.assert_called_once()
 
-    @patch('musigree.offline.offline_database_manager.close_all_sessions')
-    def test_shutdown_database_no_helper(self, mock_close_all_sessions):
-        """Test shutdown when no helper is present raises assertion error."""
+    @pytest.mark.asyncio
+    async def test_shutdown_database_no_helper(self):
+        """Test database shutdown when no helper exists."""
         # Arrange
         OfflineDatabaseManager.offline_database_helper = None
 
         # Act & Assert
         with pytest.raises(AssertionError, match="OfflineDatabaseManager.offline_database_helper must be initialized"):
-            OfflineDatabaseManager.shutdown_database()
-
-        mock_close_all_sessions.assert_called_once() 
+            await OfflineDatabaseManager.shutdown_database() 

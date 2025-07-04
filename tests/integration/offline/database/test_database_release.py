@@ -1,17 +1,19 @@
+import pytest
+
 from musigree import utils
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import NotATest
 
 
-class TestDatabaseRelease(OfflineDatabaseTestCase):
-    def test_from_db_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestDatabaseRelease(NotATest):
+    @pytest.mark.asyncio
+    async def test_from_db_01(self, offline_database_setup) -> None:
         release_id = 157
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
+            release = await release_repository.get_by_id(release_id)
             actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
@@ -75,13 +77,14 @@ class TestDatabaseRelease(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_from_db_02(self):
+    @pytest.mark.asyncio
+    async def test_from_db_02(self, offline_database_setup) -> None:
         release_id = 635
-        with offline_transaction():
+        async with offline_transaction():
             release_repository = ReleaseRepository()
-            release = release_repository.get(release_id)
+            release = await release_repository.get_by_id(release_id)
             actual = utils.normalize_dict(release.model_dump())
 
         expected_release = {
@@ -164,4 +167,4 @@ class TestDatabaseRelease(OfflineDatabaseTestCase):
         }
 
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
