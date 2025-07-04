@@ -13,13 +13,13 @@ The loader is responsible for:
     - Registering cleanup functions to be run when the application exits.
     - Running the loader process between specified dates.
 """
-
+import asyncio
 import atexit
 import datetime
 import logging
 import sys
-from functools import partial
 from pathlib import Path
+from typing import Coroutine
 
 import luigi
 
@@ -32,10 +32,9 @@ from musigree.constants import (
     ROLES_DATA,
     INSTRUMENTS_DATA,
     TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
+    TEXT_SEARCH_FILENAME, ALL_RUNTIME_DATABASE_TABLE_NAMES,
 )
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.logging_config import setup_logging
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.database import ReleaseTable, EntityTable, RelationTable
@@ -45,17 +44,14 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
-)
+from musigree.runtime.runtime_database import RuntimeEntityTable, RuntimeRelationTable
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.transfer.transfer_manager import TransferManager
-from musigree.transfer.transfer_task import TransferTask
 
 log = logging.getLogger(__name__)
 
 
-def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) -> None:
+async def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) -> None:
     """
     Loads data into the offline tables.
 
@@ -69,11 +65,11 @@ def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) 
     log.info("Load offline tables")
     stages = get_load_offline_table_stages(data_directory, date, is_bulk_inserts)
     for stage in stages:
-        stage()
+        await stage
     log.info("Load offline tables done.")
 
 
-def load_offline_table_stage(
+async def load_offline_table_stage(
     data_directory: Path, date: str, is_bulk_inserts: bool, stage: int
 ) -> None:
     """
@@ -86,13 +82,13 @@ def load_offline_table_stage(
         stage: The index of the stage to execute.
     """
     stages = get_load_offline_table_stages(data_directory, date, is_bulk_inserts)
-    log.debug(f"Run stage: {stage}")
-    stages[stage]()
+    log.debug(f"Run offline stage: {stage}")
+    await stages[stage]
 
 
 def get_load_offline_table_stages(
     data_directory: Path, date: str, is_bulk_inserts: bool
-) -> list[partial]:
+) -> list[Coroutine]:
     """
     Gets the list of stages for loading data into the tables.
 
@@ -111,137 +107,171 @@ def get_load_offline_table_stages(
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_load_offline_table_stages()"
     )
-    assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+    assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
         "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_load_offline_table_stages()"
     )
 
     is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
     is_analyze = OfflineDatabaseManager.offline_database_helper.is_vacuum_analyze()
     discogs_data_directory = data_directory / DISCOGS_DATA
+    roles_directory = data_directory / ROLES_DATA
+    instruments_directory = data_directory / INSTRUMENTS_DATA
     text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     stages = [
-        partial(RoleDataAccess.load_all_roles),
-        partial(
-            LoaderEntity().loader_entity_pass_one,
+        LoaderRole.load_roles_into_database(roles_directory, instruments_directory),
+        RoleDataAccess.load_all_roles_into_cache(),
+        LoaderEntity.loader_entity_pass_one(discogs_data_directory, date, is_bulk_inserts),
+        OfflineDatabaseManager.offline_database_helper.vacuum(
+            EntityTable.__tablename__,
+            is_full,
+            is_analyze,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
+        ),
+        LoaderRelease.loader_release_pass_one(
             discogs_data_directory,
             date,
             is_bulk_inserts,
         ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
-            EntityTable.__tablename__,
-            is_full,
-            is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
-        ),
-        partial(
-            LoaderRelease().loader_release_pass_one,
-            discogs_data_directory,
-            date,
-            is_bulk_inserts,
-        ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             ReleaseTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(LoaderEntity().loader_entity_pass_two),
-        partial(LoaderRelease().loader_release_pass_two),
-        partial(LoaderRelation().loader_relation_pass_one, date),
-        # partial(LoaderRelation().loader_relation_pass_two, date),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        LoaderEntity.loader_entity_pass_two(),
+        LoaderRelease.loader_release_pass_two(),
+        LoaderRelation.loader_relation_pass_one(),
+        # LoaderRelation.loader_relation_pass_two(date),
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             EntityTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             ReleaseTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             RelationTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(LoaderEntity().loader_entity_pass_three),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        LoaderEntity.loader_entity_pass_three(),
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             EntityTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             ReleaseTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(
-            OfflineDatabaseManager.offline_database_helper.vacuum,
+        OfflineDatabaseManager.offline_database_helper.vacuum(
             RelationTable.__tablename__,
             is_full,
             is_analyze,
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
-        partial(
-            LoaderEntity().loader_create_text_search_index,
-            text_search_path,
-        ),
+        LoaderEntity.loader_create_text_search_index(text_search_path),
     ]
     return stages
 
 
-def load_runtime_tables(data_directory: Path) -> None:
-    """Loads runtime tables with initial data."""
-    log.info("Load tables")
-    RuntimeRoleDataAccess.load_all_roles()
+async def load_runtime_tables(data_directory: Path, date: str | None) -> None:
+    """
+    Loads data into the runtime tables.
 
+    This method orchestrates the runtime loading process by executing a series of stages.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load. Used to mark the date as done in the metadata of the data laoding process
+    """
+    log.info("Load runtime tables")
+    stages = get_load_runtime_table_stages(data_directory, date)
+    for stage in stages:
+        await stage
+    log.info("Load runtime tables done.")
+
+
+async def load_runtime_table_stage(data_directory: Path, date: str | None, stage: int) -> None:
+    """
+    Loads a specific stage of the runtime data loading process.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load.
+        stage: The index of the stage to execute.
+    """
+    stages = get_load_runtime_table_stages(data_directory, date)
+    log.debug(f"Run runtime stage: {stage}")
+    await stages[stage]
+
+
+def get_load_runtime_table_stages(data_directory: Path, date: str | None) -> list[Coroutine]:
+    """
+    Gets the list of stages for loading data into the tables.
+
+    Args:
+        data_directory: The directory containing the data files.
+        date: The date of the data to load.
+
+    Returns:
+        list[partial]: A list of partial functions representing the loading stages.
+    """
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_load_runtime_table_stages()"
+    )
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+        "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_load_runtime_table_stages()"
+    )
+
+    is_full = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_full()
+    is_analyze = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_analyze()
     text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    RuntimeDatabaseHelper.text_search_index = (
-        TextSearchIndex.load_text_search_index_from_file(text_search_path)
-    )
-    log.info("Load tables done.")
+    stages = [
+        # Load roles into the runtime database
+        TransferManager.transfer_role(),
 
+        # Load role cache in memory
+        RuntimeRoleDataAccess.load_all_roles_into_cache(),
 
-def load_offline_test_tables(
-    data_directory: Path, date: str, is_bulk_inserts: bool
-) -> None:
-    """
-    Loads test data into the offline tables.
+        # Load text search index for entities
+        TransferManager.transfer_load_text_search_index(text_search_path),
 
-    This method is used for loading test data into the offline database.
-    It is typically called during the setup phase of tests.
-    """
+        # Load entities details into memory
+        TransferManager.transfer_create_entity_details_index(),
 
-    assert OfflineDatabaseManager.offline_database_helper is not None, (
-        "OfflineDatabaseManager.offline_database_helper must be initialized before calling load_offline_test_tables()"
-    )
+        # Load entities details (countries, genres and styles) into the runtime database
+        TransferManager.transfer_entity_details(),
 
-    roles_directory = data_directory / ROLES_DATA
-    instruments_directory = data_directory / INSTRUMENTS_DATA
-    LoaderRole.load_roles_into_database(roles_directory, instruments_directory)
-    load_offline_tables(data_directory, date, is_bulk_inserts=is_bulk_inserts)
+        # Load entities into the runtime database
+        TransferManager.transfer_entity(),
 
-    # text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    # OfflineDatabaseManager.offline_database_helper.text_search_index = (
-    #     TextSearchIndex.load_text_search_index_from_file(text_search_path)
-    # )
+        # Load relations into the runtime database
+        TransferManager.transfer_relation(),
 
-
-def load_runtime_test_tables(data_directory: Path) -> None:
-    TransferManager.transfer_all(data_directory)
-    load_runtime_tables(data_directory)
+        RuntimeDatabaseManager.runtime_database_helper.vacuum(
+            RuntimeEntityTable.__tablename__,
+            is_full,
+            is_analyze,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        RuntimeDatabaseManager.runtime_database_helper.vacuum(
+            RuntimeRelationTable.__tablename__,
+            is_full,
+            is_analyze,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+    ]
+    return stages
 
 
 def loader_main() -> None:
@@ -283,14 +313,21 @@ def loader_main() -> None:
         log.debug("Clearing cache")
         CacheManager.clear()
 
-    OfflineDatabaseManager.setup_database(offline_config)
-    RuntimeDatabaseManager.setup_database(runtime_config)
+    asyncio.run(OfflineDatabaseManager.setup_database(offline_config))
+    asyncio.run(RuntimeDatabaseManager.setup_database(runtime_config))
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     # atexit.register(shutdown_logging)
     atexit.register(CacheManager.shutdown_cache)
     atexit.register(OfflineDatabaseManager.shutdown_database)
     atexit.register(RuntimeDatabaseManager.shutdown_database)
+
+    asyncio.run(RuntimeDatabaseManager.runtime_database_helper.drop_tables(
+        ALL_RUNTIME_DATABASE_TABLE_NAMES
+    ))
+    asyncio.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(
+        ALL_RUNTIME_DATABASE_TABLE_NAMES
+    ))
 
     # Run the loader process between these dates
     start_date = datetime.date(2024, 11, 1)
@@ -302,7 +339,8 @@ def loader_main() -> None:
         LoaderSetupTask(
             data_directory=data_directory, start_date=start_date, end_date=end_date
         ),
-        TransferTask(data_directory=data_directory),
+        # TODO split into separate tasks
+        # TransferTask(data_directory=data_directory),
     ]
     luigi_run_result = luigi.build(
         tasks,
