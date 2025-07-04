@@ -45,14 +45,12 @@ exception and `retrying` for retry. It interacts with
 `musigree.runtime.runtime_database` for database related operations,
 and `musigree.runtime.runtime_database_manager` for managing concurrency.
 """
-
+import asyncio
 import logging
 import multiprocessing
 from typing import Any
 
-from retrying import retry  # type: ignore
-from sqlalchemy.exc import DatabaseError
-
+from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
 )
@@ -63,109 +61,51 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
-"""
-The logger for the TransferWorkerEntityInserter module.
-"""
 
 
-class TransferWorkerEntityInserter(multiprocessing.Process):
+def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]],
+                                    inserted_count: int, total_count: int) -> None:
     """
     A worker process for inserting entity records into the runtime database.
-
-    This class extends `multiprocessing.Process` to perform concurrent
-    insertion of entity records.
+    This function is designed to be run in a separate process to handle the
+    insertion of a batch of entity records (`bulk_inserts`) into the
+    runtime database, improving the efficiency of the data transfer process
     """
 
-    def __init__(
-        self,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-    ):
-        """
-        Initializes the TransferWorkerEntityInserter.
-
-        Args:
-            bulk_inserts (list[dict[str, Any]]): A list of entity records to insert.
-            inserted_count (int): The number of entities already inserted.
-        """
-        super().__init__()
-        """Call the constructor of the parent class."""
-        self.bulk_inserts = bulk_inserts
-        """The list of entity records to insert."""
-        self.inserted_count = inserted_count
-        """The number of entities already inserted."""
-
-    def run(self):
-        """
-        Executes the entity insertion process.
-
-        This method performs the following steps:
-            1. Initializes the database helper if concurrency is enabled.
-            2. Inserts all entities in `bulk_inserts` using the `save_all`
-            method.
-            3. Logs the progress and number of entities inserted.
-        """
-        proc_name = self.name
-        """Get the name of the current process."""
-
-        if RuntimeDatabaseManager.get_concurrency_count() > 1:
-            """Check if concurrency is enabled."""
-            RuntimeDatabaseHelper.initialize()
-            """Initialize the database helper."""
-
-        self.save_all(self.bulk_inserts)
-        """Save all the entities."""
-
-        log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
-        """Log the number of entities inserted."""
-
-    @staticmethod
-    def retry_if_db_error(exception):
-        """
-        Determines if the operation should be retried based on the exception type.
-
-        Args:
-            exception (Exception): The exception that was raised.
-
-        Returns:
-            bool: True if the exception is a DatabaseError, False otherwise.
-        """
-        return isinstance(exception, DatabaseError)
-
-    @staticmethod
-    @retry(
-        stop_max_attempt_number=3,
-        wait_fixed=60000,
-        retry_on_exception=retry_if_db_error,
-    )
-    def save_all(bulk_inserts: list[dict[str, Any]]) -> None:
-        """
-        Saves a batch of entities to the runtime database.
-
-        This method attempts to insert a batch of entities into the runtime
-        database. If a `DatabaseError` occurs, it retries the operation up
-        to 3 times, waiting for 60 seconds between retries.
-
-        Args:
-            bulk_inserts: A list of dictionaries, where each dictionary
-                represents an entity to be inserted.
-
-        Raises:
-            DatabaseError: If there is a database error during the insertion,
-            and all retry attempts have failed.
-        """
-        with runtime_transaction():
+    async def insert_entities(_bulk_inserts: list[dict[str, Any]]) -> None:
+        """Async function to handle entity insertion."""
+        async with runtime_transaction():
             """Ensure that database operations are performed within a transaction."""
             runtime_entity_repository = RuntimeEntityRepository()
-            """Instance of RuntimeEntityRepository for database operations on runtime entities."""
+            """Instance of RuntimeEntityRepository for database operations on entities."""
             try:
-                """Attempt to insert the releases."""
-                runtime_entity_repository.save_all(bulk_inserts)
+                """Attempt to insert the entities."""
+                await runtime_entity_repository.save_all(_bulk_inserts)
                 """Insert the entities."""
-                runtime_entity_repository.commit()
+                await runtime_entity_repository.commit()
                 """Commit the transaction."""
             except DatabaseError:
                 """Handle potential database errors."""
-                log.error("Error in TransferWorkerEntityInserter worker")
-                # log.exception("Error in TransferWorkerEntityInserter worker", exc_info=True)
-                raise
+                log.error("Error in transfer_worker_entity_inserter")
+
+        log.info(f"[{proc_name}] inserted {inserted_count} entities of {total_count}")
+        """Log the number of entities inserted."""
+
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
+
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if RuntimeDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        RuntimeDatabaseHelper.initialize(loop)
+        """Initialize the database helper."""
+
+    loop.run_until_complete(insert_entities(bulk_inserts))

@@ -1,16 +1,18 @@
+import asyncio
 import logging
-import sys
+from concurrent.futures import ProcessPoolExecutor, Executor, ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
-from musigree.constants import ALL_RUNTIME_DATABASE_TABLE_NAMES
 from musigree.exceptions import DatabaseError
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
-from musigree.logging_config import LOGGING_TRACE
+from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.role_repository import RoleRepository
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.runtime_database.country_repository import CountryRepository
 from musigree.runtime.runtime_database.genre_repository import GenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
@@ -26,19 +28,16 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.runtime_domain.country import Country
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.entity import to_runtime_entity_dict
 from musigree.runtime.runtime_domain.genre import Genre
 from musigree.runtime.runtime_domain.relation import (
     RuntimeRelationDB,
 )
 from musigree.runtime.runtime_domain.role import RuntimeRole
 from musigree.runtime.runtime_domain.style import Style
-from musigree.transfer.transfer_worker_entity_inserter import (
-    TransferWorkerEntityInserter,
-)
-from musigree.transfer.transfer_worker_relation_inserter import (
-    TransferWorkerRelationInserter,
-)
+from musigree.transfer.transfer_worker_entity_inserter import transfer_worker_entity_inserter
+from musigree.transfer.transfer_worker_relation_inserter import transfer_worker_relation_inserter
+from musigree.utils import async_chunks
 
 log = logging.getLogger(__name__)
 
@@ -47,14 +46,11 @@ class TransferManager:
     BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
-    async def transfer_entity(entity_details_index: EntityDetailsIndex) -> None:
+    async def transfer_entity() -> None:
         log.debug(f"Running transfer_entity()")
 
-        offline_entity_repository = EntityRepository()
-        runtime_entity_repository = RuntimeEntityRepository()
-
-        total_count = offline_entity_repository.count()
         async with runtime_transaction():
+            runtime_entity_repository = RuntimeEntityRepository()
             initial_count = await runtime_entity_repository.count()
         if initial_count > 0:
             error_msg = "Error in transfer_entity, runtime_entity table not empty"
@@ -62,238 +58,206 @@ class TransferManager:
             raise DatabaseError
 
         processed_count = 0
-        bulk_records = []
-        workers = []
+        concurrency_count = RuntimeDatabaseManager.get_concurrency_count()
 
-        entities = await offline_entity_repository.all()
+        async with offline_transaction():
+            offline_entity_repository = EntityRepository()
+            total_count = await offline_entity_repository.count()
+            entities = offline_entity_repository.all()
 
-        for entity in entities:
-            # TODO get from runtime countries table
-            countries = entity_details_index.get_countries_for_id(entity.id)
-            # TODO get from runtime genres table
-            genres = entity_details_index.get_genres_for_id(entity.id)
-            # TODO get from runtime styles table
-            styles = entity_details_index.get_styles_for_id(entity.id)
+            chunked_entities = async_chunks(entities, TransferManager.BULK_INSERT_BATCH_SIZE)
 
-            runtime_entity = RuntimeEntity(
-                countries=countries,
-                genres=genres,
-                styles=styles,
-                **entity.model_dump(),
-            )
-            runtime_entity_db = runtime_entity.to_db()
+            if concurrency_count > 1:
+                # Use ProcessPoolExecutor for concurrent processing
+                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                    async with asyncio.TaskGroup() as task_group:
+                        async for chunk in chunked_entities:
+                            bulk_records = []
 
-            bulk_records.append(runtime_entity_db.model_dump())
-            processed_count += 1
-            if len(bulk_records) >= TransferManager.BULK_INSERT_BATCH_SIZE:
-                if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                    # Can do multi threading
-                    worker = TransferWorkerEntityInserter(
-                        bulk_records,
-                        processed_count,
-                    )
+                            for entity in chunk:
+                                runtime_entity_dict = to_runtime_entity_dict(
+                                    RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+                                bulk_records.append(runtime_entity_dict)
+                                processed_count += 1
 
-                    worker.start()
-                    workers.append(worker)
-                    bulk_records.clear()
-                    if len(workers) > RuntimeDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        TransferManager.transfer_wait_for_worker(worker)
-                else:
-                    async with runtime_transaction():
-                        try:
-                            await runtime_entity_repository.save_all(bulk_records)
-                            await runtime_entity_repository.commit()
-                            log.info(f"processed: {processed_count} of {total_count}")
-                            bulk_records.clear()
-                        except DatabaseError:
-                            log.error("Error in transfer_entity")
-                            # log.exception("Error in transfer_entity", exc_info=True)
-                            raise
-
-        if len(bulk_records) > 0:
-            if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                # Can do multi threading
-                worker = TransferWorkerEntityInserter(
-                    bulk_records,
-                    processed_count,
-                )
-
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
+                            future = TransferManager.run_worker_function(executor,
+                                                                         concurrency_count,
+                                                                         transfer_worker_entity_inserter,
+                                                                         bulk_records,
+                                                                         processed_count, total_count,
+                                                                         )
+                            task_group.create_task(future)
             else:
-                async with runtime_transaction():
-                    try:
-                        await runtime_entity_repository.save_all(bulk_records)
-                        await runtime_entity_repository.commit()
-                        log.info(f"processed: {processed_count} of {total_count}")
-                        bulk_records.clear()
-                    except DatabaseError:
-                        log.error("Error in transfer_entity")
-                        # log.exception("Error in transfer_entity", exc_info=True)
-                        raise
+                # Use single-threaded execution
+                async for chunk in chunked_entities:
+                    bulk_records = []
 
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            TransferManager.transfer_wait_for_worker(worker)
+                    for entity in chunk:
+                        runtime_entity_dict = to_runtime_entity_dict(
+                            RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+                        bulk_records.append(runtime_entity_dict)
+                        processed_count += 1
 
-        repository_count = await runtime_entity_repository.count()
-        log.debug(f"repository_count: {repository_count}")
+                    with ThreadPoolExecutor(max_workers=concurrency_count) as executor:
+                        async with asyncio.TaskGroup() as task_group:
+                            future = TransferManager.run_worker_function(executor,
+                                                                         concurrency_count,
+                                                                         transfer_worker_entity_inserter,
+                                                                         bulk_records,
+                                                                         processed_count, total_count,
+                                                                         )
+                            task_group.create_task(future)
+
+        async with runtime_transaction():
+            repository_count = await runtime_entity_repository.count()
+        log.debug(f"runtime entity repository count: {repository_count}")
 
     @staticmethod
     async def transfer_relation() -> None:
         log.debug(f"Running transfer_relation()")
-        offline_relation_repository = RelationRepository()
-        runtime_relation_repository = RuntimeRelationRepository()
+        async with offline_transaction():
+            offline_relation_repository = RelationRepository()
+            total_count = await offline_relation_repository.count()
 
-        total_count = offline_relation_repository.count()
         async with runtime_transaction():
+            runtime_relation_repository = RuntimeRelationRepository()
             initial_count = await runtime_relation_repository.count()
+
         if initial_count > 0:
             error_msg = "Error in transfer_relation, runtime_relation table not empty"
             log.exception(error_msg, exc_info=True)
             raise DatabaseError
 
         processed_count = 0
-        bulk_records = []
-        workers = []
+        concurrency_count = RuntimeDatabaseManager.get_concurrency_count()
 
-        relations = await offline_relation_repository.all()
+        async with offline_transaction():
+            relations = offline_relation_repository.all()
+            chunked_relations = async_chunks(relations, TransferManager.BULK_INSERT_BATCH_SIZE)
 
-        for relation in relations:
-            runtime_relation = RuntimeRelationDB(**relation.model_dump())
-            bulk_records.append(runtime_relation.model_dump())
-            processed_count += 1
-            if len(bulk_records) >= TransferManager.BULK_INSERT_BATCH_SIZE:
-                if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                    # Can do multi threading
-                    worker = TransferWorkerRelationInserter(
-                        bulk_records,
-                        processed_count,
-                    )
+            if concurrency_count > 1:
+                # Use ProcessPoolExecutor for concurrent processing
+                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                    async with asyncio.TaskGroup() as task_group:
+                        async for chunk in chunked_relations:
+                            bulk_records = []
 
-                    worker.start()
-                    workers.append(worker)
-                    bulk_records.clear()
-                    if len(workers) > RuntimeDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        TransferManager.transfer_wait_for_worker(worker)
-                else:
-                    async with runtime_transaction():
-                        try:
-                            await runtime_relation_repository.save_all(bulk_records)
-                            await runtime_relation_repository.commit()
-                            log.info(f"processed: {processed_count} of {total_count}")
-                            bulk_records.clear()
-                        except DatabaseError:
-                            log.error("Error in transfer_relation")
-                            # log.exception("Error in transfer_relation", exc_info=True)
-                            raise
+                            for relation in chunk:
+                                runtime_relation = RuntimeRelationDB(**relation.model_dump())
+                                bulk_records.append(runtime_relation.model_dump())
+                                processed_count += 1
 
-        if len(bulk_records) > 0:
-            if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                # Can do multi threading
-                worker = TransferWorkerRelationInserter(
-                    bulk_records,
-                    processed_count,
-                )
-
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
+                            future = TransferManager.run_worker_function(executor,
+                                                                         concurrency_count,
+                                                                         transfer_worker_relation_inserter,
+                                                                         bulk_records,
+                                                                         processed_count, total_count,
+                                                                         )
+                            task_group.create_task(future)
             else:
-                async with runtime_transaction():
-                    try:
-                        await runtime_relation_repository.save_all(bulk_records)
-                        await runtime_relation_repository.commit()
-                        log.info(f"processed: {processed_count} of {total_count}")
-                        bulk_records.clear()
-                    except DatabaseError:
-                        log.error("Error in transfer_relation")
-                        # log.exception("Error in transfer_relation", exc_info=True)
-                        raise
+                # Use single-threaded execution
+                async for chunk in chunked_relations:
+                    bulk_records = []
 
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            TransferManager.transfer_wait_for_worker(worker)
+                    for relation in chunk:
+                        runtime_relation = RuntimeRelationDB(**relation.model_dump())
+                        bulk_records.append(runtime_relation.model_dump())
+                        processed_count += 1
 
-        repository_count = await runtime_relation_repository.count()
-        log.debug(f"repository_count: {repository_count}")
+                    with ThreadPoolExecutor(max_workers=concurrency_count) as executor:
+                        async with asyncio.TaskGroup() as task_group:
+                            future = TransferManager.run_worker_function(executor,
+                                                                         concurrency_count,
+                                                                         transfer_worker_relation_inserter,
+                                                                         bulk_records, processed_count, total_count,
+                                                                         )
+                            task_group.create_task(future)
+
+        async with runtime_transaction():
+            repository_count = await runtime_relation_repository.count()
+        log.debug(f"runtime relation repository count: {repository_count}")
 
     @staticmethod
     async def transfer_role() -> None:
         log.debug(f"Running transfer_role()")
-        roles = RoleRepository().all()
-        runtime_role_repository = RuntimeRoleRepository()
+        async with offline_transaction():
+            roles = RoleRepository().all()
 
-        async with runtime_transaction():
-            for role in roles:
-                runtime_role = RuntimeRole(**role.model_dump())
-                await runtime_role_repository.create(runtime_role)
+            async with runtime_transaction():
+                runtime_role_repository = RuntimeRoleRepository()
+                async for role in roles:
+                    runtime_role = RuntimeRole(**role.model_dump())
+                    await runtime_role_repository.create(runtime_role)
 
     @staticmethod
-    async def transfer_entity_details(entity_details_index: EntityDetailsIndex) -> None:
+    async def transfer_entity_details() -> None:
         log.debug(f"Running transfer_entity_details()")
 
         # Countries
-        sorted_countries = sorted(entity_details_index.countries_list)
-        runtime_country_repository = CountryRepository()
+        sorted_countries = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list)
 
-        for _id, country_name in enumerate(sorted_countries):
-            async with runtime_transaction():
+        async with runtime_transaction():
+            runtime_country_repository = CountryRepository()
+            for _id, country_name in enumerate(sorted_countries):
                 country = Country(id=_id, country_name=country_name)
                 await runtime_country_repository.create(country)
                 await runtime_country_repository.commit()
 
         # Genres
-        sorted_genres = sorted(entity_details_index.genres_list)
-        runtime_genre_repository = GenreRepository()
+        sorted_genres = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list)
 
-        for _id, genre_name in enumerate(sorted_genres):
-            async with runtime_transaction():
+        async with runtime_transaction():
+            runtime_genre_repository = GenreRepository()
+            for _id, genre_name in enumerate(sorted_genres):
                 genre = Genre(id=_id, genre_name=genre_name)
                 await runtime_genre_repository.create(genre)
                 await runtime_genre_repository.commit()
 
         # Styles
-        sorted_styles = sorted(entity_details_index.styles_list)
-        runtime_style_repository = StyleRepository()
+        sorted_styles = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list)
 
-        for _id, style_name in enumerate(sorted_styles):
-            async with runtime_transaction():
+        async with runtime_transaction():
+            runtime_style_repository = StyleRepository()
+            for _id, style_name in enumerate(sorted_styles):
                 style = Style(id=_id, style_name=style_name)
                 await runtime_style_repository.create(style)
                 await runtime_style_repository.commit()
 
     @staticmethod
-    def transfer_all(_data_directory: Path) -> None:
-        log.debug(f"Running transfer_all()")
-        log.error(f"BANG!!!! running transfer_all()")
-        sys.exit(1)
-        # RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-        #     ALL_RUNTIME_DATABASE_TABLE_NAMES
-        # )
-        # RuntimeDatabaseManager.runtime_database_helper.create_tables(
-        #     ALL_RUNTIME_DATABASE_TABLE_NAMES
-        # )
-        #
-        # offline_release_repository = ReleaseRepository()
-        # entity_details_index = ReleaseDataAccess.create_entity_details_index(offline_release_repository)
-        #
-        # TransferManager.transfer_role()
-        # TransferManager.transfer_entity_details(entity_details_index)
-        # TransferManager.transfer_entity(entity_details_index)
-        # TransferManager.transfer_relation()
-        #
-        # log.debug(f"Transfer all done")
+    async def transfer_load_text_search_index(text_search_path: Path) -> None:
+        log.debug(f"Running transfer load text search index")
+
+        RuntimeDatabaseManager.runtime_database_helper.text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
 
     @staticmethod
-    def transfer_wait_for_worker(worker) -> None:
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name}")
-        worker.join()
-        worker.terminate()
-        if worker.exitcode > 0:
-            log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise RuntimeError("Error in worker process")
+    async def transfer_create_entity_details_index() -> None:
+        log.debug(f"Running transfer create entity details index")
+        async with offline_transaction():
+            offline_release_repository = ReleaseRepository()
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+
+    @classmethod
+    async def run_worker_function(cls,
+                                  pool_executor: Executor,
+                                  concurrency_count: int,
+                                  worker_function,
+                                  bulk_records: list[dict[str, Any]],
+                                  current_total: int, total_count: int,
+                                  ) -> None:
+        """
+        Performs a bulk worker_function operation.
+
+        This method is called to run worker_function on a batch of records in the database.
+
+        Args:
+            pool_executor (ProcessPoolExecutor): The executor for running the worker function.
+            concurrency_count (int): The number of concurrent operations allowed.
+            worker_function (callable): The worker function to execute.
+            bulk_records (list[dict[str, Any]]): The list of dicts to process.
+            current_total (int): The current total number of records processed.
+            total_count (int): The total number of records to process.
+        """
+        loop = asyncio.get_running_loop()
+        executor = pool_executor if concurrency_count > 1 else None
+        future = loop.run_in_executor(executor, worker_function, bulk_records, current_total, total_count)
+        return await future
