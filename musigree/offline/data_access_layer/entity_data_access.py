@@ -71,7 +71,7 @@ class EntityDataAccess:
     """
 
     @staticmethod
-    def resolve_entity_references(
+    async def resolve_entity_references(
         entity_repository: EntityRepository, entity: Entity
     ) -> bool:
         """
@@ -103,7 +103,7 @@ class EntityDataAccess:
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:
@@ -118,7 +118,7 @@ class EntityDataAccess:
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:

@@ -4,7 +4,7 @@ from typing import List
 
 from sqlalchemy import Result, select, Select, delete
 
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.relation_table import RelationTable
@@ -87,13 +87,11 @@ class RelationRepository(BaseRepository[RelationTable]):
             AsyncIterator[RelationDB]: An async iterator yielding each relation.
         """
         query = select(RelationTable)
-        with await self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+            # for partition in results.partitions():
                 # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield RelationDB.model_validate(row[0])
+        async for row in result:
+            yield RelationDB.model_validate(row[0])
 
     async def get(self, relation_id: int) -> RelationDB:
         """
@@ -266,7 +264,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     async def create(
         self, relation: RelationUncommitted, on_conflict_do_nothing=False
-    ) -> RelationInternal:
+    ) -> None:
         """
         Creates a new relation in the database.
 
@@ -289,16 +287,14 @@ class RelationRepository(BaseRepository[RelationTable]):
         query = OfflineDatabaseManager.offline_database_helper.generate_insert_query(
             self.schema_class, relation_dict, on_conflict_do_nothing
         )
-        result: Result = await self._session.execute(query)
-        # result: Result = await self.execute(query)
+        await self._session.execute(query)
         await self._session.flush()
-        # await self._session.flush()
 
-        if not (instance := result.scalar_one_or_none()):
-            raise DatabaseError
-
-        relation_db = RelationDB.model_validate(instance)
-        return relation_db.to_domain()
+        # if not (instance := result.scalar_one_or_none()):
+        #     raise DatabaseError
+        #
+        # relation_db = RelationDB.model_validate(instance)
+        # return relation_db.to_domain()
 
     async def create_bulk(
         self, relations: list[RelationUncommitted], on_conflict_do_nothing=False

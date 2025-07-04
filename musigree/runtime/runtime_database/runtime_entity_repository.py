@@ -142,13 +142,9 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             AsyncIterator[RuntimeEntity]: An async iterator yielding each entity.
         """
         query = select(RuntimeEntityTable)
-        with self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield RuntimeEntityDB.model_validate(row[0]).to_domain()
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
     async def all_ids_and_names(self) -> AsyncIterator[tuple[int, str]]:
         """
@@ -159,13 +155,9 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             entity's ID and name as a tuple.
         """
         query = select(RuntimeEntityTable.id, RuntimeEntityTable.entity_name)
-        with self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield row[0], row[1]
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield row[0], row[1]
 
     async def get_by_id(self, id_: int) -> RuntimeEntity:
         """

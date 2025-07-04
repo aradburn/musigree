@@ -23,10 +23,11 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
+from asyncio import AbstractEventLoop
 from typing import Type, List, Any
 
-from sqlalchemy import Engine, Index, Table
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Index, Table
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from musigree.config import Configuration
@@ -66,8 +67,8 @@ class RuntimeDatabaseHelper(ABC):
     functionality.
 
     Attributes:
-        runtime_engine (Engine | None): The SQLAlchemy engine for the runtime database.
-        runtime_session_factory (sessionmaker | None): The SQLAlchemy session factory
+        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime database.
+        runtime_async_session_factory (async_sessionmaker | None): The SQLAlchemy session factory
             for creating database sessions.
         idx_entity_one_id (Index | None): An index for entity one ID.
         idx_entity_two_id (Index | None): An index for entity two ID.
@@ -81,9 +82,9 @@ class RuntimeDatabaseHelper(ABC):
         LINK_RATIO (int): A ratio for link calculations.
     """
 
-    runtime_engine: Engine
+    runtime_async_engine: AsyncEngine
     """The SQLAlchemy engine for the runtime database."""
-    runtime_session_factory: sessionmaker
+    runtime_async_session_factory: async_sessionmaker
     """The SQLAlchemy session factory for creating database sessions."""
 
     idx_entity_one_id: Index
@@ -116,7 +117,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         """
         Sets up the database connection and returns the engine.
 
@@ -124,45 +125,44 @@ class RuntimeDatabaseHelper(ABC):
             config: The application configuration.
 
         Returns:
-            Engine: The SQLAlchemy engine.
+            AsyncEngine: The SQLAlchemy async engine.
         """
         pass
 
     @staticmethod
     @abstractmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         """Shuts down the database connection."""
         pass
 
     @classmethod
-    def initialize(cls) -> None:
+    def initialize(cls, loop: AbstractEventLoop) -> None:
         """
-        Initializes the database connection.
+        Initializes the database connection for a new process.
 
-        Ensures that the parent process's database connections are not touched
-        in the new connection pool.
+        Ensures that the parent process's database connections are not touched in
+        the new connection pool.
         """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
-        RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose(
-            close=False
+        assert cls.runtime_async_engine is not None, (
+            "runtime_async_engine must be initialized before calling initialize()"
         )
+        loop.run_until_complete(cls.runtime_async_engine.dispose(close=False))
 
     @staticmethod
     @abstractmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Checks the database connection.
 
         Args:
             config: The application configuration.
-            engine: The SQLAlchemy engine.
+            engine: The SQLAlchemy async engine.
         """
         pass
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: List[str]) -> None:
         """
         Creates database tables.
 
@@ -170,7 +170,6 @@ class RuntimeDatabaseHelper(ABC):
             tables: An optional list of table names to create. If None, all tables
                 defined in `RuntimeBase.metadata` will be created.
         """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
         from musigree.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
 
         for table_class in ALL_RUNTIME_DATABASE_TABLES:
@@ -182,15 +181,17 @@ class RuntimeDatabaseHelper(ABC):
         ]
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
-        RuntimeBase.metadata.create_all(
-            RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
-            checkfirst=True,
-            tables=table_definitions,
-        )
+
+        async with cls.runtime_async_engine.begin() as conn:
+            await conn.run_sync(
+                RuntimeBase.metadata.create_all,
+                checkfirst = True,
+                tables=table_definitions,
+            )
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: List[str]) -> None:
         """
         Drops database tables.
 
@@ -198,34 +199,34 @@ class RuntimeDatabaseHelper(ABC):
             tables: An optional list of table names to drop. If None, all tables
                 defined in `RuntimeBase.metadata` will be dropped.
         """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
         if tables is not None:
             table_definitions: List[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                table.drop(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
+                async with cls.runtime_async_engine.begin() as conn:
+                    await conn.run_sync(
+                        table.drop,
+                        checkfirst=True,
+                    )
+        else:
+            async with cls.runtime_async_engine.begin() as conn:
+                await conn.run_sync(
+                    RuntimeBase.metadata.drop_all,
                     checkfirst=True,
                 )
-        else:
-            RuntimeBase.metadata.drop_all(
-                RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
-                checkfirst=True,
-            )
 
     @staticmethod
     @abstractmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
             table_name: The name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
-            engine: The SQLAlchemy engine connected to the database.
+            engine: The SQLAlchemy async engine connected to the database.
         """
         pass
 

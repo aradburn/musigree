@@ -57,7 +57,7 @@ async def runtime_transaction() -> AsyncIterator[AsyncSession]:
     """
     session: AsyncSession = await get_runtime_session()
     """Get a new runtime database session."""
-    CTX_RUNTIME_SESSION.set(session)
+    old_token = CTX_RUNTIME_SESSION.set(session)
     """Set the new session to the context manager."""
 
     try:
@@ -86,4 +86,5 @@ async def runtime_transaction() -> AsyncIterator[AsyncSession]:
         """Rollback all the change made in this session."""
     finally:
         await session.close()
+        CTX_RUNTIME_SESSION.reset(old_token)
         """Close the session."""

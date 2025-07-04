@@ -1,13 +1,13 @@
 import logging
-from collections.abc import Iterator, AsyncIterator
+from collections.abc import AsyncIterator
 
 from sqlalchemy import Result, select
 
 from musigree.exceptions import NotFoundError
-from musigree.runtime.runtime_database.style_table import StyleTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.style_table import StyleTable
 from musigree.runtime.runtime_domain.style import Style
 
 log = logging.getLogger(__name__)

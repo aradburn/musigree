@@ -2,12 +2,12 @@ from sqlalchemy import String, JSON, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.int_enum import IntEnum
 
 
-class EntityTable(Base):
+class EntityTable(OfflineBase):
     """
     Represents the 'entity' table in the database.
 

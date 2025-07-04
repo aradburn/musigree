@@ -4,7 +4,7 @@ import os
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker, close_all_sessions
+from sqlalchemy.ext.asyncio import async_sessionmaker, close_all_sessions
 
 from musigree.config import Configuration
 from musigree.constants import DatabaseType, ThreadingModel
@@ -30,27 +30,27 @@ class RuntimeDatabaseManager:
             raise NotImplementedError("THREADING_MODEL not configured")
 
     @classmethod
-    def setup_database(cls, config: Configuration) -> None:
+    async def setup_database(cls, config: Configuration) -> None:
         RuntimeDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
         if config.DATABASE == DatabaseType.POSTGRES:
-            from musigree.runtime.postgres.postgres_helper import (
+            from musigree.runtime.postgres.runtime_postgres_helper import (
                 RuntimePostgresHelper,
             )
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
         elif config.DATABASE == DatabaseType.SQLITE:
-            from musigree.runtime.sqlite.sqlite_helper import RuntimeSqliteHelper
+            from musigree.runtime.sqlite.runtime_sqlite_helper import RuntimeSqliteHelper
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        engine = RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
-        RuntimeDatabaseHelper.runtime_engine = engine
+        async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
+        RuntimeDatabaseHelper.runtime_async_engine = async_engine
 
         def engine_on_connect(dbapi_con, connection_record):
             if LOGGING_TRACE:
@@ -72,24 +72,35 @@ class RuntimeDatabaseManager:
                 )
 
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
-            listen(engine, "connect", engine_on_connect)
-            listen(engine, "checkout", engine_on_checkout)
+            listen(async_engine.sync_engine, "connect", engine_on_connect)
+            listen(async_engine.sync_engine, "checkout", engine_on_checkout)
 
-        # a sessionmaker(), also in the same scope as the engine
-        RuntimeDatabaseHelper.runtime_session_factory = sessionmaker(bind=engine)
+        # a async_sessionmaker(), also in the same scope as the engine
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = (
+            async_sessionmaker(
+                bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+                expire_on_commit=False,
+            )
+        )
 
         # Set logging level for SqlAlchemy
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
-        RuntimeDatabaseManager.runtime_database_helper.check_connection(config, engine)
+        await RuntimeDatabaseManager.runtime_database_helper.check_connection(config, async_engine)
 
     @classmethod
-    def shutdown_database(cls):
+    async def shutdown_database(cls):
         log.info("Shutting down database connections")
 
-        close_all_sessions()
-        RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose()
+        await close_all_sessions()
 
-        RuntimeDatabaseManager.runtime_database_helper.shutdown_database()
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling shutdown_database()"
+        )
+
+        if RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None:
+            await RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose()
+
+        await RuntimeDatabaseManager.runtime_database_helper.shutdown_database()

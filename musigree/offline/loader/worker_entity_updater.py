@@ -1,16 +1,16 @@
 """
-This module defines the `WorkerEntityUpdater` class, which is a worker process
+This module defines the `update_entities_worker` function, which is a worker function
 responsible for updating or inserting entity records in the Musigree offline
 database.
 
-It utilizes `multiprocessing` to enable concurrent updating and insertion of
-entities, improving the efficiency of the data loading process. The
-`WorkerEntityUpdater` handles updating existing entity records with new
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
+concurrent updating and insertion of entities, improving the efficiency of the data 
+loading process. The function handles updating existing entity records with new
 information, as well as inserting new entity records if they do not already
 exist in the database.
 
 Key functionalities include:
-    - **Concurrent Updating/Inserting**: Employs `multiprocessing.Process` to
+    - **Concurrent Updating/Inserting**: Designed to work with `ProcessPoolExecutor` to
       perform update and insert operations concurrently, speeding up the
       processing of large numbers of entities.
     - **Batch Processing**: Processes a list of entity data (`bulk_updates`) in
@@ -33,8 +33,7 @@ Key functionalities include:
     - **Logging**: Provides detailed logging of the update and insertion
       process, including the number of updated and inserted entities.
 
-The `WorkerEntityUpdater` class interacts with the following components:
-    - `multiprocessing.Process`: The base class for creating worker processes.
+The `update_entities_worker` function interacts with the following components:
     - `OfflineDatabaseHelper`: For managing database connections and
       initialization in a concurrent environment.
     - `EntityRepository`: For database operations related to entities.
@@ -49,14 +48,14 @@ The `WorkerEntityUpdater` class interacts with the following components:
     - `DatabaseError`: Used for handling the database exception.
     - `LOGGING_TRACE`: Used to check if trace logging is activated.
 
-The module utilizes `logging` for logging operations, `multiprocessing` for
-process management, `sqlalchemy.exc.DatabaseError` for database
-related exception and `pprint` for pretty print the diff between entities. It
-interacts with `musigree.offline.database` for database related operations,
+The module utilizes `logging` for logging operations, `sqlalchemy.exc.DatabaseError` 
+for database related exceptions and `pprint` for pretty print the diff between entities. 
+It interacts with `musigree.offline.database` for database related operations,
 `musigree.library.full_text_search` for text normalization and
 `musigree.offline.offline_database_manager` for managing concurrency.
 """
 
+import asyncio
 import logging
 import multiprocessing
 import pprint
@@ -78,63 +77,42 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
-The logger for the WorkerEntityUpdater module.
+The logger for the worker entity updater module.
 """
 
 
-class WorkerEntityUpdater(multiprocessing.Process):
+def update_entities_worker(bulk_updates: list[dict[str, Any]], processed_count: int) -> None:
     """
-    A worker process for updating or inserting entity records.
+    Worker function for updating or inserting entity records.
 
-    This class extends `multiprocessing.Process` to perform concurrent
-    update and insert operations on entity records.
+    This function is designed to be used with ProcessPoolExecutor to perform 
+    concurrent update and insert operations on entity records.
+
+    Args:
+        bulk_updates (list[dict[str, Any]]): A list of entity data to update or insert.
+        processed_count (int): The number of entities processed so far.
+
+    Raises:
+        NotFoundError: If an entity is not found during the update process.
+        DatabaseError: If there's an error during database operations.
     """
 
-    def __init__(self, bulk_updates: list[dict[str, Any]], processed_count: int):
-        """
-        Initializes the WorkerEntityUpdater.
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        Args:
-            bulk_updates (list[dict[str, Any]]): A list of entity data to update or insert.
-            processed_count (int): The number of entities processed so far.
-        """
-        super().__init__()
-        """Call the constructor of the parent class."""
-        self.bulk_updates = bulk_updates
-        """The list of entity data to update or insert."""
-        self.processed_count = processed_count
-        """The number of entities processed so far."""
+    updated_count = 0
+    """Counter for the number of entities updated."""
+    inserted_count = 0
+    """Counter for the number of entities inserted."""
 
-    def run(self):
-        """
-        Executes the entity update/insert process.
+    async def process_entities(_bulk_updates: list[dict[str, Any]]) -> None:
+        """Async function to handle entity processing."""
+        nonlocal updated_count, inserted_count
 
-        This method performs the following steps:
-            1. Initializes the database helper if concurrency is enabled.
-            2. Iterates through the list of entity data.
-            3. For each entity data, starts a database transaction.
-            4. Attempts to retrieve the existing entity from the database.
-            5. If the entity exists, compares it with the new data using DeepDiff.
-            6. Updates the entity with any changed fields.
-            7. If the entity does not exist, creates a new entity.
-            8. Handles `NotFoundError` and `DatabaseError` exceptions.
-            9. Logs the progress and number of entities updated and inserted.
-        """
-        proc_name = self.name
-        """Get the name of the current process."""
-        updated_count = 0
-        """Counter for the number of entities updated."""
-        inserted_count = 0
-        """Counter for the number of entities inserted."""
+        async with offline_transaction():
+            for data in _bulk_updates:
+                """Iterate over the entity data."""
 
-        if OfflineDatabaseManager.get_concurrency_count() > 1:
-            """Check if concurrency is enabled."""
-            OfflineDatabaseHelper.initialize()
-            """Initialize the database helper."""
-
-        for data in self.bulk_updates:
-            """Iterate over the entity data."""
-            with offline_transaction():
                 """Ensure that database operations are performed within a transaction."""
                 entity_repository = EntityRepository()
                 """Instance of EntityRepository for database operations on entities."""
@@ -148,14 +126,14 @@ class WorkerEntityUpdater(multiprocessing.Process):
                             f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
                         )
 
-                    db_entity = entity_repository.get_by_entity_id_and_entity_type(
+                    db_entity = await entity_repository.get_by_entity_id_and_entity_type(
                         updated_entity.entity_id, updated_entity.entity_type
                     )
                     """Retrieve the existing entity from the database."""
 
                     is_changed = False
                     """Flag to check if any changes were made."""
-                    update_payload = {}
+                    update_payload: dict[str, Any] = {}
                     """Dictionary to store the update payload."""
 
                     if db_entity.entity_name != updated_entity.entity_name:
@@ -210,36 +188,52 @@ class WorkerEntityUpdater(multiprocessing.Process):
 
                     if is_changed:
                         """If any changes were made, update the entity."""
-                        entity_repository.update(db_entity.id, update_payload)
+                        await entity_repository.update(db_entity.id, update_payload)
                         """Update the entity."""
-                        entity_repository.commit()
+                        await entity_repository.commit()
                         """Commit the transaction."""
                         updated_count += 1
                         """Increment the updated count."""
                 except NotFoundError:
                     """Handle the case where the entity is not found."""
                     # log.debug(
-                    #     f"New insert in WorkerEntityUpdater: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                    #     f"New insert in update_entities_worker: {updated_entity.entity_id}-{updated_entity.entity_type}"
                     # )
                     try:
                         """Attempt to create a new entity."""
-                        entity_repository.create(updated_entity)
+                        await entity_repository.create(updated_entity)
                         """Create the entity."""
-                        entity_repository.commit()
+                        await entity_repository.commit()
                         """Commit the transaction."""
                         inserted_count += 1
                         """Increment the inserted count."""
                     except DatabaseError as e:
                         """Handle database errors."""
-                        log.exception("Error in WorkerEntityUpdater worker")
+                        log.exception("Error in update_entities_worker")
                         raise e
                 except DatabaseError as e:
                     """Handle database errors."""
-                    log.exception("Error in WorkerEntityUpdater", e)
+                    log.exception("Error in update_entities_worker", e)
                     raise e
 
         log.info(
-            f"[{proc_name}] processed_count: {self.processed_count}, "
+            f"[{proc_name}] processed_count: {processed_count}, "
             + f"updated: {updated_count}, inserted: {inserted_count}"
         )
         """Log the number of entities processed, updated, and inserted."""
+
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseHelper.initialize(loop)
+        """Initialize the database helper."""
+
+    loop.run_until_complete(process_entities(bulk_updates))

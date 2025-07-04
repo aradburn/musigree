@@ -2,11 +2,11 @@ from sqlalchemy import String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 from musigree.library.fields.role_type import RoleType
 
 
-class RoleTable(Base):
+class RoleTable(OfflineBase):
     """
     Represents the 'role' table in the database.
 

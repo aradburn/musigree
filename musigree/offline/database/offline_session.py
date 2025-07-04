@@ -6,16 +6,21 @@ It provides a mechanism for creating and managing SQLAlchemy async sessions,
 handling database errors, and using context variables to manage sessions in
 concurrent environments.
 """
-
 from contextvars import ContextVar
-import asyncio
 
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 
+CTX_OFFLINE_SESSION: ContextVar[AsyncSession] = ContextVar("offline_session")
+"""
+A ContextVar to store the active offline database async session.
+
+This allows for managing the session within a specific context, ensuring that
+each coroutine or thread has its own session.
+"""
 
 async def get_offline_session() -> AsyncSession:
     """
@@ -34,31 +39,12 @@ async def get_offline_session() -> AsyncSession:
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_offline_session()"
     )
-    assert OfflineDatabaseManager.offline_database_helper.offline_session_factory is not None, (
+    assert OfflineDatabaseManager.offline_database_helper.offline_async_session_factory is not None, (
         "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_offline_session()"
     )
 
-    # Note: The session factory should be an async_sessionmaker for this to work properly
-    # This will need to be updated in the database helper classes
-    session_factory = OfflineDatabaseManager.offline_database_helper.offline_session_factory
-    
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        _scoped_session: async_scoped_session[AsyncSession] = async_scoped_session(
-            session_factory,  # type: ignore[arg-type]
-            scopefunc=lambda: id(asyncio.current_task())
-        )
-        return _scoped_session()
-    else:
-        return session_factory()
-
-
-CTX_OFFLINE_SESSION: ContextVar[AsyncSession] = ContextVar("offline_session")
-"""
-A ContextVar to store the active offline database async session.
-
-This allows for managing the session within a specific context, ensuring that
-each coroutine or thread has its own session.
-"""
+    async_session_factory = OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
+    return async_session_factory()
 
 
 class OfflineSession:
@@ -68,23 +54,7 @@ class OfflineSession:
     This class provides an interface for interacting with the database within a
     session context. It handles async session management, query execution, and error
     handling.
-
-    Attributes:
-        _ERRORS (tuple): A tuple of SQLAlchemy exceptions to catch and handle as DatabaseError.
     """
-    _ctx_session: AsyncSession | None = None
-
-    # All sqlalchemy errors that can be raised
-    _ERRORS = (IntegrityError, InvalidRequestError)
-
-    def __init__(self) -> None:
-        """
-        Initializes the OfflineSession.
-
-        Sets the context session to None, which will be populated when the
-        session is accessed via the `_session` property.
-        """
-        self._ctx_session = None
 
     async def execute(self, query) -> Result:
         """
@@ -102,7 +72,7 @@ class OfflineSession:
         try:
             result = await self._session.execute(query)
             return result
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     @property
@@ -121,9 +91,8 @@ class OfflineSession:
         Raises:
             DatabaseError: If no session is found in the context.
         """
-        if not self._ctx_session:
-            try:
-                self._ctx_session = CTX_OFFLINE_SESSION.get()
-            except LookupError:
-                raise DatabaseError(message="Not in a transaction")
-        return self._ctx_session
+        try:
+            _session = CTX_OFFLINE_SESSION.get()
+        except LookupError:
+            raise DatabaseError(message="Not in a transaction")
+        return _session

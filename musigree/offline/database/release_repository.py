@@ -5,7 +5,7 @@ from typing import List, Any, Sequence, Iterator
 from sqlalchemy import select, Result, update, delete
 
 from musigree import utils
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import NotFoundError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.domain.release import Release
@@ -39,13 +39,9 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             AsyncIterator[Release]: An async iterator yielding each release.
         """
         query = select(ReleaseTable)
-        with await self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield Release.model_validate(row[0])
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield Release.model_validate(row[0])
 
     async def get_by_id(self, release_id: int) -> Release:
         """
@@ -121,7 +117,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         self,
         release_id: int,
         payload: dict[str, Any],
-    ) -> ReleaseTable:
+    ) -> None:
         """
         Updates an existing release in the database.
 
@@ -139,15 +135,15 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             update(self.schema_class)
             .where(ReleaseTable.release_id == release_id)
             .values(payload)
-            .returning(self.schema_class)
+            # .returning(self.schema_class)
         )
-        result: Result = await self._session.execute(query)
+        await self._session.execute(query)
         await self._session.flush()
 
-        if not (schema := result.scalar_one_or_none()):
-            raise DatabaseError
-
-        return schema
+        # if not (schema := result.scalar_one_or_none()):
+        #     raise DatabaseError
+        #
+        # return schema
 
     async def delete_by_id(self, release_id: int) -> None:
         """

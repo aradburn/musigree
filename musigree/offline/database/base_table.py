@@ -3,7 +3,7 @@ from typing import TypeVar
 from sqlalchemy.orm import DeclarativeBase
 
 
-class Base(DeclarativeBase):
+class OfflineBase(DeclarativeBase):
     """
     Base class for declarative base in SQLAlchemy.
 
@@ -29,7 +29,7 @@ class Base(DeclarativeBase):
     pass
 
 
-ConcreteTable = TypeVar("ConcreteTable", bound=Base)
+ConcreteTable = TypeVar("ConcreteTable", bound=OfflineBase)
 """
 Type variable for concrete table classes.
 

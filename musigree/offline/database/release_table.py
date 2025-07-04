@@ -2,10 +2,10 @@ from sqlalchemy import String, JSON, Integer, Date
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 
 
-class ReleaseTable(Base):
+class ReleaseTable(OfflineBase):
     """
     Represents the 'release' table in the database.
 

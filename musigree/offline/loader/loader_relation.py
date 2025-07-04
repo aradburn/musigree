@@ -1,16 +1,13 @@
 """
-This module defines the `LoaderRelation` class, responsible for loading and managing
-relationship data in the Musigree offline system.
+This module defines the `LoaderRelation` class, responsible for loading,
+managing, and processing relation data in the Musigree offline system.
 
-It handles the process of extracting and storing relations between entities
-(artists, labels, etc.) based on the loaded release data. It also manages
-the database cleanup tasks, such as vacuuming the relations table.
+It handles the complex process of creating relationships between entities
+(artists, releases, etc.) in the database.
 
 Key functionalities include:
-    - **`loader_relation_pass_one`**: A method for the first pass of loading
-      relation data. It iterates through releases in batches, utilizing
-      worker processes (`WorkerRelationPassOne`) to extract and store
-      relations in parallel.
+    - **`loader_relation_pass_one`**: The first pass of loading relation data. It
+      processes batches of release IDs and creates relationships between entities.
     - **`loader_relation_vacuum`**: A method for performing database cleanup
       on the relations table. It executes the `VACUUM` command on the
       `RelationRepository`, which can help to defragment and optimize the
@@ -27,26 +24,28 @@ Key functionalities include:
       time of key methods.
 
 The `LoaderRelation` class interacts with the following components:
-    - `RelationRepository`: For database operations related to relations.
-    - `ReleaseRepository`: For accessing release data.
-    - `WorkerRelationPassOne`: A worker class for handling the relation extraction
-      process in a separate thread.
+    - `ReleaseRepository`: For retrieving release data from the database.
+    - `process_relation_pass_one_worker`: A worker function for handling the creation
+      of relations between entities.
     - `LoaderBase`: The base class that provides common loader functionalities.
     - `OfflineDatabaseManager`: For managing database concurrency settings.
     - `offline_transaction`: A decorator for managing database transactions.
     - `timeit`: A decorator for timing method execution.
 
-The module utilizes `logging` for logging operations.
+The module utilizes `logging` for logging operations, `SortedSet` for managing
+sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
-
+import asyncio
 import logging
+from abc import abstractmethod
+from concurrent.futures import ProcessPoolExecutor
+from typing import Any
 
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.offline.loader.worker_relation_pass_one import WorkerRelationPassOne
+from musigree.offline.loader.worker_relation_pass_one import process_relation_pass_one_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.utils import timeit
 
 log = logging.getLogger(__name__)
 """
@@ -56,10 +55,9 @@ The logger for the LoaderRelation module.
 
 class LoaderRelation(LoaderBase):
     """
-    Manages loading and handling relationship data in the Musigree offline system.
+    Manages loading, handling, and processing relation data in the Musigree offline system.
 
-    This class handles the first pass of loading relation data and database cleanup
-    tasks for the relations table.
+    This class handles the creation of relationships between entities in the database.
 
     Inherits from:
         LoaderBase: Provides common loader functionalities.
@@ -68,19 +66,17 @@ class LoaderRelation(LoaderBase):
     # PUBLIC METHODS
 
     @classmethod
-    @timeit
-    async def loader_relation_pass_one(cls, date: str):
+    # @timeit
+    async def loader_relation_pass_one(cls):
         """
         Performs the first pass of loading relation data.
 
-        This method processes release data to create relations between entities.
-        It divides the work into batches and uses worker processes to handle
-        the processing in parallel.
-
-        Args:
-            date (str): The date of the data dump being processed.
+        This method processes releases in batches to create relationships
+        between entities (artists, releases, etc.) in the database.
         """
-        log.debug(f"loader relation pass one - date: {date}")
+        log.debug("loader relation pass one")
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+        """Determine the number of releases to process in each batch."""
 
         async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
@@ -88,47 +84,46 @@ class LoaderRelation(LoaderBase):
             """Instance of ReleaseRepository for database operations on releases."""
             total_count = await release_repository.count()
             """Total number of releases in the database."""
-            if total_count > LoaderBase.BULK_INSERT_BATCH_SIZE * 10:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-            else:
-                number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
-            """Determine the number of releases to process in each batch."""
-
             batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
         """Get the release ids in batches."""
 
         current_total = 0
         """Counter for the total number of releases processed."""
+        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
 
-        workers = []
-        """List of worker processes."""
-        for release_ids in batched_release_ids:
-            """Iterate over the batches of release IDs."""
-            worker = WorkerRelationPassOne(release_ids, current_total, total_count)
-            """Create a new worker for the batch."""
-            worker.start()
-            """Start the worker process."""
-            workers.append(worker)
-            """Add the worker to the list."""
-            current_total += number_in_batch
-            """Update the counter."""
+        if concurrency_count > 1:
+            # Multi-threaded execution
+            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                async with asyncio.TaskGroup() as task_group:
+                    for ids in batched_release_ids:
+                        """Iterate over the batches of release IDs."""
+                        future = cls.run_worker_function(process_relation_pass_one_worker,
+                                                         ids, current_total, total_count,
+                                                         executor, concurrency_count)
+                        task_group.create_task(future)
 
-            if len(workers) > OfflineDatabaseManager.get_concurrency_count():
-                """If the number of workers exceeds the concurrency limit."""
-                worker = workers.pop(0)
-                """Remove the first worker from the list."""
-                cls.loader_wait_for_worker(worker)
-            """Wait for the worker to finish."""
+                        """Add the future to the list."""
+                        current_total += number_in_batch
+                        """Update the counter."""
+        else:
+            # Single-threaded execution
+            for ids in batched_release_ids:
+                """Iterate over the batches of release IDs."""
+                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                    async with asyncio.TaskGroup() as task_group:
+                        future = cls.run_worker_function(process_relation_pass_one_worker,
+                                                         ids, current_total, total_count,
+                                                         executor, concurrency_count)
+                        task_group.create_task(future)
 
-        while len(workers) > 0:
-            """Wait for any remaining workers to finish."""
-            worker = workers.pop(0)
-            """Remove the first worker from the list."""
-            cls.loader_wait_for_worker(worker)
-        """Wait for the worker to finish."""
+                        """Add the future to the list."""
+                        current_total += number_in_batch
+                        """Update the counter."""
 
     @classmethod
-    def insert_bulk(cls, bulk_inserts, inserted_count):
+    @abstractmethod
+    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int, executor: ProcessPoolExecutor,
+                    concurrency_count: int) -> None:
         """
         Placeholder for bulk insert operations.
 
@@ -138,11 +133,15 @@ class LoaderRelation(LoaderBase):
         Args:
             bulk_inserts: The data to be inserted.
             inserted_count: The number of items already inserted.
+            executor: The executor to run the insert operation.
+            concurrency_count: The number of concurrent operations allowed.
         """
         pass
 
     @classmethod
-    def update_bulk(cls, bulk_updates, processed_count):
+    @abstractmethod
+    async def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
+                    concurrency_count: int) -> None:
         """
         Placeholder for bulk update operations.
 
@@ -152,11 +151,15 @@ class LoaderRelation(LoaderBase):
         Args:
             bulk_updates: The data to be updated.
             processed_count: The number of items already processed.
+            executor: The executor to run the update operation.
+            concurrency_count: The number of concurrent operations allowed.
         """
         pass
 
     @classmethod
-    def delete_bulk(cls, bulk_deletes, processed_count):
+    @abstractmethod
+    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int,
+                    executor: ProcessPoolExecutor, concurrency_count: int) -> None:
         """
         Placeholder for bulk delete operations.
 
@@ -166,6 +169,8 @@ class LoaderRelation(LoaderBase):
         Args:
             bulk_deletes: The data to be deleted.
             processed_count: The number of items already processed.
+            executor: The executor to run the delete operation.
+            concurrency_count: The number of concurrent operations allowed.
         """
         pass
 

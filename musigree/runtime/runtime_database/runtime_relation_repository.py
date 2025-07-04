@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator, AsyncIterator
+from collections.abc import AsyncIterator
 from typing import List
 
 from sqlalchemy import Result, select, Select, delete
@@ -267,7 +267,6 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         result: Result = await self._session.execute(query)
         # result: Result = await self.execute(query)
         await self._session.flush()
-        # await self._session.flush()
 
         if not (instance := result.scalar_one_or_none()):
             raise DatabaseError

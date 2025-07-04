@@ -13,13 +13,11 @@ Key functionalities include:
     - Managing the database session through a context variable (`CTX_RUNTIME_SESSION`).
 """
 
-# noinspection PyPackageRequirements
 from contextvars import ContextVar
-import asyncio
 
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 
@@ -38,18 +36,15 @@ async def get_runtime_session() -> AsyncSession:
     """
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    # Note: The session factory should be an async_sessionmaker for this to work properly
-    # This will need to be updated in the database helper classes
-    session_factory = RuntimeDatabaseManager.runtime_database_helper.runtime_session_factory
-    
-    if RuntimeDatabaseManager.get_concurrency_count() > 1:
-        _scoped_session: async_scoped_session[AsyncSession] = async_scoped_session(
-            session_factory,  # type: ignore[arg-type]
-            scopefunc=lambda: id(asyncio.current_task())
-        )
-        return _scoped_session()
-    else:
-        return session_factory()
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_offline_session()"
+    )
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory is not None, (
+        "RuntimeDatabaseManager.runtime_database_helper.runtime_engine must be initialized before calling get_offline_session()"
+    )
+
+    async_session_factory = RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
+    return async_session_factory()
 
 
 CTX_RUNTIME_SESSION: ContextVar[AsyncSession] = ContextVar("runtime_session")
@@ -69,25 +64,7 @@ class RuntimeSession:
     This class provides a base for performing database operations within a
     specific async session. It handles session management, query execution, and
     common database error handling.
-
-    Attributes:
-        _ERRORS (tuple): A tuple of common SQLAlchemy errors that are handled
-            by this class.
-        _ctx_session (AsyncSession | None): an instance of a sqlAlchemy async session stored in the
-        context variable, if none is stored it will be none.
     """
-    _ctx_session: AsyncSession | None = None
-
-    # All sqlalchemy errors that can be raised
-    _ERRORS = (IntegrityError, InvalidRequestError)
-
-    def __init__(self) -> None:
-        """
-        Initializes the RuntimeSession instance.
-
-        Sets up the session manager for the async database connection.
-        """
-        self._ctx_session = None
 
     async def execute(self, query) -> Result:
         """
@@ -105,7 +82,7 @@ class RuntimeSession:
         try:
             result = await self._session.execute(query)
             return result
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     @property
@@ -123,9 +100,8 @@ class RuntimeSession:
         Raises:
             DatabaseError: If no session is found in the context variable.
         """
-        if not self._ctx_session:
-            try:
-                self._ctx_session = CTX_RUNTIME_SESSION.get()
-            except LookupError:
-                raise DatabaseError(message="Not in a transaction")
-        return self._ctx_session
+        try:
+            _session = CTX_RUNTIME_SESSION.get()
+        except LookupError:
+            raise DatabaseError(message="Not in a transaction")
+        return _session

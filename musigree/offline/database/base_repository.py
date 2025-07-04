@@ -2,10 +2,12 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any, Generic, Type
 
-from sqlalchemy import asc, delete, desc, func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
+
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from musigree.offline.database.base_table import ConcreteTable
@@ -71,7 +73,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 .returning(self.schema_class)
             )
             result: Result = await self.execute(query)
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
         if not (schema := result.scalar_one_or_none()):
@@ -148,7 +150,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             await self._session.flush()
             await self._session.refresh(schema)
             return schema
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     async def save_all(self, payloads: list[dict[str, Any]]) -> None:
@@ -166,7 +168,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
             await self._session.flush()
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     async def _all(self) -> AsyncIterator[ConcreteTable]:

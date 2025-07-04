@@ -35,6 +35,7 @@ and time handling, and `luigi` for workflow management.
 import datetime
 import logging
 import luigi
+import asyncio
 
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.metadata_repository import MetadataRepository
@@ -105,27 +106,28 @@ class LoaderTarget(luigi.Target):
         """
         key = self.get_key()
         """Get the unique key for the task."""
-        with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            repository = MetadataRepository()
-            """Instance of MetadataRepository for database operations."""
-            try:
-                log.debug(f"Checking task key: {key}")
-                """Log the task key being checked."""
-                created_metadata = repository.get_by_key(key)
-                """Retrieve the metadata record from the database."""
-                if created_metadata is not None:
-                    metadata_exists = True
-                else:
-                    metadata_exists = False
-            except NotFoundError:
-                """Handle the case where the metadata record is not found."""
-                metadata_exists = False
+        
+        async def check_metadata_exists():
+            async with offline_transaction():
+                """Ensure that database operations are performed within a transaction."""
+                repository = MetadataRepository()
+                """Instance of MetadataRepository for database operations."""
+                try:
+                    log.debug(f"Checking task key: {key}")
+                    """Log the task key being checked."""
+                    created_metadata = await repository.get_by_key(key)
+                    """Retrieve the metadata record from the database."""
+                    return created_metadata is not None
+                except NotFoundError:
+                    """Handle the case where the metadata record is not found."""
+                    return False
+        
+        metadata_exists = asyncio.run(check_metadata_exists())
         log.debug(f"key exists: {metadata_exists}")
         """Log whether the key exists."""
         return metadata_exists
 
-    def done(self):
+    async def done(self):
         """
         Marks the task as done by creating a database record.
 
@@ -143,11 +145,11 @@ class LoaderTarget(luigi.Target):
         """Create a MetadataUncommitted object to represent the task's completion."""
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
             repository = MetadataRepository()
             """Instance of MetadataRepository for database operations."""
-            repository.create(metadata)
+            await repository.create(metadata)
             """Create the metadata record in the database."""
             log.debug(f"Created task done key: {key}")
             """Log the creation of the task completion record."""

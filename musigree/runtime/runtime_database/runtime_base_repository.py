@@ -7,6 +7,8 @@ from sqlalchemy.engine import Result
 
 __all__ = ("RuntimeBaseRepository",)
 
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
+
 from musigree.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 from musigree.runtime.runtime_database.runtime_session import RuntimeSession
@@ -89,7 +91,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 .returning(self.schema_class)
             )
             result: Result = await self.execute(query)
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
         if not (schema := result.scalar_one_or_none()):
@@ -211,7 +213,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             await self._session.flush()
             await self._session.refresh(schema)
             return schema
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     async def save_all(self, payloads: list[dict[str, Any]]) -> None:
@@ -229,7 +231,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
             await self._session.flush()
-        except self._ERRORS:
+        except (IntegrityError, InvalidRequestError):
             raise DatabaseError
 
     async def _all(self) -> AsyncIterator[RuntimeConcreteTable]:

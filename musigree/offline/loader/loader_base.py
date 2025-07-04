@@ -28,20 +28,21 @@ functions, `musigree.offline.offline_database_manager` for database management,
 `musigree.library.fields.entity_type` for entity types, `musigree.offline.loader.loader_utils`
 for loader-specific utilities, and `musigree.logging_config` for logging.
 """
-
+import asyncio
 import gzip
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABC
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Iterator
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
-from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.base_repository import BaseRepository
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
@@ -53,7 +54,7 @@ The logger for the LoaderBase module.
 """
 
 
-class LoaderBase:
+class LoaderBase(ABC):
     """
     Abstract base class for data loaders.
 
@@ -123,78 +124,140 @@ class LoaderBase:
         set_of_updated_ids: SortedSet[int] = SortedSet()
         """A sorted set to keep track of updated IDs."""
 
-        initial_count = await repository.count()
+        async with offline_transaction():
+            initial_count = await repository.count()
         log.debug(f"initial_count: {initial_count}")
 
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
+        
+        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
+        
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = ParserUtils.iterparse(file_pointer, xml_tag)
-            bulk_records = []
-            workers = []
-            for i, element in enumerate(iterator):
-                try:
-                    data = parser.tags_to_fields(element)
-                    if skip_without:
-                        if any(not data.get(_) for _ in skip_without):
-                            continue
-                    # if element.get("id"):
-                    #     data[id_attr] = element.get("id")
-                    # log.debug(f"data: {data}")
+            bulk_records: list[dict[str, Any]] = []
 
-                    set_of_updated_ids.add(int(data[id_attr]))
+            if concurrency_count > 1:
+                # Multi-threaded execution
+                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                    async with asyncio.TaskGroup() as task_group:
+                        for i, element in enumerate(iterator):
+                            try:
+                                data = parser.tags_to_fields(element)
+                                if skip_without:
+                                    if any(not data.get(_) for _ in skip_without):
+                                        continue
+                                # if element.get("id"):
+                                #     data[id_attr] = element.get("id")
+                                # log.debug(f"data: {data}")
 
-                    bulk_records.append(data)
-                    processed_count += 1
+                                set_of_updated_ids.add(int(data[id_attr]))
 
-                    if OfflineDatabaseManager.get_concurrency_count() > 1:
-                        # Can do multi threading
-                        if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
+                                bulk_records.append(data)
+                                processed_count += 1
+
+                                if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
+                                    if is_bulk_inserts:
+                                        future = cls.insert_bulk(
+                                            bulk_records,
+                                            processed_count,
+                                            executor,
+                                            concurrency_count,
+                                        )
+                                    else:
+                                        future = cls.update_bulk(
+                                            bulk_records,
+                                            processed_count,
+                                            executor,
+                                            concurrency_count,
+                                        )
+                                    task_group.create_task(future)
+                                    bulk_records = []
+
+                            except DataError as e:
+                                log.exception("Error in loader_pass_one", exc_info=True)
+                                raise e
+
+                        if len(bulk_records) > 0:
                             if is_bulk_inserts:
-                                worker = cls.insert_bulk(
+                                future = cls.insert_bulk(
                                     bulk_records,
                                     processed_count,
+                                    executor,
+                                    concurrency_count,
                                 )
                             else:
-                                worker = cls.update_bulk(
+                                future = cls.update_bulk(
                                     bulk_records,
                                     processed_count,
+                                    executor,
+                                    concurrency_count,
                                 )
-                            worker.start()
-                            workers.append(worker)
-                            bulk_records.clear()
-                        if (
-                            len(workers)
-                            > OfflineDatabaseManager.get_concurrency_count()
-                        ):
-                            worker = workers.pop(0)
-                            cls.loader_wait_for_worker(worker)
+                            task_group.create_task(future)
+            else:
+                # Single-threaded execution
 
-                except DataError as e:
-                    log.exception("Error in loader_pass_one", exc_info=True)
-                    raise e
+                for i, element in enumerate(iterator):
+                    try:
+                        data = parser.tags_to_fields(element)
+                        if skip_without:
+                            if any(not data.get(_) for _ in skip_without):
+                                continue
+                        # if element.get("id"):
+                        #     data[id_attr] = element.get("id")
+                        # log.debug(f"data: {data}")
 
-            if len(bulk_records) > 0:
-                if is_bulk_inserts:
-                    worker = cls.insert_bulk(
-                        bulk_records,
-                        processed_count,
-                    )
-                else:
-                    worker = cls.update_bulk(
-                        bulk_records,
-                        processed_count,
-                    )
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
+                        set_of_updated_ids.add(int(data[id_attr]))
 
-            while len(workers) > 0:
-                worker = workers.pop(0)
-                cls.loader_wait_for_worker(worker)
+                        bulk_records.append(data)
+                        processed_count += 1
 
-            repository_count = await repository.count()
+                        if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
+                            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                                async with asyncio.TaskGroup() as task_group:
+                                    if is_bulk_inserts:
+                                        future = cls.insert_bulk(
+                                            bulk_records,
+                                            processed_count,
+                                            executor,
+                                            concurrency_count,
+                                        )
+                                    else:
+                                        future = cls.update_bulk(
+                                            bulk_records,
+                                            processed_count,
+                                            executor,
+                                            concurrency_count,
+                                        )
+                                    task_group.create_task(future)
+                                    bulk_records = []
+
+                    except DataError as e:
+                        log.exception("Error in loader_pass_one", exc_info=True)
+                        raise e
+
+                if len(bulk_records) > 0:
+                    with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                        async with asyncio.TaskGroup() as task_group:
+                            if is_bulk_inserts:
+                                future = cls.insert_bulk(
+                                    bulk_records,
+                                    processed_count,
+                                    executor,
+                                    concurrency_count,
+                                )
+                            else:
+                                future = cls.update_bulk(
+                                    bulk_records,
+                                    processed_count,
+                                    executor,
+                                    concurrency_count,
+                                )
+                            task_group.create_task(future)
+
+            async with offline_transaction():
+                repository_count = await repository.count()
             log.debug(f"repository_count: {repository_count}")
 
             new_inserts_count = repository_count - initial_count
@@ -207,11 +270,11 @@ class LoaderBase:
                 entity_type = EntityType.LABEL
             elif xml_tag == "release":
                 entity_type = None
-            set_of_database_ids = await cls.get_set_of_ids(entity_type)
+            set_of_database_ids: set[int] = await cls.get_set_of_ids(entity_type)
 
             # Check if any records need to be deleted
             # (present in database and not present in the xml dump)
-            ids_to_be_deleted = set_of_database_ids - set_of_updated_ids
+            ids_to_be_deleted: set[int] = set_of_database_ids - set_of_updated_ids
 
             log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
             log.debug(f"number of database ids: {len(set_of_database_ids)}")
@@ -220,32 +283,73 @@ class LoaderBase:
             number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
 
             if len(ids_to_be_deleted) > 0:
-                workers = []
-                batched_ids_to_be_deleted = utils.batched(
-                    ids_to_be_deleted, number_in_batch
-                )
+                if concurrency_count > 1:
+                    # Multi-threaded execution
+                    with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                        async with asyncio.TaskGroup() as task_group:
+                            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(
+                                list(ids_to_be_deleted), number_in_batch
+                            )
 
-                for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                    worker = cls.delete_bulk(
-                        batch_of_ids_to_be_deleted,
-                        len(batch_of_ids_to_be_deleted),
+                            for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
+                                future = cls.delete_bulk(
+                                    batch_of_ids_to_be_deleted,
+                                    len(batch_of_ids_to_be_deleted),
+                                    executor,
+                                    concurrency_count,
+                                )
+                                task_group.create_task(future)
+                else:
+                    # Single-threaded execution
+                    batched_ids_to_be_deleted = utils.batched(
+                        list(ids_to_be_deleted), number_in_batch
                     )
-                    worker.start()
-                    workers.append(worker)
 
-                    if len(workers) > OfflineDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        cls.loader_wait_for_worker(worker)
-
-                while len(workers) > 0:
-                    worker = workers.pop(0)
-                    cls.loader_wait_for_worker(worker)
+                    for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
+                        with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                            async with asyncio.TaskGroup() as task_group:
+                                future = cls.delete_bulk(
+                                    batch_of_ids_to_be_deleted,
+                                    len(batch_of_ids_to_be_deleted),
+                                    executor,
+                                    concurrency_count,
+                                )
+                                task_group.create_task(future)
 
         return processed_count
 
     @classmethod
+    async def run_worker_function(cls,
+                                  worker_function,
+                                  ids: list[int],
+                                  current_total: int, total_count: int,
+                                  executor: ProcessPoolExecutor,
+                                  concurrency_count: int) -> None:
+        """
+        Performs a bulk delete operation for entities.
+
+        This method is called to update a batch of entity records in the
+        database using the `update_entities_worker` function.
+
+        Args:
+            worker_function (callable): The worker function to execute.
+            ids (list[int]): The list of IDs to process.
+            current_total (int): The current total number of records processed.
+            total_count (int): The total number of records to process.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count (int): The number of concurrent operations allowed.
+        """
+        loop = asyncio.get_running_loop()
+        if concurrency_count > 1:
+            future = loop.run_in_executor(executor, worker_function, ids, current_total, total_count)
+        else:
+            future = loop.run_in_executor(None, worker_function, ids, current_total, total_count)
+        return await future
+
+    @classmethod
     @abstractmethod
-    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int):
+    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
+                          concurrency_count: int) -> None:
         """
         Performs a bulk insert operation.
 
@@ -256,12 +360,16 @@ class LoaderBase:
         Args:
             bulk_inserts (list[dict[str, Any]]): The list of records to insert.
             processed_count (int): The number of records processed so far.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count: The number of concurrent operations allowed.
+
         """
         pass
 
     @classmethod
     @abstractmethod
-    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
+    async def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
+                          concurrency_count: int) -> None:
         """
         Performs a bulk update operation.
 
@@ -272,12 +380,16 @@ class LoaderBase:
         Args:
             bulk_updates (list[dict[str, Any]]): The list of records to update.
             processed_count (int): The number of records processed so far.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count: The number of concurrent operations allowed.
+
         """
         pass
 
     @classmethod
     @abstractmethod
-    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
+    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int, executor: ProcessPoolExecutor,
+                          concurrency_count: int) -> None:
         """
         Performs a bulk delete operation.
 
@@ -288,12 +400,15 @@ class LoaderBase:
         Args:
             bulk_deletes (list[int]): The list of IDs to delete.
             processed_count (int): The number of records processed so far.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count: The number of concurrent operations allowed.
+
         """
         pass
 
     @classmethod
     @abstractmethod
-    async def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type) -> set[int]:
         """
         Retrieves a set of IDs from the database.
 
@@ -302,27 +417,8 @@ class LoaderBase:
 
         Args:
             entity_type: The type of entity to retrieve IDs for.
+
+        Returns:
+            set[int]: The set of IDs.
         """
         pass
-
-    @classmethod
-    def loader_wait_for_worker(cls, worker) -> None:
-        """
-        Waits for a worker process to finish.
-
-        This method waits for a worker process to complete its task and checks
-        for errors.
-
-        Args:
-            worker: The worker process to wait for.
-
-        Raises:
-            RuntimeError: If the worker process exits with a non-zero exit code.
-        """
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name}")
-        worker.join()
-        worker.terminate()
-        if worker.exitcode > 0:
-            log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise RuntimeError("Error in worker process")

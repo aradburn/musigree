@@ -6,11 +6,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 from musigree.offline.database.role_table import RoleTable
 
 
-class RelationTable(Base):
+class RelationTable(OfflineBase):
     """
     Represents the 'relation' table in the database.
 

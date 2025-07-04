@@ -1,10 +1,10 @@
 import logging
 from typing import Type
 
-from sqlalchemy import Engine, create_engine, text, StaticPool
+from sqlalchemy import text, StaticPool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.sql.dml import ReturningInsert
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from musigree.config import Configuration
 from musigree.offline.database.offline_database_helper import (
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class OfflineSqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         log.info("Using Sqlite Offline Database")
 
         assert config.SQLITE_OFFLINE_DATABASE_NAME is not None, (
@@ -30,41 +30,43 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         target_parent.mkdir(parents=True, exist_ok=True)
         log.info(f"Sqlite Database: {target_path}")
 
-        engine = create_engine(
-            f"sqlite:///{target_path}",
+        engine = create_async_engine(
+            f"sqlite+aiosqlite:///{target_path}",
             connect_args={
+                # "check_same_thread": True,
                 "check_same_thread": False,
             },
+            # poolclass=NullPool,
             poolclass=StaticPool,
         )
         return engine
 
     @staticmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         log.info("Shutting down Sqlite offline database")
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         try:
             log.info("Check Sqlite offline database connection...")
 
-            with engine.connect() as connection:
-                version = connection.execute(
+            async with engine.connect() as connection:
+                version = await connection.execute(
                     text("SELECT sqlite_version() AS version;")
                 )
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
 
             # Reset Sqlite if already exists
-            with engine.connect() as connection:
-                connection.execute(text("pragma writable_schema=1;"))
-                connection.execute(text("DELETE FROM sqlite_master;"))
-                connection.execute(text("pragma writable_schema=0;"))
+            async with engine.connect() as connection:
+                await connection.execute(text("pragma writable_schema=1;"))
+                await connection.execute(text("DELETE FROM sqlite_master;"))
+                await connection.execute(text("pragma writable_schema=0;"))
 
-            with engine.connect() as connection:
-                connection.execute(text("VACUUM;"))
+            async with engine.connect() as connection:
+                await connection.execute(text("VACUUM;"))
 
-            with engine.connect() as connection:
-                connection.execute(text("pragma integrity_check;"))
+            async with engine.connect() as connection:
+                await connection.execute(text("pragma integrity_check;"))
 
                 # Setup Sqlite
                 # connection.execute(text("pragma journal_mode=MEMORY;"))
@@ -74,30 +76,30 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
                 # connection.execute(text("pragma foreign_keys=ON;"))
 
                 # Setup Sqlite
-                connection.execute(text("pragma journal_mode=WAL;"))
-                connection.execute(text("pragma journal_size_limit = 6144000;"))
-                connection.execute(text("pragma synchronous=NORMAL;"))
-                connection.execute(text("pragma cache_size=-10000;"))
-                connection.execute(text("pragma temp_store=MEMORY;"))
-                connection.execute(text("pragma foreign_keys=ON;"))
+                await connection.execute(text("pragma journal_mode=WAL;"))
+                await connection.execute(text("pragma journal_size_limit = 6144000;"))
+                await connection.execute(text("pragma synchronous=NORMAL;"))
+                await connection.execute(text("pragma cache_size=-10000;"))
+                await connection.execute(text("pragma temp_store=MEMORY;"))
+                await connection.execute(text("pragma foreign_keys=ON;"))
 
-                connection.commit()
+                await connection.commit()
                 log.info("Offline Database connected OK.")
         except DatabaseError:
             log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: list[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         log.info("Create Offline Sqlite tables")
-        super().create_tables(tables=tables)
+        await super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls, tables: list[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         log.info("Drop Offline Sqlite tables")
-        super().drop_tables(tables=tables)
+        await super().drop_tables(tables=tables)
 
-    @staticmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    @classmethod
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -116,8 +118,21 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
             query += " ANALYZE"
         query += ";"
 
-        with engine.connect() as connection:
-            connection.execute(text(query))
+        # try:
+        #     loop = asyncio.get_running_loop()
+        # except RuntimeError:
+        #     """Check if the event loop is already running."""
+        #     loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(loop)
+        #     """Set a new event loop if none exists."""
+        #
+        # if OfflineDatabaseManager.get_concurrency_count() > 1:
+        #     """Check if concurrency is enabled."""
+        #     cls.initialize(loop)
+        #     """Initialize the database helper."""
+
+        async with engine.connect() as connection:
+            await connection.execute(text(query))
 
     @staticmethod
     def is_vacuum_full() -> bool:
@@ -130,16 +145,15 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
-    ) -> ReturningInsert[tuple[ConcreteTable]]:
+    ) -> Insert:
         if on_conflict_do_nothing:
             return (
                 insert(schema_class)
                 .on_conflict_do_nothing()
                 .values(values)
-                .returning(schema_class)
             )
         else:
-            return insert(schema_class).values(values).returning(schema_class)
+            return insert(schema_class).values(values)
 
     @staticmethod
     def generate_insert_bulk_query(

@@ -1,13 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
+from asyncio import AbstractEventLoop
 from typing import Type, List, Any
 
-from sqlalchemy import Engine, Table
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.dml import ReturningInsert, Insert
+from sqlalchemy import Table
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
+from sqlalchemy.sql.ddl import DropTable
+from sqlalchemy.sql.dml import Insert
 
 from musigree.config import Configuration
-from musigree.offline.database.base_table import Base, ConcreteTable
+from musigree.offline.database.base_table import OfflineBase, ConcreteTable
 from musigree.offline.database.relation_release_year_repository import (
     RelationReleaseYearRepository,
 )
@@ -26,18 +28,18 @@ class OfflineDatabaseHelper(ABC):
     and managing vacuum operations. It also defines constants for graph query limitations.
 
     Attributes:
-        offline_engine (Engine | None): The SQLAlchemy engine for the offline database.
-        offline_session_factory (sessionmaker | None): The session factory for the offline database.
+        offline_async_engine (Engine | None): The SQLAlchemy engine for the offline database.
+        offline_async_session_factory (async_sessionmaker | None): The session factory for the offline database.
     """
 
-    offline_engine: Engine | None = None
+    offline_async_engine: AsyncEngine | None = None
     """The SQLAlchemy engine for the offline database."""
-    offline_session_factory: sessionmaker | None = None
+    offline_async_session_factory: async_sessionmaker | None = None
     """The session factory for the offline database."""
 
     @staticmethod
     @abstractmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         """
         Abstract method to set up the database connection.
 
@@ -51,14 +53,14 @@ class OfflineDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         """
         Abstract method to shut down the database connection.
         """
         pass
 
     @classmethod
-    def initialize(cls) -> None:
+    def initialize(cls, loop: AbstractEventLoop) -> None:
         """
         Initializes the database connection for a new process.
 
@@ -69,16 +71,18 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling initialize()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling initialize()"
         )
-        OfflineDatabaseManager.offline_database_helper.offline_engine.dispose(
-            close=False
+        loop.run_until_complete(
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
+                close=False
+            )
         )
 
     @staticmethod
     @abstractmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Abstract method to check the database connection.
 
@@ -90,7 +94,7 @@ class OfflineDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables: list[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         """
         Creates tables in the database.
 
@@ -102,30 +106,31 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
         )
 
         if tables is None:
             return
 
-        for table in Base.metadata.tables:
+        for table in OfflineBase.metadata.tables:
             log.debug(f"table in metadata: {table}")
         table_definitions: list[Table] = [
-            Base.metadata.tables[table_name] for table_name in tables
+            OfflineBase.metadata.tables[table_name] for table_name in tables
         ]
         for table_def in table_definitions:
             log.debug(f"creating table: {table_def.name}")
 
-        Base.metadata.create_all(
-            OfflineDatabaseManager.offline_database_helper.offline_engine,
-            checkfirst=True,
-            tables=table_definitions,
-        )
+        async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+            await conn.run_sync(
+                OfflineBase.metadata.create_all,
+                checkfirst=True,
+                tables=table_definitions,
+            )
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: List[str]) -> None:
         """
         Drops tables from the database.
 
@@ -137,29 +142,27 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_engine is not None, (
+        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
         )
 
         if tables is not None:
             table_definitions: list[Table] = [
-                Base.metadata.tables[table_name] for table_name in tables
+                OfflineBase.metadata.tables[table_name] for table_name in tables
             ]
-            for table in table_definitions:
-                log.debug(f"deleting table: {table.name}")
-                table.drop(
-                    OfflineDatabaseManager.offline_database_helper.offline_engine,
-                    checkfirst=True,
-                )
+            async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+                for table in table_definitions:
+                    log.debug(f"deleting table: {table.name}")
+                    await conn.execute(DropTable(table, if_exists=True))
+                await conn.commit()
         else:
-            Base.metadata.drop_all(
-                OfflineDatabaseManager.offline_database_helper.offline_engine,
-                checkfirst=True,
-            )
+            async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+                await conn.run_sync(OfflineBase.metadata.drop_all, checkfirst=True)
+                await conn.commit()
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -196,7 +199,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_query(
         schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
-    ) -> ReturningInsert[tuple[ConcreteTable]]:
+    ) -> Insert:
         """
         Abstract method to generate an insert query.
 
@@ -206,7 +209,7 @@ class OfflineDatabaseHelper(ABC):
             on_conflict_do_nothing: Whether to do nothing on conflict.
 
         Returns:
-            ReturningInsert[tuple[ConcreteTable]]: The insert query.
+            Insert: The insert query.
         """
         pass
 

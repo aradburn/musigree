@@ -4,10 +4,10 @@ from sqlalchemy import String, TIMESTAMP, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 
 
-class MetadataTable(Base):
+class MetadataTable(OfflineBase):
     """
     Represents the 'metadata' table in the database.
 

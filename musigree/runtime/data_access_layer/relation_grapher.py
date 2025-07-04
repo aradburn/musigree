@@ -1,5 +1,4 @@
 import logging
-from abc import ABC
 from collections import OrderedDict
 
 from musigree import utils
@@ -24,7 +23,7 @@ from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
 log = logging.getLogger(__name__)
 
 
-class RelationGrapher(ABC):
+class RelationGrapher:
     # CLASS VARIABLES
 
     __slots__ = (

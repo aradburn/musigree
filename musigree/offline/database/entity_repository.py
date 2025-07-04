@@ -5,7 +5,7 @@ from typing import Any, List
 from sqlalchemy import Result, select, update, Select, delete, func
 
 from musigree import utils
-from musigree.exceptions import NotFoundError, DatabaseError, UnprocessableError
+from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.entity_table import EntityTable
@@ -113,13 +113,13 @@ class EntityRepository(BaseRepository[EntityTable]):
             AsyncIterator[Entity]: An async iterator yielding each entity.
         """
         query = select(EntityTable)
-        with await self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield Entity.model_validate(row[0])
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield Entity.model_validate(row[0])
+            # for partition in results.partitions():
+            #     partition is an iterable that will be at most 1000 items
+                # for row in partition:
+                #     yield Entity.model_validate(row[0])
 
     async def all_ids_and_names(self) -> AsyncIterator[tuple[int, str]]:
         """
@@ -130,13 +130,19 @@ class EntityRepository(BaseRepository[EntityTable]):
                 (entity ID, entity name).
         """
         query = select(EntityTable.id, EntityTable.entity_name)
-        with await self._session.execute(
-            query, execution_options={"yield_per": 1000}
-        ) as results:
-            for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
-                for row in partition:
-                    yield row[0], row[1]
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield row[0], row[1]
+
+        # with await self._session.stream(
+        #     query, execution_options={"yield_per": 1000}
+        # ) as result:
+        #     # async for result in cursor:
+        #     yield result[0], result[1]
+            # for partition in results.partitions():
+            #     partition is an iterable that will be at most 1000 items
+                # for row in partition:
+                #     yield row[0], row[1]
 
     async def get_by_id(self, id_: int) -> Entity:
         """
@@ -348,7 +354,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         self,
         id_: int,
         payload: dict[str, Any],
-    ) -> Entity:
+    ) -> None:
         """
         Updates an existing entity in the database.
 
@@ -366,16 +372,16 @@ class EntityRepository(BaseRepository[EntityTable]):
             update(self.schema_class)
             .where(EntityTable.id == id_)
             .values(payload)
-            .returning(self.schema_class)
+            # .returning(self.schema_class)
         )
-        result: Result = await self._session.execute(query)
+        _result: Result = await self._session.execute(query)
         await self._session.flush()
 
-        if not (instance := result.scalar_one_or_none()):
-            raise DatabaseError
-
-        entity_db = Entity.model_validate(instance)
-        return entity_db.to_domain()
+        # if not (instance := result.scalar_one_or_none()):
+        #     raise DatabaseError
+        #
+        # entity_db = Entity.model_validate(instance)
+        # return entity_db.to_domain()
 
     async def delete_by_id(self, id_: int) -> None:
         """

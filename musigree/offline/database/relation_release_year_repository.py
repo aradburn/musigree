@@ -4,7 +4,6 @@ from typing import List
 
 from sqlalchemy import Result, select, Select
 
-from musigree.exceptions import DatabaseError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.relation_release_year_table import (
     RelationReleaseYearTable,
@@ -71,8 +70,10 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
             AsyncIterator[RelationReleaseYear]: An async iterator yielding each
                 relation-release-year pair.
         """
-        async for instance in self._all():
-            yield RelationReleaseYear.model_validate(instance)
+        query = select(RelationReleaseYearTable)
+        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        async for row in result:
+            yield RelationReleaseYear.model_validate(row[0])
 
     async def get(self, relation_id: int) -> list[RelationReleaseYear]:
         """
@@ -96,7 +97,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         self,
         relation_release_year: RelationReleaseYearUncommitted,
         on_conflict_do_nothing=False,
-    ) -> RelationReleaseYear:
+    ) -> None:
         """
         Creates a new relation-release-year pair in the database.
 
@@ -121,14 +122,14 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         query = OfflineDatabaseManager.offline_database_helper.generate_insert_query(
             self.schema_class, relation_release_year_dict, on_conflict_do_nothing
         )
-        result: Result = await self.execute(query)
-        await self._session.flush()
-
-        if not (instance := result.scalar_one_or_none()):
-            raise DatabaseError
-
-        relation_release_year_db = RelationReleaseYearDB.model_validate(instance)
-        return relation_release_year_db.to_domain()
+        await self.execute(query)
+        # await self._session.flush()
+        #
+        # if not (instance := result.scalar_one_or_none()):
+        #     raise DatabaseError
+        #
+        # relation_release_year_db = RelationReleaseYearDB.model_validate(instance)
+        # return relation_release_year_db.to_domain()
 
     async def create_bulk(
         self,

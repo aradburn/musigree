@@ -5,10 +5,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 
 
-class RelationReleaseYearTable(Base):
+class RelationReleaseYearTable(OfflineBase):
     """
     Represents the 'relation_release_year' table in the database.
 

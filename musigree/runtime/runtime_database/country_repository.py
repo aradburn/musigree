@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator, AsyncIterator
+from collections.abc import AsyncIterator
 
 from sqlalchemy import Result, select
 
@@ -58,7 +58,6 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
         query = select(CountryTable).where(CountryTable.id == id_)
 
         result: Result = await self.execute(query)
-        # result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError

@@ -64,6 +64,8 @@ class RuntimeEntityTable(RuntimeBase):
     """Groups the entity is part of. Stored as JSON."""
     members: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
     """Members associated with the entity (e.g., members of a band). Stored as JSON."""
+    parent_label: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """Parent label associated with the entity. Stored as JSON."""
     countries: Mapped[str] = mapped_column(String, nullable=True)
     """Countries associated with the entity."""
     genres: Mapped[str] = mapped_column(String, nullable=True)

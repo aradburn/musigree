@@ -4,7 +4,7 @@ import os
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker, close_all_sessions
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from musigree.constants import DatabaseType, ThreadingModel
 from musigree.logging_config import LOGGING_TRACE
@@ -27,29 +27,29 @@ class OfflineDatabaseManager:
             raise NotImplementedError("THREADING_MODEL not configured")
 
     @classmethod
-    def setup_database(cls, config) -> None:
+    async def setup_database(cls, config) -> None:
         OfflineDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
         if config.DATABASE == DatabaseType.POSTGRES:
-            from musigree.offline.postgres.postgres_helper import (
+            from musigree.offline.postgres.offline_postgres_helper import (
                 OfflinePostgresHelper,
             )
 
             OfflineDatabaseManager.offline_database_helper = OfflinePostgresHelper()
 
         elif config.DATABASE == DatabaseType.SQLITE:
-            from musigree.offline.sqlite.sqlite_helper import OfflineSqliteHelper
+            from musigree.offline.sqlite.offline_sqlite_helper import OfflineSqliteHelper
 
             OfflineDatabaseManager.offline_database_helper = OfflineSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        engine = OfflineDatabaseManager.offline_database_helper.setup_database(config)
-        OfflineDatabaseManager.offline_database_helper.offline_engine = engine
+        async_engine = await OfflineDatabaseManager.offline_database_helper.setup_database(config)
+        OfflineDatabaseManager.offline_database_helper.offline_async_engine = async_engine
         log.debug(
-            f"engine: {OfflineDatabaseManager.offline_database_helper.offline_engine}"
+            f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}"
         )
 
         def engine_on_connect(dbapi_con, connection_record):
@@ -72,22 +72,26 @@ class OfflineDatabaseManager:
                 )
 
         if OfflineDatabaseManager.get_concurrency_count() > 1:
-            listen(engine, "connect", engine_on_connect)
-            listen(engine, "checkout", engine_on_checkout)
+            listen(async_engine.sync_engine, "connect", engine_on_connect)
+            listen(async_engine.sync_engine, "checkout", engine_on_checkout)
 
-        # a sessionmaker(), also in the same scope as the engine
-        OfflineDatabaseManager.offline_database_helper.offline_session_factory = (
-            sessionmaker(
-                bind=OfflineDatabaseManager.offline_database_helper.offline_engine
+        # a async_sessionmaker(), also in the same scope as the engine
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = (
+            async_sessionmaker(
+                bind=OfflineDatabaseManager.offline_database_helper.offline_async_engine,
+                expire_on_commit=False,
             )
         )
 
         # Set logging level for SqlAlchemy
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+        # logging.getLogger("sqlalchemy.dialects.postgresql").setLevel(logging.DEBUG)
+        # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
+        # logging.getLogger("asyncio").setLevel(logging.DEBUG)
 
         # Check database connection
-        OfflineDatabaseManager.offline_database_helper.check_connection(config, engine)
+        await OfflineDatabaseManager.offline_database_helper.check_connection(config, async_engine)
 
         # TODO remove - was Create tables
         # OfflineDatabaseManager.offline_database_helper.create_tables(
@@ -97,16 +101,16 @@ class OfflineDatabaseManager:
         # LoaderRole.load_roles_into_database()
 
     @classmethod
-    def shutdown_database(cls) -> None:
+    async def shutdown_database(cls) -> None:
         log.info("Shutting down offline database connections")
 
-        close_all_sessions()
+        # close_all_sessions()
 
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling shutdown_database()"
         )
 
-        if OfflineDatabaseManager.offline_database_helper.offline_engine is not None:
-            OfflineDatabaseManager.offline_database_helper.offline_engine.dispose()
+        if OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None:
+            await OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose()
 
-        OfflineDatabaseManager.offline_database_helper.shutdown_database()
+        await OfflineDatabaseManager.offline_database_helper.shutdown_database()

@@ -71,6 +71,18 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     object: int
     """The ID of the object entity."""
 
+    @staticmethod
+    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list["RuntimeRelationUncommitted"]:
+        relation_uncommitteds = []
+        for relation_dict in relation_dicts:
+            relation_uncommitted = RuntimeRelationUncommitted(
+                subject=relation_dict["subject"],
+                role_name=relation_dict["role"],
+                object=relation_dict["object"],
+            )
+            relation_uncommitteds.append(relation_uncommitted)
+        return relation_uncommitteds
+
 
 class RuntimeRelationDB(_RuntimeRelationBase):
     """

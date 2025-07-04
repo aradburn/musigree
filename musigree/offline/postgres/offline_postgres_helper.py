@@ -5,10 +5,10 @@ from typing import Type, List
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import Engine, URL, create_engine, text
+from sqlalchemy import URL, text
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.sql.dml import ReturningInsert
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
@@ -27,7 +27,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     _is_test: bool = False
 
     @staticmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         if config.PRODUCTION:
             log.info("**********************************************")
             log.info("* Using Production Postgres Offline Database *")
@@ -43,7 +43,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 port=config.POSTGRES_DATABASE_PORT,
                 database=config.POSTGRES_OFFLINE_DATABASE_NAME,
             )
-            engine = create_engine(
+            engine = create_async_engine(
                 url_object, pool_size=40, pool_timeout=300, pool_recycle=300
             )
 
@@ -112,11 +112,11 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # port=config[POSTGRES_DATABASE_PORT_KEY],
                     database=config.POSTGRES_OFFLINE_DATABASE_NAME,
                 )
-                engine = create_engine(
+                engine = create_async_engine(
                     url_object,
-                    pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
-                    pool_timeout=30,
-                    pool_recycle=30,
+                    # pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
+                    # pool_timeout=30,
+                    # pool_recycle=30,
                     # connect_args={
                     #     "connect_timeout": 10,
                     # },
@@ -129,6 +129,8 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     #     "idle_in_transaction_session_timeout": 30000,
                     # },
                     # poolclass=NullPool,
+                    # echo = True,
+                    # echo_pool = "debug",
                 )
 
                 OfflinePostgresHelper._is_test = True
@@ -144,7 +146,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     port=config.POSTGRES_DATABASE_PORT,
                     database=config.POSTGRES_OFFLINE_DATABASE_NAME,
                 )
-                engine = create_engine(
+                engine = create_async_engine(
                     url_object,
                     pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
                     pool_timeout=300,
@@ -165,7 +167,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         return engine
 
     @staticmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         log.info("Shutting down Postgres offline database")
 
         if (
@@ -191,13 +193,13 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             OfflinePostgresHelper._is_test = False
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         try:
             log.info("Check Postgres offline database connection...")
 
-            with engine.connect() as connection:
-                version = connection.execute(text("SELECT version();"))
-                connection.commit()
+            async with engine.connect() as connection:
+                version = await connection.execute(text("SELECT version();"))
+                await connection.commit()
 
             log.info(f"Database Version: {version.scalars().one_or_none()}")
 
@@ -206,17 +208,17 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: List[str]) -> None:
         log.info("Create Offline Postgres tables")
-        super().create_tables(tables=tables)
+        await super().create_tables(tables=tables)
 
     @classmethod
-    def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: List[str]) -> None:
         log.info("Drop Offline Postgres tables")
-        super().drop_tables(tables=tables)
+        await super().drop_tables(tables=tables)
 
-    @staticmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    @classmethod
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -225,19 +227,36 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             is_analyze: If True, performs an analyze operation.
             engine: The SQLAlchemy engine connected to the database.
         """
-        log.debug(f"VACUUM {table_name}")
-
-        query = "VACUUM"
-        if is_full:
-            query += " FULL"
+        query = "VACUUM ("
+        # if is_full:
+        #     query += " FULL,"
         if is_analyze:
-            query += " ANALYZE"
+            query += " ANALYZE, SKIP_LOCKED)"
         query += " " + table_name
         query += ";"
 
-        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
-            connection.execute(text(query))
-            connection.commit()
+        log.info(f"{query}")
+
+        # try:
+        #     loop = asyncio.get_running_loop()
+        # except RuntimeError:
+        #     """Check if the event loop is already running."""
+        #     loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(loop)
+        #     """Set a new event loop if none exists."""
+        #
+        # if OfflineDatabaseManager.get_concurrency_count() > 1:
+        #     """Check if concurrency is enabled."""
+        #     cls.initialize(loop)
+        #     """Initialize the database helper."""
+        autocommit_engine = engine.execution_options(isolation_level="AUTOCOMMIT")
+        async with autocommit_engine.connect() as connection:
+            await connection.execute(text(query))
+            await connection.commit()
+
+        # async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
+        #     await connection.execute(text(query))
+        #     await connection.commit()
 
     @staticmethod
     def is_vacuum_full() -> bool:
@@ -250,16 +269,15 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
-    ) -> ReturningInsert[tuple[ConcreteTable]]:
+    ) -> Insert:
         if on_conflict_do_nothing:
             return (
                 insert(schema_class)
                 .on_conflict_do_nothing()
                 .values(values)
-                .returning(schema_class)
             )
         else:
-            return insert(schema_class).values(values).returning(schema_class)
+            return insert(schema_class).values(values)
 
     @staticmethod
     def generate_insert_bulk_query(

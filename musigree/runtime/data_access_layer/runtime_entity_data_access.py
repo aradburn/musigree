@@ -139,7 +139,7 @@ class RuntimeEntityDataAccess:
         return relations
 
     @staticmethod
-    def get_id_by_entity_type_and_entity_name(
+    async def get_id_by_entity_type_and_entity_name(
         entity_repository: RuntimeEntityRepository,
         entity_type: EntityType,
         entity_name: str,
@@ -159,7 +159,7 @@ class RuntimeEntityDataAccess:
         if id_ is None:
             # log.debug(f"not cached, try db")
             try:
-                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
+                int_id = await entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
                 # Store the internal id, not entity_id

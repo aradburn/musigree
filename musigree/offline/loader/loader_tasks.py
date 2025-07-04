@@ -64,7 +64,7 @@ This module utilizes `luigi` for workflow management, `datetime` for date
 and time handling, `logging` for logging operations, `os` for file system
 operations, `urllib.parse` for URL parsing and `musigree` library.
 """
-
+import asyncio
 import datetime
 import logging
 from pathlib import Path
@@ -403,7 +403,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
         )
         log.debug(f"Run stage: {self.stage}")
         try:
-            stages[int(str(self.stage))]()
+            asyncio.run(stages[int(str(self.stage))])
             # Mark task done in the database
             self.output().done()
         except RuntimeError as e:

@@ -24,9 +24,9 @@ Key functionalities include:
       a file using pickle serialization.
     - **`insert_bulk`, `update_bulk`, `delete_bulk`, `get_set_of_ids`**:
       Methods for bulk database operations. These are implemented using
-      worker classes (`WorkerReleaseInserter`, `WorkerReleaseUpdater`,
-      `WorkerReleaseDeleter`).
-    - **Concurrency Management**: The class uses worker processes to improve
+      worker functions (`insert_releases_worker`, `update_releases_worker`,
+      `delete_releases_worker`).
+    - **Concurrency Management**: The class uses ProcessPoolExecutor to improve
       performance when processing a large number of releases.
     - **Database Transactions**: It utilizes database transactions (`offline_transaction`)
       to ensure data consistency.
@@ -40,9 +40,9 @@ The `LoaderRelease` class interacts with the following components:
     - `ReleaseDataAccess`: For operations related to release data extraction.
     - `ParserRelease`: For parsing release data from XML elements.
     - `EntityDetailsIndex`: For managing the entity details index.
-    - `WorkerReleaseInserter`, `WorkerReleaseUpdater`, `WorkerReleaseDeleter`:
-      Worker classes for handling bulk database operations.
-    - `WorkerReleasePassTwo`: A worker class for handling the second pass
+    - `insert_releases_worker`, `update_releases_worker`, `delete_releases_worker`:
+      Worker functions for handling bulk database operations.
+    - `process_release_pass_two_worker`: A worker function for handling the second pass
       of release data loading.
     - `LoaderBase`: The base class that provides common loader functionalities.
     - `OfflineDatabaseManager`: For managing database concurrency settings.
@@ -51,26 +51,25 @@ The `LoaderRelease` class interacts with the following components:
     - `Path`: for filesystem interaction.
 
 The module utilizes `logging` for logging operations, `pickle` for serialization,
-`SortedSet` for managing sorted sets of IDs, and `Path` for file system operations.
+`SortedSet` for managing sorted sets of IDs, `Path` for file system operations,
+and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
-
+import asyncio
 import logging
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from sortedcontainers import SortedSet
-
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
-from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_release import ParserRelease
-from musigree.offline.loader.worker_release_deleter import WorkerReleaseDeleter
-from musigree.offline.loader.worker_release_inserter import WorkerReleaseInserter
-from musigree.offline.loader.worker_release_pass_two import WorkerReleasePassTwo
-from musigree.offline.loader.worker_release_updater import WorkerReleaseUpdater
+from musigree.offline.loader.worker_release_deleter import delete_releases_worker
+from musigree.offline.loader.worker_release_inserter import insert_releases_worker
+from musigree.offline.loader.worker_release_pass_two import process_release_pass_two_worker
+from musigree.offline.loader.worker_release_updater import update_releases_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.utils import timeit
 
 log = logging.getLogger(__name__)
 """
@@ -109,7 +108,7 @@ class LoaderRelease(LoaderBase):
     # PUBLIC METHODS
 
     @classmethod
-    @timeit
+    # @timeit
     async def loader_release_pass_one(
         cls, discogs_data_directory: Path, date: str, is_bulk_inserts=False
     ) -> int:
@@ -129,86 +128,91 @@ class LoaderRelease(LoaderBase):
             int: The number of releases loaded.
         """
         log.debug(f"loader release pass one - date: {date}")
-        async with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            release_repository = ReleaseRepository()
-            """Instance of ReleaseRepository for database operations on releases."""
-            release_parser = ParserRelease()
-            """Instance of ParserRelease for parsing release data."""
-            releases_loaded = await cls.loader_pass_one_manager(
-                repository=release_repository,
-                parser=release_parser,
-                discogs_data_directory=discogs_data_directory,
-                date=date,
-                xml_tag="release",
-                id_attr=ReleaseTable.release_id.name,
-                skip_without=["title"],
-                is_bulk_inserts=is_bulk_inserts,
-            )
+
+        release_repository = ReleaseRepository()
+        """Instance of ReleaseRepository for database operations on releases."""
+        release_parser = ParserRelease()
+        """Instance of ParserRelease for parsing release data."""
+        releases_loaded = await cls.loader_pass_one_manager(
+            repository=release_repository,
+            parser=release_parser,
+            discogs_data_directory=discogs_data_directory,
+            date=date,
+            xml_tag="release",
+            id_attr=ReleaseTable.release_id.name,
+            skip_without=["title"],
+            is_bulk_inserts=is_bulk_inserts,
+        )
         return releases_loaded
 
     @classmethod
-    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int):
+    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int, executor: ProcessPoolExecutor, concurrency_count: int) -> None:
         """
         Performs a bulk insert operation for releases.
 
         This method is called to insert a batch of release records into the
-        database using the `WorkerReleaseInserter` worker class.
+        database using the `insert_releases_worker` function.
 
         Args:
             bulk_inserts (list[dict[str, Any]]): The list of release records to insert.
             inserted_count (int): The number of records processed so far.
-
-        Returns:
-            WorkerReleaseInserter: The worker instance handling the insert operation.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count (int): The number of concurrent operations allowed.
         """
-        worker = WorkerReleaseInserter(
-            bulk_inserts=bulk_inserts,
-            inserted_count=inserted_count,
-        )
-        return worker
+        loop = asyncio.get_running_loop()
+        loop.set_debug(True)
+        if concurrency_count > 1:
+            future = loop.run_in_executor(executor, insert_releases_worker, bulk_inserts, inserted_count)
+        else:
+            future = loop.run_in_executor(None, insert_releases_worker, bulk_inserts, inserted_count)
+        return await future
 
     @classmethod
-    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
+    async def update_bulk(cls,
+                          bulk_updates: list[dict[str, Any]],
+                          processed_count: int,
+                          executor: ProcessPoolExecutor,
+                          concurrency_count: int) -> None:
         """
         Performs a bulk update operation for releases.
 
         This method is called to update a batch of release records in the
-        database using the `WorkerReleaseUpdater` worker class.
+        database using the `update_releases_worker` function.
 
         Args:
             bulk_updates (list[dict[str, Any]]): The list of release records to update.
             processed_count (int): The number of records processed so far.
-
-        Returns:
-            WorkerReleaseUpdater: The worker instance handling the update operation.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count (int): The number of concurrent operations allowed.
         """
-        worker = WorkerReleaseUpdater(
-            bulk_updates=bulk_updates,
-            processed_count=processed_count,
-        )
-        return worker
+        loop = asyncio.get_running_loop()
+        if concurrency_count > 1:
+            future = loop.run_in_executor(executor, update_releases_worker, bulk_updates, processed_count)
+        else:
+            future = loop.run_in_executor(None, update_releases_worker, bulk_updates, processed_count)
+        return await future
 
     @classmethod
-    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
+    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int, executor: ProcessPoolExecutor,
+                          concurrency_count: int) -> None:
         """
         Performs a bulk delete operation for releases.
 
         This method is called to delete a batch of release records from the
-        database using the `WorkerReleaseDeleter` worker class.
+        database using the `delete_releases_worker` function.
 
         Args:
             bulk_deletes (list[int]): The list of release IDs to delete.
             processed_count (int): The number of records processed so far.
-
-        Returns:
-            WorkerReleaseDeleter: The worker instance handling the delete operation.
+            executor (ProcessPoolExecutor): The executor to submit the work to.
+            concurrency_count (int): The number of concurrent operations allowed.
         """
-        worker = WorkerReleaseDeleter(
-            bulk_deletes=bulk_deletes,
-            processed_count=processed_count,
-        )
-        return worker
+        loop = asyncio.get_running_loop()
+        if concurrency_count > 1:
+            future = loop.run_in_executor(executor, delete_releases_worker, bulk_deletes, processed_count)
+        else:
+            future = loop.run_in_executor(None, delete_releases_worker, bulk_deletes, processed_count)
+        return await future
 
     @classmethod
     async def get_set_of_ids(cls, entity_type):
@@ -220,24 +224,24 @@ class LoaderRelease(LoaderBase):
         Args:
             entity_type: Ignored, not used.
         Returns:
-            SortedSet: The set of release IDs.
+            set[int]: The set of release IDs.
         """
         async with offline_transaction():
             release_repository = ReleaseRepository()
             """Instance of ReleaseRepository for database operations on releases."""
             ids = await release_repository.get_ids()
-        set_of_ids = SortedSet(ids)
+        set_of_ids = set(ids)
         return set_of_ids
 
     @classmethod
-    @timeit
+    # @timeit
     async def loader_release_pass_two(cls):
         """
         Performs the second pass of loading release data.
 
         This method performs post-processing operations on the loaded release
         data, such as resolving references and updating related tables. It
-        processes releases in batches using the `WorkerReleasePassTwo` worker class.
+        processes releases in batches using the `process_release_pass_two_worker` function.
         """
         log.debug("loader release pass two")
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
@@ -254,30 +258,28 @@ class LoaderRelease(LoaderBase):
 
         current_total = 0
         """Counter for the total number of releases processed."""
+        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
 
-        workers = []
-        """List of worker processes."""
-        for release_ids in batched_release_ids:
-            """Iterate over the batches of release IDs."""
-            worker = WorkerReleasePassTwo(release_ids, current_total, total_count)
-            """Create a new worker for the batch."""
-            worker.start()
-            """Start the worker process."""
-            workers.append(worker)
-            """Add the worker to the list."""
-            current_total += number_in_batch
-            """Update the counter."""
-
-            if len(workers) > OfflineDatabaseManager.get_concurrency_count():
-                """If the number of workers exceeds the concurrency limit."""
-                worker = workers.pop(0)
-                """Remove the first worker from the list."""
-                cls.loader_wait_for_worker(worker)
-            """Wait for the worker to finish."""
-
-        while len(workers) > 0:
-            """Wait for any remaining workers to finish."""
-            worker = workers.pop(0)
-            """Remove the first worker from the list."""
-            cls.loader_wait_for_worker(worker)
-        """Wait for the worker to finish."""
+        if concurrency_count > 1:
+            # Multi-threaded execution
+            # Use ProcessPoolExecutor to run the worker function concurrently
+            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                async with asyncio.TaskGroup() as task_group:
+                    for ids in batched_release_ids:
+                        """Iterate over the batches of release IDs."""
+                        future = cls.run_worker_function(process_release_pass_two_worker,
+                                                         ids, current_total, total_count,
+                                                         executor, concurrency_count)
+                        task_group.create_task(future)
+                        current_total += number_in_batch
+        else:
+            # Single-threaded execution
+            for ids in batched_release_ids:
+                """Iterate over the batches of release IDs."""
+                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                    async with asyncio.TaskGroup() as task_group:
+                        future = cls.run_worker_function(process_release_pass_two_worker,
+                                                         ids, current_total, total_count,
+                                                         executor, concurrency_count)
+                        task_group.create_task(future)
+                        current_total += number_in_batch

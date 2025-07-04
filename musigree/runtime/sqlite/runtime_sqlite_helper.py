@@ -53,9 +53,10 @@ runtime operation.
 import logging
 from typing import Type, List
 
-from sqlalchemy import Engine, create_engine, text, NullPool
+from sqlalchemy import text, NullPool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
@@ -79,7 +80,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     """
 
     @staticmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         """
         Sets up the SQLite database connection and returns the engine.
 
@@ -90,7 +91,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             config (Configuration): The application configuration.
 
         Returns:
-            Engine: The SQLAlchemy engine.
+            AsyncEngine: The SQLAlchemy async engine.
         """
         log.info("Using Sqlite Runtime Database")
 
@@ -106,8 +107,8 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Create the parent folder if it does not exist."""
         log.info(f"Sqlite Database: {target_path}")
 
-        engine = create_engine(
-            f"sqlite:///{target_path}",
+        engine = create_async_engine(
+            f"sqlite+aiosqlite:///{target_path}",
             connect_args={
                 "check_same_thread": False,
                 "timeout": 600,
@@ -118,7 +119,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         return engine
 
     @staticmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         """
         Shuts down the SQLite database connection.
 
@@ -128,7 +129,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         log.info("Shutting down Sqlite Runtime Database")
 
     @staticmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Checks the SQLite database connection and performs setup.
 
@@ -144,26 +145,26 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             """Attempt to connect to the database."""
             log.info("Check Sqlite runtime database connection...")
 
-            with engine.connect() as connection:
+            async with engine.connect() as connection:
                 """Open a connection."""
-                version = connection.execute(
+                version = await connection.execute(
                     text("SELECT sqlite_version() AS version;")
                 )
                 """Get the sqlite version."""
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
                 """Log the version."""
 
-                connection.execute(text("pragma journal_mode=WAL;"))
+                await connection.execute(text("pragma journal_mode=WAL;"))
                 """Enable `WAL` journaling."""
-                connection.execute(text("pragma synchronous=normal;"))
+                await connection.execute(text("pragma synchronous=normal;"))
                 """Set `synchronous` to normal."""
-                connection.execute(text("pragma journal_size_limit = 6144000;"))
+                await connection.execute(text("pragma journal_size_limit = 6144000;"))
                 """Set `journal_size_limit`."""
-                connection.execute(text("pragma cache_size=-10000;"))
+                await connection.execute(text("pragma cache_size=-10000;"))
                 """Set `cache_size`."""
-                connection.execute(text("pragma temp_store=MEMORY;"))
+                await connection.execute(text("pragma temp_store=MEMORY;"))
                 """Set `temp_store` to `MEMORY`."""
-                connection.commit()
+                await connection.commit()
                 """Commit the operation."""
 
             log.info("Runtime Database connected OK.")
@@ -172,7 +173,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
-    def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: List[str]) -> None:
         """
         Creates tables in the SQLite database.
 
@@ -184,11 +185,11 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 `RuntimeBase.metadata` will be created. Defaults to None.
         """
         log.info("Create runtime Sqlite tables")
-        super().create_tables(tables=tables)
+        await super().create_tables(tables=tables)
         """Create the table."""
 
     @classmethod
-    def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: List[str]) -> None:
         """
         Drops tables from the SQLite database.
 
@@ -200,11 +201,11 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 `RuntimeBase.metadata` will be dropped. Defaults to None.
         """
         log.info("Drop runtime Sqlite tables")
-        super().drop_tables(tables=tables)
+        await super().drop_tables(tables=tables)
         """Drop the table."""
 
     @staticmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -223,8 +224,8 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             query += " ANALYZE"
         query += ";"
 
-        with engine.connect() as connection:
-            connection.execute(text(query))
+        async with engine.connect() as connection:
+            await connection.execute(text(query))
 
     @staticmethod
     def is_vacuum_full() -> bool:

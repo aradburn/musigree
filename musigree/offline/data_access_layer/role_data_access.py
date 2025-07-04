@@ -119,7 +119,7 @@ class RoleDataAccess:
         return role_name
 
     @staticmethod
-    async def load_all_roles() -> None:
+    async def load_all_roles_into_cache() -> None:
         """
         Loads all roles from the offline database and populates the cache.
 
@@ -135,7 +135,7 @@ class RoleDataAccess:
 
         After loading the roles, it logs the number of roles loaded.
         """
-        log.debug("Loading roles from RoleRepository")
+        log.debug("Loading roles from offline RoleRepository")
         RoleCache.role_id_to_role_name_lookup.clear()
         RoleCache.role_id_to_role_category_lookup.clear()
         RoleCache.role_name_to_role_id_lookup.clear()
