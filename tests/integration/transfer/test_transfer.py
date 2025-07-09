@@ -48,10 +48,10 @@ class TestTransfer(NotATest):
         # GIVEN
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
 
         # WHEN
-        await TransferManager.transfer_entity(entity_details_index)
+        await TransferManager.transfer_entity()
 
         # THEN
         async with runtime_transaction():
@@ -95,10 +95,10 @@ class TestTransfer(NotATest):
 
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
 
         # WHEN
-        await TransferManager.transfer_entity_details(entity_details_index)
+        await TransferManager.transfer_entity_details()
 
         # THEN
         async with runtime_transaction():
