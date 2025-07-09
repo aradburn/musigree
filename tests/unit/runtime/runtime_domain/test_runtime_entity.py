@@ -55,6 +55,7 @@ def test_converts_runtime_entity_db_to_domain_representation():
         aliases=["Alias1"],
         groups=["Group1"],
         members=["Member1"],
+        parent_label=["Parent1"],
         countries="Country1",
         genres="Genre1",
         styles="Style1",
@@ -66,6 +67,7 @@ def test_converts_runtime_entity_db_to_domain_representation():
     assert entity.entities["aliases"] == ["Alias1"]
     assert entity.entities["groups"] == ["Group1"]
     assert entity.entities["members"] == ["Member1"]
+    assert entity.entities["parent_label"] == ["Parent1"]
 
 
 def test_converts_runtime_entity_db_to_domain_representation_with_none_entities():
@@ -79,6 +81,7 @@ def test_converts_runtime_entity_db_to_domain_representation_with_none_entities(
         aliases=None,
         groups=None,
         members=None,
+        parent_label=None,
         countries="Country1",
         genres="Genre1",
         styles="Style1",
@@ -87,6 +90,7 @@ def test_converts_runtime_entity_db_to_domain_representation_with_none_entities(
     assert "aliases" not in entity.entities
     assert "groups" not in entity.entities
     assert "members" not in entity.entities
+    assert "parent_label" not in entity.entities
 
 
 def test_raises_value_error_for_unrecognized_entity_type():
