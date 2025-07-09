@@ -31,6 +31,7 @@ dependencies = [
     "uvicorn~=0.35.0",
     "httpx~=0.28.1",
     "jinja2~=3.1.6",
+    "asyncio-atexit~=1.0.1",
 ]
 
 [project.urls]
