@@ -105,7 +105,7 @@ def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]],
 
     if RuntimeDatabaseManager.get_concurrency_count() > 1:
         """Check if concurrency is enabled."""
-        RuntimeDatabaseHelper.initialize(loop)
+        RuntimeDatabaseManager.runtime_database_helper.initialize(loop)
         """Initialize the database helper."""
 
     loop.run_until_complete(insert_entities(bulk_inserts))
