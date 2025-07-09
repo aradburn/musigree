@@ -10,7 +10,6 @@ from musigree.offline.database.relation_release_year_repository import (
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.integration.updater_test_case import UpdaterTestCase
 
 
 class TestUpdater(UpdaterTestCase):

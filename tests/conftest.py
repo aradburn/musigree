@@ -4,6 +4,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.exc import DatabaseError
 
+from musigree.config import PostgresTestConfiguration, SqliteTestConfiguration
 from musigree.constants import ALL_OFFLINE_DATABASE_TABLE_NAMES, ALL_RUNTIME_DATABASE_TABLE_NAMES
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.loader import load_runtime_tables, load_offline_tables
@@ -75,7 +76,7 @@ async def offline_database_setup(offline_config, is_load_offline_data_required):
 
 
 @pytest_asyncio.fixture
-async def offline_transaction_fixture(offline_database_setup):
+async def offline_transaction_fixture():
     """Provide an async transaction context for individual tests."""
     async with offline_transaction() as session:
         yield session
@@ -83,7 +84,7 @@ async def offline_transaction_fixture(offline_database_setup):
 
 
 @pytest_asyncio.fixture
-async def reset_offline_database(offline_database_setup):
+async def reset_offline_database():
     """Reset offline database tables to start test with empty tables."""
     if OfflineDatabaseManager.offline_database_helper is not None:
         log.info("Resetting offline database tables")
@@ -138,7 +139,7 @@ async def runtime_database_setup(runtime_config, is_load_runtime_data_required):
 
 
 @pytest_asyncio.fixture
-async def runtime_transaction_fixture(runtime_database_setup):
+async def runtime_transaction_fixture():
     """Provide an async transaction context for individual tests."""
     async with runtime_transaction() as session:
         yield session
@@ -146,7 +147,7 @@ async def runtime_transaction_fixture(runtime_database_setup):
 
 
 @pytest_asyncio.fixture
-async def reset_runtime_database(runtime_database_setup):
+async def reset_runtime_database():
     """Reset runtime database tables to start test with empty tables."""
     if RuntimeDatabaseManager.runtime_database_helper is not None:
         log.info("Resetting runtime database tables")
@@ -156,3 +157,13 @@ async def reset_runtime_database(runtime_database_setup):
 
     yield
     # Function-level cleanup if needed can go here
+
+
+# @pytest_asyncio.fixture(scope="class")
+# async def app_setup(offline_database_setup, runtime_database_setup):
+#     offline_config = PostgresTestConfiguration()
+#     runtime_config = SqliteTestConfiguration()
+#
+#     await offline_database_setup(offline_config, True)
+#     await runtime_database_setup(runtime_config, True)
+
