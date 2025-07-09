@@ -3,6 +3,7 @@ import itertools
 import json
 import logging
 import math
+import random
 import re
 import shutil
 import string
@@ -10,11 +11,10 @@ import sys
 import textwrap
 import time
 import unicodedata
-from collections.abc import Mapping, Sequence, Iterator
+from collections.abc import Mapping, Iterator
 from datetime import datetime, date
 from functools import wraps
-import random
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Sequence, AsyncIterator
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -149,6 +149,34 @@ def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
     return batched(seq, math.ceil(num_items / num_chunks))
+
+
+async def async_chunks(
+    async_iterator: AsyncIterator[T],
+    size: int,
+) -> AsyncIterator[list[T]]:
+    """Generate chunks from an asynchronous sequence.
+
+    Chunks are lists consists of original ``T`` elements.
+    The chunk can't contain more than ``size`` elements.
+    The last chunk might contain less than ``size`` elements,
+    but can't be empty.
+    """
+    finished = False
+
+    while not finished:
+        results: list[T] = []
+
+        for _ in range(size):
+            try:
+                result = await anext(async_iterator)
+            except StopAsyncIteration:
+                finished = True
+            else:
+                results.append(result)
+
+        if results:
+            yield results
 
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
@@ -293,19 +321,6 @@ def to_ascii(_string: str) -> str:
     return _string
 
 
-def timeit(func):
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        log.debug(f"### TIMER ### Function {func.__name__}: {total_time:.1f} seconds")
-        return result
-
-    return timeit_wrapper
-
-
 def sleep_with_backoff(multiplier: int) -> None:
     time_in_secs = int(multiplier * (1.0 + random.random()))
     if time_in_secs > 60:
@@ -372,3 +387,20 @@ def calculate_size(obj):
 
 def get_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+
+def async_partial(async_fn, *args):
+    async def wrapped():
+        return await async_fn(*args)
+
+    return wrapped
+
+
+def awaitify(sync_func):
+    """Wrap a synchronous callable to allow ``await``'ing it"""
+
+    @wraps(sync_func)
+    async def async_func(*args, **kwargs):
+        return sync_func(*args, **kwargs)
+
+    return async_func
