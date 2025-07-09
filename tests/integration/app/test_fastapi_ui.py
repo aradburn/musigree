@@ -1,36 +1,47 @@
-from tests.integration.app_test_case import AppTestCase
+import pytest
+from httpx import AsyncClient
 
 
-class TestFastAPIUI(AppTestCase):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+@pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
+class TestFastAPIUI:
 
-    def test_index(self):
-        response = self.client.get("/")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_index(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/")
+        assert response.status_code == 200
 
-    def test_artist_200(self):
-        response = self.client.get("/artist/2239")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_artist_200(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/artist/2239")
+        assert response.status_code == 200
 
-    def test_artist_400(self):
-        response = self.client.get("/artist/bad")
-        self.assertEqual(400, response.status_code)
+    @pytest.mark.asyncio
+    async def test_artist_400(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/artist/bad")
+        assert response.status_code == 400
 
-    def test_artist_404(self):
-        response = self.client.get("/artist/0")
-        self.assertEqual(404, response.status_code)
+    @pytest.mark.asyncio
+    async def test_artist_404(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/artist/0")
+        assert response.status_code == 404
 
-    def test_label_200(self):
-        response = self.client.get("/label/1")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_label_200(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/label/1")
+        assert response.status_code == 200
 
-    def test_label_400(self):
-        response = self.client.get("/label/bad")
-        self.assertEqual(400, response.status_code)
+    @pytest.mark.asyncio
+    async def test_label_400(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/label/bad")
+        assert response.status_code == 400
 
-    def test_label_404(self):
-        response = self.client.get("/label/2")
-        self.assertEqual(404, response.status_code)
+    @pytest.mark.asyncio
+    async def test_label_404(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/label/2")
+        assert response.status_code == 404
 
-    def test_error(self):
-        response = self.client.get("/malformed")
-        self.assertEqual(404, response.status_code)
+    @pytest.mark.asyncio
+    async def test_error(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        response = await client.get("/malformed")
+        assert response.status_code == 404

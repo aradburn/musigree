@@ -1,23 +1,39 @@
+"""Integration tests for the FastAPI API endpoints."""
+import pytest
+from httpx import AsyncClient
+
+from musigree.utils import normalize_dict_list
 
 
-class TestFastAPIAPI(AppTestCase):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+@pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
+class TestFastAPIAPI:
+    """Test class for FastAPI API endpoints."""
 
-    def test_network_01(self):
-        response = self.client.get("/api/artist/network/2239")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_network_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test network endpoint with valid artist ID."""
+        response = await client.get("/api/artist/network/2239")
+        assert response.status_code == 200
 
-    def test_network_02(self):
-        response = self.client.get("/api/artist/network/999999999999")
-        self.assertEqual(404, response.status_code)
+    @pytest.mark.asyncio
+    async def test_network_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test network endpoint with invalid artist ID."""
+        response = await client.get("/api/artist/network/999999999999")
+        assert response.status_code == 404
 
-    def test_network_03(self):
-        response = self.client.get("/api/label/network/1")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_network_03(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test network endpoint with valid label ID."""
+        response = await client.get("/api/label/network/1")
+        assert response.status_code == 200
 
-    def test_search_01(self):
-        response = self.client.get("/api/search/Morris")
+    @pytest.mark.asyncio
+    async def test_search_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test search endpoint with basic query."""
+        response = await client.get("/api/search/Morris")
         print(f"response: {response}")
-        self.assertEqual(200, response.status_code)
+        assert response.status_code == 200
 
         actual = response.json()
         print(f"actual: {actual}")
@@ -34,20 +50,26 @@ class TestFastAPIAPI(AppTestCase):
                 {"key": "artist-249982", "name": "Leo Swift Morris"},
             ]
         }
-        self.maxDiff = None
-        self.assertCountEqual(expected["results"], actual["results"])
+        # We are not testing results sort order here, so we can just check the results
+        actual_str = normalize_dict_list(actual["results"])
+        expected_str = normalize_dict_list(expected["results"])
+        assert actual_str == expected_str
 
-    def test_search_02(self):
-        response = self.client.get("/api/search/Chris%20Morris")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_search_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test search endpoint with URL encoded query."""
+        response = await client.get("/api/search/Chris%20Morris")
+        assert response.status_code == 200
 
         actual = response.json()
         expected = {"results": [{"key": "artist-3723", "name": "Chris Morris"}]}
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relations_01(self):
-        response = self.client.get("/api/artist/relations/32613")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_relations_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test relations endpoint."""
+        response = await client.get("/api/artist/relations/32613")
+        assert response.status_code == 200
 
         actual = response.json()
         expected = {
@@ -172,70 +194,79 @@ class TestFastAPIAPI(AppTestCase):
         #         },
         #     ]
         # }
-        self.assertEqual(expected, actual)
+        actual_str = normalize_dict_list(actual["results"])
+        expected_str = normalize_dict_list(expected["results"])
+        assert actual_str == expected_str
 
-    def test_roles_01(self):
-        response = self.client.get("/api/roles")
-        self.assertEqual(200, response.status_code)
+    @pytest.mark.asyncio
+    async def test_roles_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+        """Test roles endpoint."""
+        response = await client.get("/api/roles")
+        assert response.status_code == 200
 
         actual = response.json()
-        self.assertIsNotNone(actual)
-        self.assertIsNotNone(actual["roles"])
+        assert actual is not None
+        assert actual["roles"] is not None
         expected = 4119
-        self.assertEqual(expected, len(actual["roles"]))
+        assert len(actual["roles"]) == expected
 
-    def test_entity_details_01(self):
+    @pytest.mark.asyncio
+    async def test_entity_details_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
         """Test getting entity details for an artist."""
-        response = self.client.get("/api/artist/details/2239")
-        self.assertEqual(200, response.status_code)
+        response = await client.get("/api/artist/details/2239")
+        assert response.status_code == 200
 
         actual = response.json()
-        self.assertIsNotNone(actual)
+        assert actual is not None
         
         # Verify required fields are present
-        self.assertIn("id", actual)
-        self.assertIn("type", actual)
-        self.assertIn("name", actual)
-        self.assertIn("metadata", actual)
-        self.assertIn("entities", actual)
-        self.assertIn("relation_counts", actual)
+        assert "id" in actual
+        assert "type" in actual
+        assert "name" in actual
+        assert "metadata" in actual
+        assert "entities" in actual
+        assert "relation_counts" in actual
         
         # Verify correct types
-        self.assertEqual(actual["id"], 2239)
-        self.assertEqual(actual["type"], "artist")
-        self.assertIsInstance(actual["name"], str)
-        self.assertIsInstance(actual["metadata"], dict)
-        self.assertIsInstance(actual["entities"], dict)
-        self.assertIsInstance(actual["relation_counts"], dict)
+        assert actual["id"] == 2239
+        assert actual["type"] == "artist"
+        assert isinstance(actual["name"], str)
+        assert isinstance(actual["metadata"], dict)
+        assert isinstance(actual["entities"], dict)
+        assert isinstance(actual["relation_counts"], dict)
 
-    def test_entity_details_02(self):
+    @pytest.mark.asyncio
+    async def test_entity_details_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
         """Test getting entity details for a label."""
-        response = self.client.get("/api/label/details/1")
-        self.assertEqual(200, response.status_code)
+        response = await client.get("/api/label/details/1")
+        assert response.status_code == 200
 
         actual = response.json()
-        self.assertIsNotNone(actual)
+        assert actual is not None
         
         # Verify required fields are present
-        self.assertIn("id", actual)
-        self.assertIn("type", actual)
-        self.assertIn("name", actual)
+        assert "id" in actual
+        assert "type" in actual
+        assert "name" in actual
         
         # Verify correct types
-        self.assertEqual(actual["id"], 1)
-        self.assertEqual(actual["type"], "label")
+        assert actual["id"] == 1
+        assert actual["type"] == "label"
 
-    def test_entity_details_03(self):
+    @pytest.mark.asyncio
+    async def test_entity_details_03(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
         """Test entity details endpoint with invalid entity ID."""
-        response = self.client.get("/api/artist/details/999999999999")
-        self.assertEqual(404, response.status_code)
+        response = await client.get("/api/artist/details/999999999999")
+        assert response.status_code == 404
 
-    def test_entity_details_04(self):
+    @pytest.mark.asyncio
+    async def test_entity_details_04(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
         """Test entity details endpoint with invalid entity type."""
-        response = self.client.get("/api/invalidtype/details/1")
-        self.assertEqual(400, response.status_code)
+        response = await client.get("/api/invalidtype/details/1")
+        assert response.status_code == 400
 
-    def test_entity_details_05(self):
+    @pytest.mark.asyncio
+    async def test_entity_details_05(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
         """Test entity details endpoint with non-numeric entity ID."""
-        response = self.client.get("/api/artist/details/abc")
-        self.assertEqual(400, response.status_code)
+        response = await client.get("/api/artist/details/abc")
+        assert response.status_code == 400
