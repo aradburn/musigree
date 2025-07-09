@@ -22,13 +22,12 @@ The module uses the following components:
     - musigree.logging_config: For logging configuration
     - musigree.runtime.runtime_database_manager: For database management
 """
-
-import atexit
 import logging
 import sys
 from typing import Any
 from contextlib import asynccontextmanager
 
+import asyncio_atexit  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
@@ -38,40 +37,23 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from musigree.config import Configuration
-from musigree.constants import TEMPLATES_DIR, PUBLIC_DIR
+from musigree.constants import TEMPLATES_DIR, PUBLIC_DIR, TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from musigree.exceptions import (
     BaseError,
     NotFoundError,
 )
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.loader.loader import load_runtime_tables
 from musigree.logging_config import setup_logging, shutdown_logging
+from musigree.runtime.data_access_layer.runtime_role_data_access import RuntimeRoleDataAccess
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.app.fastapi_security import setup_security_middleware
+from musigree.transfer.transfer_manager import TransferManager
 
 log = logging.getLogger(__name__)
 """The logger for the application module."""
 
 # Create a global templates variable
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    """
-    Lifespan context manager for the FastAPI application.
-
-    This function manages the application lifecycle. Code before yield is executed
-    on startup, and code after yield is executed on shutdown.
-
-    Args:
-        _app: The FastAPI application instance.
-    """
-    # Code to run on application startup
-    yield
-    # Code to run on application shutdown
-    shutdown_application()
-
 
 def create_app(config: Configuration) -> FastAPI:
     """
@@ -91,6 +73,29 @@ def create_app(config: Configuration) -> FastAPI:
     from musigree.app.fastapi_ui import router as ui_router
     from musigree.app.fastapi_assets import create_assets_router
 
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        """
+        Lifespan context manager for the FastAPI application.
+
+        This function manages the application lifecycle. Code before yield is executed
+        on startup, and code after yield is executed on shutdown.
+
+        Args:
+            _app: The FastAPI application instance.
+        """
+        # Code to run on application startup
+
+        # Initialize the app
+        log.info("######## APPLICATION STARTUP ########")
+        await init_app(config)
+
+        yield
+
+        # Code to run on application shutdown
+        log.info("######## APPLICATION SHUTDOWN ########")
+        await shutdown_application()
+
     # Create a new FastAPI app
     app = FastAPI(
         title="Musigree",
@@ -98,9 +103,6 @@ def create_app(config: Configuration) -> FastAPI:
         version="1.0.0",
         lifespan=lifespan,
     )
-
-    # Initialize the app
-    init_app(config)
 
     # Add middleware
     # noinspection PyTypeChecker
@@ -191,7 +193,7 @@ def create_app(config: Configuration) -> FastAPI:
     return app
 
 
-def shutdown_application():
+async def shutdown_application():
     """
     Shuts down the application.
 
@@ -204,13 +206,13 @@ def shutdown_application():
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
     log.info("######## APPLICATION SHUTDOWN START ########")
-    RuntimeDatabaseManager.shutdown_database()
+    await RuntimeDatabaseManager.shutdown_database()
     CacheManager.shutdown_cache()
     shutdown_logging()
     log.info("######## APPLICATION SHUTDOWN DONE ########")
 
 
-def init_app(config: Configuration):
+async def init_app(config: Configuration):
     """
     Initializes the application.
 
@@ -247,11 +249,14 @@ def init_app(config: Configuration):
         CacheManager.clear()
 
     # Setup Database
-    RuntimeDatabaseManager.setup_database(config)
+    await RuntimeDatabaseManager.setup_database(config)
 
-    # Load runtime tables
-    if not config.TESTING:
-        load_runtime_tables(config.DATA_DIR)
+    # Load role cache in memory
+    await RuntimeRoleDataAccess.load_all_roles_into_cache()
+
+    # Load text search index for entities
+    text_search_path = config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    await TransferManager.transfer_load_text_search_index(text_search_path)
 
     # Shutdown on app exit
-    atexit.register(shutdown_application)
+    asyncio_atexit.register(shutdown_application())
