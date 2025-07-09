@@ -70,7 +70,7 @@ class TestTransferManager:
                     mock_async_chunks.return_value = empty_chunks(mock_offline_instance.all.return_value, TransferManager.BULK_INSERT_BATCH_SIZE)
 
                     # Call the method
-                    await TransferManager.transfer_entity(mock_entity_details)
+                    await TransferManager.transfer_entity()
 
                     # Verify runtime table was checked to be empty
                     mock_runtime_instance.count.assert_called()
@@ -97,7 +97,7 @@ class TestTransferManager:
 
         # Call the method and expect DatabaseError
         with pytest.raises(DatabaseError):
-            await TransferManager.transfer_entity(mock_entity_details)
+            await TransferManager.transfer_entity()
 
     @patch('musigree.transfer.transfer_manager.offline_transaction')
     @patch('musigree.transfer.transfer_manager.RuntimeRelationRepository')
@@ -249,11 +249,16 @@ class TestTransferManager:
     @patch('musigree.transfer.transfer_manager.GenreRepository')
     @patch('musigree.transfer.transfer_manager.CountryRepository')
     @patch('musigree.transfer.transfer_manager.runtime_transaction')
-    async def test_transfer_entity_details(self, _mock_runtime_transaction: Mock, mock_country_repo: Mock, mock_genre_repo: Mock, mock_style_repo: Mock, mock_offline_transaction: Mock) -> None:
+    @patch('musigree.transfer.transfer_manager.RuntimeDatabaseManager')
+    async def test_transfer_entity_details(self, mock_runtime_db_manager: Mock, _mock_runtime_transaction: Mock, mock_country_repo: Mock, mock_genre_repo: Mock, mock_style_repo: Mock, mock_offline_transaction: Mock) -> None:
         """Test transfer_entity_details method."""
         # Mock offline transaction context manager
         mock_offline_transaction.return_value.__aenter__ = AsyncMock()
         mock_offline_transaction.return_value.__aexit__ = AsyncMock()
+
+        # Mock runtime transaction context manager
+        _mock_runtime_transaction.return_value.__aenter__ = AsyncMock()
+        _mock_runtime_transaction.return_value.__aexit__ = AsyncMock()
 
         # Setup repository mocks
         mock_country_instance = AsyncMock()
@@ -263,14 +268,21 @@ class TestTransferManager:
         mock_genre_repo.return_value = mock_genre_instance
         mock_style_repo.return_value = mock_style_instance
 
-        # Create a proper mock for EntityDetailsIndex with proper attributes
+        # Create a proper mock for EntityDetailsIndex
         mock_entity_details = Mock(spec=EntityDetailsIndex)
         mock_entity_details.countries_list = ["United States", "United Kingdom", "Canada"]
         mock_entity_details.genres_list = ["Rock", "Pop", "Jazz"]
         mock_entity_details.styles_list = ["Alternative", "Indie", "Classic"]
 
+        # Create a mock runtime_database_helper and attach the entity_details_index
+        mock_runtime_db_helper = Mock()
+        mock_runtime_db_helper.entity_details_index = mock_entity_details
+        
+        # Attach the runtime_database_helper to RuntimeDatabaseManager
+        mock_runtime_db_manager.runtime_database_helper = mock_runtime_db_helper
+
         # Call the method
-        await TransferManager.transfer_entity_details(mock_entity_details)
+        await TransferManager.transfer_entity_details()
 
         # Verify repository methods were called (create and commit, not count)
         assert mock_country_instance.create.call_count == 3
@@ -324,7 +336,7 @@ class TestTransferManager:
             mock_async_chunks.side_effect = empty_chunk_generator
             
             # The test passes if the method completes without throwing an exception
-            await TransferManager.transfer_entity(mock_entity_details)
+            await TransferManager.transfer_entity()
 
     @patch('musigree.transfer.transfer_manager.offline_transaction')
     @patch('musigree.transfer.transfer_manager.RuntimeDatabaseManager')
@@ -357,7 +369,7 @@ class TestTransferManager:
 
         # Call the method and expect the original exception to propagate
         with pytest.raises(Exception, match="Database connection failed"):
-            await TransferManager.transfer_entity(mock_entity_details)
+            await TransferManager.transfer_entity()
 
     @patch('musigree.transfer.transfer_manager.offline_transaction')
     @patch('musigree.transfer.transfer_manager.RuntimeDatabaseManager')
@@ -410,7 +422,7 @@ class TestTransferManager:
             # Mock TransferManager static methods
             with patch('musigree.runtime.runtime_domain.entity.to_runtime_entity_dict'):
                 # The test passes if the method completes without throwing an exception
-                await TransferManager.transfer_entity(mock_entity_details)
+                await TransferManager.transfer_entity()
 
     @pytest.mark.asyncio
     async def test_transfer_all(self) -> None:
