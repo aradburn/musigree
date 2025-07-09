@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
 from typing import Type, List, Any
 
-from sqlalchemy import Index, Table
+from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
@@ -70,8 +70,6 @@ class RuntimeDatabaseHelper(ABC):
         runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime database.
         runtime_async_session_factory (async_sessionmaker | None): The SQLAlchemy session factory
             for creating database sessions.
-        idx_entity_one_id (Index | None): An index for entity one ID.
-        idx_entity_two_id (Index | None): An index for entity two ID.
         text_search_index (TextSearchIndex | None): An index for text-based searches.
         entity_details_index (EntityDetailsIndex | None): An index for entity details.
         entity_count_cached (int): A cached count of entities.
@@ -86,11 +84,6 @@ class RuntimeDatabaseHelper(ABC):
     """The SQLAlchemy engine for the runtime database."""
     runtime_async_session_factory: async_sessionmaker
     """The SQLAlchemy session factory for creating database sessions."""
-
-    idx_entity_one_id: Index
-    """An index for entity one ID."""
-    idx_entity_two_id: Index
-    """An index for entity two ID."""
 
     text_search_index: TextSearchIndex
     """An index for text-based searches."""
@@ -170,6 +163,7 @@ class RuntimeDatabaseHelper(ABC):
             tables: An optional list of table names to create. If None, all tables
                 defined in `RuntimeBase.metadata` will be created.
         """
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
         from musigree.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
 
         for table_class in ALL_RUNTIME_DATABASE_TABLES:
@@ -182,7 +176,7 @@ class RuntimeDatabaseHelper(ABC):
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
 
-        async with cls.runtime_async_engine.begin() as conn:
+        async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
             await conn.run_sync(
                 RuntimeBase.metadata.create_all,
                 checkfirst = True,
@@ -199,19 +193,21 @@ class RuntimeDatabaseHelper(ABC):
             tables: An optional list of table names to drop. If None, all tables
                 defined in `RuntimeBase.metadata` will be dropped.
         """
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
         if tables is not None:
             table_definitions: List[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                async with cls.runtime_async_engine.begin() as conn:
+                async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
                     await conn.run_sync(
                         table.drop,
                         checkfirst=True,
                     )
         else:
-            async with cls.runtime_async_engine.begin() as conn:
+            async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
                 await conn.run_sync(
                     RuntimeBase.metadata.drop_all,
                     checkfirst=True,
@@ -369,6 +365,8 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             tuple[int, EntityType]: A tuple containing the entity ID and type.
         """
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
         # structural_roles = [
         #     "Alias",
         #     "Member Of",
@@ -388,7 +386,7 @@ class RuntimeDatabaseHelper(ABC):
         counter = 0
 
         while True:
-            random_id = RuntimeDatabaseHelper.search_get_random_id()
+            random_id = RuntimeDatabaseManager.runtime_database_helper.search_get_random_id()
             entity_id, entity_type = to_entity_external_id(random_id)
             if entity_type == EntityType.LABEL:
                 log.debug("random skip label")
@@ -497,10 +495,14 @@ class RuntimeDatabaseHelper(ABC):
         result = {"results": tuple(data)}
         return result
 
-    @classmethod
-    def search_text_index(cls, search_text):
-        return RuntimeDatabaseHelper.text_search_index.search(search_text)
+    @staticmethod
+    def search_text_index(search_text):
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    @classmethod
-    def search_get_random_id(cls):
-        return RuntimeDatabaseHelper.text_search_index.get_random_id()
+        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.search(search_text)
+
+    @staticmethod
+    def search_get_random_id():
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.get_random_id()
