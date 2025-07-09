@@ -73,11 +73,11 @@ class RuntimeEntity(InternalDomainObject):
     """The metadata of the entity."""
     entities: dict[str, Any]
     """The entities related to this entity."""
-    countries: str | None = None
+    countries: str | None
     """The countries associated with the entity."""
-    genres: str | None = None
+    genres: str | None
     """The genres associated with the entity."""
-    styles: str | None = None
+    styles: str | None
     """The styles associated with the entity."""
 
     @property
@@ -208,19 +208,19 @@ class RuntimeEntityDB(InternalDomainObject):
     """The relation counts of the entity."""
     entity_metadata: dict | list
     """The metadata of the entity."""
-    aliases: dict | list | None = None
+    aliases: dict | list | None
     """The aliases of the entity."""
-    groups: dict | list | None = None
+    groups: dict | list | None
     """The groups associated with the entity."""
-    members: dict | list | None = None
+    members: dict | list | None
     """The members associated with the entity."""
-    parent_label: dict | list | None = None
+    parent_label: dict | list | None
     """The parent label associated with the entity if it is a label."""
-    countries: str | None = None
+    countries: str | None
     """The countries associated with the entity."""
-    genres: str | None = None
+    genres: str | None
     """The genres associated with the entity."""
-    styles: str | None = None
+    styles: str | None
     """The styles associated with the entity."""
 
     def to_domain(self) -> RuntimeEntity:
