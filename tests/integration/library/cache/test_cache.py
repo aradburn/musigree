@@ -6,17 +6,17 @@ from musigree.config import (
     PostgresDevelopmentConfiguration,
 )
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.logging_config import setup_logging
+from musigree.logging_config import setup_logging, shutdown_logging
 
 
-class TestCache(unittest.TestCase):
+class TestCache:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         setup_logging(is_testing=True)
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #     shutdown_logging()
+    @classmethod
+    def teardown_class(cls):
+        shutdown_logging()
 
     def test_01(self):
         CacheManager.setup_cache(SqliteTestConfiguration())
