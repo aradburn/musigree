@@ -12,7 +12,6 @@ from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.role_repository import RoleRepository
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.runtime_database.country_repository import CountryRepository
 from musigree.runtime.runtime_database.genre_repository import GenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
@@ -227,7 +226,8 @@ class TransferManager:
     async def transfer_load_text_search_index(text_search_path: Path) -> None:
         log.debug(f"Running transfer load text search index")
 
-        RuntimeDatabaseManager.runtime_database_helper.text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
 
     @staticmethod
     async def transfer_create_entity_details_index() -> None:
