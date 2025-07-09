@@ -50,7 +50,7 @@ class RuntimeDatabaseManager:
             raise ValueError("Configuration Error: Unknown database type")
 
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
-        RuntimeDatabaseHelper.runtime_async_engine = async_engine
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
 
         def engine_on_connect(dbapi_con, connection_record):
             if LOGGING_TRACE:
