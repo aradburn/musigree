@@ -230,9 +230,15 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
         from musigree.offline.database.base_table import OfflineBase
+        from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
+        from musigree.library.domain.base import InternalDomainObject
 
         if isinstance(o, OfflineBase):
             return list_public_attributes(preprocessor.filter(as_dict(o)))
+        elif isinstance(o, RuntimeBase):
+            return list_public_attributes(preprocessor.filter(as_dict(o)))
+        elif isinstance(o, InternalDomainObject):
+            return list_public_attributes(preprocessor.filter(o.model_dump()))
         elif isinstance(o, enum.Enum):
             return str(o)
         elif isinstance(o, date):
