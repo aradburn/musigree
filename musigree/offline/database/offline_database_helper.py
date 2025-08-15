@@ -72,7 +72,7 @@ class OfflineDatabaseHelper(ABC):
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling initialize()"
         )
         assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
-            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling initialize()"
+            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling initialize()"
         )
         loop.run_until_complete(
             OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
