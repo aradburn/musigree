@@ -322,6 +322,10 @@ def loader_main() -> None:
     atexit.register(OfflineDatabaseManager.shutdown_database)
     atexit.register(RuntimeDatabaseManager.shutdown_database)
 
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
+
     asyncio.run(RuntimeDatabaseManager.runtime_database_helper.drop_tables(
         ALL_RUNTIME_DATABASE_TABLE_NAMES
     ))
