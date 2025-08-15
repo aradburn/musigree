@@ -258,6 +258,10 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+
         relation_dict = relation.model_dump(exclude={"role_name"})
         role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
         relation_dict.update(predicate=role_id)
@@ -285,6 +289,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             on_conflict_do_nothing: If True, ignore conflicts during insertion.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
 
         relation_dicts = []
         for relation in relations:

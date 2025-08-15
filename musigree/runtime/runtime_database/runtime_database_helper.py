@@ -35,8 +35,11 @@ from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+from musigree.runtime.data_access_layer.relation_grapher import (
+    RelationGrapher,
+)
 from musigree.runtime.runtime_database.runtime_base_table import (
     RuntimeBase,
     RuntimeConcreteTable,
@@ -46,9 +49,6 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 )
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
-)
-from musigree.runtime.data_access_layer.relation_grapher import (
-    RelationGrapher,
 )
 
 log = logging.getLogger(__name__)
@@ -80,9 +80,9 @@ class RuntimeDatabaseHelper(ABC):
         LINK_RATIO (int): A ratio for link calculations.
     """
 
-    runtime_async_engine: AsyncEngine
+    runtime_async_engine: AsyncEngine | None = None
     """The SQLAlchemy engine for the runtime database."""
-    runtime_async_session_factory: async_sessionmaker
+    runtime_async_session_factory: async_sessionmaker | None = None
     """The SQLAlchemy session factory for creating database sessions."""
 
     text_search_index: TextSearchIndex
@@ -136,10 +136,15 @@ class RuntimeDatabaseHelper(ABC):
         Ensures that the parent process's database connections are not touched in
         the new connection pool.
         """
-        assert cls.runtime_async_engine is not None, (
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
             "runtime_async_engine must be initialized before calling initialize()"
         )
-        loop.run_until_complete(cls.runtime_async_engine.dispose(close=False))
+        loop.run_until_complete(RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False))
 
     @staticmethod
     @abstractmethod
@@ -176,6 +181,12 @@ class RuntimeDatabaseHelper(ABC):
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling create_tables()"
+        )
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+            "runtime_async_engine must be initialized before calling create_tables()"
+        )
         async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
             await conn.run_sync(
                 RuntimeBase.metadata.create_all,
@@ -194,6 +205,13 @@ class RuntimeDatabaseHelper(ABC):
                 defined in `RuntimeBase.metadata` will be dropped.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling drop_tables()"
+        )
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+            "runtime_async_engine must be initialized before calling drop_tables()"
+        )
 
         if tables is not None:
             table_definitions: List[Table] = [
@@ -366,6 +384,10 @@ class RuntimeDatabaseHelper(ABC):
             tuple[int, EntityType]: A tuple containing the entity ID and type.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
 
         # structural_roles = [
         #     "Alias",

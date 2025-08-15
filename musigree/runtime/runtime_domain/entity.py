@@ -27,6 +27,8 @@ __all__ = [
 import logging
 from typing import Any
 
+from pydantic import Field
+
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.domain.entity import Entity
@@ -71,7 +73,7 @@ class RuntimeEntity(InternalDomainObject):
     """The relation counts of the entity."""
     entity_metadata: dict[str, Any]
     """The metadata of the entity."""
-    entities: dict[str, Any]
+    entities: dict[str, Any] = Field(default_factory=dict)
     """The entities related to this entity."""
     countries: str | None
     """The countries associated with the entity."""
@@ -258,6 +260,7 @@ def to_runtime_entity_dict(entity_details_index: EntityDetailsIndex, entity: Ent
     genres = entity_details_index.get_genres_for_id(entity.id)
     # TODO get from runtime styles table
     styles = entity_details_index.get_styles_for_id(entity.id)
+
     runtime_entity = RuntimeEntity(
         countries=countries,
         genres=genres,

@@ -17,8 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseManager:
-    runtime_database_helper: RuntimeDatabaseHelper
-    _threading_model: ThreadingModel
+    runtime_database_helper: RuntimeDatabaseHelper | None = None
+    _threading_model: ThreadingModel | None = None
 
     @staticmethod
     def get_concurrency_count() -> int:
@@ -51,6 +51,9 @@ class RuntimeDatabaseManager:
 
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
+        log.debug(
+            f"engine: {RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine}"
+        )
 
         def engine_on_connect(dbapi_con, connection_record):
             if LOGGING_TRACE:
