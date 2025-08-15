@@ -184,6 +184,10 @@ async def route__entity_type__entity_id(
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
     from musigree.app.fastapi_app import templates
 
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
+
     # Convert query parameters to the format expected by the existing code
     query_params: dict[str, Any] = {}
     if roles:

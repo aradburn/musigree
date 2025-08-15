@@ -85,6 +85,10 @@ async def route__api__entity_type__relations__entity_id(
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
+
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
@@ -149,6 +153,10 @@ async def route__api__entity_type__network__entity_id(
         RuntimeRelationRepository,
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
@@ -303,6 +311,10 @@ async def route__api__random(
         RuntimeEntityRepository,
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()

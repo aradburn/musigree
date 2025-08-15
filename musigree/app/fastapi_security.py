@@ -9,11 +9,13 @@ rate limiting enhancements, and other security best practices.
 import logging
 from typing import Union, TYPE_CHECKING
 
-from starlette.types import ASGIApp, Scope, Receive, Send, Message
 from fastapi import FastAPI
+from starlette.types import ASGIApp, Scope, Receive, Send, Message
+
+from musigree.config import Configuration
 
 if TYPE_CHECKING:
-    from musigree.config import Configuration
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +107,7 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
-def validate_environment_variables(config: "Configuration") -> None:
+def validate_environment_variables(config: Configuration) -> None:
     """
     Validate that required environment variables are set for production.
     
@@ -139,7 +141,7 @@ def validate_environment_variables(config: "Configuration") -> None:
         )
 
 
-def setup_security_middleware(app: "FastAPI", config: "Configuration") -> None:
+def setup_security_middleware(app: FastAPI, config: Configuration) -> None:
     """
     Set up security middleware for the FastAPI application.
     
