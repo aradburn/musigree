@@ -48,6 +48,10 @@ class TransferManager:
     async def transfer_entity() -> None:
         log.debug(f"Running transfer_entity()")
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+
         async with runtime_transaction():
             runtime_entity_repository = RuntimeEntityRepository()
             initial_count = await runtime_entity_repository.count()
@@ -192,6 +196,10 @@ class TransferManager:
     async def transfer_entity_details() -> None:
         log.debug(f"Running transfer_entity_details()")
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+
         # Countries
         sorted_countries = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list)
 
@@ -225,13 +233,18 @@ class TransferManager:
     @staticmethod
     async def transfer_load_text_search_index(text_search_path: Path) -> None:
         log.debug(f"Running transfer load text search index")
-
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
         text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
 
     @staticmethod
     async def transfer_create_entity_details_index() -> None:
         log.debug(f"Running transfer create entity details index")
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
             RuntimeDatabaseManager.runtime_database_helper.entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)

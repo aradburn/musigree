@@ -4,9 +4,6 @@ import multiprocessing
 from typing import Any
 
 from musigree.exceptions import DatabaseError
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
-)
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
@@ -57,6 +54,9 @@ def transfer_worker_relation_inserter(bulk_inserts: list[dict[str, Any]],
         """Set a new event loop if none exists."""
 
     if RuntimeDatabaseManager.get_concurrency_count() > 1:
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
         """Check if concurrency is enabled."""
         RuntimeDatabaseManager.runtime_database_helper.initialize(loop)
         """Initialize the database helper."""
