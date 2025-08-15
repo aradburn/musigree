@@ -4,7 +4,6 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.exc import DatabaseError
 
-from musigree.config import PostgresTestConfiguration, SqliteTestConfiguration
 from musigree.constants import ALL_OFFLINE_DATABASE_TABLE_NAMES, ALL_RUNTIME_DATABASE_TABLE_NAMES
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.loader import load_runtime_tables, load_offline_tables
@@ -17,10 +16,10 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-# Mixin to handle abstract test classes
-class NotATest:
+# Mixin to handle abstract database test classes
+class AbstractDatabaseTest:
     def __init_subclass__(cls):
-        cls.__test__ = NotATest not in cls.__bases__
+        cls.__test__ = AbstractDatabaseTest not in cls.__bases__
 
 
 @pytest.fixture(scope="class")
@@ -96,6 +95,21 @@ async def reset_offline_database():
 
 
 @pytest_asyncio.fixture(scope="class")
+async def offline_database_update(offline_config):
+    log.info("Updating test data into offline database")
+
+    # Load test data
+    await load_offline_tables(
+        offline_config.DATA_DIR,
+        "testupdate",
+        is_bulk_inserts=False,
+    )
+
+    log.info("Offline database update complete")
+    yield
+
+
+@pytest_asyncio.fixture(scope="class")
 async def runtime_database_setup(runtime_config, is_load_runtime_data_required):
     setup_logging(is_testing=True)
 
@@ -114,6 +128,7 @@ async def runtime_database_setup(runtime_config, is_load_runtime_data_required):
 
     # Ensure database helper is initialized
     assert RuntimeDatabaseManager.runtime_database_helper is not None, "Database helper not initialized"
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, "Database async_engine not initialized"
 
     # Drop and recreate tables (excluding role tables)
     await RuntimeDatabaseManager.runtime_database_helper.drop_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES)
