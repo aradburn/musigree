@@ -3,11 +3,11 @@ import pytest
 from musigree import utils
 from musigree.offline.database.role_repository import RoleRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestDatabaseRole(NotATest):
+class TestDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_01(self, offline_database_setup) -> None:
         name = "Acoustic Bass"

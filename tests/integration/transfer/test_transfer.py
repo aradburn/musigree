@@ -20,12 +20,12 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.transfer.transfer_manager import TransferManager
 
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
-class TestTransfer(NotATest):
+class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_transfer_roles(self, offline_database_setup, runtime_database_setup) -> None:
         # GIVEN
@@ -46,9 +46,7 @@ class TestTransfer(NotATest):
     @pytest.mark.asyncio
     async def test_transfer_entities(self, offline_database_setup, runtime_database_setup) -> None:
         # GIVEN
-        async with offline_transaction():
-            offline_release_repository = ReleaseRepository()
-            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+        await TransferManager.transfer_create_entity_details_index()
 
         # WHEN
         await TransferManager.transfer_entity()

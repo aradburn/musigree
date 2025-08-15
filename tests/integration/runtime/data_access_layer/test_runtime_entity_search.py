@@ -6,12 +6,13 @@ from musigree.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestRuntimeEntitySearch(NotATest):
-    def test_text_search_lookup_1(self, runtime_config):
+@pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
+class TestRuntimeEntitySearch(AbstractDatabaseTest):
+    def test_text_search_lookup_1(self, runtime_config, offline_database_setup, runtime_database_setup):
         """Test text search functionality for 'Wax' query."""
         text_search_path = (
             runtime_config.DATA_DIR
@@ -44,7 +45,7 @@ class TestRuntimeEntitySearch(NotATest):
         assert expected == list(results["results"])
 
 
-    def test_text_search_lookup_2(self, runtime_config):
+    def test_text_search_lookup_2(self, runtime_config, offline_database_setup, runtime_database_setup):
         """Test text search functionality for 'Joker' query."""
         text_search_path = (
             runtime_config.DATA_DIR

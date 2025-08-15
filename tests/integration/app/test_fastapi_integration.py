@@ -2,8 +2,6 @@
 Integration tests for the FastAPI application.
 """
 
-from unittest.mock import Mock, patch, mock_open
-
 import pytest
 from httpx import AsyncClient
 

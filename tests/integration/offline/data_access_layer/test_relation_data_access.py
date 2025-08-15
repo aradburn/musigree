@@ -7,11 +7,11 @@ from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
 from tests import id_utils
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestRelationDataAccess(NotATest):
+class TestRelationDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_from_release(self, offline_database_setup, offline_config):

@@ -13,11 +13,11 @@ from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestDatabaseRelationFromRelease(NotATest):
+class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_relation_from_release_01(self, offline_database_setup, offline_config):
         # GIVEN

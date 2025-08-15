@@ -7,11 +7,11 @@ from musigree.offline.data_access_layer.entity_data_access import EntityDataAcce
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from tests import id_utils
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestEntityDataAccess(NotATest):
+class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_init_text_search_index(self, offline_database_setup):

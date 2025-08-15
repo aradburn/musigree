@@ -12,11 +12,11 @@ from musigree.offline.domain.relation_release_year import (
     RelationReleaseYear,
 )
 from musigree.offline.loader.loader_role import LoaderRole
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
-class TestRepositoryRelationReleaseYear(NotATest):
+class TestRepositoryRelationReleaseYear(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_01_create(self, offline_database_setup, offline_config) -> None:
         # GIVEN

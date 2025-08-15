@@ -10,11 +10,11 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
-class TestRuntimeRepositoryEntity(NotATest):
+class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_01(self, runtime_database_setup, runtime_config):
         """Test creating a runtime entity."""

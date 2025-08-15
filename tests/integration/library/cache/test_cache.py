@@ -1,5 +1,3 @@
-import unittest
-
 from musigree.config import (
     SqliteTestConfiguration,
     SqliteDevelopmentConfiguration,

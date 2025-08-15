@@ -5,11 +5,11 @@ from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
-class TestRepositoryRelease(NotATest):
+class TestRepositoryRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_01(self, offline_database_setup, offline_config) -> None:
         # GIVEN

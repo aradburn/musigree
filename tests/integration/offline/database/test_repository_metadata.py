@@ -8,11 +8,11 @@ from musigree import utils
 from musigree.offline.database.metadata_repository import MetadataRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.metadata import Metadata, MetadataUncommitted
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
-class TestRepositoryMetadata(NotATest):
+class TestRepositoryMetadata(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_create_metadata(self, offline_database_setup) -> None:

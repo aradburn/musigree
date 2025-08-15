@@ -4,11 +4,11 @@ from musigree import utils
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.library.fields.entity_type import EntityType
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestDatabaseEntity(NotATest):
+class TestDatabaseEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_01(self, offline_database_setup) -> None:
         # GIVEN

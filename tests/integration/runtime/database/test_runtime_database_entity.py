@@ -4,12 +4,12 @@ from musigree import utils
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
-class TestRuntimeDatabaseEntity(NotATest):
+class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_01(self, offline_database_setup, runtime_database_setup) -> None:
         # GIVEN

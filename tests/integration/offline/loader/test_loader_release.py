@@ -5,10 +5,10 @@ from musigree.config import SqliteTestConfiguration
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestLoaderRelease(NotATest):
+class TestLoaderRelease(AbstractDatabaseTest):
     def test_release_xml_parse(self):
         # GIVEN
         source = utils.normalize(

@@ -15,12 +15,13 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from musigree.runtime.runtime_domain.entity import to_runtime_entity_dict, RuntimeEntity
 from musigree.runtime.runtime_domain.relation import RuntimeRelationInternal, RuntimeRelationUncommitted, \
     RuntimeRelation
-from tests.conftest import NotATest
+from musigree.transfer.transfer_manager import TransferManager
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
-class TestRuntimeRepositoryRelation(NotATest):
+class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_create_relation(self, offline_database_setup, runtime_database_setup, offline_config) -> None:
@@ -34,6 +35,7 @@ class TestRuntimeRepositoryRelation(NotATest):
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
             entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+        await TransferManager.transfer_role()
 
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -48,6 +50,9 @@ class TestRuntimeRepositoryRelation(NotATest):
         entity_2 = ParserEntity().from_element(entity_element_2)
 
         runtime_entity_dict_1 = to_runtime_entity_dict(entity_details_index, entity_1)
+        print(f"entity_1: {entity_1}")
+        print(f"runtime_entity_dict_1: {runtime_entity_dict_1}")
+
         runtime_entity_dict_2 = to_runtime_entity_dict(entity_details_index, entity_2)
         runtime_entity_1 = RuntimeEntity.model_validate(runtime_entity_dict_1)
         runtime_entity_2 = RuntimeEntity.model_validate(runtime_entity_dict_2)

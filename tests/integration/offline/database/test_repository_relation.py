@@ -16,11 +16,11 @@ from musigree.offline.domain.relation import (
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
-class TestRepositoryRelation(NotATest):
+class TestRepositoryRelation(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_create_relation(self, offline_database_setup, offline_config) -> None:

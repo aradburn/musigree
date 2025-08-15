@@ -5,11 +5,11 @@ from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.loader.loader_role import LoaderRole
 
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
-class TestLoaderRole(NotATest):
+class TestLoaderRole(AbstractDatabaseTest):
 
     def test_load_wikipedia_instruments(self, offline_database_setup, offline_config):
         # GIVEN
@@ -51,7 +51,8 @@ class TestLoaderRole(NotATest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_load_roles_from_files_from_database(self, offline_database_setup, offline_config, clean_offline_database):
+    async def test_load_roles_from_files_from_database(self, offline_database_setup, offline_config,
+                                                       reset_offline_database):
         # GIVEN
         roles_directory = offline_config.DATA_DIR / ROLES_DATA
         roles_from_files = LoaderRole.load_roles_from_files(roles_directory)
@@ -69,7 +70,7 @@ class TestLoaderRole(NotATest):
 
     @pytest.mark.asyncio
     async def test_load_hornbostel_sachs_instruments_from_database(self, offline_database_setup, offline_config,
-                                                                   clean_offline_database):
+                                                                   reset_offline_database):
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
         hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments(
@@ -89,7 +90,7 @@ class TestLoaderRole(NotATest):
 
     @pytest.mark.asyncio
     async def test_load_wikipedia_instruments_from_database(self, offline_database_setup, offline_config,
-                                                            clean_offline_database):
+                                                            reset_offline_database):
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
         wikipedia_instruments = LoaderRole.load_wikipedia_instruments(

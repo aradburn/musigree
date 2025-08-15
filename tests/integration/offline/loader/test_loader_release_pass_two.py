@@ -4,11 +4,11 @@ from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from tests.conftest import NotATest
+from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestLoaderReleasePassTwo(NotATest):
+class TestLoaderReleasePassTwo(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_release_pass_two(self, offline_database_setup):
         # GIVEN
