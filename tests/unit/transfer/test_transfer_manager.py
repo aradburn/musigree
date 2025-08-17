@@ -78,9 +78,13 @@ class TestTransferManager:
     @patch('musigree.transfer.transfer_manager.offline_transaction')
     @patch('musigree.transfer.transfer_manager.RuntimeEntityRepository')
     @patch('musigree.transfer.transfer_manager.runtime_transaction')
+    @patch('musigree.transfer.transfer_manager.RuntimeDatabaseManager')
     @pytest.mark.asyncio
-    async def test_transfer_entity_non_empty_runtime_table(self, mock_runtime_transaction: Mock, mock_runtime_repo: Mock, mock_offline_transaction: Mock) -> None:
+    async def test_transfer_entity_non_empty_runtime_table(self, mock_db_manager: Mock, mock_runtime_transaction: Mock, mock_runtime_repo: Mock, mock_offline_transaction: Mock) -> None:
         """Test transfer_entity when runtime table is not empty (should raise error)."""
+        # Mock the runtime_database_helper to avoid assertion error
+        mock_db_manager.runtime_database_helper = Mock()
+        
         # Mock runtime transaction context manager
         mock_runtime_transaction.return_value.__aenter__ = AsyncMock()
         mock_runtime_transaction.return_value.__aexit__ = AsyncMock()

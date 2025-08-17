@@ -131,9 +131,13 @@ class TestFastAPIUI:
         assert context['title'] == 'Musigree: The Beatles'
         assert 'The Beatles' in context['og_title']
 
+    @patch('musigree.runtime.runtime_database_manager.RuntimeDatabaseManager')
     @pytest.mark.asyncio
-    async def test_route_entity_type_entity_id_bad_entity_type(self):
+    async def test_route_entity_type_entity_id_bad_entity_type(self, mock_db_manager):
         """Test the entity route with invalid entity type."""
+        # Mock the runtime_database_helper to avoid assertion error
+        mock_db_manager.runtime_database_helper = Mock()
+        
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
         
@@ -144,9 +148,13 @@ class TestFastAPIUI:
         
         assert "Bad Entity Type" in str(exc_info.value)
 
+    @patch('musigree.runtime.runtime_database_manager.RuntimeDatabaseManager')
     @pytest.mark.asyncio
-    async def test_route_entity_type_entity_id_bad_entity_id(self):
+    async def test_route_entity_type_entity_id_bad_entity_id(self, mock_db_manager):
         """Test the entity route with non-numeric entity ID."""
+        # Mock the runtime_database_helper to avoid assertion error
+        mock_db_manager.runtime_database_helper = Mock()
+        
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
         
@@ -243,9 +251,13 @@ class TestFastAPIUI:
         assert 'og_url' in context
         assert context['og_url'].startswith('/artist/123')
 
+    @patch('musigree.runtime.runtime_database_manager.RuntimeDatabaseManager')
     @pytest.mark.asyncio
-    async def test_entity_type_validation(self):
+    async def test_entity_type_validation(self, mock_db_manager):
         """Test entity type validation."""
+        # Mock the runtime_database_helper to avoid assertion error
+        mock_db_manager.runtime_database_helper = Mock()
+        
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
         
