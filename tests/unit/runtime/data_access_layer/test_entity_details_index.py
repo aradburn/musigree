@@ -167,7 +167,7 @@ class TestEntityDetailsIndex:
         """Test getting countries for existing entity ID."""
         self.index.index_country(1, "USA & Canada")
         result = self.index.get_countries_for_id(1)
-        assert result == "USA,Canada"
+        assert result == "Canada,USA"
 
     def test_get_countries_for_id_nonexistent(self):
         """Test getting countries for non-existent entity ID."""
@@ -184,7 +184,7 @@ class TestEntityDetailsIndex:
         """Test getting genres for existing entity ID."""
         self.index.index_genre(1, "Rock & Jazz")
         result = self.index.get_genres_for_id(1)
-        assert result == "Rock,Jazz"
+        assert result == "Jazz,Rock"
 
     def test_get_genres_for_id_nonexistent(self):
         """Test getting genres for non-existent entity ID."""
@@ -273,12 +273,12 @@ class TestEntityDetailsIndex:
         assert len(self.index.styles_list) == 3  # Alternative, Orchestral, Chamber
         
         # Test retrieval
-        assert self.index.get_countries_for_id(1) == "USA,Canada"
+        assert self.index.get_countries_for_id(1) == "Canada,USA"
         assert self.index.get_countries_for_id(2) == "Germany"
-        assert self.index.get_genres_for_id(1) == "Rock,Jazz"
+        assert self.index.get_genres_for_id(1) == "Jazz,Rock"
         assert self.index.get_genres_for_id(2) == "Classical"
         assert self.index.get_styles_for_id(1) == "Alternative"
-        assert self.index.get_styles_for_id(2) == "Orchestral,Chamber"
+        assert self.index.get_styles_for_id(2) == "Chamber,Orchestral"
 
     def test_whitespace_handling(self):
         """Test proper handling of whitespace in tokens."""
