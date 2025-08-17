@@ -27,16 +27,16 @@ class RelationGrapher:
     # CLASS VARIABLES
 
     __slots__ = (
-        "should_break_loop",
-        "center_entity",
-        "degree",
-        "entity_keys_to_visit",
-        "link_ratio",
-        "links",
-        "max_nodes",
-        "nodes",
-        "relational_role_names",
-        "structural_role_names",
+        "_should_break_loop",
+        "_center_entity",
+        "_degree",
+        "_entity_keys_to_visit",
+        "_link_ratio",
+        "_links",
+        "_max_nodes",
+        "_nodes",
+        "_relational_role_names",
+        "_structural_role_names",
     )
 
     roles_to_prune = [
@@ -72,24 +72,24 @@ class RelationGrapher:
         log.debug(
             f"RelationGrapher for {center_entity.entity_type}-{center_entity.entity_name}"
         )
-        self.center_entity = center_entity
+        self._center_entity = center_entity
         degree = int(degree)
         assert degree > 0
-        self.degree = degree
+        self._degree = degree
         if max_nodes is not None:
             max_nodes = int(max_nodes)
             assert max_nodes > 0
         else:
             max_nodes = RuntimeDatabaseHelper.MAX_NODES
-        self.max_nodes = max_nodes
+        self._max_nodes = max_nodes
         if link_ratio is not None:
             link_ratio = int(link_ratio)
             assert link_ratio > 0
         else:
             link_ratio = RuntimeDatabaseHelper.LINK_RATIO
-        self.link_ratio = link_ratio
-        self.structural_role_names: list[str] = []
-        self.relational_role_names: list[str] = []
+        self._link_ratio = link_ratio
+        self._structural_role_names: list[str] = []
+        self._relational_role_names: list[str] = []
         if role_names:
             # if isinstance(role_names, str):
             #     role_names = (role_names,)
@@ -101,15 +101,15 @@ class RelationGrapher:
             )
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
-                    self.structural_role_names.append(role_name)
+                    self._structural_role_names.append(role_name)
                 else:
-                    self.relational_role_names.append(role_name)
+                    self._relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[tuple[int, EntityType], TrellisNode] = OrderedDict()
-        self.links: dict[str, RuntimeRelationResult] = {}
-        self.should_break_loop = False
-        self.entity_keys_to_visit = set[tuple[int, EntityType]]()
+        self._nodes: OrderedDict[tuple[int, EntityType], TrellisNode] = OrderedDict()
+        self._links: dict[str, RuntimeRelationResult] = {}
+        self._should_break_loop = False
+        self._entity_keys_to_visit = set[tuple[int, EntityType]]()
 
     async def get_relation_graph(
         self,
@@ -136,9 +136,9 @@ class RelationGrapher:
         """
         
         log.debug(f"Searching around {self.center_entity.entity_name}...")
-        log.debug(f"  {len(self.structural_role_names)} structural_role_names")
-        log.debug(f"  {len(self.relational_role_names)}relational_role_names")
-        provisional_role_names = self.relational_role_names
+        log.debug(f"  {len(self._structural_role_names)} structural_role_names")
+        log.debug(f"  {len(self._relational_role_names)}relational_role_names")
+        provisional_role_names = self._relational_role_names
         # provisional_roles = list(self.relational_role_names)
         self.report_search_start()
         self.clear()
@@ -283,14 +283,22 @@ class RelationGrapher:
         ):
             entity = node.entity
             aliases = entity.entities.get("aliases", {})
+            print(f"find_clusters aliases1: {aliases}")
+
             if not aliases:
+                print("find_clusters no aliases, skipping")
                 continue
             if entity.entity_id not in cluster_map:
                 cluster_count += 1
                 cluster_map[entity.entity_id] = cluster_count
+                print(f"find_clusters aliases2: {aliases}")
+                print(f"find_clusters aliases.items(): {aliases.items()}")
+
                 for _, alias_id in aliases.items():
                     cluster_map[alias_id] = cluster_count
             cluster = cluster_map[entity.entity_id]
+            print(f"find_clusters cluster: {cluster}")
+            print(f"find_clusters cluster_map: {cluster_map}")
             if cluster is not None:
                 node.cluster = cluster
 
@@ -450,7 +458,7 @@ class RelationGrapher:
         provisional_roles,
         relation_links: dict[str, RuntimeRelationResult],
     ) -> None:
-        if not self.structural_role_names:
+        if not self._structural_role_names:
             return
         log.debug("        Retrieving structural relations")
         for entity_key in sorted(self.entity_keys_to_visit):
@@ -465,7 +473,7 @@ class RelationGrapher:
             # log.debug(f"            relations: {relations}")
             relation_links.update(
                 RuntimeEntityDataAccess.structural_roles_to_relations(
-                    entity, self.structural_role_names
+                    entity, self._structural_role_names
                 )
             )
 
@@ -518,52 +526,52 @@ class RelationGrapher:
 
     @property
     def all_roles(self) -> list[str]:
-        return self.structural_role_names + self.relational_role_names
+        return self._structural_role_names + self._relational_role_names
 
-    # @property
-    # def should_break_loop(self):
-    #     return self.should_break_loop
-    #
-    # @should_break_loop.setter
-    # def should_break_loop(self, expr):
-    #     self.should_break_loop = bool(expr)
-    #
-    # @property
-    # def center_entity(self):
-    #     return self.center_entity
-    #
-    # @property
-    # def degree(self):
-    #     return self.degree
-    #
-    # @property
-    # def entity_keys_to_visit(self):
-    #     return self.entity_keys_to_visit
-    #
-    # @property
-    # def link_ratio(self):
-    #     return self.link_ratio
-    #
-    # @property
-    # def links(self):
-    #     return self.links
+    @property
+    def should_break_loop(self):
+        return self._should_break_loop
+
+    @should_break_loop.setter
+    def should_break_loop(self, expr):
+        self._should_break_loop = bool(expr)
+
+    @property
+    def center_entity(self):
+        return self._center_entity
+
+    @property
+    def degree(self):
+        return self._degree
+
+    @property
+    def entity_keys_to_visit(self):
+        return self._entity_keys_to_visit
+
+    @property
+    def link_ratio(self):
+        return self._link_ratio
+
+    @property
+    def links(self):
+        return self._links
 
     @property
     def max_links(self) -> int:
-        return self.max_nodes * self.link_ratio
+        return self._max_nodes * self._link_ratio
 
-    # @property
-    # def max_nodes(self):
-    #     return self.max_nodes
-    #
-    # @property
-    # def nodes(self):
-    #     return self.nodes
-    #
-    # @property
-    # def relational_roles(self):
-    #     return self.relational_roles
-    #
-    # @property
-    # def structural_roles(self):
-    #     return self.structural_roles
+    @property
+    def max_nodes(self):
+        return self._max_nodes
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @property
+    def relational_role_names(self):
+        return self._relational_role_names
+
+    @property
+    def structural_role_names(self):
+        return self._structural_role_names
