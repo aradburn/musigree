@@ -227,7 +227,6 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
             ],
             "nodes": [
                 {
-                    "cluster": 3,
                     "distance": 1,
                     "id": 2239,
                     "key": "artist-2239",
@@ -272,6 +271,16 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "links": ["artist-66803-member-of-artist-2239"],
                     "missing": 0,
                     "name": "Daren Seymour",
+                    "size": 0,
+                    "type": "artist",
+                },
+                {
+                    "distance": 2,
+                    "id": 115880,
+                    "key": "artist-115880",
+                    "links": ["artist-115880-member-of-artist-2239"],
+                    "missing": 0,
+                    "name": "Sarah Peacock",
                     "size": 0,
                     "type": "artist",
                 },
@@ -672,199 +681,83 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
             actual = utils.normalize_dict(network)
 
         # THEN
-        # NOTE: This expected network appears to be incorrect for a LABEL test with "Recorded At" roles.
-        # It seems to be copied from the previous ARTIST test. This preserves the original test behavior.
         expected_network = {
-            "center": {"key": "artist-489350", "name": "Justin Fletcher"},
+            "center": {
+                "key": "label-271251",
+                "name": "Lab Studio, Berlin"
+            },
             "links": [
                 {
-                    "key": "artist-115880-member-of-artist-2239",
-                    "role": "Member Of",
-                    "source": "artist-115880",
-                    "target": "artist-2239",
+                    "key": "artist-1193-recorded-at-label-271251",
+                    "role": "Recorded At",
+                    "source": "artist-1193",
+                    "target": "label-271251"
                 },
                 {
-                    "key": "artist-1920-alias-artist-51674",
-                    "role": "Alias",
-                    "source": "artist-1920",
-                    "target": "artist-51674",
+                    "key": "artist-1193-recorded-at-label-307743",
+                    "role": "Recorded At",
+                    "source": "artist-1193",
+                    "target": "label-307743"
                 },
                 {
-                    "key": "artist-231-alias-artist-1920",
-                    "role": "Alias",
-                    "source": "artist-231",
-                    "target": "artist-1920",
-                },
-                {
-                    "key": "artist-231-alias-artist-51674",
-                    "role": "Alias",
-                    "source": "artist-231",
-                    "target": "artist-51674",
-                },
-                {
-                    "key": "artist-3490-alias-artist-41103",
-                    "role": "Alias",
-                    "source": "artist-3490",
-                    "target": "artist-41103",
-                },
-                {
-                    "key": "artist-41103-member-of-artist-2239",
-                    "role": "Member Of",
-                    "source": "artist-41103",
-                    "target": "artist-2239",
-                },
-                {
-                    "key": "artist-489350-member-of-artist-2239",
-                    "role": "Member Of",
-                    "source": "artist-489350",
-                    "target": "artist-2239",
-                },
-                {
-                    "key": "artist-51674-member-of-artist-1656080",
-                    "role": "Member Of",
-                    "source": "artist-51674",
-                    "target": "artist-1656080",
-                },
-                {
-                    "key": "artist-51674-member-of-artist-2239",
-                    "role": "Member Of",
-                    "source": "artist-51674",
-                    "target": "artist-2239",
-                },
-                {
-                    "key": "artist-66803-member-of-artist-2239",
-                    "role": "Member Of",
-                    "source": "artist-66803",
-                    "target": "artist-2239",
-                },
+                    "key": "artist-2718-recorded-at-label-271251",
+                    "role": "Recorded At",
+                    "source": "artist-2718",
+                    "target": "label-271251"
+                }
             ],
             "nodes": [
                 {
-                    "cluster": 1,
-                    "distance": 3,
-                    "id": 231,
-                    "key": "artist-231",
+                    "distance": 1,
+                    "id": 1193,
+                    "key": "artist-1193",
                     "links": [
-                        "artist-231-alias-artist-1920",
-                        "artist-231-alias-artist-51674",
+                        "artist-1193-recorded-at-label-271251",
+                        "artist-1193-recorded-at-label-307743"
                     ],
                     "missing": 0,
-                    "name": "Woodenspoon",
-                    "size": 0,
-                    "type": "artist",
-                },
-                {
-                    "cluster": 1,
-                    "distance": 3,
-                    "id": 1920,
-                    "key": "artist-1920",
-                    "links": [
-                        "artist-1920-alias-artist-51674",
-                        "artist-231-alias-artist-1920",
-                    ],
-                    "missing": 0,
-                    "name": "Disjecta",
-                    "size": 0,
-                    "type": "artist",
+                    "name": "Sun Electric",
+                    "size": 2,
+                    "type": "artist"
                 },
                 {
                     "distance": 1,
-                    "id": 2239,
-                    "key": "artist-2239",
+                    "id": 2718,
+                    "key": "artist-2718",
                     "links": [
-                        "artist-115880-member-of-artist-2239",
-                        "artist-41103-member-of-artist-2239",
-                        "artist-489350-member-of-artist-2239",
-                        "artist-51674-member-of-artist-2239",
-                        "artist-66803-member-of-artist-2239",
+                        "artist-2718-recorded-at-label-271251"
                     ],
                     "missing": 0,
-                    "name": "Seefeel",
-                    "size": 5,
-                    "type": "artist",
-                },
-                {
-                    "cluster": 2,
-                    "distance": 3,
-                    "id": 3490,
-                    "key": "artist-3490",
-                    "links": ["artist-3490-alias-artist-41103"],
-                    "missing": 0,
-                    "name": "Locust",
+                    "name": "Thomas Fehlmann",
                     "size": 0,
-                    "type": "artist",
-                },
-                {
-                    "cluster": 2,
-                    "distance": 2,
-                    "id": 41103,
-                    "key": "artist-41103",
-                    "links": [
-                        "artist-3490-alias-artist-41103",
-                        "artist-41103-member-of-artist-2239",
-                    ],
-                    "missing": 0,
-                    "name": "Mark Van Hoen",
-                    "size": 0,
-                    "type": "artist",
-                },
-                {
-                    "cluster": 1,
-                    "distance": 2,
-                    "id": 51674,
-                    "key": "artist-51674",
-                    "links": [
-                        "artist-1920-alias-artist-51674",
-                        "artist-231-alias-artist-51674",
-                        "artist-51674-member-of-artist-1656080",
-                        "artist-51674-member-of-artist-2239",
-                    ],
-                    "missing": 0,
-                    "name": "Mark Clifford",
-                    "size": 0,
-                    "type": "artist",
-                },
-                {
-                    "distance": 2,
-                    "id": 66803,
-                    "key": "artist-66803",
-                    "links": ["artist-66803-member-of-artist-2239"],
-                    "missing": 0,
-                    "name": "Daren Seymour",
-                    "size": 0,
-                    "type": "artist",
-                },
-                {
-                    "distance": 2,
-                    "id": 115880,
-                    "key": "artist-115880",
-                    "links": ["artist-115880-member-of-artist-2239"],
-                    "missing": 0,
-                    "name": "Sarah Peacock",
-                    "size": 0,
-                    "type": "artist",
+                    "type": "artist"
                 },
                 {
                     "distance": 0,
-                    "id": 489350,
-                    "key": "artist-489350",
-                    "links": ["artist-489350-member-of-artist-2239"],
+                    "id": 271251,
+                    "key": "label-271251",
+                    "links": [
+                        "artist-1193-recorded-at-label-271251",
+                        "artist-2718-recorded-at-label-271251"
+                    ],
                     "missing": 0,
-                    "name": "Justin Fletcher",
+                    "name": "Lab Studio, Berlin",
                     "size": 0,
-                    "type": "artist",
+                    "type": "label"
                 },
                 {
-                    "distance": 3,
-                    "id": 1656080,
-                    "key": "artist-1656080",
-                    "links": ["artist-51674-member-of-artist-1656080"],
+                    "distance": 2,
+                    "id": 307743,
+                    "key": "label-307743",
+                    "links": [
+                        "artist-1193-recorded-at-label-307743"
+                    ],
                     "missing": 0,
-                    "name": "Cliffordandcalix",
-                    "size": 1,
-                    "type": "artist",
-                },
-            ],
+                    "name": "Sun Electric G.E.C.",
+                    "size": 0,
+                    "type": "label"
+                }
+            ]
         }
         expected = utils.normalize_dict(expected_network)
         assert actual == expected
