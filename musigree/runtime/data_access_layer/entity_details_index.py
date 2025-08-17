@@ -139,7 +139,8 @@ class EntityDetailsIndex:
         entity_countries_strs = [
             self.countries_list[country_index] for country_index in entity_countries
         ]
-        return ",".join(entity_countries_strs)
+        sorted_entity_countries_strs = sorted(entity_countries_strs)
+        return ",".join(sorted_entity_countries_strs)
 
     def get_genres_for_id(self, id_: int) -> str | None:
         """
@@ -158,7 +159,8 @@ class EntityDetailsIndex:
         entity_genres_strs = [
             self.genres_list[genre_index] for genre_index in entity_genres
         ]
-        return ",".join(entity_genres_strs)
+        sorted_entity_genres_strs = sorted(entity_genres_strs)
+        return ",".join(sorted_entity_genres_strs)
 
     def get_styles_for_id(self, id_: int) -> str | None:
         """
@@ -177,7 +179,8 @@ class EntityDetailsIndex:
         entity_styles_strs = [
             self.styles_list[style_index] for style_index in entity_styles
         ]
-        return ",".join(entity_styles_strs)
+        sorted_entity_styles_strs = sorted(entity_styles_strs)
+        return ",".join(sorted_entity_styles_strs)
 
     def print_sizes(self) -> None:
         """
