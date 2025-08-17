@@ -87,7 +87,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
                 "Remix": 1,
                 "Written By": 1,
             },
-            "styles": "Techno,Tech House,Acid",
+            "styles": "Acid,Tech House,Techno",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -150,7 +150,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
                 "Remix": 6,
                 "Written By": 5,
             },
-            "styles": "Leftfield,IDM,Ambient",
+            "styles": "Ambient,IDM,Leftfield",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -170,7 +170,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
             actual = utils.normalize_dict(entity.model_dump())
 
         expected_entity = {
-            "countries": "US,Belgium",
+            "countries": "Belgium,US",
             "entities": {},
             "entity_id": 1,
             "entity_type": "EntityType.LABEL",
@@ -188,7 +188,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
             "genres": "Electronic",
             "id": 1000000001,
             "relation_counts": {"Released On": 1},
-            "styles": "Techno,House,Experimental",
+            "styles": "Experimental,House,Techno",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
