@@ -204,14 +204,20 @@ class RuntimeRoleDataAccess:
             """Get the instance of the `RuntimeRoleRepository`."""
             roles = role_repository.all()
         
+            role_list = []
             async for role in roles:
                 """Iterate over the roles."""
                 RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
                 """Add the mapping from id to name."""
                 RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category
                 """Add the mapping from id to category."""
+                role_list.append(role)
+                """Also collect roles for the tree building."""
+                if LOGGING_TRACE:
+                    """If trace logging is enabled."""
+                    log.debug(role.role_name)
+                    """Log each role name."""
 
-            role_list = [role async for role in roles]
             await cls.build_role_tree(role_list)
             """Build the role tree."""
 
