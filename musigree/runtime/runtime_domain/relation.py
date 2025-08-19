@@ -33,6 +33,7 @@ __all__ = [
 import logging
 from typing import Any, Self
 
+from pydantic import field_serializer
 from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
@@ -155,6 +156,11 @@ class RuntimeRelation(_RuntimeRelationBase):
     """The role of the relation."""
     releases: dict[str, int | None] | None = None
     """The releases associated with the relation."""
+
+    @field_serializer('entity_one_type', 'entity_two_type', when_used='json')
+    def serialize_entity_types(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     @property
     def entity_one_key(self) -> tuple[int, EntityType]:

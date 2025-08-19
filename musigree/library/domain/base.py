@@ -5,7 +5,7 @@ This module defines the common base for all Domain Objects.
 import json
 from typing import Any, Callable, TypeVar
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 __all__ = [
     "InternalDomainObject",
@@ -38,9 +38,7 @@ def to_camelcase(string: str) -> str:
     return resp
 
 
-_json_encoders: dict[Any, Callable[[Any], Any]] = {
-    EntityType: lambda v: EntityType(v).name,
-}
+# Deprecated json_encoders replaced with field_serializer decorators in subclasses
 
 
 class InternalDomainObject(BaseModel):
@@ -57,7 +55,7 @@ class InternalDomainObject(BaseModel):
             - validate_assignment: True to validate field assignments.
             - arbitrary_types_allowed: False to disallow arbitrary types.
             - from_attributes: True to enable creating models from attributes.
-            - json_encoders: A dictionary of JSON encoders for specific types.
+
     """
 
     model_config = ConfigDict(
@@ -66,7 +64,6 @@ class InternalDomainObject(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=False,
         from_attributes=True,
-        json_encoders=_json_encoders,
     )
 
     def __repr__(self) -> str:
@@ -96,7 +93,7 @@ class PublicDomainObject(BaseModel):
             - validate_assignment: True to validate field assignments.
             - arbitrary_types_allowed: True to allow arbitrary types.
             - from_attributes: True to enable creating models from attributes.
-            - json_encoders: A dictionary of JSON encoders for specific types.
+
             - loc_by_alias: True to locate fields by alias.
             - alias_generator: The function to generate aliases for field names.
     """
@@ -107,7 +104,6 @@ class PublicDomainObject(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
         from_attributes=True,
-        json_encoders=_json_encoders,
         loc_by_alias=True,
         alias_generator=to_camelcase,
     )

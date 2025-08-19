@@ -27,7 +27,7 @@ __all__ = [
 import logging
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_serializer
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
@@ -81,6 +81,11 @@ class RuntimeEntity(InternalDomainObject):
     """The genres associated with the entity."""
     styles: str | None
     """The styles associated with the entity."""
+
+    @field_serializer('entity_type', when_used='json')
+    def serialize_entity_type(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     @property
     def entity_key(self) -> tuple[int, EntityType]:
@@ -224,6 +229,11 @@ class RuntimeEntityDB(InternalDomainObject):
     """The genres associated with the entity."""
     styles: str | None
     """The styles associated with the entity."""
+
+    @field_serializer('entity_type', when_used='json')
+    def serialize_entity_type(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     def to_domain(self) -> RuntimeEntity:
         """
