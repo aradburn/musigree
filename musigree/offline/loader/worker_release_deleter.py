@@ -39,8 +39,7 @@ import asyncio
 import logging
 import multiprocessing
 
-from sqlalchemy.exc import DatabaseError
-
+from musigree.exceptions import DatabaseError
 from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository

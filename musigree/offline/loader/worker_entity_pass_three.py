@@ -48,8 +48,7 @@ import logging
 import multiprocessing
 import asyncio
 
-from sqlalchemy.exc import DatabaseError
-
+from musigree.exceptions import DatabaseError
 from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
