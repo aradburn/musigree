@@ -8,8 +8,8 @@ from unittest.mock import Mock
 from musigree.library.fields.int_enum import IntEnum
 
 
-class TestEnum(enum.Enum):
-    """Test enum for testing IntEnum functionality."""
+class SampleEnum(enum.Enum):
+    """Sample enum for testing IntEnum functionality."""
     VALUE_A = 1
     VALUE_B = 2
     VALUE_C = 10
@@ -27,24 +27,24 @@ class TestIntEnum:
     def test_init_with_enum_type(self):
         """Test initialization with an enum type."""
         # Arrange & Act
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
 
         # Assert
-        assert int_enum._enumtype == TestEnum
+        assert int_enum._enumtype == SampleEnum
         assert int_enum.impl is not None
 
     def test_init_with_args_and_kwargs(self):
         """Test initialization with additional args and kwargs."""
         # Arrange & Act
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         
         # Assert
-        assert int_enum._enumtype == TestEnum
+        assert int_enum._enumtype == SampleEnum
 
     def test_cache_ok_attribute(self):
         """Test that cache_ok is set correctly."""
         # Arrange & Act
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
 
         # Assert
         assert int_enum.cache_ok is True
@@ -55,7 +55,7 @@ class TestIntEnum:
         from sqlalchemy import Integer
         
         # Act
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         
         # Assert
         assert isinstance(int_enum.impl, Integer)
@@ -67,7 +67,7 @@ class TestProcessBindParam:
     def test_process_bind_param_with_integer(self):
         """Test process_bind_param with integer input."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         integer_value = 5
         mock_dialect = Mock()
 
@@ -80,8 +80,8 @@ class TestProcessBindParam:
     def test_process_bind_param_with_enum_member(self):
         """Test process_bind_param with enum member input."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
-        enum_value = TestEnum.VALUE_A
+        int_enum = IntEnum(SampleEnum)
+        enum_value = SampleEnum.VALUE_A
         mock_dialect = Mock()
 
         # Act
@@ -93,18 +93,18 @@ class TestProcessBindParam:
     def test_process_bind_param_with_different_enum_members(self):
         """Test process_bind_param with different enum members."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
-        assert int_enum.process_bind_param(TestEnum.VALUE_A, mock_dialect) == 1
-        assert int_enum.process_bind_param(TestEnum.VALUE_B, mock_dialect) == 2
-        assert int_enum.process_bind_param(TestEnum.VALUE_C, mock_dialect) == 10
+        assert int_enum.process_bind_param(SampleEnum.VALUE_A, mock_dialect) == 1
+        assert int_enum.process_bind_param(SampleEnum.VALUE_B, mock_dialect) == 2
+        assert int_enum.process_bind_param(SampleEnum.VALUE_C, mock_dialect) == 10
 
     def test_process_bind_param_with_zero(self):
         """Test process_bind_param with zero integer."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act
@@ -116,7 +116,7 @@ class TestProcessBindParam:
     def test_process_bind_param_with_negative_integer(self):
         """Test process_bind_param with negative integer."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act
@@ -128,7 +128,7 @@ class TestProcessBindParam:
     def test_process_bind_param_with_none(self):
         """Test process_bind_param with None value."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
         
         # Act
@@ -140,11 +140,11 @@ class TestProcessBindParam:
     def test_process_bind_param_dialect_parameter_ignored(self):
         """Test that dialect parameter is ignored in process_bind_param."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act
-        result = int_enum.process_bind_param(TestEnum.VALUE_A, mock_dialect)
+        result = int_enum.process_bind_param(SampleEnum.VALUE_A, mock_dialect)
 
         # Assert
         assert result == 1
@@ -168,31 +168,31 @@ class TestProcessResultValue:
     def test_process_result_value_with_valid_integer(self):
         """Test process_result_value with valid integer."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act
         result = int_enum.process_result_value(1, mock_dialect)
 
         # Assert
-        assert result == TestEnum.VALUE_A
-        assert isinstance(result, TestEnum)
+        assert result == SampleEnum.VALUE_A
+        assert isinstance(result, SampleEnum)
 
     def test_process_result_value_with_different_values(self):
         """Test process_result_value with different valid values."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
-        assert int_enum.process_result_value(1, mock_dialect) == TestEnum.VALUE_A
-        assert int_enum.process_result_value(2, mock_dialect) == TestEnum.VALUE_B
-        assert int_enum.process_result_value(10, mock_dialect) == TestEnum.VALUE_C
+        assert int_enum.process_result_value(1, mock_dialect) == SampleEnum.VALUE_A
+        assert int_enum.process_result_value(2, mock_dialect) == SampleEnum.VALUE_B
+        assert int_enum.process_result_value(10, mock_dialect) == SampleEnum.VALUE_C
 
     def test_process_result_value_with_invalid_integer(self):
         """Test process_result_value with invalid integer (not in enum)."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
@@ -202,19 +202,19 @@ class TestProcessResultValue:
     def test_process_result_value_dialect_parameter_ignored(self):
         """Test that dialect parameter is ignored in process_result_value."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act
         result = int_enum.process_result_value(1, mock_dialect)
 
         # Assert
-        assert result == TestEnum.VALUE_A
+        assert result == SampleEnum.VALUE_A
 
     def test_process_result_value_with_none(self):
         """Test process_result_value with None value."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
         
         # Act
@@ -226,7 +226,7 @@ class TestProcessResultValue:
     def test_process_result_value_with_string(self):
         """Test process_result_value with string input (should fail)."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
@@ -240,8 +240,8 @@ class TestIntegration:
     def test_round_trip_conversion(self):
         """Test round-trip conversion: enum -> int -> enum."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
-        original_enum = TestEnum.VALUE_B
+        int_enum = IntEnum(SampleEnum)
+        original_enum = SampleEnum.VALUE_B
         mock_dialect = Mock()
 
         # Act
@@ -255,11 +255,11 @@ class TestIntegration:
     def test_round_trip_conversion_all_values(self):
         """Test round-trip conversion for all enum values."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
-        for enum_member in TestEnum:
+        for enum_member in SampleEnum:
             bound_value = int_enum.process_bind_param(enum_member, mock_dialect)
             result_value = int_enum.process_result_value(bound_value, mock_dialect)
             assert result_value == enum_member
@@ -268,7 +268,7 @@ class TestIntegration:
     def test_integer_passthrough(self):
         """Test that integers pass through bind_param unchanged."""
         # Arrange
-        int_enum = IntEnum(TestEnum)
+        int_enum = IntEnum(SampleEnum)
         mock_dialect = Mock()
 
         # Act & Assert
