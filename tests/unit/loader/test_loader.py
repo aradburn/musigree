@@ -39,11 +39,8 @@ class TestLoaderFunctions:
     async def test_load_offline_tables_success(self, mock_get_stages, mock_data_directory, mock_date):
         """Test successful loading of offline tables."""
         # Arrange
-        async def mock_stage1():
-            pass
-        
-        async def mock_stage2():
-            pass
+        mock_stage1 = AsyncMock()
+        mock_stage2 = AsyncMock()
         
         mock_get_stages.return_value = [mock_stage1(), mock_stage2()]
         
@@ -58,14 +55,9 @@ class TestLoaderFunctions:
     async def test_load_offline_table_stage_success(self, mock_get_stages, mock_data_directory, mock_date):
         """Test successful loading of a specific offline table stage."""
         # Arrange
-        async def mock_stage1():
-            pass
-        
-        async def mock_stage2():
-            pass
-        
-        async def mock_stage3():
-            pass
+        mock_stage1 = AsyncMock()
+        mock_stage2 = AsyncMock()
+        mock_stage3 = AsyncMock()
         
         mock_get_stages.return_value = [mock_stage1(), mock_stage2(), mock_stage3()]
         
@@ -100,23 +92,18 @@ class TestLoaderFunctions:
         mock_helper.offline_async_engine = Mock()  # Changed from offline_engine to offline_async_engine
         mock_db_manager.offline_database_helper = mock_helper
 
-        # Mock vacuum method to return a coroutine
-        async def mock_vacuum(*args, **kwargs):
-            pass
-        mock_helper.vacuum = mock_vacuum
+        # Mock vacuum method to return an AsyncMock coroutine
+        mock_helper.vacuum.return_value = AsyncMock()()
 
-        # Mock the static/class methods to return coroutines
-        async def mock_coroutine():
-            pass
-
-        _mock_role_data_access.load_all_roles_into_cache.return_value = mock_coroutine()
-        mock_loader_entity.loader_entity_pass_one.return_value = mock_coroutine()
-        mock_loader_entity.loader_entity_pass_two.return_value = mock_coroutine()
-        mock_loader_entity.loader_entity_pass_three.return_value = mock_coroutine()
-        mock_loader_entity.loader_create_text_search_index.return_value = mock_coroutine()
-        mock_loader_release.loader_release_pass_one.return_value = mock_coroutine()
-        mock_loader_release.loader_release_pass_two.return_value = mock_coroutine()
-        mock_loader_relation.loader_relation_pass_one.return_value = mock_coroutine()
+        # Mock the static/class methods to return AsyncMock coroutines
+        _mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
+        mock_loader_entity.loader_create_text_search_index.return_value = AsyncMock()()
+        mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
+        mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
+        mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
 
         # Act
         result = get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
@@ -142,23 +129,46 @@ class TestLoaderFunctions:
         assert "OfflineDatabaseManager.offline_database_helper must be initialized" in str(excinfo.value)
 
     @patch('musigree.loader.loader.OfflineDatabaseManager')
-    def test_get_load_offline_table_stages_assertion_error_no_engine(self, mock_db_manager, mock_data_directory, mock_date):
+    @patch('musigree.offline.loader.loader_entity.LoaderEntity')
+    @patch('musigree.offline.loader.loader_release.LoaderRelease')
+    @patch('musigree.offline.loader.loader_relation.LoaderRelation')
+    @patch('musigree.loader.loader.RoleDataAccess')
+    @patch('musigree.offline.loader.loader_role.LoaderRole')
+    def test_get_load_offline_table_stages_assertion_error_no_engine(
+        self,
+        mock_loader_role,
+        mock_role_data_access,
+        mock_loader_relation,
+        mock_loader_release,
+        mock_loader_entity,
+        mock_db_manager,
+        mock_data_directory,
+        mock_date
+    ):
         """Test get_load_offline_table_stages raises assertion error when engine is None."""
         # Arrange
         mock_helper = Mock()
-        mock_helper.offline_engine = None
+        mock_helper.offline_async_engine = None
         mock_db_manager.offline_database_helper = mock_helper
 
+        # Mock all the loader methods to avoid creating actual coroutines
+        mock_loader_role.load_roles_into_database.return_value = AsyncMock()()
+        mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
+        mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
+        mock_loader_entity.loader_create_text_search_index.return_value = AsyncMock()()
+        mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
+        mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
+        mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
+        mock_helper.vacuum.return_value = AsyncMock()()
+
         # Act & Assert
-        # The function should raise an assertion error or handle None engine gracefully
-        # Based on the actual implementation, let's see what it does
-        try:
-            result = get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
-            # If it doesn't raise an error, verify it returns an empty list or handles it gracefully
-            assert isinstance(result, list)
-        except (AssertionError, AttributeError) as e:
-            # If it raises an error as expected, that's also fine
-            pass
+        # The function should raise an assertion error when engine is None
+        with pytest.raises(AssertionError) as excinfo:
+            get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
+        
+        assert "offline_engine must be initialized" in str(excinfo.value)
 
     @patch('musigree.loader.loader.get_load_runtime_table_stages')
     @pytest.mark.asyncio
@@ -169,11 +179,8 @@ class TestLoaderFunctions:
     ):
         """Test successful loading of runtime tables."""
         # Arrange
-        async def mock_stage1():
-            pass
-        
-        async def mock_stage2():
-            pass
+        mock_stage1 = AsyncMock()
+        mock_stage2 = AsyncMock()
         
         mock_get_stages.return_value = [mock_stage1(), mock_stage2()]
         
@@ -301,15 +308,10 @@ class TestLoaderIntegration:
         """Test integration of load_offline_tables with all components."""
         # Mock get_load_offline_table_stages to return awaitable mock stages
         with patch('musigree.loader.loader.get_load_offline_table_stages') as mock_get_stages:
-            # Create actual coroutines for stages
-            async def mock_stage1():
-                pass
-            
-            async def mock_stage2():
-                pass
-            
-            async def mock_stage3():
-                pass
+            # Create AsyncMock objects for stages
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
+            mock_stage3 = AsyncMock()
             
             mock_stages = [mock_stage1(), mock_stage2(), mock_stage3()]
             mock_get_stages.return_value = mock_stages
@@ -330,14 +332,11 @@ class TestLoaderIntegration:
         date = "2024-11-01"
 
         with patch('musigree.loader.loader.get_load_offline_table_stages') as mock_get_stages:
-            # Create actual coroutine objects (not functions)
-            async def mock_stage1():
-                pass
+            # Create AsyncMock objects
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
             
-            async def mock_stage2():
-                pass
-            
-            # Return actual coroutine objects
+            # Return AsyncMock coroutines
             mock_stages = [mock_stage1(), mock_stage2()]
             mock_get_stages.return_value = mock_stages
 
@@ -353,7 +352,19 @@ class TestLoaderIntegration:
 class TestLoaderEdgeCases:
     """Test edge cases for loader functions."""
 
-    def test_empty_data_directory(self):
+    @patch('musigree.offline.loader.loader_entity.LoaderEntity')
+    @patch('musigree.offline.loader.loader_release.LoaderRelease')
+    @patch('musigree.offline.loader.loader_relation.LoaderRelation')
+    @patch('musigree.loader.loader.RoleDataAccess')
+    @patch('musigree.offline.loader.loader_role.LoaderRole')
+    def test_empty_data_directory(
+        self,
+        mock_loader_role,
+        mock_role_data_access,
+        mock_loader_relation,
+        mock_loader_release,
+        mock_loader_entity
+    ):
         """Test handling of empty data directory."""
         empty_directory = Path("/empty")
         date = "2024-11-01"
@@ -362,8 +373,20 @@ class TestLoaderEdgeCases:
             mock_helper = Mock()
             mock_helper.is_vacuum_full.return_value = False
             mock_helper.is_vacuum_analyze.return_value = False
-            mock_helper.offline_engine = Mock()
+            mock_helper.offline_async_engine = Mock()
             mock_db_manager.offline_database_helper = mock_helper
+            
+            # Mock all the loader methods to avoid creating actual coroutines
+            mock_loader_role.load_roles_into_database.return_value = AsyncMock()()
+            mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
+            mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
+            mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
+            mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
+            mock_loader_entity.loader_create_text_search_index.return_value = AsyncMock()()
+            mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
+            mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
+            mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
+            mock_helper.vacuum.return_value = AsyncMock()()
             
             # Should not raise error even with empty directory
             stages = get_load_offline_table_stages(empty_directory, date, is_bulk_inserts=False)
@@ -378,8 +401,8 @@ class TestLoaderEdgeCases:
         missing_directory = Path("/missing")
         
         # Mock the stages but have one of them raise FileNotFoundError
-        async def mock_stage_that_fails():
-            raise FileNotFoundError("Text search file not found")
+        mock_stage_that_fails = AsyncMock()
+        mock_stage_that_fails.side_effect = FileNotFoundError("Text search file not found")
         
         mock_get_stages.return_value = [mock_stage_that_fails()]
         
