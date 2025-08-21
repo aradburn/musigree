@@ -51,23 +51,6 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
-[project.optional-dependencies]
-dev = [
-    "pg-temp>=0.9.1,<1.0.0",
-    "fakeredis~=2.31.0",
-    "pytest~=8.4.1",
-    "pytest-mock~=3.14.1",
-    "pytest-asyncio~=1.1.0",
-    "pytest-cov~=6.2.1",
-    "mypy~=1.17.1",
-    "memray>=1.17.2,<2.0.0",
-    "pytest-memray>=1.7.0,<2.0.0",
-    "sortedcontainers-stubs~=2.4.3",
-    "types-requests~=2.32.4.20250611",
-    "types-python-dateutil~=2.9.0.20250516",
-    "locust~=2.37.11",
-]
-
 [tool.uv]
 dev-dependencies = [
     "pg-temp>=0.9.1,<1.0.0",
@@ -83,10 +66,15 @@ dev-dependencies = [
     "types-requests~=2.32.4.20250611",
     "types-python-dateutil~=2.9.0.20250516",
     "locust~=2.37.11",
+    "ruff>=0.12.9",
 ]
 
 [tool.mypy]
 python_version = "3.13"
 warn_return_any = true
 disallow_untyped_defs = true
+
+[tool.ruff.lint]
+extend-select = ["B"]
+
 
