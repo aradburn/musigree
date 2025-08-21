@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -32,12 +32,12 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
     schema_class = CountryTable
     """The SQLAlchemy table class for runtime countries."""
 
-    async def all(self) -> AsyncIterator[Country]:
+    async def all(self) -> AsyncGenerator[Country, None]:
         """
         Retrieves all countries from the runtime database.
 
         Yields:
-            AsyncIterator[Country]: An async iterator yielding each country.
+            AsyncGenerator[Country]: An async iterator yielding each country.
         """
         async for instance in self._all():
             yield Country.model_validate(instance)

@@ -1,4 +1,4 @@
-from sqlalchemy import String, JSON, Integer, Date
+from sqlalchemy import String, Integer, Date, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils

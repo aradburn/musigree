@@ -1,7 +1,7 @@
 from typing import AsyncGenerator
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from sqlalchemy import Result
 from musigree.exceptions import NotFoundError
@@ -214,10 +214,11 @@ class TestRuntimeRoleRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRoleRepository, "_all")
-    async def test_all_iterator(self, mock_all: Mock) -> None:
+    async def test_all_iterator(self) -> None:
         """Test the all() iterator method."""
         # GIVEN
+        from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
+        
         mock_result1 = Mock()
         mock_result1.id = 1
         mock_result1.role_name = "Producer"
@@ -230,27 +231,50 @@ class TestRuntimeRoleRepository:
         mock_result2.role_category = "CREATION"
         mock_result2.role_subcategory = "NONE"
 
-        # Mock async generator
-        async def async_generator() -> AsyncGenerator[Mock, None]:
-            yield mock_result1
-            yield mock_result2
+        # Mock session and set in context
+        mock_session = AsyncMock()
+        
+        # Mock the stream result to return an async iterator
+        class MockStreamResult:
+            def __init__(self) -> None:
+                self.data = [(mock_result1,), (mock_result2,)]
+                self.index = 0
 
-        mock_all.return_value = async_generator()
+            def __aiter__(self) -> "MockStreamResult":
+                return self
 
-        with patch.object(RuntimeRole, "model_validate") as mock_validate:
-            role1 = Mock()
-            role2 = Mock()
-            mock_validate.side_effect = [role1, role2]
+            async def __anext__(self) -> tuple[Mock]:
+                if self.index >= len(self.data):
+                    raise StopAsyncIteration
+                result = self.data[self.index]
+                self.index += 1
+                return result
 
-            # WHEN
-            result = []
-            async for role in self.repository.all():
-                result.append(role)
+        mock_stream_result = MockStreamResult()
+        mock_session.stream.return_value = mock_stream_result
 
-            # THEN
-            assert len(result) == 2
-            assert result[0] == role1
-            assert result[1] == role2
+        # Set up context variable
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+
+        try:
+            with patch.object(RuntimeRole, "model_validate") as mock_validate:
+                role1 = Mock()
+                role2 = Mock()
+                mock_validate.side_effect = [role1, role2]
+
+                # WHEN
+                result = []
+                async for role in self.repository.all():
+                    result.append(role)
+
+                # THEN
+                assert len(result) == 2
+                assert result[0] == role1
+                assert result[1] == role2
+                mock_validate.assert_any_call(mock_result1)
+                mock_validate.assert_any_call(mock_result2)
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
 
     @pytest.mark.asyncio
     async def test_cache_key_format(self) -> None:

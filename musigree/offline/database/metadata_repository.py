@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from sqlalchemy import Result, select, update
 
@@ -32,12 +31,12 @@ class MetadataRepository(BaseRepository[MetadataTable]):
     The SQLAlchemy table class for metadata.
     """
 
-    async def all(self) -> AsyncIterator[Metadata]:
+    async def all(self) -> AsyncGenerator[Metadata, None]:
         """
         Retrieves all metadata from the database.
 
         Yields:
-            AsyncIterator[Metadata]: An async iterator yielding each metadata.
+            AsyncGenerator[Metadata]: An async iterator yielding each metadata.
         """
         async for instance in self._all():
             yield Metadata.model_validate(instance)

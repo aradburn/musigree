@@ -69,7 +69,7 @@ from pathlib import Path
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import URL, text, SingletonThreadPool
+from sqlalchemy import URL, text, SingletonThreadPool, AsyncAdaptedQueuePool
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -226,6 +226,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 """Create the url to connect to the db."""
                 engine = create_async_engine(
                     url_object,
+                    poolclass=AsyncAdaptedQueuePool,
                     pool_size=RuntimeDatabaseManager.get_concurrency_count(),
                     pool_timeout=30,
                     pool_recycle=30,

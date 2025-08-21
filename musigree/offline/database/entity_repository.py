@@ -1,6 +1,6 @@
 import logging
-from collections.abc import Iterator, Sequence, AsyncIterator
-from typing import Any
+from collections.abc import Iterator, Sequence
+from typing import Any, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -107,12 +107,12 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         return value
 
-    async def all(self) -> AsyncIterator[Entity]:
+    async def all(self) -> AsyncGenerator[Entity, None]:
         """
         Retrieves all entities from the database.
 
         Yields:
-            AsyncIterator[Entity]: An async iterator yielding each entity.
+            AsyncGenerator[Entity]: An async iterator yielding each entity.
         """
         query = select(EntityTable)
         result = await self._session.stream(
@@ -125,12 +125,12 @@ class EntityRepository(BaseRepository[EntityTable]):
             # for row in partition:
             #     yield Entity.model_validate(row[0])
 
-    async def all_ids_and_names(self) -> AsyncIterator[tuple[int, str]]:
+    async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str], None]:
         """
         Retrieves all entity IDs and names from the database.
 
         Yields:
-            AsyncIterator[tuple[int, str]]: An async iterator yielding tuples of
+            AsyncGenerator[tuple[int, str]]: An async iterator yielding tuples of
                 (entity ID, entity name).
         """
         query = select(EntityTable.id, EntityTable.entity_name)

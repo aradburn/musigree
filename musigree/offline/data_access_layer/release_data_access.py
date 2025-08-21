@@ -25,6 +25,7 @@ the index.
 
 import logging
 
+from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.offline.loader.loader_base import LoaderBase
@@ -124,7 +125,8 @@ class ReleaseDataAccess:
         if count % (LoaderBase.BULK_REPORTING_SIZE * 100) != 0:
             log.debug(f"Indexed {count} releases")
             """Log the final number of indexed releases."""
-        entity_details_index.print_details()
+        if LOGGING_TRACE:
+            entity_details_index.print_details()
         """Print the details of the indexed data."""
         entity_details_index.print_sizes()
         """Print the sizes of the different indexed data."""

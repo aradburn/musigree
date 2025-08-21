@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -34,15 +34,22 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
     schema_class = RuntimeRoleTable
     """The SQLAlchemy table class for runtime roles."""
 
-    async def all(self) -> AsyncIterator[RuntimeRole]:
+    async def all(self) -> AsyncGenerator[RuntimeRole, None]:
         """
         Retrieves all roles from the runtime database.
 
         Yields:
-            AsyncIterator[RuntimeRole]: An async iterator yielding each role.
+            AsyncGenerator[RuntimeRole]: An async iterator yielding each role.
         """
-        async for instance in self._all():
-            yield RuntimeRole.model_validate(instance)
+        query = select(RuntimeRoleTable)
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
+        async for row in result:
+            yield RuntimeRole.model_validate(row[0])
+
+        # async for instance in self._all():
+        #     yield RuntimeRole.model_validate(instance)
 
     async def get_by_id(self, id_: int) -> RuntimeRole:
         """

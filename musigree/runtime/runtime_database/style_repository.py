@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -32,12 +32,12 @@ class StyleRepository(RuntimeBaseRepository[StyleTable]):
     schema_class = StyleTable
     """The SQLAlchemy table class for runtime styles."""
 
-    async def all(self) -> AsyncIterator[Style]:
+    async def all(self) -> AsyncGenerator[Style, None]:
         """
         Retrieves all styles from the runtime database.
 
         Yields:
-            AsyncIterator[Style]: An async iterator yielding each style.
+            AsyncGenerator[Style]: An async iterator yielding each style.
         """
         async for instance in self._all():
             yield Style.model_validate(instance)

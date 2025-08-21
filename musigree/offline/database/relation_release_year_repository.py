@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
-from typing import List
+from typing import List, AsyncGenerator
 
 from sqlalchemy import Result, select, Select
 
@@ -62,12 +61,12 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
         ]
         return relation_release_years
 
-    async def all(self) -> AsyncIterator[RelationReleaseYear]:
+    async def all(self) -> AsyncGenerator[RelationReleaseYear, None]:
         """
         Retrieves all relation-release-year pairs from the database.
 
         Yields:
-            AsyncIterator[RelationReleaseYear]: An async iterator yielding each
+            AsyncGenerator[RelationReleaseYear]: An async iterator yielding each
                 relation-release-year pair.
         """
         query = select(RelationReleaseYearTable)

@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
-from typing import Any, Generic, Type
+from typing import Any, Generic, Type, AsyncGenerator
 
 from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
@@ -234,12 +233,12 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
-    async def _all(self) -> AsyncIterator[RuntimeConcreteTable]:
+    async def _all(self) -> AsyncGenerator[RuntimeConcreteTable, None]:
         """
         Retrieves all records from the database table.
 
         Yields:
-            AsyncIterator[RuntimeConcreteTable]: An async iterator that yields each
+            AsyncGenerator[RuntimeConcreteTable]: An async iterator that yields each
                 database row as an object.
         """
         result: Result = await self.execute(select(self.schema_class))

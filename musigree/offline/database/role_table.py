@@ -37,7 +37,7 @@ class RoleTable(OfflineBase):
     """
     The primary key of the table, an auto-incrementing integer representing the unique identifier for the role.
     """
-    role_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    role_name: Mapped[str] = mapped_column(String, index=True, nullable=False, unique=True)
     """
     The name of the role (e.g., 'Producer', 'Remixer'). Indexed for faster lookup.
     """

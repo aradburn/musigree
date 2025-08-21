@@ -14,7 +14,7 @@ import unicodedata
 from collections.abc import Mapping, Iterator
 from datetime import datetime, date
 from io import BufferedWriter
-from typing import Protocol, Any, TypeVar, Sequence, AsyncIterator, Union
+from typing import Protocol, Any, TypeVar, Sequence, AsyncGenerator
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -26,7 +26,7 @@ from unidecode import unidecode
 class SupportsWrite(Protocol):
     """Protocol for objects that support writing."""
 
-    def write(self, data: Union[str, bytes]) -> Any: ...
+    def write(self, data: str | bytes) -> Any: ...
 
     def flush(self) -> None: ...
 
@@ -170,9 +170,9 @@ def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
 
 
 async def async_chunks(
-    async_iterator: AsyncIterator[T],
+    async_generator: AsyncGenerator[T, None],
     size: int,
-) -> AsyncIterator[list[T]]:
+) -> AsyncGenerator[list[T], None]:
     """Generate chunks from an asynchronous sequence.
 
     Chunks are lists consists of original ``T`` elements.
@@ -187,7 +187,7 @@ async def async_chunks(
 
         for _ in range(size):
             try:
-                result = await anext(async_iterator)
+                result = await anext(async_generator)
             except StopAsyncIteration:
                 finished = True
             else:
@@ -356,7 +356,7 @@ def sleep_with_backoff(multiplier: int) -> None:
 
 
 def download_file(
-    input_url: str, output_file: Union[SupportsWrite, BufferedWriter]
+    input_url: str, output_file: SupportsWrite | BufferedWriter
 ) -> None:
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()

@@ -21,8 +21,7 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
-from collections.abc import AsyncIterator
-from typing import Any, List, Sequence, Iterator
+from typing import Any, List, Sequence, Iterator, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -134,12 +133,12 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
         return value
 
-    async def all(self) -> AsyncIterator[RuntimeEntity]:
+    async def all(self) -> AsyncGenerator[RuntimeEntity, None]:
         """
         Retrieves all entities from the runtime database.
 
         Yields:
-            AsyncIterator[RuntimeEntity]: An async iterator yielding each entity.
+            AsyncGenerator[RuntimeEntity]: An async iterator yielding each entity.
         """
         query = select(RuntimeEntityTable)
         result = await self._session.stream(
@@ -148,12 +147,12 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         async for row in result:
             yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
-    async def all_ids_and_names(self) -> AsyncIterator[tuple[int, str]]:
+    async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str], None]:
         """
         Retrieves all entity IDs and names from the runtime database.
 
         Yields:
-            AsyncIterator[tuple[int, str]]: An async iterator yielding each
+            AsyncGenerator[tuple[int, str]]: An async iterator yielding each
             entity's ID and name as a tuple.
         """
         query = select(RuntimeEntityTable.id, RuntimeEntityTable.entity_name)

@@ -17,8 +17,8 @@ Key functionalities include:
 """
 
 import logging
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def runtime_transaction() -> AsyncIterator[AsyncSession]:
+async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
     """
     Async context manager for handling runtime database transactions.
 

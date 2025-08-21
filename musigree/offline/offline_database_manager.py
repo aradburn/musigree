@@ -21,7 +21,7 @@ class OfflineDatabaseManager:
     @staticmethod
     def get_concurrency_count() -> int:
         if OfflineDatabaseManager._threading_model == ThreadingModel.PROCESS:
-            return multiprocessing.cpu_count()
+            return multiprocessing.cpu_count() * 2
         elif OfflineDatabaseManager._threading_model == ThreadingModel.THREAD:
             return 1
         else:
@@ -100,13 +100,6 @@ class OfflineDatabaseManager:
         await OfflineDatabaseManager.offline_database_helper.check_connection(
             config, async_engine
         )
-
-        # TODO remove - was Create tables
-        # OfflineDatabaseManager.offline_database_helper.create_tables(
-        #     ALL_OFFLINE_DATABASE_TABLE_NAMES
-        # )
-        #
-        # LoaderRole.load_roles_into_database()
 
     @classmethod
     async def shutdown_database(cls) -> None:

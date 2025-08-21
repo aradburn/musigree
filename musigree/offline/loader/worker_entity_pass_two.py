@@ -104,10 +104,14 @@ def process_entity_pass_two_worker(
     async def process_entities(_ids: list[int]) -> None:
         nonlocal count, end_count
         async with offline_transaction():
+            """Ensure that database operations are performed within a transaction."""
+            entity_repository = EntityRepository()
+            """Instance of EntityRepository for database operations on entities."""
+
             for _id in _ids:
                 # log.debug(f"[{proc_name}] processing entity id: {_id}")
                 """Iterate over the entity IDs."""
-                await process_entity(_id)
+                await process_entity(entity_repository, _id)
                 count += 1
                 # """Increment the entity counter."""
                 if (
@@ -119,12 +123,8 @@ def process_entity_pass_two_worker(
 
         log.info(f"[{proc_name}] processed {count} of {total_count}")
 
-    async def process_entity(entity_id: int) -> None:
+    async def process_entity(entity_repository: EntityRepository, entity_id: int) -> None:
         """Async function to handle entity processing."""
-
-        """Ensure that database operations are performed within a transaction."""
-        entity_repository = EntityRepository()
-        """Instance of EntityRepository for database operations on entities."""
         try:
             """Attempt to process the entity."""
             entity = await entity_repository.get_by_id(entity_id)

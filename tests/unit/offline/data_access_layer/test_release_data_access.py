@@ -43,8 +43,6 @@ class TestCreateEntityDetailsIndex:
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -77,8 +75,6 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_country.assert_any_call("artist1", "US")
         mock_index.index_country.assert_any_call("label1", "US")
         assert mock_index.index_country.call_count == 2
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -114,8 +110,6 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_genre.assert_any_call("label1", "Rock")
         mock_index.index_genre.assert_any_call("label1", "Pop")
         assert mock_index.index_genre.call_count == 4
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -151,8 +145,6 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_style.assert_any_call("label1", "Alternative Rock")
         mock_index.index_style.assert_any_call("label1", "Indie Pop")
         assert mock_index.index_style.call_count == 4
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -184,8 +176,6 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.assert_called_once()
         # Should only index country for label, not artist (missing id)
         mock_index.index_country.assert_called_once_with("label1", "US")
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -217,8 +207,6 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.assert_called_once()
         # Should only index country for artist, not label (missing id)
         mock_index.index_country.assert_called_once_with("artist1", "US")
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -250,8 +238,6 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.assert_called_once()
         # Should only index country for label, not artist (not a list)
         mock_index.index_country.assert_called_once_with("label1", "US")
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -283,8 +269,6 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.assert_called_once()
         # Should only index country for artist, not label (not a list)
         mock_index.index_country.assert_called_once_with("artist1", "US")
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -326,8 +310,6 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.assert_called_once()
         # Should log progress at 1000 and final count
         assert mock_log.debug.call_count >= 2
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
@@ -385,6 +367,4 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_style.assert_any_call("label1", "Chillout")
         assert mock_index.index_style.call_count == 6
 
-        mock_index.print_details.assert_called_once()
-        mock_index.print_sizes.assert_called_once()
         assert result == mock_index

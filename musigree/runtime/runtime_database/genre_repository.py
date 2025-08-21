@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -32,12 +32,12 @@ class GenreRepository(RuntimeBaseRepository[GenreTable]):
     schema_class = GenreTable
     """The SQLAlchemy table class for runtime genres."""
 
-    async def all(self) -> AsyncIterator[Genre]:
+    async def all(self) -> AsyncGenerator[Genre, None]:
         """
         Retrieves all genres from the runtime database.
 
         Yields:
-            AsyncIterator[Genre]: An async iterator yielding each genre.
+            AsyncGenerator[Genre]: An async iterator yielding each genre.
         """
         async for instance in self._all():
             yield Genre.model_validate(instance)

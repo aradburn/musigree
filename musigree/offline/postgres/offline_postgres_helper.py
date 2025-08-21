@@ -5,7 +5,7 @@ from typing import Type, List
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import URL, text
+from sqlalchemy import URL, text, AsyncAdaptedQueuePool
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -78,10 +78,9 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 options = {
                     "work_mem": "100MB",
                     "maintenance_work_mem": "100MB",
-                    "effective_cache_size": "2GB",
-                    "max_connections": OfflineDatabaseManager.get_concurrency_count()
-                    + 4,
-                    "shared_buffers": "3GB",
+                    "effective_cache_size": "3GB",
+                    "max_connections": OfflineDatabaseManager.get_concurrency_count() + 4,
+                    "shared_buffers": "4GB",
                     # "log_min_duration_statement": 5000,
                     # "shared_preload_libraries": 'pg_stat_statements',
                     # "session_preload_libraries": 'auto_explain',
@@ -122,9 +121,10 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 )
                 engine = create_async_engine(
                     url_object,
-                    # pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
-                    # pool_timeout=30,
-                    # pool_recycle=30,
+                    poolclass=AsyncAdaptedQueuePool,
+                    pool_size=OfflineDatabaseManager.get_concurrency_count(),
+                    pool_timeout=30,
+                    pool_recycle=30,
                     # connect_args={
                     #     "connect_timeout": 10,
                     # },

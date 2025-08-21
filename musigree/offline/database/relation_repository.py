@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -78,12 +78,12 @@ class RelationRepository(BaseRepository[RelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    async def all(self) -> AsyncIterator[RelationDB]:
+    async def all(self) -> AsyncGenerator[RelationDB, None]:
         """
         Retrieves all relations from the database.
 
         Yields:
-            AsyncIterator[RelationDB]: An async iterator yielding each relation.
+            AsyncGenerator[RelationDB]: An async iterator yielding each relation.
         """
         query = select(RelationTable)
         result = await self._session.stream(

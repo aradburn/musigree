@@ -1,5 +1,5 @@
 from typing import Any
-from sqlalchemy import String, JSON, Index, Integer, inspect
+from sqlalchemy import String, Index, Integer, inspect, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils

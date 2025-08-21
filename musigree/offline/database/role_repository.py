@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from sqlalchemy import select, Result
 
@@ -29,12 +29,12 @@ class RoleRepository(BaseRepository[RoleTable]):
     schema_class = RoleTable
     """The SQLAlchemy table class for roles."""
 
-    async def all(self) -> AsyncIterator[Role]:
+    async def all(self) -> AsyncGenerator[Role, None]:
         """
         Retrieves all roles from the database.
 
         Yields:
-            AsyncIterator[Role]: An async iterator yielding each role.
+            AsyncGenerator[Role]: An async iterator yielding each role.
         """
         async for instance in self._all():
             yield Role.model_validate(instance)

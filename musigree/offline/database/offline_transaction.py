@@ -7,8 +7,8 @@ success or failure of the operations.
 """
 
 import logging
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def offline_transaction() -> AsyncIterator[AsyncSession]:
+async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
     """
     Async context manager for handling offline database transactions.
 

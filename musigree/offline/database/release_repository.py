@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
-from typing import List, Any, Sequence, Iterator
+from typing import List, Any, Sequence, Iterator, AsyncGenerator
 
 from sqlalchemy import select, Result, update, delete
 
@@ -31,16 +30,16 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
     schema_class = ReleaseTable
     """The SQLAlchemy table class for releases."""
 
-    async def all(self) -> AsyncIterator[Release]:
+    async def all(self) -> AsyncGenerator[Release, None]:
         """
         Retrieves all releases from the database.
 
         Yields:
-            AsyncIterator[Release]: An async iterator yielding each release.
+            AsyncGenerator[Release]: An async iterator yielding each release.
         """
         query = select(ReleaseTable)
         result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
+            query, execution_options={"yield_per": 100}
         )
         async for row in result:
             yield Release.model_validate(row[0])

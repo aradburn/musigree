@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
-from musigree.exceptions import NotFoundError
+from musigree.exceptions import DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
@@ -196,32 +196,50 @@ class LoaderRole(LoaderBase):
     @classmethod
     async def save_roles(cls, roles: list[RoleUncommitted]) -> int:
         log.debug("Adding roles to RoleRepository")
-        bulk_inserts = []
-        names = set()
         async with offline_transaction():
             added_count = 0
             role_repository = RoleRepository()
 
             for role_uncommitted in roles:
-                if role_uncommitted.role_name not in names:
-                    names.add(role_uncommitted.role_name)
-                    # Check if the role already exists in the database
-                    # If it does not, add it to the bulk inserts
-                    try:
-                        await role_repository.get_by_name(
-                            name=role_uncommitted.role_name
-                        )
-                    except NotFoundError:
-                        # Add new role
-                        bulk_inserts.append(role_uncommitted.model_dump())
-                        added_count += 1
-
-            await role_repository.save_all(bulk_inserts)
-            """Insert the roles."""
-            await role_repository.commit()
+                try:
+                    await role_repository.create(role_uncommitted)
+                    await role_repository.commit()
+                    added_count += 1
+                except DatabaseError:
+                    await role_repository.rollback()
 
         log.debug(f"Added {added_count} roles")
         return added_count
+
+    # @classmethod
+    # async def save_roles(cls, roles: list[RoleUncommitted]) -> int:
+    #     log.debug("Adding roles to RoleRepository")
+    #     bulk_inserts = []
+    #     names = set()
+    #     async with offline_transaction():
+    #         added_count = 0
+    #         role_repository = RoleRepository()
+    #
+    #         for role_uncommitted in roles:
+    #             if role_uncommitted.role_name not in names:
+    #                 names.add(role_uncommitted.role_name)
+    #                 # Check if the role already exists in the database
+    #                 # If it does not, add it to the bulk inserts
+    #                 try:
+    #                     await role_repository.get_by_name(
+    #                         name=role_uncommitted.role_name
+    #                     )
+    #                 except NotFoundError:
+    #                     # Add new role
+    #                     bulk_inserts.append(role_uncommitted.model_dump())
+    #                     added_count += 1
+    #
+    #         await role_repository.save_all(bulk_inserts)
+    #         """Insert the roles."""
+    #         await role_repository.commit()
+    #
+    #     log.debug(f"Added {added_count} roles")
+    #     return added_count
 
     @classmethod
     @abstractmethod

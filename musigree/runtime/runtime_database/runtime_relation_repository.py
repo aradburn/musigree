@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncIterator
-from typing import List
+from typing import List, AsyncGenerator
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -85,12 +84,12 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    async def all(self) -> AsyncIterator[RuntimeRelationInternal]:
+    async def all(self) -> AsyncGenerator[RuntimeRelationInternal, None]:
         """
         Retrieves all relations from the runtime database.
 
         Yields:
-            AsyncIterator[RuntimeRelationInternal]: An async iterator yielding
+            AsyncGenerator[RuntimeRelationInternal]: An async iterator yielding
                 each relation.
         """
         async for instance in self._all():
