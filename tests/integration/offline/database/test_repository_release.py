@@ -1,5 +1,8 @@
+from typing import AsyncGenerator
+
 import pytest
 
+from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
@@ -11,7 +14,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
 class TestRepositoryRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_create_01(self, offline_database_setup, offline_config) -> None:
+    async def test_create_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
@@ -29,7 +36,11 @@ class TestRepositoryRelease(AbstractDatabaseTest):
         assert release == created_release
 
     @pytest.mark.asyncio
-    async def test_get_01(self, offline_database_setup, offline_config) -> None:
+    async def test_get_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(

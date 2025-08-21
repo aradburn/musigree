@@ -3,8 +3,8 @@ This module defines the `process_entity_pass_two_worker` function, which is a wo
 responsible for processing entity records in the second pass of the
 data loading process in the Musigree offline system.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent processing of entities, improving the efficiency of the data loading process. 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent processing of entities, improving the efficiency of the data loading process.
 The function handles the resolution of entity references (e.g., aliases, groups, members)
 within the entity data.
 
@@ -47,7 +47,7 @@ The `process_entity_pass_two_worker` function interacts with the following compo
     - `NotFoundError`: Used for handling the not found exception.
     - `DatabaseError`: Used for handling the database exception.
 
-The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError` 
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions. It interacts with `musigree.offline.database` for database
 related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
@@ -74,11 +74,13 @@ The logger for the worker entity pass two module.
 """
 
 
-def process_entity_pass_two_worker(ids: list[int], current_total: int, total_count: int) -> None:
+def process_entity_pass_two_worker(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing entity records in the second pass.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
+    This function is designed to be used with ProcessPoolExecutor to perform
     concurrent processing of entities, resolving references to other entities.
 
     Args:
@@ -99,7 +101,7 @@ def process_entity_pass_two_worker(ids: list[int], current_total: int, total_cou
     """Counter for the number of entities processed."""
     end_count = count + len(ids)
 
-    async def process_entities(_ids: list[int]):
+    async def process_entities(_ids: list[int]) -> None:
         nonlocal count, end_count
         async with offline_transaction():
             for _id in _ids:
@@ -108,7 +110,10 @@ def process_entity_pass_two_worker(ids: list[int], current_total: int, total_cou
                 await process_entity(_id)
                 count += 1
                 # """Increment the entity counter."""
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if (
+                    count % LoaderBase.BULK_REPORTING_SIZE == 0
+                    and not count == end_count
+                ):
                     """Log the progress."""
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -149,6 +154,7 @@ def process_entity_pass_two_worker(ids: list[int], current_total: int, total_cou
 
     loop.run_until_complete(process_entities(ids))
 
+
 async def worker_pass_two_single(
     entity_repository: EntityRepository, entity: Entity, proc_name: str
 ) -> None:
@@ -170,7 +176,9 @@ async def worker_pass_two_single(
     if LOGGING_TRACE:
         log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+    changed = await EntityDataAccess.resolve_entity_references(
+        entity_repository, entity
+    )
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""

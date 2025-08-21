@@ -1,4 +1,6 @@
-from tests.integration.runtime.domain.test_runtime_relation_grapher import TestRuntimeRelationGrapher
+from tests.integration.runtime.domain.test_runtime_relation_grapher import (
+    TestRuntimeRelationGrapher,
+)
 
 
 class TestSqliteRuntimeRelationGrapher(TestRuntimeRelationGrapher):

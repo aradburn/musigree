@@ -52,7 +52,7 @@ class RelationReleaseYearTable(OfflineBase):
     The year of the release.
     """
 
-    __table_args__: tuple[Index, dict]  = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_relation_release_year_relation_ids",
             relation_id,
@@ -66,11 +66,11 @@ class RelationReleaseYearTable(OfflineBase):
           relation_id column.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RelationReleaseYearTable object.
 
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

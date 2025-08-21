@@ -1,6 +1,5 @@
 import logging
 from collections.abc import AsyncIterator
-from typing import List
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -87,9 +86,11 @@ class RelationRepository(BaseRepository[RelationTable]):
             AsyncIterator[RelationDB]: An async iterator yielding each relation.
         """
         query = select(RelationTable)
-        result = await self._session.stream(query, execution_options={"yield_per": 1000})
-            # for partition in results.partitions():
-                # partition is an iterable that will be at most 1000 items
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
+        # for partition in results.partitions():
+        # partition is an iterable that will be at most 1000 items
         async for row in result:
             yield RelationDB.model_validate(row[0])
 
@@ -136,7 +137,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
         if not (instance := result.scalar()):
             raise NotFoundError
-        return instance
+        return int(instance)
 
     async def find_by_id(self, relation_id: int) -> RelationInternal:
         """
@@ -248,10 +249,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         query = (
             select(RelationTable)
             .where(
-                (
-                    (RelationTable.subject == id_)
-                    | (RelationTable.object == id_)
-                )
+                ((RelationTable.subject == id_) | (RelationTable.object == id_))
                 & (RelationTable.predicate.in_(role_ids))
             )
             .order_by(
@@ -263,7 +261,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         return await self._get_all_by_query(query)
 
     async def create(
-        self, relation: RelationUncommitted, on_conflict_do_nothing=False
+        self, relation: RelationUncommitted, on_conflict_do_nothing: bool = False
     ) -> None:
         """
         Creates a new relation in the database.
@@ -297,7 +295,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         # return relation_db.to_domain()
 
     async def create_bulk(
-        self, relations: list[RelationUncommitted], on_conflict_do_nothing=False
+        self, relations: list[RelationUncommitted], on_conflict_do_nothing: bool = False
     ) -> None:
         """
         Creates multiple relations in the database in bulk.

@@ -2,8 +2,8 @@
 This module defines the `insert_releases_worker` function, which is a worker function
 responsible for inserting release records into the Musigree offline database.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent insertion of releases, improving the efficiency of the data loading process. 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent insertion of releases, improving the efficiency of the data loading process.
 The function handles the insertion of a batch of release records (`bulk_inserts`).
 
 Key functionalities include:
@@ -31,7 +31,7 @@ The `insert_releases_worker` function interacts with the following components:
     - `logging`: For logging operations.
     - `DatabaseError`: Used for handling the database exception.
 
-The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError` 
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
 
@@ -59,7 +59,7 @@ def insert_releases_worker(
     """
     Worker function for inserting release records into the database.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
+    This function is designed to be used with ProcessPoolExecutor to perform
     concurrent insertion of release records.
 
     Args:

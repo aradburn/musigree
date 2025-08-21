@@ -42,12 +42,12 @@ _redis_client: Any = None
 def get_redis_client() -> Any:
     """
     Get the Redis client, initializing it if necessary.
-    
+
     Returns:
         Redis client instance (real or fake based on configuration)
     """
     global _redis_client
-    
+
     if _redis_client is None:
         # For now, we'll use FakeRedis for development and testing
         # In production, this should be replaced with real Redis configuration
@@ -58,10 +58,10 @@ def get_redis_client() -> Any:
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5,
-            retry_on_timeout=True
+            retry_on_timeout=True,
         )
         log.info("Initialized FakeRedis for rate limiting")
-    
+
     return _redis_client
 
 

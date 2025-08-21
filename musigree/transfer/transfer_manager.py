@@ -2,7 +2,7 @@ import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor, Executor, ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from musigree.exceptions import DatabaseError
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
@@ -34,8 +34,12 @@ from musigree.runtime.runtime_domain.relation import (
 )
 from musigree.runtime.runtime_domain.role import RuntimeRole
 from musigree.runtime.runtime_domain.style import Style
-from musigree.transfer.transfer_worker_entity_inserter import transfer_worker_entity_inserter
-from musigree.transfer.transfer_worker_relation_inserter import transfer_worker_relation_inserter
+from musigree.transfer.transfer_worker_entity_inserter import (
+    transfer_worker_entity_inserter,
+)
+from musigree.transfer.transfer_worker_relation_inserter import (
+    transfer_worker_relation_inserter,
+)
 from musigree.utils import async_chunks
 
 log = logging.getLogger(__name__)
@@ -46,7 +50,7 @@ class TransferManager:
 
     @staticmethod
     async def transfer_entity() -> None:
-        log.debug(f"Running transfer_entity()")
+        log.debug("Running transfer_entity()")
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
@@ -68,7 +72,9 @@ class TransferManager:
             total_count = await offline_entity_repository.count()
             entities = offline_entity_repository.all()
 
-            chunked_entities = async_chunks(entities, TransferManager.BULK_INSERT_BATCH_SIZE)
+            chunked_entities = async_chunks(
+                entities, TransferManager.BULK_INSERT_BATCH_SIZE
+            )
 
             if concurrency_count > 1:
                 # Use ProcessPoolExecutor for concurrent processing
@@ -79,16 +85,20 @@ class TransferManager:
 
                             for entity in chunk:
                                 runtime_entity_dict = to_runtime_entity_dict(
-                                    RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+                                    RuntimeDatabaseManager.runtime_database_helper.entity_details_index,
+                                    entity,
+                                )
                                 bulk_records.append(runtime_entity_dict)
                                 processed_count += 1
 
-                            future = TransferManager.run_worker_function(executor,
-                                                                         concurrency_count,
-                                                                         transfer_worker_entity_inserter,
-                                                                         bulk_records,
-                                                                         processed_count, total_count,
-                                                                         )
+                            future = TransferManager.run_worker_function(
+                                executor,
+                                concurrency_count,
+                                transfer_worker_entity_inserter,
+                                bulk_records,
+                                processed_count,
+                                total_count,
+                            )
                             task_group.create_task(future)
             else:
                 # Use single-threaded execution
@@ -97,18 +107,22 @@ class TransferManager:
 
                     for entity in chunk:
                         runtime_entity_dict = to_runtime_entity_dict(
-                            RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+                            RuntimeDatabaseManager.runtime_database_helper.entity_details_index,
+                            entity,
+                        )
                         bulk_records.append(runtime_entity_dict)
                         processed_count += 1
 
                     with ThreadPoolExecutor(max_workers=concurrency_count) as executor:
                         async with asyncio.TaskGroup() as task_group:
-                            future = TransferManager.run_worker_function(executor,
-                                                                         concurrency_count,
-                                                                         transfer_worker_entity_inserter,
-                                                                         bulk_records,
-                                                                         processed_count, total_count,
-                                                                         )
+                            future = TransferManager.run_worker_function(
+                                executor,
+                                concurrency_count,
+                                transfer_worker_entity_inserter,
+                                bulk_records,
+                                processed_count,
+                                total_count,
+                            )
                             task_group.create_task(future)
 
         async with runtime_transaction():
@@ -117,7 +131,7 @@ class TransferManager:
 
     @staticmethod
     async def transfer_relation() -> None:
-        log.debug(f"Running transfer_relation()")
+        log.debug("Running transfer_relation()")
         async with offline_transaction():
             offline_relation_repository = RelationRepository()
             total_count = await offline_relation_repository.count()
@@ -136,7 +150,9 @@ class TransferManager:
 
         async with offline_transaction():
             relations = offline_relation_repository.all()
-            chunked_relations = async_chunks(relations, TransferManager.BULK_INSERT_BATCH_SIZE)
+            chunked_relations = async_chunks(
+                relations, TransferManager.BULK_INSERT_BATCH_SIZE
+            )
 
             if concurrency_count > 1:
                 # Use ProcessPoolExecutor for concurrent processing
@@ -146,16 +162,20 @@ class TransferManager:
                             bulk_records = []
 
                             for relation in chunk:
-                                runtime_relation = RuntimeRelationDB(**relation.model_dump())
+                                runtime_relation = RuntimeRelationDB(
+                                    **relation.model_dump()
+                                )
                                 bulk_records.append(runtime_relation.model_dump())
                                 processed_count += 1
 
-                            future = TransferManager.run_worker_function(executor,
-                                                                         concurrency_count,
-                                                                         transfer_worker_relation_inserter,
-                                                                         bulk_records,
-                                                                         processed_count, total_count,
-                                                                         )
+                            future = TransferManager.run_worker_function(
+                                executor,
+                                concurrency_count,
+                                transfer_worker_relation_inserter,
+                                bulk_records,
+                                processed_count,
+                                total_count,
+                            )
                             task_group.create_task(future)
             else:
                 # Use single-threaded execution
@@ -169,11 +189,14 @@ class TransferManager:
 
                     with ThreadPoolExecutor(max_workers=concurrency_count) as executor:
                         async with asyncio.TaskGroup() as task_group:
-                            future = TransferManager.run_worker_function(executor,
-                                                                         concurrency_count,
-                                                                         transfer_worker_relation_inserter,
-                                                                         bulk_records, processed_count, total_count,
-                                                                         )
+                            future = TransferManager.run_worker_function(
+                                executor,
+                                concurrency_count,
+                                transfer_worker_relation_inserter,
+                                bulk_records,
+                                processed_count,
+                                total_count,
+                            )
                             task_group.create_task(future)
 
         async with runtime_transaction():
@@ -182,7 +205,7 @@ class TransferManager:
 
     @staticmethod
     async def transfer_role() -> None:
-        log.debug(f"Running transfer_role()")
+        log.debug("Running transfer_role()")
         async with offline_transaction():
             roles = RoleRepository().all()
 
@@ -194,14 +217,16 @@ class TransferManager:
 
     @staticmethod
     async def transfer_entity_details() -> None:
-        log.debug(f"Running transfer_entity_details()")
+        log.debug("Running transfer_entity_details()")
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
 
         # Countries
-        sorted_countries = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list)
+        sorted_countries = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list
+        )
 
         async with runtime_transaction():
             runtime_country_repository = CountryRepository()
@@ -211,7 +236,9 @@ class TransferManager:
                 await runtime_country_repository.commit()
 
         # Genres
-        sorted_genres = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list)
+        sorted_genres = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list
+        )
 
         async with runtime_transaction():
             runtime_genre_repository = GenreRepository()
@@ -221,7 +248,9 @@ class TransferManager:
                 await runtime_genre_repository.commit()
 
         # Styles
-        sorted_styles = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list)
+        sorted_styles = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list
+        )
 
         async with runtime_transaction():
             runtime_style_repository = StyleRepository()
@@ -232,31 +261,41 @@ class TransferManager:
 
     @staticmethod
     async def transfer_load_text_search_index(text_search_path: Path) -> None:
-        log.debug(f"Running transfer load text search index")
+        log.debug("Running transfer load text search index")
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
-        RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(
+            text_search_path
+        )
+        RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
+            text_search_index
+        )
 
     @staticmethod
     async def transfer_create_entity_details_index() -> None:
-        log.debug(f"Running transfer create entity details index")
+        log.debug("Running transfer create entity details index")
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            RuntimeDatabaseManager.runtime_database_helper.entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index = (
+                await ReleaseDataAccess.create_entity_details_index(
+                    offline_release_repository
+                )
+            )
 
     @classmethod
-    async def run_worker_function(cls,
-                                  pool_executor: Executor,
-                                  concurrency_count: int,
-                                  worker_function,
-                                  bulk_records: list[dict[str, Any]],
-                                  current_total: int, total_count: int,
-                                  ) -> None:
+    async def run_worker_function(
+        cls,
+        pool_executor: Executor,
+        concurrency_count: int,
+        worker_function: Callable,
+        bulk_records: list[dict[str, Any]],
+        current_total: int,
+        total_count: int,
+    ) -> None:
         """
         Performs a bulk worker_function operation.
 
@@ -272,5 +311,7 @@ class TransferManager:
         """
         loop = asyncio.get_running_loop()
         executor = pool_executor if concurrency_count > 1 else None
-        future = loop.run_in_executor(executor, worker_function, bulk_records, current_total, total_count)
-        return await future
+        future = loop.run_in_executor(
+            executor, worker_function, bulk_records, current_total, total_count
+        )
+        await future

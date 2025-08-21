@@ -129,7 +129,7 @@ class EntityDataAccess:
     @staticmethod
     async def resolve_release_references(
         entity_repository: EntityRepository, release: Release
-    ):
+    ) -> bool:
         """
         Resolves release references within a release's data structure.
 
@@ -287,7 +287,9 @@ class EntityDataAccess:
                 cache.set(entity_key_str, EntityDataAccess.CACHE_ENTRY_IS_NULL)
                 """Mark the cache entry as null."""
 
-        return id_
+        if id_ is None:
+            return None
+        return int(id_)
 
     @staticmethod
     async def init_text_search_index(

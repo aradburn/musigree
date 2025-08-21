@@ -54,12 +54,14 @@ The module utilizes `logging` for logging operations, `pickle` for serialization
 `SortedSet` for managing sorted sets of IDs, `Path` for file system operations,
 and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
+
 import asyncio
 import logging
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
@@ -67,7 +69,9 @@ from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.loader.worker_release_deleter import delete_releases_worker
 from musigree.offline.loader.worker_release_inserter import insert_releases_worker
-from musigree.offline.loader.worker_release_pass_two import process_release_pass_two_worker
+from musigree.offline.loader.worker_release_pass_two import (
+    process_release_pass_two_worker,
+)
 from musigree.offline.loader.worker_release_updater import update_releases_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -110,7 +114,7 @@ class LoaderRelease(LoaderBase):
     @classmethod
     # @timeit
     async def loader_release_pass_one(
-        cls, discogs_data_directory: Path, date: str, is_bulk_inserts=False
+        cls, discogs_data_directory: Path, date: str, is_bulk_inserts: bool = False
     ) -> int:
         """
         Performs the first pass of loading release data.
@@ -146,7 +150,13 @@ class LoaderRelease(LoaderBase):
         return releases_loaded
 
     @classmethod
-    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int, executor: ProcessPoolExecutor, concurrency_count: int) -> None:
+    async def insert_bulk(
+        cls,
+        bulk_inserts: list[dict[str, Any]],
+        inserted_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk insert operation for releases.
 
@@ -162,17 +172,23 @@ class LoaderRelease(LoaderBase):
         loop = asyncio.get_running_loop()
         loop.set_debug(True)
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, insert_releases_worker, bulk_inserts, inserted_count)
+            future = loop.run_in_executor(
+                executor, insert_releases_worker, bulk_inserts, inserted_count
+            )
         else:
-            future = loop.run_in_executor(None, insert_releases_worker, bulk_inserts, inserted_count)
-        return await future
+            future = loop.run_in_executor(
+                None, insert_releases_worker, bulk_inserts, inserted_count
+            )
+        await future
 
     @classmethod
-    async def update_bulk(cls,
-                          bulk_updates: list[dict[str, Any]],
-                          processed_count: int,
-                          executor: ProcessPoolExecutor,
-                          concurrency_count: int) -> None:
+    async def update_bulk(
+        cls,
+        bulk_updates: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk update operation for releases.
 
@@ -187,14 +203,23 @@ class LoaderRelease(LoaderBase):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, update_releases_worker, bulk_updates, processed_count)
+            future = loop.run_in_executor(
+                executor, update_releases_worker, bulk_updates, processed_count
+            )
         else:
-            future = loop.run_in_executor(None, update_releases_worker, bulk_updates, processed_count)
-        return await future
+            future = loop.run_in_executor(
+                None, update_releases_worker, bulk_updates, processed_count
+            )
+        await future
 
     @classmethod
-    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int, executor: ProcessPoolExecutor,
-                          concurrency_count: int) -> None:
+    async def delete_bulk(
+        cls,
+        bulk_deletes: list[int],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk delete operation for releases.
 
@@ -209,13 +234,17 @@ class LoaderRelease(LoaderBase):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, delete_releases_worker, bulk_deletes, processed_count)
+            future = loop.run_in_executor(
+                executor, delete_releases_worker, bulk_deletes, processed_count
+            )
         else:
-            future = loop.run_in_executor(None, delete_releases_worker, bulk_deletes, processed_count)
-        return await future
+            future = loop.run_in_executor(
+                None, delete_releases_worker, bulk_deletes, processed_count
+            )
+        await future
 
     @classmethod
-    async def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         """
         Retrieves a set of release IDs from the database.
 
@@ -235,7 +264,7 @@ class LoaderRelease(LoaderBase):
 
     @classmethod
     # @timeit
-    async def loader_release_pass_two(cls):
+    async def loader_release_pass_two(cls) -> None:
         """
         Performs the second pass of loading release data.
 
@@ -253,7 +282,9 @@ class LoaderRelease(LoaderBase):
             """Instance of ReleaseRepository for database operations on releases."""
             total_count = await release_repository.count()
             """Total number of releases in the database."""
-            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
+            batched_release_ids = await release_repository.get_batched_ids(
+                number_in_batch
+            )
         """Get the release ids in batches."""
 
         current_total = 0
@@ -267,9 +298,14 @@ class LoaderRelease(LoaderBase):
                 async with asyncio.TaskGroup() as task_group:
                     for ids in batched_release_ids:
                         """Iterate over the batches of release IDs."""
-                        future = cls.run_worker_function(process_release_pass_two_worker,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            process_release_pass_two_worker,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
                         current_total += number_in_batch
         else:
@@ -278,8 +314,13 @@ class LoaderRelease(LoaderBase):
                 """Iterate over the batches of release IDs."""
                 with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                     async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(process_release_pass_two_worker,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            process_release_pass_two_worker,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
                         current_total += number_in_batch

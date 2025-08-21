@@ -13,14 +13,25 @@ import time
 import unicodedata
 from collections.abc import Mapping, Iterator
 from datetime import datetime, date
-from functools import wraps
-from typing import Any, TypeVar, Sequence, AsyncIterator
+from io import BufferedWriter
+from typing import Protocol, Any, TypeVar, Sequence, AsyncIterator, Union
 
 import requests
 from dateutil.relativedelta import relativedelta
-# noinspection Mypy
+from sqlalchemy.orm import DeclarativeBase
 from toolz import count  # type: ignore
 from unidecode import unidecode
+
+
+class SupportsWrite(Protocol):
+    """Protocol for objects that support writing."""
+
+    def write(self, data: Union[str, bytes]) -> Any: ...
+
+    def flush(self) -> None: ...
+
+    def close(self) -> None: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -38,12 +49,17 @@ T = TypeVar("T")
 
 
 class SkipFilter:
-    def __init__(self, types=None, keys=None, allow_empty=False):
+    def __init__(
+        self,
+        types: tuple[type] | None = None,
+        keys: list[str] | None = None,
+        allow_empty: bool = False,
+    ) -> None:
         self.types = tuple(types or [])
         self.keys = set(keys or [])
         self.allow_empty = allow_empty  # if True include empty filtered structures
 
-    def filter(self, data):
+    def filter(self, data: Any) -> Any:
         if isinstance(data, Mapping):
             result = {}  # dict-like, use dict as a base
             for k, v in data.items():
@@ -71,7 +87,9 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(args) -> tuple[list[str], tuple[int, int] | int | None]:
+def parse_request_args(
+    args: dict[str, Any],
+) -> tuple[list[str], tuple[int, int] | int | None]:
     from musigree.library.cache.role_cache import RoleCache
     from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
 
@@ -123,7 +141,7 @@ def parse_request_args(args) -> tuple[list[str], tuple[int, int] | int | None]:
     return roles_list, year
 
 
-def batched(iterable: Sequence[T], n) -> Iterator[list[T]]:
+def batched(iterable: Sequence[T], n: int) -> Iterator[list[T]]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -211,10 +229,10 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 #     return s
 
 
-def normalize_dict(obj: Any, skip_keys=None) -> str:
+def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
     preprocessor = SkipFilter(keys=skip_keys)
 
-    def list_public_attributes(input_var):
+    def list_public_attributes(input_var: dict[str, Any]) -> dict[str, Any]:
         return {
             k: (
                 list_public_attributes(preprocessor.filter(v))
@@ -225,9 +243,9 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
             if not (k.startswith("_") or callable(v))
         }
 
-    def default(o):
-        def as_dict(self):
-            return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    def default(o: Any) -> dict[str, Any] | str:
+        def as_dict(self: DeclarativeBase) -> dict[str, Any]:
+            return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
 
         from musigree.offline.database.base_table import OfflineBase
         from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
@@ -260,16 +278,16 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
 
 
 def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
-    def sorted_itemgetter(*items):
+    def sorted_itemgetter(*items: str) -> Any:
         if len(items) == 1:
             item = items[0]
 
-            def g(obj):
+            def g(obj: dict[str, Any]) -> Any:
                 return obj[item]
 
         else:
 
-            def g(obj):
+            def g(obj: dict[str, Any]) -> Any:
                 return tuple(obj[item_] for item_ in items)
 
         return g
@@ -307,8 +325,8 @@ def strip_trailing_newline(input_str: str) -> str:
     return input_str.removesuffix("\n")
 
 
-def row2dict(row):
-    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+def table2dict(table: DeclarativeBase) -> dict[str, Any]:
+    return {c.name: getattr(table, c.name) for c in table.__table__.columns}  # type: ignore
 
 
 def is_latin(_string: str) -> bool:
@@ -337,12 +355,14 @@ def sleep_with_backoff(multiplier: int) -> None:
     time.sleep(time_in_secs)
 
 
-def download_file(input_url: str, output_file) -> None:
+def download_file(
+    input_url: str, output_file: Union[SupportsWrite, BufferedWriter]
+) -> None:
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()
         shutil.copyfileobj(response.raw, output_file, length=10 * 1024)
-    output_file.flush()
-    output_file.close()
+    output_file.flush()  # type: ignore
+    output_file.close()  # type: ignore
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:
@@ -367,7 +387,7 @@ def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
     return date_list
 
 
-def calculate_size(obj):
+def calculate_size(obj: Any) -> int:
     size = sys.getsizeof(obj)
     if isinstance(obj, dict):
         size += sum(calculate_size(v) for v in obj.values())
@@ -393,20 +413,3 @@ def calculate_size(obj):
 
 def get_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-
-def async_partial(async_fn, *args):
-    async def wrapped():
-        return await async_fn(*args)
-
-    return wrapped
-
-
-def awaitify(sync_func):
-    """Wrap a synchronous callable to allow ``await``'ing it"""
-
-    @wraps(sync_func)
-    async def async_func(*args, **kwargs):
-        return sync_func(*args, **kwargs)
-
-    return async_func

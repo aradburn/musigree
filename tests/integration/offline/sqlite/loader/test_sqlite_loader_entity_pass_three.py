@@ -3,7 +3,6 @@ from tests.integration.offline.loader.test_loader_entity_pass_three import (
 )
 
 
-class TestSqliteLoaderEntityPassThree(TestLoaderEntityPassThree
-):
+class TestSqliteLoaderEntityPassThree(TestLoaderEntityPassThree):
     # Run all tests in TestLoaderEntityPassThree
     pass

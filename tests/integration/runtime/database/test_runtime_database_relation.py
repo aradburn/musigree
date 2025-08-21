@@ -1,9 +1,13 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.runtime_database.runtime_relation_repository import RuntimeRelationRepository
+from musigree.runtime.runtime_database.runtime_relation_repository import (
+    RuntimeRelationRepository,
+)
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
 
@@ -11,9 +15,12 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_from_db_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -122,7 +129,11 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_from_db_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 21209
         entity_one_type = EntityType.ARTIST
@@ -161,7 +172,11 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_03(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_from_db_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 335173
         entity_one_type = EntityType.ARTIST

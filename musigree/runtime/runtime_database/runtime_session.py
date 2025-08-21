@@ -14,7 +14,9 @@ Key functionalities include:
 """
 
 from contextvars import ContextVar
+from typing import Any
 
+from sqlalchemy import Executable
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,12 +41,17 @@ async def get_runtime_session() -> AsyncSession:
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_offline_session()"
     )
-    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory is not None, (
+    assert (
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
+        is not None
+    ), (
         "RuntimeDatabaseManager.runtime_database_helper.runtime_engine must be initialized before calling get_offline_session()"
     )
 
-    async_session_factory = RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
-    return async_session_factory()
+    async_session_factory = (
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
+    )
+    return async_session_factory()  # type: ignore
 
 
 CTX_RUNTIME_SESSION: ContextVar[AsyncSession] = ContextVar("runtime_session")
@@ -66,7 +73,7 @@ class RuntimeSession:
     common database error handling.
     """
 
-    async def execute(self, query) -> Result:
+    async def execute(self, query: Executable) -> Result[Any]:
         """
         Executes a SQL query within the current async session.
 
@@ -82,8 +89,8 @@ class RuntimeSession:
         try:
             result = await self._session.execute(query)
             return result
-        except (IntegrityError, InvalidRequestError):
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
     @property
     def _session(self) -> AsyncSession:
@@ -103,5 +110,5 @@ class RuntimeSession:
         try:
             _session = CTX_RUNTIME_SESSION.get()
         except LookupError:
-            raise DatabaseError(message="Not in a transaction")
+            raise DatabaseError(message="Not in a transaction") from None
         return _session

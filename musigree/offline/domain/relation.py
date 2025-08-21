@@ -114,7 +114,9 @@ class RelationDB(_RelationBase):
         """
         relation_db_dict: dict[str, Any] = self.model_dump()
         _role_id = relation_db_dict.get("predicate")
-        role_id: int = _role_id if _role_id is not None and isinstance(_role_id, int) else 0
+        role_id: int = (
+            _role_id if _role_id is not None and isinstance(_role_id, int) else 0
+        )
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RelationInternal.model_validate(relation_db_dict)
@@ -189,6 +191,7 @@ class Relation(_RelationBase):
             return f"artist-{self.entity_one_id}"
         elif self.entity_one_type == EntityType.LABEL:
             return f"label-{self.entity_one_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_one_key)
 
     @property
@@ -206,6 +209,7 @@ class Relation(_RelationBase):
             return f"artist-{self.entity_two_id}"
         elif self.entity_two_type == EntityType.LABEL:
             return f"label-{self.entity_two_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_two_key)
 
     @property

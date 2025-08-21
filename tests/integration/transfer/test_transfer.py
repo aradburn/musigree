@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
@@ -27,7 +29,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
 class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_transfer_roles(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_transfer_roles(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         async with offline_transaction():
             offline_role_repository = RoleRepository()
@@ -44,7 +50,11 @@ class TestTransfer(AbstractDatabaseTest):
         assert actual_count == expected_count
 
     @pytest.mark.asyncio
-    async def test_transfer_entities(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_transfer_entities(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         await TransferManager.transfer_create_entity_details_index()
 
@@ -60,7 +70,11 @@ class TestTransfer(AbstractDatabaseTest):
         assert actual_count == expected_count
 
     @pytest.mark.asyncio
-    async def test_transfer_relations(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_transfer_relations(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         async with offline_transaction():
             offline_relation_repository = RelationRepository()
@@ -77,7 +91,11 @@ class TestTransfer(AbstractDatabaseTest):
         assert actual_count == expected_count
 
     @pytest.mark.asyncio
-    async def test_transfer_entity_details(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_transfer_entity_details(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         async with runtime_transaction():
             runtime_country_repository = CountryRepository()
@@ -93,7 +111,9 @@ class TestTransfer(AbstractDatabaseTest):
 
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            await ReleaseDataAccess.create_entity_details_index(
+                offline_release_repository
+            )
 
         # WHEN
         await TransferManager.transfer_entity_details()

@@ -141,10 +141,15 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
-            "runtime_async_engine must be initialized before calling initialize()"
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ), "runtime_async_engine must be initialized before calling initialize()"
+        loop.run_until_complete(
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
+                close=False
+            )
         )
-        loop.run_until_complete(RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False))
 
     @staticmethod
     @abstractmethod
@@ -184,13 +189,16 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling create_tables()"
         )
-        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
-            "runtime_async_engine must be initialized before calling create_tables()"
-        )
-        async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ), "runtime_async_engine must be initialized before calling create_tables()"
+        async with (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+        ):
             await conn.run_sync(
                 RuntimeBase.metadata.create_all,
-                checkfirst = True,
+                checkfirst=True,
                 tables=table_definitions,
             )
 
@@ -209,9 +217,10 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling drop_tables()"
         )
-        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
-            "runtime_async_engine must be initialized before calling drop_tables()"
-        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ), "runtime_async_engine must be initialized before calling drop_tables()"
 
         if tables is not None:
             table_definitions: List[Table] = [
@@ -219,13 +228,17 @@ class RuntimeDatabaseHelper(ABC):
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
+                async with (
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+                ):
                     await conn.run_sync(
                         table.drop,
                         checkfirst=True,
                     )
         else:
-            async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
+            async with (
+                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+            ):
                 await conn.run_sync(
                     RuntimeBase.metadata.drop_all,
                     checkfirst=True,
@@ -233,7 +246,9 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -265,7 +280,7 @@ class RuntimeDatabaseHelper(ABC):
     def generate_insert_query(
         schema_class: Type[RuntimeConcreteTable],
         values: dict,
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
         Generates an SQL insert query.
@@ -285,7 +300,7 @@ class RuntimeDatabaseHelper(ABC):
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
         values: list[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Generates an SQL insert bulk query.
@@ -306,9 +321,9 @@ class RuntimeDatabaseHelper(ABC):
         relation_repository: RuntimeRelationRepository,
         entity_id: int,
         entity_type: EntityType,
-        on_mobile,
+        on_mobile: bool,
         roles: List[str],
-    ):
+    ) -> dict[str, Any] | None:
         """
         Retrieves a network of entities and relations.
 
@@ -340,7 +355,7 @@ class RuntimeDatabaseHelper(ABC):
             log.debug(f"  get cache_key: {cache_key}")
             cached_data = cache.get(cache_key)
             if cached_data:
-                return cached_data
+                return cached_data  # type: ignore
 
         try:
             entity = await entity_repository.get_by_entity_id_and_entity_type(
@@ -408,7 +423,9 @@ class RuntimeDatabaseHelper(ABC):
         counter = 0
 
         while True:
-            random_id = RuntimeDatabaseManager.runtime_database_helper.search_get_random_id()
+            random_id = (
+                RuntimeDatabaseManager.runtime_database_helper.search_get_random_id()
+            )
             entity_id, entity_type = to_entity_external_id(random_id)
             if entity_type == EntityType.LABEL:
                 log.debug("random skip label")
@@ -518,13 +535,27 @@ class RuntimeDatabaseHelper(ABC):
         return result
 
     @staticmethod
-    def search_text_index(search_text):
+    def search_text_index(search_text: str) -> list[tuple[int, str]]:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.search(search_text)
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling search_text_index()"
+        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
+        ), "text_search_index must be initialized before calling search_text_index()"
+        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.search(
+            search_text
+        )
 
     @staticmethod
-    def search_get_random_id():
+    def search_get_random_id() -> int:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling search_text_index()"
+        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
+        ), "text_search_index must be initialized before calling search_text_index()"
         return RuntimeDatabaseManager.runtime_database_helper.text_search_index.get_random_id()

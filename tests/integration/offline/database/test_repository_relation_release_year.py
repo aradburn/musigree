@@ -1,6 +1,9 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
+from musigree.config import Configuration
 from musigree.constants import ROLES_DATA, INSTRUMENTS_DATA
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.database.relation_release_year_repository import (
@@ -18,7 +21,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
 class TestRepositoryRelationReleaseYear(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_01_create(self, offline_database_setup, offline_config) -> None:
+    async def test_01_create(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         await LoaderRole.load_roles_into_database(
             offline_config.DATA_DIR / ROLES_DATA,
@@ -39,10 +46,12 @@ class TestRepositoryRelationReleaseYear(AbstractDatabaseTest):
             await repository.create(relation_release_year)
             async for created_relation_release_year in repository.all():
                 """Retrieve all created relation_release_years."""
-                assert created_relation_release_year is not None, "Created relation_release_year should not be None"
+                assert created_relation_release_year is not None, (
+                    "Created relation_release_year should not be None"
+                )
             actual = utils.normalize_dict(created_relation_release_year.model_dump())
             print(f"actual: {actual}")
-        exclude = {"random"}
+        _exclude = {"random"}
         # THEN
         expected_relation = RelationReleaseYear(
             relation_release_year_id=1,
@@ -201,7 +210,9 @@ class TestRepositoryRelationReleaseYear(AbstractDatabaseTest):
     #     self.assertEqual(expected, actual)
 
     @pytest.mark.asyncio
-    async def test_03_get(self, offline_database_setup) -> None:
+    async def test_03_get(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
 
         # WHEN

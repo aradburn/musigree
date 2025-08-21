@@ -94,10 +94,18 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 OfflinePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_OFFLINE_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
-                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
                     dirname=pg_offline_dirname,
                     options=options,
                 )
@@ -218,7 +226,9 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         await super().drop_tables(tables=tables)
 
     @classmethod
-    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -268,14 +278,12 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+        schema_class: Type[ConcreteTable],
+        values: dict,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
-            return (
-                insert(schema_class)
-                .on_conflict_do_nothing()
-                .values(values)
-            )
+            return insert(schema_class).on_conflict_do_nothing().values(values)
         else:
             return insert(schema_class).values(values)
 
@@ -283,7 +291,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
         values_list: List[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
             return insert(schema_class).on_conflict_do_nothing().values(values_list)

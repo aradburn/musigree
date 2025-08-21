@@ -8,7 +8,7 @@ from musigree.runtime.runtime_domain.role import (
 )
 
 
-def test_creates_runtime_role_with_valid_data():
+def test_creates_runtime_role_with_valid_data() -> None:
     role = RuntimeRole(
         id=1,
         role_name="Producer",
@@ -25,14 +25,14 @@ def test_creates_runtime_role_with_valid_data():
     assert role.role_subcategory_name == "None"
 
 
-def test_creates_runtime_role_jstree_state_with_valid_data():
+def test_creates_runtime_role_jstree_state_with_valid_data() -> None:
     state = RuntimeRoleJSTreeState(opened=True, disabled=False, selected=True)
     assert state.opened is True
     assert state.disabled is False
     assert state.selected is True
 
 
-def test_creates_runtime_role_jstree_entry_with_valid_data():
+def test_creates_runtime_role_jstree_entry_with_valid_data() -> None:
     state = RuntimeRoleJSTreeState(opened=True, disabled=False, selected=True)
     entry = RuntimeRoleJSTreeEntry(
         id="1",
@@ -52,7 +52,7 @@ def test_creates_runtime_role_jstree_entry_with_valid_data():
     assert entry.a_attr == {"href": "#"}
 
 
-def test_creates_runtime_role_jstree_with_valid_data():
+def test_creates_runtime_role_jstree_with_valid_data() -> None:
     state = RuntimeRoleJSTreeState(opened=True, disabled=False, selected=True)
     entry = RuntimeRoleJSTreeEntry(
         id="1",
@@ -68,7 +68,7 @@ def test_creates_runtime_role_jstree_with_valid_data():
     assert jstree.data[0] == entry
 
 
-def test_creates_runtime_role_jstree_wrapper_with_valid_data():
+def test_creates_runtime_role_jstree_wrapper_with_valid_data() -> None:
     state = RuntimeRoleJSTreeState(opened=True, disabled=False, selected=True)
     entry = RuntimeRoleJSTreeEntry(
         id="1",

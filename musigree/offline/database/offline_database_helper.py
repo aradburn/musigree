@@ -68,10 +68,14 @@ class OfflineDatabaseHelper(ABC):
         the new connection pool.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling initialize()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
+        assert (
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine
+            is not None
+        ), (
             "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling initialize()"
         )
         loop.run_until_complete(
@@ -106,7 +110,10 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
+        assert (
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine
+            is not None
+        ), (
             "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
         )
 
@@ -121,7 +128,9 @@ class OfflineDatabaseHelper(ABC):
         for table_def in table_definitions:
             log.debug(f"creating table: {table_def.name}")
 
-        async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+        async with (
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
+        ):
             await conn.run_sync(
                 OfflineBase.metadata.create_all,
                 checkfirst=True,
@@ -142,7 +151,10 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
+        assert (
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine
+            is not None
+        ), (
             "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
         )
 
@@ -150,19 +162,25 @@ class OfflineDatabaseHelper(ABC):
             table_definitions: list[Table] = [
                 OfflineBase.metadata.tables[table_name] for table_name in tables
             ]
-            async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+            async with (
+                OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
+            ):
                 for table in table_definitions:
                     log.debug(f"deleting table: {table.name}")
                     await conn.execute(DropTable(table, if_exists=True))
                 await conn.commit()
         else:
-            async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
+            async with (
+                OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
+            ):
                 await conn.run_sync(OfflineBase.metadata.drop_all, checkfirst=True)
                 await conn.commit()
 
     @classmethod
     @abstractmethod
-    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -198,7 +216,9 @@ class OfflineDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+        schema_class: Type[ConcreteTable],
+        values: dict,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Abstract method to generate an insert query.
@@ -218,7 +238,7 @@ class OfflineDatabaseHelper(ABC):
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
         values: list[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Abstract method to generate a bulk insert query.
@@ -289,7 +309,9 @@ class OfflineDatabaseHelper(ABC):
         relation = relation_internal.to_relation()
 
         if relation is not None:
-            relation_release_years = await relation_release_year_repository.get(relation.id)
+            relation_release_years = await relation_release_year_repository.get(
+                relation.id
+            )
             relation.releases = {}
             for relation_release_year in relation_release_years:
                 relation.releases[str(relation_release_year.release_id)] = (

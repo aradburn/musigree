@@ -10,7 +10,7 @@ from musigree.offline.loader.parser_entity import ParserEntity
 
 class TestLoaderEntity:
     @pytest.mark.asyncio
-    async def test_from_element_01(self):
+    async def test_from_element_01(self) -> None:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -79,7 +79,7 @@ class TestLoaderEntity:
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_element_02(self):
+    async def test_from_element_02(self) -> None:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -124,7 +124,7 @@ class TestLoaderEntity:
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_element_03(self):
+    async def test_from_element_03(self) -> None:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -155,7 +155,7 @@ class TestLoaderEntity:
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
 
-    def test_load_artists_from_xml_file(self):
+    def test_load_artists_from_xml_file(self) -> None:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
@@ -172,7 +172,7 @@ class TestLoaderEntity:
         expected = 5560
         assert actual == expected
 
-    def test_load_labels_from_xml_file(self):
+    def test_load_labels_from_xml_file(self) -> None:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 

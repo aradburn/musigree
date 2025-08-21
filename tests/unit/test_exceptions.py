@@ -234,19 +234,19 @@ def test_all_exceptions_defined() -> None:
     """Test that all exceptions from __all__ are properly defined."""
     # noinspection PyProtectedMember
     from musigree.exceptions import __all__
-    
+
     expected_exceptions = [
         "BaseError",
-        "BadRequestError", 
+        "BadRequestError",
         "UnprocessableError",
         "NotFoundError",
         "AuthenticationError",
         "AuthorizationError",
         "DatabaseError",
-        "ProcessError", 
+        "ProcessError",
         "RateLimitError",
     ]
-    
+
     assert set(expected_exceptions) == set(__all__)
 
 
@@ -262,7 +262,7 @@ def test_status_code_uniqueness() -> None:
         (ProcessError(), status.HTTP_500_INTERNAL_SERVER_ERROR),
         (RateLimitError(), status.HTTP_429_TOO_MANY_REQUESTS),
     ]
-    
+
     status_codes = [pair[1] for pair in error_status_pairs]
     # Most status codes should be unique (except 500 which is shared by BaseError and ProcessError)
     unique_codes = set(status_codes)
@@ -272,10 +272,10 @@ def test_status_code_uniqueness() -> None:
 def test_exception_raising_and_catching() -> None:
     """Test that exceptions can be properly raised and caught."""
     test_message = "Test exception message"
-    
+
     with pytest.raises(BadRequestError) as exc_info:
         raise BadRequestError(message=test_message)
-    
+
     assert exc_info.value.message == test_message
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -284,4 +284,4 @@ def test_exception_str_representation() -> None:
     """Test string representation of exceptions."""
     test_message = "Test message"
     error = NotFoundError(message=test_message)
-    assert str(error) == test_message 
+    assert str(error) == test_message

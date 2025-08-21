@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Iterator, Sequence, AsyncIterator
-from typing import Any, List
+from typing import Any
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -57,7 +57,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         entity_db = Entity.model_validate(instance)
         return entity_db.to_domain()
 
-    async def _get_all_by_query(self, query: Select[tuple[EntityTable]]) -> list[Entity]:
+    async def _get_all_by_query(
+        self, query: Select[tuple[EntityTable]]
+    ) -> list[Entity]:
         """
         Executes a query that should return multiple Entities.
 
@@ -113,13 +115,15 @@ class EntityRepository(BaseRepository[EntityTable]):
             AsyncIterator[Entity]: An async iterator yielding each entity.
         """
         query = select(EntityTable)
-        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
         async for row in result:
             yield Entity.model_validate(row[0])
             # for partition in results.partitions():
             #     partition is an iterable that will be at most 1000 items
-                # for row in partition:
-                #     yield Entity.model_validate(row[0])
+            # for row in partition:
+            #     yield Entity.model_validate(row[0])
 
     async def all_ids_and_names(self) -> AsyncIterator[tuple[int, str]]:
         """
@@ -130,7 +134,9 @@ class EntityRepository(BaseRepository[EntityTable]):
                 (entity ID, entity name).
         """
         query = select(EntityTable.id, EntityTable.entity_name)
-        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
         async for row in result:
             yield row[0], row[1]
 
@@ -139,10 +145,10 @@ class EntityRepository(BaseRepository[EntityTable]):
         # ) as result:
         #     # async for result in cursor:
         #     yield result[0], result[1]
-            # for partition in results.partitions():
-            #     partition is an iterable that will be at most 1000 items
-                # for row in partition:
-                #     yield row[0], row[1]
+        # for partition in results.partitions():
+        #     partition is an iterable that will be at most 1000 items
+        # for row in partition:
+        #     yield row[0], row[1]
 
     async def get_by_id(self, id_: int) -> Entity:
         """
@@ -326,7 +332,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         instance: EntityTable = await self._save(entity.model_dump())
         return Entity.model_validate(instance)
 
-    async def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> Entity:
+    async def get_by_type_and_name(
+        self, entity_type: EntityType, entity_name: str
+    ) -> Entity:
         """
         Retrieves an entity by its type and name.
 
@@ -368,20 +376,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         Raises:
             DatabaseError: If there is an error updating the entity.
         """
-        query = (
-            update(self.schema_class)
-            .where(EntityTable.id == id_)
-            .values(payload)
-            # .returning(self.schema_class)
-        )
+        query = update(self.schema_class).where(EntityTable.id == id_).values(payload)
         _result: Result = await self._session.execute(query)
         await self._session.flush()
-
-        # if not (instance := result.scalar_one_or_none()):
-        #     raise DatabaseError
-        #
-        # entity_db = Entity.model_validate(instance)
-        # return entity_db.to_domain()
 
     async def delete_by_id(self, id_: int) -> None:
         """
@@ -393,7 +390,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         await self.execute(delete(self.schema_class).where(EntityTable.id == id_))
         await self._session.flush()
 
-    async def search_multi(self, entity_keys) -> list[Entity]:
+    async def search_multi(
+        self, entity_keys: list[tuple[int, EntityType]]
+    ) -> list[Entity]:
         """
         Searches for multiple entities by their entity keys (entity ID and type).
 

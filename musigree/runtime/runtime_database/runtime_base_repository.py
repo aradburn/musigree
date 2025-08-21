@@ -91,13 +91,13 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 .returning(self.schema_class)
             )
             result: Result = await self.execute(query)
-        except (IntegrityError, InvalidRequestError):
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
         if not (schema := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        return schema  # type: ignore
 
     async def _get(self, key: str, value: Any) -> RuntimeConcreteTable:
         """
@@ -122,7 +122,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
     async def count(self) -> int:
         """
@@ -169,7 +169,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
     async def _last(self, by: str = "id") -> RuntimeConcreteTable:
         """
@@ -192,7 +192,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
     async def _save(self, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
@@ -213,8 +213,8 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             await self._session.flush()
             await self._session.refresh(schema)
             return schema
-        except (IntegrityError, InvalidRequestError):
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
     async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
@@ -231,8 +231,8 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
             await self._session.flush()
-        except (IntegrityError, InvalidRequestError):
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
     async def _all(self) -> AsyncIterator[RuntimeConcreteTable]:
         """

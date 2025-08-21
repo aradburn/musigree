@@ -50,7 +50,7 @@ import gzip
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Iterator
 
 from musigree.offline.loader.parser_utils import ParserUtils
 
@@ -134,7 +134,7 @@ class LoaderUtils:
         return full_path_files
 
     @staticmethod
-    def get_iterator(discogs_data_directory: Path, tag: str, date: str):
+    def get_iterator(discogs_data_directory: Path, tag: str, date: str) -> Iterator:
         """
         Creates an iterator for parsing a Discogs XML dump file.
 

@@ -96,4 +96,4 @@ class GenreRepository(RuntimeBaseRepository[GenreTable]):
             Genre: The created genre.
         """
         instance: GenreTable = await self._save(genre.model_dump())
-        return Genre.model_validate(instance) 
+        return Genre.model_validate(instance)

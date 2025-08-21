@@ -1,7 +1,11 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
-from musigree.runtime.runtime_database.runtime_role_repository import RuntimeRoleRepository
+from musigree.runtime.runtime_database.runtime_role_repository import (
+    RuntimeRoleRepository,
+)
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
 
@@ -10,7 +14,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_from_db_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         name = "Acoustic Bass"
         async with runtime_transaction():
             role_repository = RuntimeRoleRepository()
@@ -28,7 +36,11 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup, runtime_database_setup) -> None:
+    async def test_from_db_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         name = "Mezzo-Soprano Vocals"
         async with runtime_transaction():
             role_repository = RuntimeRoleRepository()

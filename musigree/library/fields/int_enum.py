@@ -1,3 +1,6 @@
+from typing import Any
+import enum
+
 from sqlalchemy import TypeDecorator, Integer
 
 
@@ -43,7 +46,7 @@ class IntEnum(TypeDecorator):
     impl = Integer
     cache_ok = True
 
-    def __init__(self, enumtype, *args, **kwargs):
+    def __init__(self, enumtype: type[enum.Enum], *args: Any, **kwargs: Any) -> None:
         """
         Initializes the IntEnum type decorator.
 
@@ -55,7 +58,10 @@ class IntEnum(TypeDecorator):
         super(IntEnum, self).__init__(*args, **kwargs)
         self._enumtype = enumtype
 
-    def process_bind_param(self, value, dialect):
+    # noinspection PyUnreachableCode
+    def process_bind_param(
+        self, value: int | enum.Enum | None, dialect: Any
+    ) -> int | str | None:
         """
         Converts a Python value to a bind parameter for a SQL query.
 
@@ -67,7 +73,7 @@ class IntEnum(TypeDecorator):
             dialect: The database dialect (not used in this implementation).
 
         Returns:
-            int: The integer value to bind to the SQL query.
+            The value to bind to the SQL query (int for integer enums, str for string enums).
         """
         if value is None:
             return None
@@ -75,9 +81,11 @@ class IntEnum(TypeDecorator):
             return value
 
         # noinspection PyUnresolvedReferences
-        return value.value
+        return value.value  # type: ignore
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(
+        self, value: int | str | None, dialect: Any
+    ) -> enum.Enum | None:
         """
         Converts a result value from the database to a Python value.
 
@@ -85,11 +93,11 @@ class IntEnum(TypeDecorator):
         the corresponding enum member.
 
         Args:
-            value: The integer value from the database.
+            value: The value from the database (int or str).
             dialect: The database dialect (not used in this implementation).
 
         Returns:
-            The corresponding enum member.
+            The corresponding enum member or None.
         """
         if value is None:
             return None

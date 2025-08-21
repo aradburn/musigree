@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class OfflineSqliteHelper(OfflineDatabaseHelper):
-
     @staticmethod
     async def setup_database(config: Configuration) -> AsyncEngine:
         log.info("Using Sqlite Offline Database")
@@ -99,7 +98,9 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         await super().drop_tables(tables=tables)
 
     @classmethod
-    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -144,14 +145,12 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable], values: dict, on_conflict_do_nothing=False
+        schema_class: Type[ConcreteTable],
+        values: dict,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
-            return (
-                insert(schema_class)
-                .on_conflict_do_nothing()
-                .values(values)
-            )
+            return insert(schema_class).on_conflict_do_nothing().values(values)
         else:
             return insert(schema_class).values(values)
 
@@ -159,7 +158,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
         values_list: list[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
             return insert(schema_class).on_conflict_do_nothing().values(values_list)

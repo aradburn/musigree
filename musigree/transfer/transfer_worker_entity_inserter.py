@@ -45,6 +45,7 @@ exception and `retrying` for retry. It interacts with
 `musigree.runtime.runtime_database` for database related operations,
 and `musigree.runtime.runtime_database_manager` for managing concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -60,8 +61,9 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]],
-                                    inserted_count: int, total_count: int) -> None:
+def transfer_worker_entity_inserter(
+    bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int
+) -> None:
     """
     A worker process for inserting entity records into the runtime database.
     This function is designed to be run in a separate process to handle the

@@ -73,7 +73,9 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     """The ID of the object entity."""
 
     @staticmethod
-    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list["RuntimeRelationUncommitted"]:
+    def from_dicts(
+        relation_dicts: list[dict[str, Any]],
+    ) -> list["RuntimeRelationUncommitted"]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RuntimeRelationUncommitted(
@@ -154,10 +156,10 @@ class RuntimeRelation(_RuntimeRelationBase):
     """The type of the second entity."""
     role: str
     """The role of the relation."""
-    releases: dict[str, int | None] | None = None
+    releases: dict[str, int | None] | None
     """The releases associated with the relation."""
 
-    @field_serializer('entity_one_type', 'entity_two_type', when_used='json')
+    @field_serializer("entity_one_type", "entity_two_type", when_used="json")
     def serialize_entity_types(self, entity_type: EntityType) -> str:
         """Serialize EntityType to its name for JSON compatibility."""
         return entity_type.name
@@ -197,6 +199,7 @@ class RuntimeRelation(_RuntimeRelationBase):
             return f"artist-{self.entity_one_id}"
         elif self.entity_one_type == EntityType.LABEL:
             return f"label-{self.entity_one_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_one_key)
 
     @property
@@ -214,6 +217,7 @@ class RuntimeRelation(_RuntimeRelationBase):
             return f"artist-{self.entity_two_id}"
         elif self.entity_two_type == EntityType.LABEL:
             return f"label-{self.entity_two_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_two_key)
 
     @property
@@ -317,6 +321,7 @@ class RuntimeRelationInternal(_RuntimeRelationBase):
                 entity_two_id=entity_two_id,
                 entity_two_type=entity_two_type,
                 role=self.role,
+                releases=None,
             )
         except NotFoundError:
             return None

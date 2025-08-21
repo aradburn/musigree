@@ -73,7 +73,7 @@ class RelationTable(OfflineBase):
         - idx_relation_object: A non-unique index on the object column.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RelationTable object.
 
@@ -83,4 +83,4 @@ class RelationTable(OfflineBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

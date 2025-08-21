@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree.library.fields.entity_type import EntityType
@@ -14,16 +16,21 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeEntityDataAccess(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_get_id_by_entity_type_and_entity_name(self, offline_database_setup, runtime_database_setup):
+    async def test_get_id_by_entity_type_and_entity_name(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test getting entity ID by type and name."""
         entity_type = EntityType.ARTIST
         entity_name = "Joker, The (3)"
         async with runtime_transaction():
             runtime_entity_repository = RuntimeEntityRepository()
-            actual = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-                runtime_entity_repository, entity_type, entity_name
+            actual = (
+                await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    runtime_entity_repository, entity_type, entity_name
+                )
             )
 
         # THEN

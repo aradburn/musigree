@@ -60,7 +60,7 @@ class _EntityBase(InternalDomainObject):
     entities: dict[str, Any] | list[str]
     search_content: str
 
-    @field_serializer('entity_type', when_used='json')
+    @field_serializer("entity_type", when_used="json")
     def serialize_entity_type(self, entity_type: EntityType) -> str:
         """Serialize EntityType to its name for JSON compatibility."""
         return entity_type.name
@@ -138,6 +138,7 @@ class _EntityBase(InternalDomainObject):
             return f"artist-{entity_id}"
         elif entity_type == EntityType.LABEL:
             return f"label-{entity_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(entity_id, entity_type)
 
     def to_domain(self) -> Self:

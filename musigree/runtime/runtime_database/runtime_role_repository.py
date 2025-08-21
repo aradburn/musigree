@@ -82,7 +82,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         # Try to get from cache first
         cache = CacheManager.get_cache()
         role_key_str = f"ROLE-{name}"
-        role = cache.get(role_key_str)
+        role: RuntimeRole | None = cache.get(role_key_str)
         if role:
             return role
 

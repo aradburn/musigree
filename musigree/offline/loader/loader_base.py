@@ -28,13 +28,14 @@ functions, `musigree.offline.offline_database_manager` for database management,
 `musigree.library.fields.entity_type` for entity types, `musigree.offline.loader.loader_utils`
 for loader-specific utilities, and `musigree.logging_config` for logging.
 """
+
 import asyncio
 import gzip
 import logging
 from abc import abstractmethod, ABC
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import List, Any, Iterator
+from typing import Any, Iterator, Callable
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -93,7 +94,7 @@ class LoaderBase(ABC):
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-        is_bulk_inserts=False,
+        is_bulk_inserts: bool = False,
     ) -> int:
         """
         Manages the first pass of the data loading process.
@@ -131,9 +132,9 @@ class LoaderBase(ABC):
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
-        
+
         concurrency_count = OfflineDatabaseManager.get_concurrency_count()
-        
+
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = ParserUtils.iterparse(file_pointer, xml_tag)
             bulk_records: list[dict[str, Any]] = []
@@ -142,7 +143,7 @@ class LoaderBase(ABC):
                 # Multi-threaded execution
                 with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                     async with asyncio.TaskGroup() as task_group:
-                        for i, element in enumerate(iterator):
+                        for _, element in enumerate(iterator):
                             try:
                                 data = parser.tags_to_fields(element)
                                 if skip_without:
@@ -157,7 +158,10 @@ class LoaderBase(ABC):
                                 bulk_records.append(data)
                                 processed_count += 1
 
-                                if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
+                                if (
+                                    len(bulk_records)
+                                    >= LoaderBase.BULK_INSERT_BATCH_SIZE
+                                ):
                                     if is_bulk_inserts:
                                         future = cls.insert_bulk(
                                             bulk_records,
@@ -198,7 +202,7 @@ class LoaderBase(ABC):
             else:
                 # Single-threaded execution
 
-                for i, element in enumerate(iterator):
+                for _, element in enumerate(iterator):
                     try:
                         data = parser.tags_to_fields(element)
                         if skip_without:
@@ -214,7 +218,9 @@ class LoaderBase(ABC):
                         processed_count += 1
 
                         if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
-                            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                            with ProcessPoolExecutor(
+                                max_workers=concurrency_count
+                            ) as executor:
                                 async with asyncio.TaskGroup() as task_group:
                                     if is_bulk_inserts:
                                         future = cls.insert_bulk(
@@ -287,8 +293,8 @@ class LoaderBase(ABC):
                     # Multi-threaded execution
                     with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                         async with asyncio.TaskGroup() as task_group:
-                            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(
-                                list(ids_to_be_deleted), number_in_batch
+                            batched_ids_to_be_deleted: Iterator[list[int]] = (
+                                utils.batched(list(ids_to_be_deleted), number_in_batch)
                             )
 
                             for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
@@ -306,7 +312,9 @@ class LoaderBase(ABC):
                     )
 
                     for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                        with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
+                        with ProcessPoolExecutor(
+                            max_workers=concurrency_count
+                        ) as executor:
                             async with asyncio.TaskGroup() as task_group:
                                 future = cls.delete_bulk(
                                     batch_of_ids_to_be_deleted,
@@ -319,12 +327,15 @@ class LoaderBase(ABC):
         return processed_count
 
     @classmethod
-    async def run_worker_function(cls,
-                                  worker_function,
-                                  ids: list[int],
-                                  current_total: int, total_count: int,
-                                  executor: ProcessPoolExecutor,
-                                  concurrency_count: int) -> None:
+    async def run_worker_function(
+        cls,
+        worker_function: Callable,
+        ids: list[int],
+        current_total: int,
+        total_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> Any:
         """
         Performs a bulk delete operation for entities.
 
@@ -341,15 +352,24 @@ class LoaderBase(ABC):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, worker_function, ids, current_total, total_count)
+            future = loop.run_in_executor(
+                executor, worker_function, ids, current_total, total_count
+            )
         else:
-            future = loop.run_in_executor(None, worker_function, ids, current_total, total_count)
+            future = loop.run_in_executor(
+                None, worker_function, ids, current_total, total_count
+            )
         return await future
 
     @classmethod
     @abstractmethod
-    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
-                          concurrency_count: int) -> None:
+    async def insert_bulk(
+        cls,
+        bulk_inserts: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk insert operation.
 
@@ -368,8 +388,13 @@ class LoaderBase(ABC):
 
     @classmethod
     @abstractmethod
-    async def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
-                          concurrency_count: int) -> None:
+    async def update_bulk(
+        cls,
+        bulk_updates: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk update operation.
 
@@ -388,8 +413,13 @@ class LoaderBase(ABC):
 
     @classmethod
     @abstractmethod
-    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int, executor: ProcessPoolExecutor,
-                          concurrency_count: int) -> None:
+    async def delete_bulk(
+        cls,
+        bulk_deletes: list[int],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk delete operation.
 
@@ -408,7 +438,7 @@ class LoaderBase(ABC):
 
     @classmethod
     @abstractmethod
-    async def get_set_of_ids(cls, entity_type) -> set[int]:
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         """
         Retrieves a set of IDs from the database.
 

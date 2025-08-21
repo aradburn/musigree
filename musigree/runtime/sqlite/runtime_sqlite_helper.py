@@ -205,7 +205,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -251,7 +253,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     def generate_insert_query(
         schema_class: Type[RuntimeConcreteTable],
         values: dict,
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
         Generates an SQL insert query for SQLite.
@@ -285,7 +287,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
         values_list: List[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Generates an SQL bulk insert query for SQLite.

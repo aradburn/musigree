@@ -156,13 +156,16 @@ class TextSearchIndex:
         """
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(query)
-        analyzed_query = [token for token in normalized_query.split() 
-                         if token not in TextSearchIndex.STOP_WORDS]
-        
+        analyzed_query = [
+            token
+            for token in normalized_query.split()
+            if token not in TextSearchIndex.STOP_WORDS
+        ]
+
         # Handle empty query after filtering stop words
         if not analyzed_query:
             return []
-        
+
         # log.debug(f"search analyzed_query: {analyzed_query}")
 
         results = self._results(analyzed_query)
@@ -196,7 +199,6 @@ class TextSearchIndex:
         if not documents:
             return list[tuple[int, str]]()
         for document in documents:
-
             normalised_name = normalise_search_content(document[1])
             term_frequencies = Counter(normalised_name.split())
 
@@ -212,7 +214,7 @@ class TextSearchIndex:
         ranked = sorted(results, key=lambda doc: doc[1], reverse=True)
         return [ranked_item[0] for ranked_item in ranked]
 
-    def reduce_list_to_set(self):
+    def reduce_list_to_set(self) -> None:
         for key, words in self.index.items():
             reduced_set = set(words)
             self.index[key] = list(reduced_set)

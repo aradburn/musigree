@@ -1,6 +1,7 @@
 """
 Unit tests for musigree.library.fields.role_type module.
 """
+
 import pytest
 from enum import Enum
 import re
@@ -11,74 +12,74 @@ from musigree.library.fields.role_type import RoleType
 class TestRoleType:
     """Test cases for RoleType class."""
 
-    def test_role_type_is_class(self):
+    def test_role_type_is_class(self) -> None:
         """Test that RoleType is a regular class."""
         # Assert
         assert isinstance(RoleType, type)
         assert not issubclass(RoleType, Enum)
 
-    def test_role_type_has_nested_enums(self):
+    def test_role_type_has_nested_enums(self) -> None:
         """Test that RoleType has Category and Subcategory nested enums."""
         # Assert
-        assert hasattr(RoleType, 'Category')
-        assert hasattr(RoleType, 'Subcategory')
+        assert hasattr(RoleType, "Category")
+        assert hasattr(RoleType, "Subcategory")
         assert issubclass(RoleType.Category, Enum)
         assert issubclass(RoleType.Subcategory, Enum)
 
-    def test_role_type_has_category_names(self):
+    def test_role_type_has_category_names(self) -> None:
         """Test that RoleType has category_names mapping."""
         # Assert
-        assert hasattr(RoleType, 'category_names')
+        assert hasattr(RoleType, "category_names")
         assert isinstance(RoleType.category_names, dict)
         assert len(RoleType.category_names) > 0
 
-    def test_role_type_has_subcategory_names(self):
+    def test_role_type_has_subcategory_names(self) -> None:
         """Test that RoleType has subcategory_names mapping."""
         # Assert
-        assert hasattr(RoleType, 'subcategory_names')
+        assert hasattr(RoleType, "subcategory_names")
         assert isinstance(RoleType.subcategory_names, dict)
         assert len(RoleType.subcategory_names) > 0
 
-    def test_role_type_has_aggregate_roles(self):
+    def test_role_type_has_aggregate_roles(self) -> None:
         """Test that RoleType has aggregate_roles tuple."""
         # Assert
-        assert hasattr(RoleType, 'aggregate_roles')
+        assert hasattr(RoleType, "aggregate_roles")
         assert isinstance(RoleType.aggregate_roles, tuple)
         assert len(RoleType.aggregate_roles) > 0
 
-    def test_role_type_has_bracket_pattern(self):
+    def test_role_type_has_bracket_pattern(self) -> None:
         """Test that RoleType has _bracket_pattern regex."""
         # Assert
-        assert hasattr(RoleType, '_bracket_pattern')
+        assert hasattr(RoleType, "_bracket_pattern")
         assert isinstance(RoleType._bracket_pattern, re.Pattern)
 
-    def test_bracket_pattern_functionality(self):
+    def test_bracket_pattern_functionality(self) -> None:
         """Test that _bracket_pattern works correctly."""
         # Arrange
         test_string = "Role [additional info] with more [details]"
-        
+
         # Act
         matches = RoleType._bracket_pattern.findall(test_string)
-        
+
         # Assert
         assert matches == ["additional info", "details"]
 
-    def test_hornbostel_sachs_to_subcategory_method_exists(self):
+    def test_hornbostel_sachs_to_subcategory_method_exists(self) -> None:
         """Test that hornbostel_sachs_to_subcategory method exists."""
         # Assert
-        assert hasattr(RoleType, 'hornbostel_sachs_to_subcategory')
+        assert hasattr(RoleType, "hornbostel_sachs_to_subcategory")
         assert callable(RoleType.hornbostel_sachs_to_subcategory)
 
 
 class TestRoleTypeCategory:
     """Test cases for RoleType.Category nested enum."""
 
-    def test_category_inheritance(self):
+    def test_category_inheritance(self) -> None:
         """Test that Category inherits from Enum."""
         # Assert
         assert issubclass(RoleType.Category, Enum)
 
-    def test_category_values(self):
+    def test_category_values(self) -> None:
         """Test Category enum values are correct."""
         # Act & Assert
         assert RoleType.Category.ACTING_LITERARY_AND_SPOKEN.value == 1
@@ -96,14 +97,20 @@ class TestRoleTypeCategory:
         assert RoleType.Category.VOCAL.value == 13
         assert RoleType.Category.WRITING_AND_ARRANGEMENT.value == 14
 
-    def test_category_names(self):
+    def test_category_names(self) -> None:
         """Test Category enum names are correct."""
         # Act & Assert
-        assert RoleType.Category.ACTING_LITERARY_AND_SPOKEN.name == "ACTING_LITERARY_AND_SPOKEN"
+        assert (
+            RoleType.Category.ACTING_LITERARY_AND_SPOKEN.name
+            == "ACTING_LITERARY_AND_SPOKEN"
+        )
         assert RoleType.Category.COMPANIES.name == "COMPANIES"
         assert RoleType.Category.CONDUCTING_AND_LEADING.name == "CONDUCTING_AND_LEADING"
         assert RoleType.Category.DJ_MIX.name == "DJ_MIX"
-        assert RoleType.Category.FEATURING_AND_PRESENTING.name == "FEATURING_AND_PRESENTING"
+        assert (
+            RoleType.Category.FEATURING_AND_PRESENTING.name
+            == "FEATURING_AND_PRESENTING"
+        )
         assert RoleType.Category.INSTRUMENTS.name == "INSTRUMENTS"
         assert RoleType.Category.MANAGEMENT.name == "MANAGEMENT"
         assert RoleType.Category.PRODUCTION.name == "PRODUCTION"
@@ -112,9 +119,11 @@ class TestRoleTypeCategory:
         assert RoleType.Category.TECHNICAL.name == "TECHNICAL"
         assert RoleType.Category.VISUAL.name == "VISUAL"
         assert RoleType.Category.VOCAL.name == "VOCAL"
-        assert RoleType.Category.WRITING_AND_ARRANGEMENT.name == "WRITING_AND_ARRANGEMENT"
+        assert (
+            RoleType.Category.WRITING_AND_ARRANGEMENT.name == "WRITING_AND_ARRANGEMENT"
+        )
 
-    def test_category_count(self):
+    def test_category_count(self) -> None:
         """Test that all expected Category values exist."""
         # Act
         categories = list(RoleType.Category)
@@ -122,7 +131,7 @@ class TestRoleTypeCategory:
         # Assert
         assert len(categories) == 14
 
-    def test_category_creation_from_value(self):
+    def test_category_creation_from_value(self) -> None:
         """Test creating Category from integer values."""
         # Act & Assert
         assert RoleType.Category(1) == RoleType.Category.ACTING_LITERARY_AND_SPOKEN
@@ -130,7 +139,7 @@ class TestRoleTypeCategory:
         assert RoleType.Category(13) == RoleType.Category.VOCAL
         assert RoleType.Category(14) == RoleType.Category.WRITING_AND_ARRANGEMENT
 
-    def test_category_invalid_value(self):
+    def test_category_invalid_value(self) -> None:
         """Test creating Category with invalid values raises error."""
         # Act & Assert
         with pytest.raises(ValueError):
@@ -140,7 +149,7 @@ class TestRoleTypeCategory:
         with pytest.raises(ValueError):
             RoleType.Category(-1)
 
-    def test_category_iteration(self):
+    def test_category_iteration(self) -> None:
         """Test iterating over Category values."""
         # Arrange
         expected_count = 14
@@ -154,7 +163,7 @@ class TestRoleTypeCategory:
         values = [category.value for category in categories]
         assert len(set(values)) == expected_count
 
-    def test_category_membership(self):
+    def test_category_membership(self) -> None:
         """Test membership testing with Category."""
         # Act & Assert
         assert RoleType.Category.PRODUCTION in RoleType.Category
@@ -162,14 +171,14 @@ class TestRoleTypeCategory:
         assert RoleType.Category.INSTRUMENTS in RoleType.Category
         assert RoleType.Category.VOCAL in RoleType.Category
 
-    def test_category_hash(self):
+    def test_category_hash(self) -> None:
         """Test Category instances are hashable."""
         # Act
         category_set = {
             RoleType.Category.PRODUCTION,
             RoleType.Category.TECHNICAL,
             RoleType.Category.INSTRUMENTS,
-            RoleType.Category.VOCAL
+            RoleType.Category.VOCAL,
         }
 
         # Assert
@@ -181,12 +190,12 @@ class TestRoleTypeCategory:
 class TestRoleTypeSubcategory:
     """Test cases for RoleType.Subcategory nested enum."""
 
-    def test_subcategory_inheritance(self):
+    def test_subcategory_inheritance(self) -> None:
         """Test that Subcategory inherits from Enum."""
         # Assert
         assert issubclass(RoleType.Subcategory, Enum)
 
-    def test_subcategory_values(self):
+    def test_subcategory_values(self) -> None:
         """Test Subcategory enum values are correct."""
         # Act & Assert
         assert RoleType.Subcategory.NONE.value == 0
@@ -198,7 +207,7 @@ class TestRoleTypeSubcategory:
         assert RoleType.Subcategory.TUNED_PERCUSSION.value == 6
         assert RoleType.Subcategory.WIND_INSTRUMENTS.value == 7
 
-    def test_subcategory_names(self):
+    def test_subcategory_names(self) -> None:
         """Test Subcategory enum names are correct."""
         # Act & Assert
         assert RoleType.Subcategory.NONE.name == "NONE"
@@ -210,7 +219,7 @@ class TestRoleTypeSubcategory:
         assert RoleType.Subcategory.TUNED_PERCUSSION.name == "TUNED_PERCUSSION"
         assert RoleType.Subcategory.WIND_INSTRUMENTS.name == "WIND_INSTRUMENTS"
 
-    def test_subcategory_count(self):
+    def test_subcategory_count(self) -> None:
         """Test that all expected Subcategory values exist."""
         # Act
         subcategories = list(RoleType.Subcategory)
@@ -218,14 +227,14 @@ class TestRoleTypeSubcategory:
         # Assert
         assert len(subcategories) == 8
 
-    def test_subcategory_creation_from_value(self):
+    def test_subcategory_creation_from_value(self) -> None:
         """Test creating Subcategory from integer values."""
         # Act & Assert
         assert RoleType.Subcategory(0) == RoleType.Subcategory.NONE
         assert RoleType.Subcategory(1) == RoleType.Subcategory.DRUMS_AND_PERCUSSION
         assert RoleType.Subcategory(7) == RoleType.Subcategory.WIND_INSTRUMENTS
 
-    def test_subcategory_invalid_value(self):
+    def test_subcategory_invalid_value(self) -> None:
         """Test creating Subcategory with invalid values raises error."""
         # Act & Assert
         with pytest.raises(ValueError):
@@ -237,7 +246,7 @@ class TestRoleTypeSubcategory:
 class TestRoleTypeMappings:
     """Test cases for RoleType mappings."""
 
-    def test_category_names_completeness(self):
+    def test_category_names_completeness(self) -> None:
         """Test that category_names has entries for all Category values."""
         # Act
         all_categories = set(RoleType.Category)
@@ -246,7 +255,7 @@ class TestRoleTypeMappings:
         # Assert
         assert all_categories == mapped_categories
 
-    def test_category_names_values(self):
+    def test_category_names_values(self) -> None:
         """Test specific category name mappings."""
         # Act & Assert
         assert RoleType.category_names[RoleType.Category.PRODUCTION] == "Production"
@@ -254,7 +263,7 @@ class TestRoleTypeMappings:
         assert RoleType.category_names[RoleType.Category.INSTRUMENTS] == "Instruments"
         assert RoleType.category_names[RoleType.Category.VOCAL] == "Vocal"
 
-    def test_subcategory_names_completeness(self):
+    def test_subcategory_names_completeness(self) -> None:
         """Test that subcategory_names has entries for all Subcategory values."""
         # Act
         all_subcategories = set(RoleType.Subcategory)
@@ -263,24 +272,30 @@ class TestRoleTypeMappings:
         # Assert
         assert all_subcategories == mapped_subcategories
 
-    def test_subcategory_names_values(self):
+    def test_subcategory_names_values(self) -> None:
         """Test specific subcategory name mappings."""
         # Act & Assert
         assert RoleType.subcategory_names[RoleType.Subcategory.NONE] == "None"
-        assert RoleType.subcategory_names[RoleType.Subcategory.DRUMS_AND_PERCUSSION] == "Drums & Percussion"
+        assert (
+            RoleType.subcategory_names[RoleType.Subcategory.DRUMS_AND_PERCUSSION]
+            == "Drums & Percussion"
+        )
         assert RoleType.subcategory_names[RoleType.Subcategory.KEYBOARDS] == "Keyboards"
-        assert RoleType.subcategory_names[RoleType.Subcategory.STRINGED_INSTRUMENTS] == "String Instruments"
+        assert (
+            RoleType.subcategory_names[RoleType.Subcategory.STRINGED_INSTRUMENTS]
+            == "String Instruments"
+        )
 
 
 class TestRoleTypeAggregateRoles:
     """Test cases for RoleType aggregate_roles."""
 
-    def test_aggregate_roles_type(self):
+    def test_aggregate_roles_type(self) -> None:
         """Test that aggregate_roles is a tuple."""
         # Assert
         assert isinstance(RoleType.aggregate_roles, tuple)
 
-    def test_aggregate_roles_content(self):
+    def test_aggregate_roles_content(self) -> None:
         """Test specific aggregate roles content."""
         # Act & Assert
         assert "Compiled By" in RoleType.aggregate_roles
@@ -289,14 +304,14 @@ class TestRoleTypeAggregateRoles:
         assert "Hosted By" in RoleType.aggregate_roles
         assert "Presenter" in RoleType.aggregate_roles
 
-    def test_aggregate_roles_immutable(self):
+    def test_aggregate_roles_immutable(self) -> None:
         """Test that aggregate_roles is immutable."""
         # Arrange
         original_length = len(RoleType.aggregate_roles)
 
         # Act & Assert - tuples are immutable by nature
         assert isinstance(RoleType.aggregate_roles, tuple)
-        
+
         # Length should remain the same
         assert len(RoleType.aggregate_roles) == original_length
 
@@ -304,70 +319,79 @@ class TestRoleTypeAggregateRoles:
 class TestHornbostelSachsMapping:
     """Test cases for hornbostel_sachs_to_subcategory method."""
 
-    def test_hornbostel_sachs_idiophones(self):
+    def test_hornbostel_sachs_idiophones(self) -> None:
         """Test mapping idiophones to drums and percussion."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("idiophones")
-        
+
         # Assert
         assert result == RoleType.Subcategory.DRUMS_AND_PERCUSSION
 
-    def test_hornbostel_sachs_membranophones(self):
+    def test_hornbostel_sachs_membranophones(self) -> None:
         """Test mapping membranophones to drums and percussion."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("membranophones")
-        
+
         # Assert
         assert result == RoleType.Subcategory.DRUMS_AND_PERCUSSION
 
-    def test_hornbostel_sachs_chordophones(self):
+    def test_hornbostel_sachs_chordophones(self) -> None:
         """Test mapping chordophones to stringed instruments."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("chordophones")
-        
+
         # Assert
         assert result == RoleType.Subcategory.STRINGED_INSTRUMENTS
 
-    def test_hornbostel_sachs_aerophones(self):
+    def test_hornbostel_sachs_aerophones(self) -> None:
         """Test mapping aerophones to wind instruments."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("aerophones")
-        
+
         # Assert
         assert result == RoleType.Subcategory.WIND_INSTRUMENTS
 
-    def test_hornbostel_sachs_electrophones(self):
+    def test_hornbostel_sachs_electrophones(self) -> None:
         """Test mapping electrophones to technical musical."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("electrophones")
-        
+
         # Assert
         assert result == RoleType.Subcategory.TECHNICAL_MUSICAL
 
-    def test_hornbostel_sachs_case_insensitive(self):
+    def test_hornbostel_sachs_case_insensitive(self) -> None:
         """Test that mapping is case insensitive."""
         # Act & Assert
-        assert RoleType.hornbostel_sachs_to_subcategory("IDIOPHONES") == RoleType.Subcategory.DRUMS_AND_PERCUSSION
-        assert RoleType.hornbostel_sachs_to_subcategory("ChordopHones") == RoleType.Subcategory.STRINGED_INSTRUMENTS
-        assert RoleType.hornbostel_sachs_to_subcategory("AeRoPhOnEs") == RoleType.Subcategory.WIND_INSTRUMENTS
+        assert (
+            RoleType.hornbostel_sachs_to_subcategory("IDIOPHONES")
+            == RoleType.Subcategory.DRUMS_AND_PERCUSSION
+        )
+        assert (
+            RoleType.hornbostel_sachs_to_subcategory("ChordopHones")
+            == RoleType.Subcategory.STRINGED_INSTRUMENTS
+        )
+        assert (
+            RoleType.hornbostel_sachs_to_subcategory("AeRoPhOnEs")
+            == RoleType.Subcategory.WIND_INSTRUMENTS
+        )
 
-    def test_hornbostel_sachs_unknown_classification(self):
+    def test_hornbostel_sachs_unknown_classification(self) -> None:
         """Test mapping unknown classification to other musical."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("unknown")
-        
+
         # Assert
         assert result == RoleType.Subcategory.OTHER_MUSICAL
 
-    def test_hornbostel_sachs_empty_string(self):
+    def test_hornbostel_sachs_empty_string(self) -> None:
         """Test mapping empty string to other musical."""
         # Act
         result = RoleType.hornbostel_sachs_to_subcategory("")
-        
+
         # Assert
         assert result == RoleType.Subcategory.OTHER_MUSICAL
 
-    def test_hornbostel_sachs_static_method(self):
+    def test_hornbostel_sachs_static_method(self) -> None:
         """Test that hornbostel_sachs_to_subcategory is a static method."""
         # Act & Assert
         # Should be callable on the class without instantiation
@@ -378,7 +402,7 @@ class TestHornbostelSachsMapping:
 class TestRoleTypeIntegration:
     """Integration tests for RoleType components."""
 
-    def test_category_and_mapping_consistency(self):
+    def test_category_and_mapping_consistency(self) -> None:
         """Test that all categories have corresponding name mappings."""
         # Act
         for category in RoleType.Category:
@@ -387,7 +411,7 @@ class TestRoleTypeIntegration:
             assert isinstance(RoleType.category_names[category], str)
             assert len(RoleType.category_names[category]) > 0
 
-    def test_subcategory_and_mapping_consistency(self):
+    def test_subcategory_and_mapping_consistency(self) -> None:
         """Test that all subcategories have corresponding name mappings."""
         # Act
         for subcategory in RoleType.Subcategory:
@@ -396,7 +420,7 @@ class TestRoleTypeIntegration:
             assert isinstance(RoleType.subcategory_names[subcategory], str)
             assert len(RoleType.subcategory_names[subcategory]) > 0
 
-    def test_enum_value_uniqueness(self):
+    def test_enum_value_uniqueness(self) -> None:
         """Test that enum values are unique within each enum."""
         # Act
         category_values = [category.value for category in RoleType.Category]
@@ -406,13 +430,13 @@ class TestRoleTypeIntegration:
         assert len(category_values) == len(set(category_values))
         assert len(subcategory_values) == len(set(subcategory_values))
 
-    def test_class_attributes_exist(self):
+    def test_class_attributes_exist(self) -> None:
         """Test that all expected class attributes exist."""
         # Assert
-        assert hasattr(RoleType, 'Category')
-        assert hasattr(RoleType, 'Subcategory')
-        assert hasattr(RoleType, 'category_names')
-        assert hasattr(RoleType, 'subcategory_names')
-        assert hasattr(RoleType, 'aggregate_roles')
-        assert hasattr(RoleType, '_bracket_pattern')
-        assert hasattr(RoleType, 'hornbostel_sachs_to_subcategory') 
+        assert hasattr(RoleType, "Category")
+        assert hasattr(RoleType, "Subcategory")
+        assert hasattr(RoleType, "category_names")
+        assert hasattr(RoleType, "subcategory_names")
+        assert hasattr(RoleType, "aggregate_roles")
+        assert hasattr(RoleType, "_bracket_pattern")
+        assert hasattr(RoleType, "hornbostel_sachs_to_subcategory")

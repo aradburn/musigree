@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 
 
 class RoleDataAccess:
-
     @staticmethod
     def role_name_lookup(role_name: str) -> tuple[str, int] | None:
         if role_name in RoleCache.role_name_set:
@@ -93,7 +92,7 @@ class RoleDataAccess:
 
     @staticmethod
     @functools.lru_cache(maxsize=100000)
-    def find_role_inner(role_name: str) -> tuple[str, int] | None:
+    def find_role_inner(role_name: str | None) -> tuple[str, int] | None:
         if role_name is None or role_name == "":
             return None
 

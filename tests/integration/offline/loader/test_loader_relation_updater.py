@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -5,7 +7,9 @@ from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_release_year_repository import RelationReleaseYearRepository
+from musigree.offline.database.relation_release_year_repository import (
+    RelationReleaseYearRepository,
+)
 from musigree.offline.database.relation_repository import RelationRepository
 from tests.conftest import AbstractDatabaseTest
 
@@ -13,7 +17,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestLoaderRelationUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_relation_updated_01(self, offline_database_setup, offline_database_update):
+    async def test_relation_updated_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -38,6 +46,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -54,7 +63,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_updated_02(self, offline_database_setup, offline_database_update):
+    async def test_relation_updated_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 49
         entity_one_type = EntityType.ARTIST
@@ -79,6 +92,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -95,7 +109,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_updated_03(self, offline_database_setup, offline_database_update):
+    async def test_relation_updated_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 300407
         entity_one_type = EntityType.ARTIST
@@ -120,6 +138,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -136,7 +155,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_updated_04(self, offline_database_setup, offline_database_update):
+    async def test_relation_updated_04(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_one_id = 445854
         entity_one_type = EntityType.ARTIST
@@ -161,6 +184,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -177,7 +201,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_not_updated_01(self, offline_database_setup, offline_database_update):
+    async def test_relation_not_updated_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         key = dict(
             subject=42,
@@ -194,6 +222,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -283,7 +312,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_not_updated_02(self, offline_database_setup, offline_database_update):
+    async def test_relation_not_updated_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         key = dict(
             subject=21209,
@@ -300,6 +333,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN
@@ -321,7 +355,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_not_updated_03(self, offline_database_setup, offline_database_update):
+    async def test_relation_not_updated_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         key = dict(
             subject=335173,
@@ -338,6 +376,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
                 relation_release_year_repository,
                 key,
             )
+            assert relation is not None
             actual = utils.normalize_dict(relation.model_dump(exclude={"id"}))
 
         # THEN

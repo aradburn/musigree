@@ -13,6 +13,7 @@ The loader is responsible for:
     - Registering cleanup functions to be run when the application exits.
     - Running the loader process between specified dates.
 """
+
 import asyncio
 import atexit
 import datetime
@@ -32,7 +33,8 @@ from musigree.constants import (
     ROLES_DATA,
     INSTRUMENTS_DATA,
     TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME, ALL_RUNTIME_DATABASE_TABLE_NAMES,
+    TEXT_SEARCH_FILENAME,
+    ALL_RUNTIME_DATABASE_TABLE_NAMES,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging
@@ -51,7 +53,9 @@ from musigree.transfer.transfer_manager import TransferManager
 log = logging.getLogger(__name__)
 
 
-async def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) -> None:
+async def load_offline_tables(
+    data_directory: Path, date: str, is_bulk_inserts: bool
+) -> None:
     """
     Loads data into the offline tables.
 
@@ -107,7 +111,9 @@ def get_load_offline_table_stages(
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_load_offline_table_stages()"
     )
-    assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
+    assert (
+        OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
+    ), (
         "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_load_offline_table_stages()"
     )
 
@@ -120,7 +126,9 @@ def get_load_offline_table_stages(
     stages = [
         LoaderRole.load_roles_into_database(roles_directory, instruments_directory),
         RoleDataAccess.load_all_roles_into_cache(),
-        LoaderEntity.loader_entity_pass_one(discogs_data_directory, date, is_bulk_inserts),
+        LoaderEntity.loader_entity_pass_one(
+            discogs_data_directory, date, is_bulk_inserts
+        ),
         OfflineDatabaseManager.offline_database_helper.vacuum(
             EntityTable.__tablename__,
             is_full,
@@ -201,7 +209,9 @@ async def load_runtime_tables(data_directory: Path, date: str | None) -> None:
     log.info("Load runtime tables done.")
 
 
-async def load_runtime_table_stage(data_directory: Path, date: str | None, stage: int) -> None:
+async def load_runtime_table_stage(
+    data_directory: Path, date: str | None, stage: int
+) -> None:
     """
     Loads a specific stage of the runtime data loading process.
 
@@ -215,13 +225,15 @@ async def load_runtime_table_stage(data_directory: Path, date: str | None, stage
     await stages[stage]
 
 
-def get_load_runtime_table_stages(data_directory: Path, date: str | None) -> list[Coroutine]:
+def get_load_runtime_table_stages(
+    data_directory: Path, _date: str | None
+) -> list[Coroutine]:
     """
     Gets the list of stages for loading data into the tables.
 
     Args:
         data_directory: The directory containing the data files.
-        date: The date of the data to load.
+        _date: The date of the data to load.
 
     Returns:
         list[partial]: A list of partial functions representing the loading stages.
@@ -229,7 +241,9 @@ def get_load_runtime_table_stages(data_directory: Path, date: str | None) -> lis
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_load_runtime_table_stages()"
     )
-    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+    assert (
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
+    ), (
         "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_load_runtime_table_stages()"
     )
 
@@ -239,25 +253,18 @@ def get_load_runtime_table_stages(data_directory: Path, date: str | None) -> lis
     stages = [
         # Load roles into the runtime database
         TransferManager.transfer_role(),
-
         # Load role cache in memory
         RuntimeRoleDataAccess.load_all_roles_into_cache(),
-
         # Load text search index for entities
         TransferManager.transfer_load_text_search_index(text_search_path),
-
         # Load entities details into memory
         TransferManager.transfer_create_entity_details_index(),
-
         # Load entities details (countries, genres and styles) into the runtime database
         TransferManager.transfer_entity_details(),
-
         # Load entities into the runtime database
         TransferManager.transfer_entity(),
-
         # Load relations into the runtime database
         TransferManager.transfer_relation(),
-
         RuntimeDatabaseManager.runtime_database_helper.vacuum(
             RuntimeEntityTable.__tablename__,
             is_full,
@@ -326,12 +333,16 @@ def loader_main() -> None:
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
-    asyncio.run(RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-        ALL_RUNTIME_DATABASE_TABLE_NAMES
-    ))
-    asyncio.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(
-        ALL_RUNTIME_DATABASE_TABLE_NAMES
-    ))
+    asyncio.run(
+        RuntimeDatabaseManager.runtime_database_helper.drop_tables(
+            ALL_RUNTIME_DATABASE_TABLE_NAMES
+        )
+    )
+    asyncio.run(
+        RuntimeDatabaseManager.runtime_database_helper.create_tables(
+            ALL_RUNTIME_DATABASE_TABLE_NAMES
+        )
+    )
 
     # Run the loader process between these dates
     start_date = datetime.date(2024, 11, 1)

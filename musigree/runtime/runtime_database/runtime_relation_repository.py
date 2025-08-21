@@ -142,7 +142,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
         if not (instance := result.scalar()):
             raise NotFoundError
-        return instance
+        return int(instance)
 
     async def find_by_id(self, relation_id: int) -> RuntimeRelationInternal:
         """
@@ -204,8 +204,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
                 the entity.
         """
         query = select(RuntimeRelationTable).where(
-            (RuntimeRelationTable.subject == id_)
-            | (RuntimeRelationTable.object == id_)
+            (RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_)
         )
         return await self._get_all_by_query(query)
 
@@ -244,7 +243,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         return await self._get_all_by_query(query)
 
     async def create(
-        self, relation: RuntimeRelationUncommitted, on_conflict_do_nothing=False
+        self, relation: RuntimeRelationUncommitted, on_conflict_do_nothing: bool = False
     ) -> RuntimeRelationInternal:
         """
         Creates a new relation in the runtime database.
@@ -279,7 +278,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         return relation_db.to_domain()
 
     async def create_bulk(
-        self, relations: List[RuntimeRelationUncommitted], on_conflict_do_nothing=False
+        self,
+        relations: List[RuntimeRelationUncommitted],
+        on_conflict_do_nothing: bool = False,
     ) -> None:
         """
         Creates multiple relations in the runtime database in bulk.
@@ -289,6 +290,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             on_conflict_do_nothing: If True, ignore conflicts during insertion.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
@@ -314,8 +316,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             id_: The ID of the entity whose relations should be deleted.
         """
         query = delete(RuntimeRelationTable).where(
-            (RuntimeRelationTable.subject == id_)
-            | (RuntimeRelationTable.object == id_)
+            (RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_)
         )
         await self._session.execute(query)
         await self._session.flush()

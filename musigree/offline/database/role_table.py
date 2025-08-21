@@ -60,7 +60,7 @@ class RoleTable(OfflineBase):
      The name of the subcategory to which the role belongs.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RoleTable object.
 
@@ -70,4 +70,4 @@ class RoleTable(OfflineBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

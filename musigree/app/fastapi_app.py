@@ -22,6 +22,7 @@ The module uses the following components:
     - musigree.logging_config: For logging configuration
     - musigree.runtime.runtime_database_manager: For database management
 """
+
 import logging
 import sys
 from typing import Any
@@ -37,14 +38,21 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from musigree.config import Configuration
-from musigree.constants import TEMPLATES_DIR, PUBLIC_DIR, TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
+from musigree.constants import (
+    TEMPLATES_DIR,
+    PUBLIC_DIR,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
+)
 from musigree.exceptions import (
     BaseError,
     NotFoundError,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
-from musigree.runtime.data_access_layer.runtime_role_data_access import RuntimeRoleDataAccess
+from musigree.runtime.data_access_layer.runtime_role_data_access import (
+    RuntimeRoleDataAccess,
+)
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.app.fastapi_security import setup_security_middleware
 from musigree.transfer.transfer_manager import TransferManager
@@ -54,6 +62,7 @@ log = logging.getLogger(__name__)
 
 # Create a global templates variable
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
 
 def create_app(config: Configuration) -> FastAPI:
     """
@@ -74,7 +83,7 @@ def create_app(config: Configuration) -> FastAPI:
     from musigree.app.fastapi_assets import create_assets_router
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI):
+    async def lifespan(_app: FastAPI) -> Any:
         """
         Lifespan context manager for the FastAPI application.
 
@@ -107,7 +116,7 @@ def create_app(config: Configuration) -> FastAPI:
     # Add middleware
     # noinspection PyTypeChecker
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    
+
     # Configure CORS based on environment
     if config.PRODUCTION:
         # Production: specific origins only
@@ -128,7 +137,11 @@ def create_app(config: Configuration) -> FastAPI:
         # noinspection PyTypeChecker
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"],
+            allow_origins=[
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8080",
+            ],
             allow_methods=["*"],
             allow_headers=["*"],
         )
@@ -193,7 +206,7 @@ def create_app(config: Configuration) -> FastAPI:
     return app
 
 
-async def shutdown_application():
+async def shutdown_application() -> None:
     """
     Shuts down the application.
 
@@ -212,7 +225,7 @@ async def shutdown_application():
     log.info("######## APPLICATION SHUTDOWN DONE ########")
 
 
-async def init_app(config: Configuration):
+async def init_app(config: Configuration) -> None:
     """
     Initializes the application.
 

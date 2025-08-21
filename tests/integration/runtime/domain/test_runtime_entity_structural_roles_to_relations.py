@@ -1,4 +1,6 @@
 import logging
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -18,9 +20,12 @@ log = logging.getLogger(__name__)
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeEntityStructuralRolesToRelations(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_01(self, offline_database_setup, runtime_database_setup):
+    async def test_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test structural roles to relations conversion."""
         entity_id = 430141
         entity_type = EntityType.ARTIST

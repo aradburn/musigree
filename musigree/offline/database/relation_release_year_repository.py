@@ -71,7 +71,9 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
                 relation-release-year pair.
         """
         query = select(RelationReleaseYearTable)
-        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
         async for row in result:
             yield RelationReleaseYear.model_validate(row[0])
 
@@ -86,9 +88,8 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
             List[RelationReleaseYear]: A list of relation-release-year pairs associated
                 with the specified relation ID.
         """
-        query = (
-            select(RelationReleaseYearTable)
-            .where(RelationReleaseYearTable.relation_id == relation_id)
+        query = select(RelationReleaseYearTable).where(
+            RelationReleaseYearTable.relation_id == relation_id
         )
 
         return await self._get_all_by_query(query)
@@ -96,7 +97,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
     async def create(
         self,
         relation_release_year: RelationReleaseYearUncommitted,
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> None:
         """
         Creates a new relation-release-year pair in the database.
@@ -134,7 +135,7 @@ class RelationReleaseYearRepository(BaseRepository[RelationReleaseYearTable]):
     async def create_bulk(
         self,
         relation_release_years: List[RelationReleaseYearUncommitted],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> None:
         """
         Creates multiple new relation-release-year pairs in the database.

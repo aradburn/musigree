@@ -87,7 +87,7 @@ class EntityTable(OfflineBase):
         - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type columns.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the EntityTable object.
 
@@ -97,4 +97,4 @@ class EntityTable(OfflineBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

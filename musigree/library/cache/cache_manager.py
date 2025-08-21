@@ -181,7 +181,7 @@ class RedisCache(BaseCache):
             )
             self._client = fakeredis.FakeRedis()
 
-    def _get_redis_client(self):
+    def _get_redis_client(self) -> redis.Redis | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
@@ -290,6 +290,7 @@ class CacheManager:
 
         # Based on configuration, use a different cache setup.
         cache_type = config.CACHE_TYPE
+        # noinspection PyUnreachableCode
         if cache_type == CacheType.MEMORY:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
             log.info("Using memory cache")

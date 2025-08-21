@@ -1,4 +1,6 @@
 import logging
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -22,9 +24,12 @@ log = logging.getLogger(__name__)
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeRelationGrapher(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_01(self, offline_database_setup, runtime_database_setup):
+    async def test_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """
         Test RelationGrapher with Seefeel artist.
 
@@ -42,7 +47,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
+            artist = await entity_repository.get_by_type_and_name(
+                entity_type, entity_name
+            )
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
@@ -52,7 +59,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(entity_repository, relation_repository)
+            network = await grapher.get_relation_graph(
+                entity_repository, relation_repository
+            )
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -165,9 +174,12 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_network)
         assert actual == expected
 
-
     @pytest.mark.asyncio
-    async def test_02(self, offline_database_setup, runtime_database_setup):
+    async def test_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test RelationGrapher with Justin Fletcher artist."""
         # GIVEN
         entity_type = EntityType.ARTIST
@@ -177,7 +189,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
+            artist = await entity_repository.get_by_type_and_name(
+                entity_type, entity_name
+            )
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
@@ -187,7 +201,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=5,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(entity_repository, relation_repository)
+            network = await grapher.get_relation_graph(
+                entity_repository, relation_repository
+            )
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -299,9 +315,12 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_network)
         assert actual == expected
 
-
     @pytest.mark.asyncio
-    async def test_03(self, offline_database_setup, runtime_database_setup):
+    async def test_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         entity_type = EntityType.ARTIST
         entity_name = "Justin Fletcher"
@@ -310,7 +329,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
+            artist = await entity_repository.get_by_type_and_name(
+                entity_type, entity_name
+            )
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
                 center_entity=artist,
@@ -319,7 +340,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(entity_repository, relation_repository)
+            network = await grapher.get_relation_graph(
+                entity_repository, relation_repository
+            )
             actual = utils.normalize_dict(network)
 
         # THEN
@@ -431,9 +454,12 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_network)
         assert actual == expected
 
-
     @pytest.mark.asyncio
-    async def test_04(self, offline_database_setup, runtime_database_setup):
+    async def test_04(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """
         Missing count takes into account structural roles: members,
         aliases, groups, sublabels, parent labels, etc.
@@ -457,7 +483,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(entity_repository, relation_repository)
+            network = await grapher.get_relation_graph(
+                entity_repository, relation_repository
+            )
             actual = utils.normalize_dict(network)
 
         expected_network = {
@@ -655,9 +683,12 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_network)
         assert actual == expected
 
-
     @pytest.mark.asyncio
-    async def test_05(self, offline_database_setup, runtime_database_setup):
+    async def test_05(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test RelationGrapher with Lab Studio, Berlin label."""
         # GIVEN
         entity_type = EntityType.LABEL
@@ -667,7 +698,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            label = await entity_repository.get_by_type_and_name(entity_type, entity_name)
+            label = await entity_repository.get_by_type_and_name(
+                entity_type, entity_name
+            )
             print(f"label: {label}")
             roles = ["Recorded At"]
             grapher = RelationGrapher(
@@ -677,34 +710,33 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(entity_repository, relation_repository)
+            network = await grapher.get_relation_graph(
+                entity_repository, relation_repository
+            )
             actual = utils.normalize_dict(network)
 
         # THEN
         expected_network = {
-            "center": {
-                "key": "label-271251",
-                "name": "Lab Studio, Berlin"
-            },
+            "center": {"key": "label-271251", "name": "Lab Studio, Berlin"},
             "links": [
                 {
                     "key": "artist-1193-recorded-at-label-271251",
                     "role": "Recorded At",
                     "source": "artist-1193",
-                    "target": "label-271251"
+                    "target": "label-271251",
                 },
                 {
                     "key": "artist-1193-recorded-at-label-307743",
                     "role": "Recorded At",
                     "source": "artist-1193",
-                    "target": "label-307743"
+                    "target": "label-307743",
                 },
                 {
                     "key": "artist-2718-recorded-at-label-271251",
                     "role": "Recorded At",
                     "source": "artist-2718",
-                    "target": "label-271251"
-                }
+                    "target": "label-271251",
+                },
             ],
             "nodes": [
                 {
@@ -713,24 +745,22 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "key": "artist-1193",
                     "links": [
                         "artist-1193-recorded-at-label-271251",
-                        "artist-1193-recorded-at-label-307743"
+                        "artist-1193-recorded-at-label-307743",
                     ],
                     "missing": 0,
                     "name": "Sun Electric",
                     "size": 2,
-                    "type": "artist"
+                    "type": "artist",
                 },
                 {
                     "distance": 1,
                     "id": 2718,
                     "key": "artist-2718",
-                    "links": [
-                        "artist-2718-recorded-at-label-271251"
-                    ],
+                    "links": ["artist-2718-recorded-at-label-271251"],
                     "missing": 0,
                     "name": "Thomas Fehlmann",
                     "size": 0,
-                    "type": "artist"
+                    "type": "artist",
                 },
                 {
                     "distance": 0,
@@ -738,26 +768,24 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "key": "label-271251",
                     "links": [
                         "artist-1193-recorded-at-label-271251",
-                        "artist-2718-recorded-at-label-271251"
+                        "artist-2718-recorded-at-label-271251",
                     ],
                     "missing": 0,
                     "name": "Lab Studio, Berlin",
                     "size": 0,
-                    "type": "label"
+                    "type": "label",
                 },
                 {
                     "distance": 2,
                     "id": 307743,
                     "key": "label-307743",
-                    "links": [
-                        "artist-1193-recorded-at-label-307743"
-                    ],
+                    "links": ["artist-1193-recorded-at-label-307743"],
                     "missing": 0,
                     "name": "Sun Electric G.E.C.",
                     "size": 0,
-                    "type": "label"
-                }
-            ]
+                    "type": "label",
+                },
+            ],
         }
         expected = utils.normalize_dict(expected_network)
         assert actual == expected

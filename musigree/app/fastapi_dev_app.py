@@ -55,6 +55,7 @@ def create_development_app() -> FastAPI:
 
     return _app
 
+
 """
 The main FastAPI application instance for development.
 

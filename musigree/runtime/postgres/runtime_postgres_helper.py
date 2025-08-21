@@ -66,6 +66,7 @@ import shutil
 from typing import Type, List
 
 from pathlib import Path
+
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
 from sqlalchemy import URL, text, SingletonThreadPool
@@ -196,10 +197,18 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 RuntimePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_RUNTIME_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
-                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser"
+                    if config.POSTGRES_ROOT is not None
+                    else None,
                     dirname=pg_runtime_dirname,
                     options=options,
                 )
@@ -351,7 +360,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """Drop the tables."""
 
     @staticmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -370,7 +381,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         query += " " + table_name
         query += ";"
 
-        async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
+        async with engine.execution_options(
+            isolation_level="AUTOCOMMIT"
+        ).connect() as connection:
             await connection.execute(text(query))
             await connection.commit()
 
@@ -398,7 +411,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     def generate_insert_query(
         schema_class: Type[RuntimeConcreteTable],
         values: dict,
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
         Generates an SQL insert query for PostgreSQL.
@@ -432,7 +445,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
         values_list: List[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Generates an SQL bulk insert query for PostgreSQL.

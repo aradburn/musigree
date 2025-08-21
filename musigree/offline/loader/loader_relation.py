@@ -35,16 +35,20 @@ The `LoaderRelation` class interacts with the following components:
 The module utilizes `logging` for logging operations, `SortedSet` for managing
 sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
+
 import asyncio
 import logging
 from abc import abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 
+from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.offline.loader.worker_relation_pass_one import process_relation_pass_one_worker
+from musigree.offline.loader.worker_relation_pass_one import (
+    process_relation_pass_one_worker,
+)
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -67,7 +71,7 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     # @timeit
-    async def loader_relation_pass_one(cls):
+    async def loader_relation_pass_one(cls) -> None:
         """
         Performs the first pass of loading relation data.
 
@@ -84,7 +88,9 @@ class LoaderRelation(LoaderBase):
             """Instance of ReleaseRepository for database operations on releases."""
             total_count = await release_repository.count()
             """Total number of releases in the database."""
-            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
+            batched_release_ids = await release_repository.get_batched_ids(
+                number_in_batch
+            )
         """Get the release ids in batches."""
 
         current_total = 0
@@ -97,9 +103,14 @@ class LoaderRelation(LoaderBase):
                 async with asyncio.TaskGroup() as task_group:
                     for ids in batched_release_ids:
                         """Iterate over the batches of release IDs."""
-                        future = cls.run_worker_function(process_relation_pass_one_worker,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            process_relation_pass_one_worker,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
 
                         """Add the future to the list."""
@@ -111,9 +122,14 @@ class LoaderRelation(LoaderBase):
                 """Iterate over the batches of release IDs."""
                 with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                     async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(process_relation_pass_one_worker,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            process_relation_pass_one_worker,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
 
                         """Add the future to the list."""
@@ -122,8 +138,13 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     @abstractmethod
-    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int, executor: ProcessPoolExecutor,
-                    concurrency_count: int) -> None:
+    async def insert_bulk(
+        cls,
+        bulk_inserts: list[dict[str, Any]],
+        inserted_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Placeholder for bulk insert operations.
 
@@ -140,8 +161,13 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     @abstractmethod
-    async def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
-                    concurrency_count: int) -> None:
+    async def update_bulk(
+        cls,
+        bulk_updates: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Placeholder for bulk update operations.
 
@@ -158,8 +184,13 @@ class LoaderRelation(LoaderBase):
 
     @classmethod
     @abstractmethod
-    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int,
-                    executor: ProcessPoolExecutor, concurrency_count: int) -> None:
+    async def delete_bulk(
+        cls,
+        bulk_deletes: list[int],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Placeholder for bulk delete operations.
 
@@ -175,7 +206,7 @@ class LoaderRelation(LoaderBase):
         pass
 
     @classmethod
-    def get_set_of_ids(cls, entity_type):
+    def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore
         """
         Placeholder for getting a set of IDs.
 

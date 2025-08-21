@@ -63,7 +63,9 @@ The logger for the worker entity pass three module.
 """
 
 
-def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
+def process_entity_pass_three_worker(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing entity records in the third pass.
 
@@ -93,7 +95,10 @@ def process_entity_pass_three_worker(ids: list[int], current_total: int, total_c
                 """Iterate over the entity IDs."""
                 await process_entity(_id)
                 count += 1
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if (
+                    count % LoaderBase.BULK_REPORTING_SIZE == 0
+                    and not count == end_count
+                ):
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
         log.info(f"[{proc_name}] processed {count} of {total_count}")

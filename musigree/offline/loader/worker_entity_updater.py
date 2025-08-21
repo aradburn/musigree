@@ -3,8 +3,8 @@ This module defines the `update_entities_worker` function, which is a worker fun
 responsible for updating or inserting entity records in the Musigree offline
 database.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent updating and insertion of entities, improving the efficiency of the data 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent updating and insertion of entities, improving the efficiency of the data
 loading process. The function handles updating existing entity records with new
 information, as well as inserting new entity records if they do not already
 exist in the database.
@@ -48,8 +48,8 @@ The `update_entities_worker` function interacts with the following components:
     - `DatabaseError`: Used for handling the database exception.
     - `LOGGING_TRACE`: Used to check if trace logging is activated.
 
-The module utilizes `logging` for logging operations, `sqlalchemy.exc.DatabaseError` 
-for database related exceptions and `pprint` for pretty print the diff between entities. 
+The module utilizes `logging` for logging operations, `sqlalchemy.exc.DatabaseError`
+for database related exceptions and `pprint` for pretty print the diff between entities.
 It interacts with `musigree.offline.database` for database related operations,
 `musigree.library.full_text_search` for text normalization and
 `musigree.offline.offline_database_manager` for managing concurrency.
@@ -81,11 +81,13 @@ The logger for the worker entity updater module.
 """
 
 
-def update_entities_worker(bulk_updates: list[dict[str, Any]], processed_count: int) -> None:
+def update_entities_worker(
+    bulk_updates: list[dict[str, Any]], processed_count: int
+) -> None:
     """
     Worker function for updating or inserting entity records.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
+    This function is designed to be used with ProcessPoolExecutor to perform
     concurrent update and insert operations on entity records.
 
     Args:
@@ -126,8 +128,10 @@ def update_entities_worker(bulk_updates: list[dict[str, Any]], processed_count: 
                             f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
                         )
 
-                    db_entity = await entity_repository.get_by_entity_id_and_entity_type(
-                        updated_entity.entity_id, updated_entity.entity_type
+                    db_entity = (
+                        await entity_repository.get_by_entity_id_and_entity_type(
+                            updated_entity.entity_id, updated_entity.entity_type
+                        )
                     )
                     """Retrieve the existing entity from the database."""
 

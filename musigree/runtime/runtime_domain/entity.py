@@ -82,7 +82,7 @@ class RuntimeEntity(InternalDomainObject):
     styles: str | None
     """The styles associated with the entity."""
 
-    @field_serializer('entity_type', when_used='json')
+    @field_serializer("entity_type", when_used="json")
     def serialize_entity_type(self, entity_type: EntityType) -> str:
         """Serialize EntityType to its name for JSON compatibility."""
         return entity_type.name
@@ -150,6 +150,7 @@ class RuntimeEntity(InternalDomainObject):
             return f"artist-{entity_id}"
         elif entity_type == EntityType.LABEL:
             return f"label-{entity_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(entity_id, entity_type)
 
     def to_db(self) -> "RuntimeEntityDB":
@@ -165,10 +166,22 @@ class RuntimeEntity(InternalDomainObject):
         """
         entity_dict: dict = self.model_dump()
         entities: dict = entity_dict.get("entities", {})
-        aliases: dict | None = entities.get("aliases", None) if isinstance(entities, dict) else None
-        groups: dict | None = entities.get("groups", None) if isinstance(entities, dict) else None
-        members: dict | None = entities.get("members", None) if isinstance(entities, dict) else None
-        parent_label: dict | None = entities.get("parent_label", None) if isinstance(entities, dict) else None
+        # noinspection PyUnreachableCode
+        aliases: dict | None = (
+            entities.get("aliases", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        groups: dict | None = (
+            entities.get("groups", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        members: dict | None = (
+            entities.get("members", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        parent_label: dict | None = (
+            entities.get("parent_label", None) if isinstance(entities, dict) else None
+        )
         if aliases is not None and len(aliases) == 0:
             aliases = None
         if groups is not None and len(groups) == 0:
@@ -177,7 +190,9 @@ class RuntimeEntity(InternalDomainObject):
             members = None
         if parent_label is not None and len(parent_label) == 0:
             parent_label = None
-        entity_dict.update(aliases=aliases, groups=groups, members=members, parent_label=parent_label)
+        entity_dict.update(
+            aliases=aliases, groups=groups, members=members, parent_label=parent_label
+        )
         return RuntimeEntityDB.model_validate(entity_dict)
 
 
@@ -230,7 +245,7 @@ class RuntimeEntityDB(InternalDomainObject):
     styles: str | None
     """The styles associated with the entity."""
 
-    @field_serializer('entity_type', when_used='json')
+    @field_serializer("entity_type", when_used="json")
     def serialize_entity_type(self, entity_type: EntityType) -> str:
         """Serialize EntityType to its name for JSON compatibility."""
         return entity_type.name
@@ -263,7 +278,10 @@ class RuntimeEntityDB(InternalDomainObject):
         entity_dict.update(entities=entities)
         return RuntimeEntity.model_validate(entity_dict)
 
-def to_runtime_entity_dict(entity_details_index: EntityDetailsIndex, entity: Entity) -> dict[str, Any]:
+
+def to_runtime_entity_dict(
+    entity_details_index: EntityDetailsIndex, entity: Entity
+) -> dict[str, Any]:
     # TODO get from runtime countries table
     countries = entity_details_index.get_countries_for_id(entity.id)
     # TODO get from runtime genres table

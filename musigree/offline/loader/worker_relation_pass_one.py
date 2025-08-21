@@ -76,7 +76,9 @@ The logger for the worker relation pass one module.
 """
 
 
-def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+def process_relation_pass_one_worker(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing relations in the first pass.
 
@@ -106,7 +108,6 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
         """List to store relation-release-year mappings."""
 
         async with offline_transaction():
-
             for _id in _release_ids:
                 """Iterate over the release IDs."""
                 await process_release(_id, relation_release_years)
@@ -134,7 +135,9 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
         log.info(f"[{proc_name}] processed {count} of {total_count}")
         """Log the total number of releases processed."""
 
-    async def process_release(release_id: int, _relation_release_years: list[RelationReleaseYearUncommitted]) -> None:
+    async def process_release(
+        release_id: int, _relation_release_years: list[RelationReleaseYearUncommitted]
+    ) -> None:
         """Async function to handle relation processing."""
         """Ensure that database operations are performed within a transaction."""
         release_repository = ReleaseRepository()
@@ -153,7 +156,9 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
             """Extract relations from the release."""
         except NotFoundError:
             """Handle the case where the release is not found."""
-            log.debug(f"process_relation_pass_one_worker release_id not found: {release_id}")
+            log.debug(
+                f"process_relation_pass_one_worker release_id not found: {release_id}"
+            )
         except DatabaseError:
             """Handle database errors."""
             log.error("Error in process_relation_pass_one_worker")
@@ -172,7 +177,7 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
 
                 # try:
                 #     """Attempt to create individual relation."""
-                #     await relation_repository.create(relation, on_conflict_do_nothing=True)
+                #     await relation_repository.create(relation, on_conflict_do_nothing: bool = True)
                 #     """Create the relation."""
                 #     await relation_repository.commit()
                 #     """Commit the transaction."""
@@ -188,7 +193,12 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
                 #     await relation_repository.rollback()
                 #     """Rollback the transaction."""
 
-                year = release.release_date.year if release.release_date is not None and release.release_date.year is not None else None
+                year = (
+                    release.release_date.year
+                    if release.release_date is not None
+                    and release.release_date.year is not None
+                    else None
+                )
                 """Extract the year from the release date."""
                 new_relation_release_years = await to_relation_release_years(
                     relation_repository=relation_repository,
@@ -200,7 +210,9 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
                 _relation_release_years.extend(new_relation_release_years)
                 """Add the mappings to the list."""
 
-    async def process_relation_release_years(_relation_release_years: list[RelationReleaseYearUncommitted]) -> None:
+    async def process_relation_release_years(
+        _relation_release_years: list[RelationReleaseYearUncommitted],
+    ) -> None:
         if len(_relation_release_years) > 0:
             """If there are remaining mappings to process."""
 
@@ -274,7 +286,7 @@ async def create_relation_bulk(
                 """Rollback the transaction."""
                 log.exception(ex)
             except IntegrityError:
-                log.debug(f"IntegrityError in relation worker process individual")
+                log.debug("IntegrityError in relation worker process individual")
                 """Handle integrity errors."""
                 await relation_repository.rollback()
                 """Rollback the transaction."""
@@ -282,7 +294,7 @@ async def create_relation_bulk(
         """Handle operational errors."""
         await relation_repository.rollback()
         """Rollback the transaction."""
-        log.debug(f"OperationalError in worker process")
+        log.debug("OperationalError in worker process")
         raise e
 
 
@@ -336,12 +348,12 @@ async def to_relation_release_years(
         """Rollback the transaction."""
         if LOGGING_TRACE:
             """Log if trace logging is enabled."""
-            log.debug(f"Error cannot find relation")
+            log.debug("Error cannot find relation")
     except DatabaseError:
         """Handle database errors."""
         await relation_repository.rollback()
         """Rollback the transaction."""
-        log.debug(f"Error cannot find relation")
+        log.debug("Error cannot find relation")
     except OperationalError as e:
         """Handle operational errors."""
         await relation_repository.rollback()
@@ -374,7 +386,7 @@ async def create_relation_release_year_bulk(
         """Handle database errors."""
         await relation_release_year_repository.rollback()
         """Rollback the transaction."""
-        log.debug(f"Error cannot create RelationReleaseYear")
+        log.debug("Error cannot create RelationReleaseYear")
     except OperationalError as e:
         """Handle operational errors."""
         await relation_release_year_repository.rollback()

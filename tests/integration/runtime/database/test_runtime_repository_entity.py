@@ -1,6 +1,9 @@
+from typing import AsyncGenerator
+
 import pytest
 import pydantic
 
+from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_utils import LoaderUtils
@@ -16,7 +19,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
 class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_create_01(self, runtime_database_setup, runtime_config):
+    async def test_create_01(
+        self,
+        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_config: Configuration,
+    ) -> None:
         """Test creating a runtime entity."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
@@ -44,9 +51,12 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
         # THEN
         assert runtime_entity == created_entity
 
-
     @pytest.mark.asyncio
-    async def test_get_01(self, runtime_database_setup, runtime_config):
+    async def test_get_01(
+        self,
+        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_config: Configuration,
+    ) -> None:
         """Test retrieving a runtime entity by ID and type."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
@@ -80,9 +90,12 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
         # THEN
         assert created_entity == retrieved_entity
 
-
     @pytest.mark.asyncio
-    async def test_create_02(self, runtime_database_setup, runtime_config):
+    async def test_create_02(
+        self,
+        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_config: Configuration,
+    ) -> None:
         """Test creating a more complex runtime entity with members."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA

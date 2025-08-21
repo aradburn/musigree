@@ -2,8 +2,8 @@
 This module defines the `delete_releases_worker` function, which is a worker function
 responsible for deleting release records from the Musigree offline database.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent deletion of releases, improving the efficiency of the data loading process. 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent deletion of releases, improving the efficiency of the data loading process.
 The function handles the deletion of a batch of release records (`bulk_deletes`).
 
 Key functionalities include:
@@ -31,7 +31,7 @@ The `delete_releases_worker` function interacts with the following components:
     - `logging`: For logging operations.
     - `DatabaseError`: Used for handling the database exception.
 
-The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError` 
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
 
@@ -55,7 +55,7 @@ def delete_releases_worker(bulk_deletes: list[int], processed_count: int) -> Non
     """
     Worker function for deleting release records from the database.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
+    This function is designed to be used with ProcessPoolExecutor to perform
     concurrent deletion of release records.
 
     Args:

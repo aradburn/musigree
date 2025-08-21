@@ -73,14 +73,14 @@ class LoaderTarget(luigi.Target):
         self.date = date
         """The date associated with the task."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns a string representation of the target.
 
         Returns:
             str: The task ID.
         """
-        return self.task_id
+        return str(self.task_id)
 
     def get_key(self) -> str:
         """
@@ -94,7 +94,7 @@ class LoaderTarget(luigi.Target):
         """
         return f"task-{self.task_id}-{self.date}"
 
-    def exists(self):
+    def exists(self) -> bool:
         """
         Checks if the target exists, i.e., if the task has been completed.
 
@@ -106,8 +106,8 @@ class LoaderTarget(luigi.Target):
         """
         key = self.get_key()
         """Get the unique key for the task."""
-        
-        async def check_metadata_exists():
+
+        async def check_metadata_exists() -> bool:
             async with offline_transaction():
                 """Ensure that database operations are performed within a transaction."""
                 repository = MetadataRepository()
@@ -121,13 +121,13 @@ class LoaderTarget(luigi.Target):
                 except NotFoundError:
                     """Handle the case where the metadata record is not found."""
                     return False
-        
+
         metadata_exists = asyncio.run(check_metadata_exists())
         log.debug(f"key exists: {metadata_exists}")
         """Log whether the key exists."""
         return metadata_exists
 
-    async def done(self):
+    async def done(self) -> None:
         """
         Marks the task as done by creating a database record.
 

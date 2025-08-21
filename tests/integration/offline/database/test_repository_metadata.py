@@ -1,6 +1,7 @@
 """Tests for MetadataRepository with async/await and pytest fixtures."""
 
 import datetime
+from typing import AsyncGenerator
 
 import pytest
 
@@ -13,9 +14,10 @@ from tests.conftest import AbstractDatabaseTest
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
 class TestRepositoryMetadata(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_create_metadata(self, offline_database_setup) -> None:
+    async def test_create_metadata(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         """Test creating metadata in the repository.
 
         Args:
@@ -50,9 +52,10 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
         )
         assert actual == expected
 
-
     @pytest.mark.asyncio
-    async def test_get_metadata_by_key(self, offline_database_setup) -> None:
+    async def test_get_metadata_by_key(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         """Test retrieving metadata by key from the repository.
 
         Args:

@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -10,7 +12,9 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup) -> None:
+    async def test_from_db_01(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 3
         entity_type = EntityType.ARTIST
@@ -90,7 +94,9 @@ class TestDatabaseEntity(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup) -> None:
+    async def test_from_db_02(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 2239
         entity_type = EntityType.ARTIST
@@ -151,7 +157,9 @@ class TestDatabaseEntity(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_03(self, offline_database_setup) -> None:
+    async def test_from_db_03(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 1
         entity_type = EntityType.LABEL
@@ -187,7 +195,9 @@ class TestDatabaseEntity(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_04(self, offline_database_setup) -> None:
+    async def test_from_db_04(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 138147
         entity_type = EntityType.LABEL
@@ -201,33 +211,25 @@ class TestDatabaseEntity(AbstractDatabaseTest):
             actual = utils.normalize_dict(entity.model_dump())
 
         expected_entity = {
-                               "entities": {
-                                   "parent_label": {
-                                       "Warner Music Group": None
-                                   }
-                               },
-                               "entity_id": 138147,
-                               "entity_metadata": {
-                                   "profile": "Music publishing company, and a division of the Warner "
-                           + "Music Group. \r\n[b]Pre 1987 issues - please use [l51877][/b]\r\nThe "
-                           + "company traces its origins back to 1811 and the founding of Chappell & "
-                           + "Company, a music publishing company and instrument shop on London\u2019s "
-                           + "Bond Street.\r\nWarner/Chappell was created in 1987 when Warner "
-                           + "Communications purchased Chappell & Co. and is one of the largest music "
-                           + "publishers with a catalog of more than one million songs and a roster of "
-                           + "more than 65,000 songwriters.\r\n\r\nAlso credited as \"Warner "
-                           + "Chappell\".\r\n",
-                                   "urls": [
-                                       "http://www.warnerchappell.com/"
-                                   ]
-                               },
-                               "entity_name": "Warner/Chappell",
-                               "entity_type": "EntityType.LABEL",
-                               "id": 1000138147,
-                               "relation_counts": {
-                                   "Published By": 2
-                               },
-                               "search_content": "warnerchappell"
-                           }
+            "entities": {"parent_label": {"Warner Music Group": None}},
+            "entity_id": 138147,
+            "entity_metadata": {
+                "profile": "Music publishing company, and a division of the Warner "
+                + "Music Group. \r\n[b]Pre 1987 issues - please use [l51877][/b]\r\nThe "
+                + "company traces its origins back to 1811 and the founding of Chappell & "
+                + "Company, a music publishing company and instrument shop on London\u2019s "
+                + "Bond Street.\r\nWarner/Chappell was created in 1987 when Warner "
+                + "Communications purchased Chappell & Co. and is one of the largest music "
+                + "publishers with a catalog of more than one million songs and a roster of "
+                + 'more than 65,000 songwriters.\r\n\r\nAlso credited as "Warner '
+                + 'Chappell".\r\n',
+                "urls": ["http://www.warnerchappell.com/"],
+            },
+            "entity_name": "Warner/Chappell",
+            "entity_type": "EntityType.LABEL",
+            "id": 1000138147,
+            "relation_counts": {"Published By": 2},
+            "search_content": "warnerchappell",
+        }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

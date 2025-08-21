@@ -3,8 +3,8 @@ This module defines the `delete_entities_worker` function, which is a worker fun
 responsible for deleting entity records and their associated relations from the
 Musigree offline database.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent deletion of entities, improving the efficiency of the data loading process. 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent deletion of entities, improving the efficiency of the data loading process.
 The function handles the deletion of both entity records and related data in the relation
 repository.
 
@@ -34,7 +34,7 @@ The `delete_entities_worker` function interacts with the following components:
     - `OfflineDatabaseManager`: For managing database concurrency settings.
     - `logging`: For logging operations.
 
-The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError` 
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
 
@@ -63,8 +63,8 @@ def delete_entities_worker(
     """
     Worker function for deleting entity records and their associated relations.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
-    concurrent deletion of entities, including both the entity record and any 
+    This function is designed to be used with ProcessPoolExecutor to perform
+    concurrent deletion of entities, including both the entity record and any
     associated relations.
 
     Args:
@@ -88,8 +88,13 @@ def delete_entities_worker(
                 """Iterate through the entity IDs to delete."""
                 await delete_entity(_id)
                 count += 1
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
-                    log.debug(f"[{proc_name}] processed {processed_count} deleted {count}")
+                if (
+                    count % LoaderBase.BULK_REPORTING_SIZE == 0
+                    and not count == end_count
+                ):
+                    log.debug(
+                        f"[{proc_name}] processed {processed_count} deleted {count}"
+                    )
 
         log.info(f"[{proc_name}] processed {processed_count} deleted {count}")
         """Log the progress and number of deleted entities."""

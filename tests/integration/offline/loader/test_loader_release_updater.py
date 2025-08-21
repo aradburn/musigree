@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -10,7 +12,11 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestLoaderReleaseUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_release_updated(self, offline_database_setup, offline_database_update):
+    async def test_release_updated(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         release_id = 157
 
@@ -85,7 +91,11 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_release_not_updated(self, offline_database_setup, offline_database_update):
+    async def test_release_not_updated(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         release_id = 635
 
@@ -179,7 +189,11 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_release_inserted(self, offline_database_setup, offline_database_update):
+    async def test_release_inserted(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         release_id = 99999999
 
@@ -261,7 +275,11 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_release_deleted(self, offline_database_setup, offline_database_update):
+    async def test_release_deleted(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None],
+    ) -> None:
         # GIVEN
         release_id = 61930
 

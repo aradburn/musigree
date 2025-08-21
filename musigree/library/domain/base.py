@@ -3,9 +3,9 @@ This module defines the common base for all Domain Objects.
 """
 
 import json
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "InternalDomainObject",
@@ -15,7 +15,6 @@ __all__ = [
 ]
 
 from musigree import utils
-from musigree.library.fields.entity_type import EntityType
 
 
 def to_camelcase(string: str) -> str:
@@ -108,7 +107,7 @@ class PublicDomainObject(BaseModel):
         alias_generator=to_camelcase,
     )
 
-    def flat_dict(self, by_alias=True):
+    def flat_dict(self, by_alias: bool = True) -> dict[str, Any]:
         """
         Returns a flattened dictionary representation of the model.
 
@@ -121,7 +120,7 @@ class PublicDomainObject(BaseModel):
         Returns:
             dict: A flattened dictionary representation of the model.
         """
-        return json.loads(self.model_dump_json(by_alias=by_alias))
+        return json.loads(self.model_dump_json(by_alias=by_alias))  # type: ignore
 
 
 _PublicDomainObject = TypeVar("_PublicDomainObject", bound=PublicDomainObject)

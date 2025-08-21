@@ -1,4 +1,6 @@
-from tests.integration.runtime.database.test_runtime_database_entity import TestRuntimeDatabaseEntity
+from tests.integration.runtime.database.test_runtime_database_entity import (
+    TestRuntimeDatabaseEntity,
+)
 
 
 class TestSqliteRuntimeDatabaseEntity(TestRuntimeDatabaseEntity):

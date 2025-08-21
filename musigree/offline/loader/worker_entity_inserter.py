@@ -2,8 +2,8 @@
 This module defines the `insert_entities_worker` function, which is a worker function
 responsible for inserting entity records into the Musigree offline database.
 
-It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable 
-concurrent insertion of entities, improving the efficiency of the data loading process. 
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent insertion of entities, improving the efficiency of the data loading process.
 The function handles the insertion of a batch of entity records (`bulk_inserts`).
 
 Key functionalities include:
@@ -30,7 +30,7 @@ The `insert_entities_worker` function interacts with the following components:
     - `OfflineDatabaseManager`: For managing database concurrency settings.
     - `logging`: For logging operations.
 
-The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError` 
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
 
@@ -58,7 +58,7 @@ def insert_entities_worker(
     """
     Worker function for inserting entity records into the database.
 
-    This function is designed to be used with ProcessPoolExecutor to perform 
+    This function is designed to be used with ProcessPoolExecutor to perform
     concurrent insertion of entity records.
 
     Args:

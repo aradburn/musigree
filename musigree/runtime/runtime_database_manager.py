@@ -34,6 +34,7 @@ class RuntimeDatabaseManager:
         RuntimeDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
+        # noinspection PyUnreachableCode
         if config.DATABASE == DatabaseType.POSTGRES:
             from musigree.runtime.postgres.runtime_postgres_helper import (
                 RuntimePostgresHelper,
@@ -42,25 +43,31 @@ class RuntimeDatabaseManager:
             RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
         elif config.DATABASE == DatabaseType.SQLITE:
-            from musigree.runtime.sqlite.runtime_sqlite_helper import RuntimeSqliteHelper
+            from musigree.runtime.sqlite.runtime_sqlite_helper import (
+                RuntimeSqliteHelper,
+            )
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
+        async_engine = (
+            await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
+        )
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = (
+            async_engine
+        )
         log.debug(
             f"engine: {RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine}"
         )
 
-        def engine_on_connect(dbapi_con, connection_record):
+        def engine_on_connect(dbapi_con, connection_record):  # type: ignore
             if LOGGING_TRACE:
                 log.debug(f"New engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
 
-        def engine_on_checkout(dbapi_con, connection_record, connection_proxy):
+        def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
             pid = os.getpid()
             if connection_record.info["pid"] != pid:
                 log.error(f"New engine checkout using wrong pid: {dbapi_con}")
@@ -79,11 +86,9 @@ class RuntimeDatabaseManager:
             listen(async_engine.sync_engine, "checkout", engine_on_checkout)
 
         # a async_sessionmaker(), also in the same scope as the engine
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = (
-            async_sessionmaker(
-                bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
-                expire_on_commit=False,
-            )
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = async_sessionmaker(
+            bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+            expire_on_commit=False,
         )
 
         # Set logging level for SqlAlchemy
@@ -91,10 +96,12 @@ class RuntimeDatabaseManager:
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
-        await RuntimeDatabaseManager.runtime_database_helper.check_connection(config, async_engine)
+        await RuntimeDatabaseManager.runtime_database_helper.check_connection(
+            config, async_engine
+        )
 
     @classmethod
-    async def shutdown_database(cls):
+    async def shutdown_database(cls) -> None:
         log.info("Shutting down database connections")
 
         await close_all_sessions()
@@ -103,7 +110,10 @@ class RuntimeDatabaseManager:
             "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling shutdown_database()"
         )
 
-        if RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None:
+        if (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ):
             await RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose()
 
         await RuntimeDatabaseManager.runtime_database_helper.shutdown_database()

@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree import utils
@@ -9,7 +11,9 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup) -> None:
+    async def test_from_db_01(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         name = "Acoustic Bass"
         async with offline_transaction():
             role_repository = RoleRepository()
@@ -27,7 +31,9 @@ class TestDatabaseRole(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup) -> None:
+    async def test_from_db_02(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         name = "Mezzo-Soprano Vocals"
         async with offline_transaction():
             role_repository = RoleRepository()

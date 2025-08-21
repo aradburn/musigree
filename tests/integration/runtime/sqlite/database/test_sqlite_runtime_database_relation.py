@@ -1,4 +1,6 @@
-from tests.integration.runtime.database.test_runtime_database_relation import TestRuntimeDatabaseRelation
+from tests.integration.runtime.database.test_runtime_database_relation import (
+    TestRuntimeDatabaseRelation,
+)
 
 
 class TestSqliteRuntimeDatabaseRelation(TestRuntimeDatabaseRelation):

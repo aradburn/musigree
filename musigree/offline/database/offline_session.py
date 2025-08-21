@@ -6,8 +6,11 @@ It provides a mechanism for creating and managing SQLAlchemy async sessions,
 handling database errors, and using context variables to manage sessions in
 concurrent environments.
 """
-from contextvars import ContextVar
 
+from contextvars import ContextVar
+from typing import Any
+
+from sqlalchemy import CursorResult, Executable
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +24,7 @@ A ContextVar to store the active offline database async session.
 This allows for managing the session within a specific context, ensuring that
 each coroutine or thread has its own session.
 """
+
 
 async def get_offline_session() -> AsyncSession:
     """
@@ -39,12 +43,17 @@ async def get_offline_session() -> AsyncSession:
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_offline_session()"
     )
-    assert OfflineDatabaseManager.offline_database_helper.offline_async_session_factory is not None, (
+    assert (
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
+        is not None
+    ), (
         "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_offline_session()"
     )
 
-    async_session_factory = OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
-    return async_session_factory()
+    async_session_factory = (
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
+    )
+    return async_session_factory()  # type: ignore
 
 
 class OfflineSession:
@@ -56,7 +65,7 @@ class OfflineSession:
     handling.
     """
 
-    async def execute(self, query) -> Result:
+    async def execute(self, query: Executable) -> Result[Any] | CursorResult[Any]:
         """
         Executes a SQL query within the current async session.
 
@@ -71,9 +80,9 @@ class OfflineSession:
         """
         try:
             result = await self._session.execute(query)
-            return result
-        except (IntegrityError, InvalidRequestError):
-            raise DatabaseError
+            return result  # type: ignore
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
     @property
     def _session(self) -> AsyncSession:
@@ -94,5 +103,5 @@ class OfflineSession:
         try:
             _session = CTX_OFFLINE_SESSION.get()
         except LookupError:
-            raise DatabaseError(message="Not in a transaction")
+            raise DatabaseError(message="Not in a transaction") from None
         return _session

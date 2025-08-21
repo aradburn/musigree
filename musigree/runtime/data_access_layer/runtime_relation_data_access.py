@@ -6,7 +6,10 @@ from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_domain.relation import RuntimeRelation, RuntimeRelationInternal
+from musigree.runtime.runtime_domain.relation import (
+    RuntimeRelation,
+    RuntimeRelationInternal,
+)
 
 log = logging.getLogger(__name__)
 

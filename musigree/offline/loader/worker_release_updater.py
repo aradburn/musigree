@@ -48,6 +48,7 @@ related exception and `pprint` for pretty print the diff between releases. It
 interacts with `musigree.offline.database` for database related operations,
 and `musigree.offline.offline_database_manager` for managing concurrency.
 """
+
 import asyncio
 import logging
 import pprint
@@ -71,7 +72,9 @@ The logger for the update_releases_worker module.
 """
 
 
-def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_count: int):
+def update_releases_worker(
+    bulk_updates: list[dict[str, Any]], processed_count: int
+) -> None:
     """
     A worker function for updating or inserting release records.
 
@@ -146,26 +149,20 @@ def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_count: 
             """Attempt to update the release."""
             if LOGGING_TRACE:
                 """Log if trace logging is enabled."""
-                log.debug(
-                    f"update: {updated_release.release_id}"
-                )
+                log.debug(f"update: {updated_release.release_id}")
 
-            db_release = await release_repository.get_by_id(
-                updated_release.release_id
-            )
+            db_release = await release_repository.get_by_id(updated_release.release_id)
             """Retrieve the existing release from the database."""
 
             is_changed = False
             """Flag to check if any changes were made."""
-            update_payload: dict[str, Any]  = {}
+            update_payload: dict[str, Any] = {}
             """Dictionary to store the update payload."""
 
             if db_release.title != updated_release.title:
                 """Check if the release title has changed."""
                 db_release.title = updated_release.title
-                update_payload[ReleaseTable.title.key] = (
-                    db_release.title
-                )
+                update_payload[ReleaseTable.title.key] = db_release.title
                 """Update the release title."""
                 is_changed = True
                 """Set the changed flag."""
@@ -226,9 +223,7 @@ def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_count: 
             """If the release is not found in the database."""
             if LOGGING_TRACE:
                 """Log if trace logging is enabled."""
-                log.debug(
-                    f"insert: {updated_release.release_id}"
-                )
+                log.debug(f"insert: {updated_release.release_id}")
 
             await release_repository.create(updated_release)
             """Insert the new release into the database."""

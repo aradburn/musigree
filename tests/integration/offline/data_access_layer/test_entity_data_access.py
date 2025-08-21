@@ -1,5 +1,8 @@
+from typing import AsyncGenerator
+
 import pytest
 
+from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, TEST_DIR
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
@@ -12,9 +15,10 @@ from tests.conftest import AbstractDatabaseTest
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestEntityDataAccess(AbstractDatabaseTest):
-
     @pytest.mark.asyncio
-    async def test_init_text_search_index(self, offline_database_setup):
+    async def test_init_text_search_index(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         index = TextSearchIndex()
 
         async with offline_transaction():
@@ -26,7 +30,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert len(index.documents.items()) == 6216
 
     @pytest.mark.asyncio
-    async def test_get_id_by_entity_type_and_entity_name(self, offline_database_setup):
+    async def test_get_id_by_entity_type_and_entity_name(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "Joker, The (3)"
 
@@ -41,7 +47,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_entity_references_1(self, offline_database_setup):
+    async def test_resolve_entity_references_1(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 48
@@ -68,7 +76,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_entity_references_2(self, offline_database_setup):
+    async def test_resolve_entity_references_2(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 98
@@ -97,7 +107,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_entity_references_3(self, offline_database_setup):
+    async def test_resolve_entity_references_3(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 288
         entity_type = EntityType.ARTIST
@@ -121,7 +133,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_entity_references_4(self, offline_database_setup):
+    async def test_resolve_entity_references_4(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 61
@@ -145,7 +159,11 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_release_references_1(self, offline_database_setup, offline_config):
+    async def test_resolve_release_references_1(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         release_id = 637
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -154,7 +172,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await EntityDataAccess.resolve_release_references(
+                entity_repository, release
+            )
             actual = release.labels
 
         # THEN
@@ -165,7 +185,11 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_release_references_2(self, offline_database_setup, offline_config):
+    async def test_resolve_release_references_2(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         release_id = 158
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -174,7 +198,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await EntityDataAccess.resolve_release_references(
+                entity_repository, release
+            )
             actual = release.companies
 
         # THEN
@@ -213,7 +239,11 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_release_references_3(self, offline_database_setup, offline_config):
+    async def test_resolve_release_references_3(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         release_id = 1700
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -222,7 +252,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await EntityDataAccess.resolve_release_references(
+                entity_repository, release
+            )
             actual = release.artists
 
         # THEN
@@ -230,7 +262,11 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_resolve_release_references_4(self, offline_database_setup, offline_config):
+    async def test_resolve_release_references_4(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
         release_id = 1700
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -239,7 +275,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await EntityDataAccess.resolve_release_references(
+                entity_repository, release
+            )
             actual = release.extra_artists
 
         # THEN

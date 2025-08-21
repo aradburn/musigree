@@ -29,6 +29,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
+from typing import Annotated
 
 import musigree.utils
 from musigree.exceptions import BadRequestError, NotFoundError
@@ -61,8 +62,8 @@ Default roles to display if none are specified in the request.
 @router.get("/", response_class=HTMLResponse)
 async def route__index(
     request: Request,
-    roles: list[str] | None = Query(None),
-    year: int | None = Query(None),
+    roles: Annotated[list[str] | None, Query()] = None,
+    year: Annotated[int | None, Query()] = None,
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -148,8 +149,8 @@ async def route__entity_type__entity_id(
     request: Request,
     entity_type_str: str,
     entity_id: str,
-    roles: list[str] | None = Query(None),
-    year: int | None = Query(None),
+    roles: Annotated[list[str] | None, Query()] = None,
+    year: Annotated[int | None, Query()] = None,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -204,7 +205,7 @@ async def route__entity_type__entity_id(
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+        raise BadRequestError(message="Bad Entity Type") from None
     """Validate the entity type."""
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")

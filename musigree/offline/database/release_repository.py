@@ -39,7 +39,9 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             AsyncIterator[Release]: An async iterator yielding each release.
         """
         query = select(ReleaseTable)
-        result = await self._session.stream(query, execution_options={"yield_per": 1000})
+        result = await self._session.stream(
+            query, execution_options={"yield_per": 1000}
+        )
         async for row in result:
             yield Release.model_validate(row[0])
 

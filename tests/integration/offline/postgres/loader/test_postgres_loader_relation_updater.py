@@ -1,4 +1,6 @@
-from tests.integration.offline.loader.test_loader_relation_updater import TestLoaderRelationUpdater
+from tests.integration.offline.loader.test_loader_relation_updater import (
+    TestLoaderRelationUpdater,
+)
 
 
 class TestPostgresLoaderRelationUpdater(TestLoaderRelationUpdater):

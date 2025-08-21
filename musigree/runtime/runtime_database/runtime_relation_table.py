@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import (
     ForeignKey,
     Index,
@@ -72,7 +74,7 @@ class RuntimeRelationTable(RuntimeBase):
         - idx_runtime_relation_object: A non-unique index on the object column.
     """
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a RuntimeRelationTable instance.
 
@@ -92,7 +94,7 @@ class RuntimeRelationTable(RuntimeBase):
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RuntimeRelationTable instance.
 
@@ -102,4 +104,4 @@ class RuntimeRelationTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

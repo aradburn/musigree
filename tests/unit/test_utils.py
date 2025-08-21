@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from unittest.mock import patch, MagicMock
 
 import pytest
+from sqlalchemy.orm import DeclarativeBase
 
 from musigree import utils
 from musigree.constants import (
@@ -449,33 +450,30 @@ def test_skip_filter_non_mapping() -> None:
     assert result == "not a mapping"
 
 
-def test_row2dict() -> None:
-    """Test row2dict converts database row-like object to dictionary."""
+def test_table2dict() -> None:
+    """Test table2dict converts database table object to dictionary."""
+
     # Mock a database row-like object with __table__ attribute
     class MockColumn:
         def __init__(self, name: str) -> None:
             self.name = name
-    
-    class MockTable:
-        def __init__(self) -> None:
-            self.columns = [MockColumn("id"), MockColumn("name")]
-    
-    class MockRow:
-        def __init__(self) -> None:
-            self.id = 1
-            self.name = "test"
-            self.__table__ = MockTable()
-        
-        @staticmethod
-        def keys() -> List[str]:
-            return ["id", "name"]
-        
-        def __getitem__(self, key: str) -> Any:
-            return getattr(self, key)
 
-    row = MockRow()
-    result = utils.row2dict(row)
-    expected = {"id": 1, "name": "test"}
+    class MockTableDef:
+        def __init__(self) -> None:
+            self.columns = [MockColumn("id"), MockColumn("name"), MockColumn("value")]
+
+    class MockTable(DeclarativeBase):
+        def __init__(self, **kw: Any) -> None:
+            super().__init__(**kw)
+            self.id: int = 1
+            self.name: str = "test"
+            self.value: float = 3.14
+            # Override the __table__ attribute after initialization
+            object.__setattr__(self, "__table__", MockTableDef())
+
+    table = MockTable()
+    result = utils.table2dict(table)
+    expected: dict[str, Any] = {"id": 1, "name": "test", "value": 3.14}
     assert result == expected
 
 
@@ -506,7 +504,9 @@ def test_to_ascii_basic() -> None:
 def test_to_ascii_with_accents() -> None:
     """Test to_ascii function preserves non-ASCII when is_latin is False."""
     result = utils.to_ascii("naïve résumé")
-    assert result == "naïve résumé"  # Function preserves non-ASCII when is_latin is False
+    assert (
+        result == "naïve résumé"
+    )  # Function preserves non-ASCII when is_latin is False
 
 
 def test_to_ascii_non_latin() -> None:
@@ -515,7 +515,7 @@ def test_to_ascii_non_latin() -> None:
     assert result == "Здравствуй"  # Function doesn't transliterate non-latin
 
 
-@patch('time.sleep')
+@patch("time.sleep")
 def test_sleep_with_backoff(mock_sleep: MagicMock) -> None:
     """Test sleep_with_backoff function calls sleep with appropriate duration."""
     utils.sleep_with_backoff(2)

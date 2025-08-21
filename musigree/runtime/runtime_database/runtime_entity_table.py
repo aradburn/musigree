@@ -88,7 +88,7 @@ class RuntimeEntityTable(RuntimeBase):
           entity_type columns.
     """
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a RuntimeEntityTable instance.
 
@@ -108,7 +108,7 @@ class RuntimeEntityTable(RuntimeBase):
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RuntimeEntityTable instance.
 
@@ -118,4 +118,4 @@ class RuntimeEntityTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

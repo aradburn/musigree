@@ -75,7 +75,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         """
         query = select(RoleTable).where(RoleTable.role_name == name)
         result = await self._session.execute(query)
-        
+
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
         return Role.model_validate(instance)

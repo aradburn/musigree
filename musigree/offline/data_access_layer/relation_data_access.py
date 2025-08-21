@@ -73,7 +73,7 @@ class RelationDataAccess:
             list[RelationUncommitted]: A list of uncommitted relations.
         """
         # log.debug(f"      release: {release}")
-        triples = set()
+        triples: set[tuple[int, str, int]] = set()
         """Set to store unique triples of (subject_id, role, object_id)."""
         artist_ids, label_ids, is_compilation = cls.get_release_setup(release)
         """Get the artist IDs, label IDs, and compilation status from the release."""
@@ -120,7 +120,9 @@ class RelationDataAccess:
         """Determine the iterator based on whether the release is a compilation."""
         for subject_id, company in iterator:
             company_role_str = company["entity_type_name"]
-            company_role_strs_list = RoleDataUtils.normalise_role_names(company_role_str)
+            company_role_strs_list = RoleDataUtils.normalise_role_names(
+                company_role_str
+            )
             """Normalize the role names."""
             for role_str in company_role_strs_list:
                 role_name = RoleDataAccess.find_role(role_str)
@@ -149,7 +151,9 @@ class RelationDataAccess:
             for object_id, credit in iterator:
                 for roles in credit.get("roles", ()):
                     track_role_str: str = roles["name"]
-                    track_role_strs_list = RoleDataUtils.normalise_role_names(track_role_str)
+                    track_role_strs_list = RoleDataUtils.normalise_role_names(
+                        track_role_str
+                    )
                     """Normalize the role names."""
                     for role_str in track_role_strs_list:
                         role_name = RoleDataAccess.find_role(role_str)
@@ -166,7 +170,7 @@ class RelationDataAccess:
                 object_id = track_artist_id
                 triples.add((subject_id, role_name, object_id))
         # log.debug(f"triples3: {triples}")
-        triples_list = sorted(triples)
+        triples_list = list(triples)
         """Sort the triples for consistency."""
         # log.debug(f"      triples: {triples}")
         relation_dicts = cls.from_triples(triples_list, release=release)
@@ -212,7 +216,7 @@ class RelationDataAccess:
         return triples
 
     @classmethod
-    def get_release_setup(cls, release) -> tuple[set[int], set[int], bool]:
+    def get_release_setup(cls, release: Release) -> tuple[set[int], set[int], bool]:
         """
         Extracts the setup information from a release.
 
@@ -240,7 +244,11 @@ class RelationDataAccess:
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
-        if len(artist_ids) == 1 and release.artists and release.artists[0]["name"] in ["Various", "Various Artists"]:
+        if (
+            len(artist_ids) == 1
+            and release.artists
+            and release.artists[0]["name"] in ["Various", "Various Artists"]
+        ):
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist or []:
@@ -253,11 +261,13 @@ class RelationDataAccess:
         return artist_ids, label_ids, is_compilation
 
     @classmethod
-    def from_triples(cls, triples, release=None) -> list[dict[str, Any]]:
+    def from_triples(
+        cls, triples: list[tuple[int, str, int]], release: Release | None = None
+    ) -> list[dict[str, Any]]:
         """
-        Converts triples to a list of relations.
+        Converts a list of triples to a list of relations.
 
-        This method takes a set of triples (subject_id, role, object_id) and
+        This method takes a list of triples (subject_id, role, object_id) and
         converts them into a list of relation dictionaries.
 
         Args:
@@ -267,8 +277,10 @@ class RelationDataAccess:
         Returns:
             list[dict[str, Any]]: A list of relation dictionaries.
         """
+        triples_set = set(triples)
+        sorted_triples = sorted(list(triples_set))
         relations = []
-        for subject_id, role, object_id in triples:
+        for subject_id, role, object_id in sorted_triples:
             relation = dict(
                 subject=subject_id,
                 role=role,

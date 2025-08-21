@@ -1,4 +1,7 @@
 """Integration tests for the FastAPI API endpoints."""
+
+from typing import AsyncGenerator
+
 import pytest
 from httpx import AsyncClient
 
@@ -11,25 +14,45 @@ class TestFastAPIAPI:
     """Test class for FastAPI API endpoints."""
 
     @pytest.mark.asyncio
-    async def test_network_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_network_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test network endpoint with valid artist ID."""
         response = await client.get("/api/artist/network/2239")
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_network_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_network_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test network endpoint with invalid artist ID."""
         response = await client.get("/api/artist/network/999999999999")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_network_03(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_network_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test network endpoint with valid label ID."""
         response = await client.get("/api/label/network/1")
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_search_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_search_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test search endpoint with basic query."""
         response = await client.get("/api/search/Morris")
         print(f"response: {response}")
@@ -56,7 +79,12 @@ class TestFastAPIAPI:
         assert actual_str == expected_str
 
     @pytest.mark.asyncio
-    async def test_search_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_search_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test search endpoint with URL encoded query."""
         response = await client.get("/api/search/Chris%20Morris")
         assert response.status_code == 200
@@ -66,7 +94,12 @@ class TestFastAPIAPI:
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relations_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_relations_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test relations endpoint."""
         response = await client.get("/api/artist/relations/32613")
         assert response.status_code == 200
@@ -199,7 +232,12 @@ class TestFastAPIAPI:
         assert actual_str == expected_str
 
     @pytest.mark.asyncio
-    async def test_roles_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_roles_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test roles endpoint."""
         response = await client.get("/api/roles")
         assert response.status_code == 200
@@ -211,14 +249,19 @@ class TestFastAPIAPI:
         assert len(actual["roles"]) == expected
 
     @pytest.mark.asyncio
-    async def test_entity_details_01(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_entity_details_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test getting entity details for an artist."""
         response = await client.get("/api/artist/details/2239")
         assert response.status_code == 200
 
         actual = response.json()
         assert actual is not None
-        
+
         # Verify required fields are present
         assert "id" in actual
         assert "type" in actual
@@ -226,7 +269,7 @@ class TestFastAPIAPI:
         assert "metadata" in actual
         assert "entities" in actual
         assert "relation_counts" in actual
-        
+
         # Verify correct types
         assert actual["id"] == 2239
         assert actual["type"] == "artist"
@@ -236,37 +279,57 @@ class TestFastAPIAPI:
         assert isinstance(actual["relation_counts"], dict)
 
     @pytest.mark.asyncio
-    async def test_entity_details_02(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_entity_details_02(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test getting entity details for a label."""
         response = await client.get("/api/label/details/1")
         assert response.status_code == 200
 
         actual = response.json()
         assert actual is not None
-        
+
         # Verify required fields are present
         assert "id" in actual
         assert "type" in actual
         assert "name" in actual
-        
+
         # Verify correct types
         assert actual["id"] == 1
         assert actual["type"] == "label"
 
     @pytest.mark.asyncio
-    async def test_entity_details_03(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_entity_details_03(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test entity details endpoint with invalid entity ID."""
         response = await client.get("/api/artist/details/999999999999")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_entity_details_04(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_entity_details_04(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test entity details endpoint with invalid entity type."""
         response = await client.get("/api/invalidtype/details/1")
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_entity_details_05(self, offline_database_setup, runtime_database_setup, client: AsyncClient) -> None:
+    async def test_entity_details_05(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
         """Test entity details endpoint with non-numeric entity ID."""
         response = await client.get("/api/artist/details/abc")
         assert response.status_code == 400

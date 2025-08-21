@@ -69,7 +69,9 @@ The logger for the worker release pass two module.
 """
 
 
-def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+def process_release_pass_two_worker(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing release records in the second pass.
 
@@ -101,7 +103,10 @@ def process_release_pass_two_worker(release_ids: list[int], current_total: int, 
 
                 count += 1
                 """Increment the processed counter."""
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if (
+                    count % LoaderBase.BULK_REPORTING_SIZE == 0
+                    and not count == end_count
+                ):
                     """Log every BULK_REPORTING_SIZE."""
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -145,11 +150,12 @@ def process_release_pass_two_worker(release_ids: list[int], current_total: int, 
 
     loop.run_until_complete(process_releases(release_ids))
 
+
 async def worker_pass_two_single(
     *,
     entity_repository: EntityRepository,
     release_repository: ReleaseRepository,
-    id_,
+    id_: int,
 ) -> None:
     """
     Processes a single release record in the second pass.

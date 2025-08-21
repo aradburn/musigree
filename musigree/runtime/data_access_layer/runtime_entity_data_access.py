@@ -19,7 +19,7 @@ class RuntimeEntityDataAccess:
     CACHE_KEY_SEPARATOR = "_"
 
     @staticmethod
-    def roles_to_relation_count(entity: RuntimeEntity, roles) -> int:
+    def roles_to_relation_count(entity: RuntimeEntity, roles: list[str]) -> int:
         count = 0
         relation_counts = entity.relation_counts or {}
         for role in roles:
@@ -45,7 +45,7 @@ class RuntimeEntityDataAccess:
 
     @staticmethod
     def structural_roles_to_relations(
-        entity: RuntimeEntity, roles
+        entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
         # log.debug(f"            structural_roles_to_relations entity: {self}")
         # log.debug(
@@ -150,7 +150,7 @@ class RuntimeEntityDataAccess:
             f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
         )
 
-        id_ = cache.get(entity_key_str)
+        id_: int | None = cache.get(entity_key_str)
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
 
@@ -159,13 +159,15 @@ class RuntimeEntityDataAccess:
         if id_ is None:
             # log.debug(f"not cached, try db")
             try:
-                int_id = await entity_repository.get_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
+                internal_id = (
+                    await entity_repository.get_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
                 )
                 # Store the internal id, not entity_id
-                cache.set(entity_key_str, int_id)
+                cache.set(entity_key_str, internal_id)
                 # log.debug(f"cache set for {key_str} -> {int_id}")
-                id_ = int_id
+                id_ = internal_id
 
             except NotFoundError:
                 if LOGGING_TRACE:

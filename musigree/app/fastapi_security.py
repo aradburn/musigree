@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 class SecurityHeadersMiddleware:
     """
     ASGI middleware to add security headers to all responses.
-    
+
     This middleware adds various security headers to protect against
     common web vulnerabilities such as XSS, clickjacking, and MIME
     type sniffing attacks.
@@ -50,30 +50,30 @@ class SecurityHeadersMiddleware:
         async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":
                 # Add security headers to the response
-                headers: dict[Union[str, bytes], Union[str, bytes]] = dict(message.get("headers", []))
-                
+                headers: dict[Union[str, bytes], Union[str, bytes]] = dict(
+                    message.get("headers", [])
+                )
+
                 # Define security headers
                 security_headers: dict[bytes, bytes] = {
                     # Prevent MIME type sniffing
                     b"x-content-type-options": b"nosniff",
-                    
                     # Prevent clickjacking
                     b"x-frame-options": b"DENY",
-                    
                     # Enable XSS protection
                     b"x-xss-protection": b"1; mode=block",
-                    
                     # Referrer policy
                     b"referrer-policy": b"strict-origin-when-cross-origin",
-                    
                     # Permissions policy (previously Feature-Policy)
                     b"permissions-policy": b"camera=(), microphone=(), geolocation=(), interest-cohort=()",
                 }
 
                 if self.is_production:
                     # Add HSTS header for production HTTPS
-                    security_headers[b"strict-transport-security"] = b"max-age=31536000; includeSubDomains; preload"
-                    
+                    security_headers[b"strict-transport-security"] = (
+                        b"max-age=31536000; includeSubDomains; preload"
+                    )
+
                     # Content Security Policy for production
                     security_headers[b"content-security-policy"] = (
                         b"default-src 'self' data:; "
@@ -98,9 +98,13 @@ class SecurityHeadersMiddleware:
                     headers[header_name] = header_value
 
                 # Update message headers (convert back to list of byte tuples)
-                message["headers"] = [(name.encode() if isinstance(name, str) else name, 
-                                     value.encode() if isinstance(value, str) else value) 
-                                    for name, value in headers.items()]
+                message["headers"] = [
+                    (
+                        name.encode() if isinstance(name, str) else name,
+                        value.encode() if isinstance(value, str) else value,
+                    )
+                    for name, value in headers.items()
+                ]
 
             await send(message)
 
@@ -110,18 +114,18 @@ class SecurityHeadersMiddleware:
 def validate_environment_variables(config: Configuration) -> None:
     """
     Validate that required environment variables are set for production.
-    
+
     Args:
         config: The application configuration object
-        
+
     Raises:
         ValueError: If required environment variables are missing in production
     """
     if not config.PRODUCTION:
         return
-    
+
     missing_vars = []
-    
+
     if config.DATABASE.value == "postgres":
         required_postgres_vars = [
             ("POSTGRES_DATABASE_USERNAME", config.POSTGRES_DATABASE_USERNAME),
@@ -130,11 +134,11 @@ def validate_environment_variables(config: Configuration) -> None:
             ("POSTGRES_DATABASE_PORT", config.POSTGRES_DATABASE_PORT),
             ("POSTGRES_OFFLINE_DATABASE_NAME", config.POSTGRES_OFFLINE_DATABASE_NAME),
         ]
-        
+
         for var_name, var_value in required_postgres_vars:
             if not var_value:
                 missing_vars.append(var_name)
-    
+
     if missing_vars:
         raise ValueError(
             f"Required environment variables for production are missing: {', '.join(missing_vars)}"
@@ -144,16 +148,18 @@ def validate_environment_variables(config: Configuration) -> None:
 def setup_security_middleware(app: FastAPI, config: Configuration) -> None:
     """
     Set up security middleware for the FastAPI application.
-    
+
     Args:
         app: The FastAPI application instance
         config: The application configuration object
     """
     # Validate environment variables for production
     validate_environment_variables(config)
-    
+
     # Add security headers middleware
     # noinspection PyTypeChecker
     app.add_middleware(SecurityHeadersMiddleware, is_production=config.PRODUCTION)
-    
-    log.info(f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment") 
+
+    log.info(
+        f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment"
+    )

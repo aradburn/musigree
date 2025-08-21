@@ -190,7 +190,7 @@ class RuntimeRoleDataAccess:
         After loading the roles, it builds the role tree structure and logs
         the number of roles loaded.
         """
-        
+
         log.debug("Loading roles from RoleRepository")
         RoleCache.role_id_to_role_name_lookup.clear()
         RoleCache.role_id_to_role_category_lookup.clear()
@@ -203,7 +203,7 @@ class RuntimeRoleDataAccess:
             role_repository = RuntimeRoleRepository()
             """Get the instance of the `RuntimeRoleRepository`."""
             roles = role_repository.all()
-        
+
             role_list = []
             async for role in roles:
                 """Iterate over the roles."""

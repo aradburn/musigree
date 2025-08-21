@@ -9,7 +9,7 @@ from musigree.offline.loader.parser_utils import ParserUtils
 
 
 class TestParserUtils:
-    def test_clean_elements(self):
+    def test_clean_elements(self) -> None:
         # GIVEN
         xml_string = """
         <root>
@@ -28,7 +28,7 @@ class TestParserUtils:
         </root>
         """
         root = ElementTree.fromstring(xml_string)
-        elements = root.findall("element")
+        elements = iter(root.findall("element"))
 
         # WHEN
         cleaned_elements = list(ParserUtils.clean_elements(elements))
@@ -60,21 +60,23 @@ class TestParserUtils:
             ("2023-0-12", None),
         ],
     )
-    def test_parse_release_date(self, date_string, expected_datetime):
+    def test_parse_release_date(
+        self, date_string: str, expected_datetime: datetime.datetime
+    ) -> None:
         # WHEN
         result = ParserUtils.parse_release_date(date_string)
 
         # THEN
         assert result == expected_datetime
 
-    def test_validate_release_date(self):
+    def test_validate_release_date(self) -> None:
         # WHEN
         date = ParserUtils.validate_release_date("2023", "10", "27")
 
         # THEN
         assert date == datetime.datetime(2023, 10, 27, 0, 0)
 
-    def test_element_to_datetime(self):
+    def test_element_to_datetime(self) -> None:
         # GIVEN
         xml_string = "<element>2023-10-27</element>"
         element = ElementTree.fromstring(xml_string)
@@ -85,14 +87,14 @@ class TestParserUtils:
         # THEN
         assert result == datetime.datetime(2023, 10, 27, 0, 0)
 
-    def test_element_to_datetime_none(self):
+    def test_element_to_datetime_none(self) -> None:
         # WHEN
         result = ParserUtils.element_to_datetime(None)
 
         # THEN
         assert result is None
 
-    def test_element_to_datetime_empty(self):
+    def test_element_to_datetime_empty(self) -> None:
         # GIVEN
         xml_string = "<element></element>"
         element = ElementTree.fromstring(xml_string)
@@ -103,7 +105,7 @@ class TestParserUtils:
         # THEN
         assert result is None
 
-    def test_element_to_integer(self):
+    def test_element_to_integer(self) -> None:
         # GIVEN
         xml_string = "<element>123</element>"
         element = ElementTree.fromstring(xml_string)
@@ -114,14 +116,14 @@ class TestParserUtils:
         # THEN
         assert result == 123
 
-    def test_element_to_integer_none(self):
+    def test_element_to_integer_none(self) -> None:
         # WHEN
         result = ParserUtils.element_to_integer(None)
 
         # THEN
         assert result is None
 
-    def test_element_to_string(self):
+    def test_element_to_string(self) -> None:
         # GIVEN
         xml_string = "<element>test string</element>"
         element = ElementTree.fromstring(xml_string)
@@ -132,14 +134,14 @@ class TestParserUtils:
         # THEN
         assert result == "test string"
 
-    def test_element_to_string_none(self):
+    def test_element_to_string_none(self) -> None:
         # WHEN
         result = ParserUtils.element_to_string(None)
 
         # THEN
         assert result is None
 
-    def test_element_to_string_empty(self):
+    def test_element_to_string_empty(self) -> None:
         # GIVEN
         xml_string = "<element></element>"
         element = ElementTree.fromstring(xml_string)
@@ -150,7 +152,7 @@ class TestParserUtils:
         # THEN
         assert result is None
 
-    def test_element_to_strings(self):
+    def test_element_to_strings(self) -> None:
         # GIVEN
         xml_string = """
         <element>
@@ -166,14 +168,14 @@ class TestParserUtils:
         # THEN
         assert result == ["string1", "string2"]
 
-    def test_element_to_strings_none(self):
+    def test_element_to_strings_none(self) -> None:
         # WHEN
         result = ParserUtils.element_to_strings(None)
 
         # THEN
         assert result is None
 
-    def test_element_to_strings_empty(self):
+    def test_element_to_strings_empty(self) -> None:
         # GIVEN
         xml_string = "<element></element>"
         element = ElementTree.fromstring(xml_string)
@@ -184,7 +186,7 @@ class TestParserUtils:
         # THEN
         assert result is None
 
-    def test_element_to_none(self):
+    def test_element_to_none(self) -> None:
         # GIVEN
         xml_string = "<element></element>"
         element = ElementTree.fromstring(xml_string)
@@ -195,7 +197,7 @@ class TestParserUtils:
         # THEN
         assert result is None
 
-    def test_iterparse(self):
+    def test_iterparse(self) -> None:
         # GIVEN
         xml_string = """
         <root>
@@ -216,10 +218,10 @@ class TestParserUtils:
 
         # THEN
         assert len(records) == 2
-        assert records[0].find("id").text == "1"
-        assert records[1].find("id").text == "2"
+        assert records[0].find("id").text == "1"  # type: ignore
+        assert records[1].find("id").text == "2"  # type: ignore
 
-    def test_prettify(self):
+    def test_prettify(self) -> None:
         # GIVEN
         xml_string = "<element><child>text</child></element>"
         element = ElementTree.fromstring(xml_string)

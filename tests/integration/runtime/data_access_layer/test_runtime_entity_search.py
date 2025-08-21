@@ -1,5 +1,8 @@
+from typing import AsyncGenerator
+
 import pytest
 
+from musigree.config import Configuration
 from musigree.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.runtime.data_access_layer.runtime_entity_search import (
@@ -12,13 +15,18 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeEntitySearch(AbstractDatabaseTest):
-    def test_text_search_lookup_1(self, runtime_config, offline_database_setup, runtime_database_setup):
+    def test_text_search_lookup_1(
+        self,
+        runtime_config: Configuration,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test text search functionality for 'Wax' query."""
         text_search_path = (
-            runtime_config.DATA_DIR
-            / TEXT_SEARCH_DATA
-            / TEXT_SEARCH_FILENAME
+            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         )
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
@@ -44,14 +52,18 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         assert 14 == len(results["results"])
         assert expected == list(results["results"])
 
-
-    def test_text_search_lookup_2(self, runtime_config, offline_database_setup, runtime_database_setup):
+    def test_text_search_lookup_2(
+        self,
+        runtime_config: Configuration,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
         """Test text search functionality for 'Joker' query."""
         text_search_path = (
-            runtime_config.DATA_DIR
-            / TEXT_SEARCH_DATA
-            / TEXT_SEARCH_FILENAME
+            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         )
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )

@@ -9,7 +9,7 @@ from tests.conftest import AbstractDatabaseTest
 
 
 class TestLoaderRelease(AbstractDatabaseTest):
-    def test_release_xml_parse(self):
+    def test_release_xml_parse(self) -> None:
         # GIVEN
         source = utils.normalize(
             """
@@ -169,7 +169,7 @@ class TestLoaderRelease(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_release)
         assert actual == expected
 
-    def test_release_from_element_01(self):
+    def test_release_from_element_01(self) -> None:
         # GIVEN
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -244,7 +244,7 @@ class TestLoaderRelease(AbstractDatabaseTest):
         expected = utils.normalize_dict(expected_release)
         assert actual == expected
 
-    def test_release_from_element_02(self):
+    def test_release_from_element_02(self) -> None:
         # GIVEN
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA

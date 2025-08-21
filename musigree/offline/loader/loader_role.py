@@ -4,9 +4,11 @@ import logging
 from abc import abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+from typing import Any
 
 from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
 from musigree.exceptions import NotFoundError
+from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
@@ -29,7 +31,7 @@ class LoaderRole(LoaderBase):
     async def load_roles_into_database(
         cls, roles_directory: Path, instruments_directory: Path
     ) -> None:
-        log.info(f"Loading initial roles ")
+        log.info("Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
         file_roles = cls.load_roles_from_files(roles_directory)
@@ -46,13 +48,13 @@ class LoaderRole(LoaderBase):
         # Load back in all roles from database
         # TODO check if needed
         await RoleDataAccess.load_all_roles_into_cache()
-        log.debug(f"Initial roles loaded OK")
+        log.debug("Initial roles loaded OK")
 
     @classmethod
     def load_wikipedia_instruments(
         cls, instruments_directory: Path
     ) -> list[RoleUncommitted]:
-        log.info(f"Loading Wikipedia instruments")
+        log.info("Loading Wikipedia instruments")
 
         roles = []
         loaded_count = 0
@@ -98,7 +100,7 @@ class LoaderRole(LoaderBase):
         cls, instruments_directory: Path
     ) -> list[RoleUncommitted]:
         # Load Hornbostel Sachs instrument data
-        log.info(f"Load Hornbostel Sachs instrument data")
+        log.info("Load Hornbostel Sachs instrument data")
 
         roles = []
         loaded_count = 0
@@ -143,7 +145,7 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     def load_roles_from_files(cls, roles_directory: Path) -> list[RoleUncommitted]:
-        log.info(f"Loading roles from files")
+        log.info("Loading roles from files")
 
         roles = []
         loaded_count = 0
@@ -193,7 +195,7 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     async def save_roles(cls, roles: list[RoleUncommitted]) -> int:
-        log.debug(f"Adding roles to RoleRepository")
+        log.debug("Adding roles to RoleRepository")
         bulk_inserts = []
         names = set()
         async with offline_transaction():
@@ -206,7 +208,9 @@ class LoaderRole(LoaderBase):
                     # Check if the role already exists in the database
                     # If it does not, add it to the bulk inserts
                     try:
-                        await role_repository.get_by_name(name=role_uncommitted.role_name)
+                        await role_repository.get_by_name(
+                            name=role_uncommitted.role_name
+                        )
                     except NotFoundError:
                         # Add new role
                         bulk_inserts.append(role_uncommitted.model_dump())
@@ -221,19 +225,38 @@ class LoaderRole(LoaderBase):
 
     @classmethod
     @abstractmethod
-    async def insert_bulk(cls, bulk_inserts, processed_count, executor: ProcessPoolExecutor, concurrency_count: int) -> None:
+    async def insert_bulk(
+        cls,
+        bulk_inserts: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         pass
 
     @classmethod
     @abstractmethod
-    async def update_bulk(cls, bulk_updates, processed_count, executor: ProcessPoolExecutor, concurrency_count: int) -> None:
+    async def update_bulk(
+        cls,
+        bulk_updates: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         pass
 
     @classmethod
     @abstractmethod
-    async def delete_bulk(cls, bulk_deletes, processed_count, executor: ProcessPoolExecutor, concurrency_count: int) -> None:
+    async def delete_bulk(
+        cls,
+        bulk_deletes: list[int],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         pass
 
     @classmethod
-    def get_set_of_ids(cls, entity_type):
+    @abstractmethod
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         pass

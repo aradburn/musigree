@@ -96,4 +96,4 @@ class StyleRepository(RuntimeBaseRepository[StyleTable]):
             Style: The created style.
         """
         instance: StyleTable = await self._save(style.model_dump())
-        return Style.model_validate(instance) 
+        return Style.model_validate(instance)

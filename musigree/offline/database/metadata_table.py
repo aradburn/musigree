@@ -59,11 +59,11 @@ class MetadataTable(OfflineBase):
         - idx_metadata: A unique index on the metadata_key column.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the MetadataTable object.
 
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self))
+        return utils.normalize_dict(utils.table2dict(self))

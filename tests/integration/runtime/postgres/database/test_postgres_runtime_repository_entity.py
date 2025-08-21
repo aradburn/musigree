@@ -1,4 +1,6 @@
-from tests.integration.runtime.database.test_runtime_repository_entity import TestRuntimeRepositoryEntity
+from tests.integration.runtime.database.test_runtime_repository_entity import (
+    TestRuntimeRepositoryEntity,
+)
 
 
 class TestPostgresRuntimeRepositoryEntity(TestRuntimeRepositoryEntity):

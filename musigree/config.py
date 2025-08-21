@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -90,7 +91,7 @@ class PostgresProductionConfiguration(Configuration):
         description="PostgreSQL offline database name from environment variable",
     )
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         """Set values from environment variables if not provided in constructor."""
         if self.POSTGRES_DATABASE_USERNAME is None:
             self.POSTGRES_DATABASE_USERNAME = os.getenv("MUSIGREE_DATABASE_USERNAME")
@@ -142,7 +143,7 @@ class PostgresTestConfiguration(Configuration):
     POSTGRES_RUNTIME_DATABASE_NAME: str = "test_runtime_musigree"
     POSTGRES_ROOT: str = "/usr/lib/postgresql/17"
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         # Generate random strings before init
         self._offline_random_string = utils.get_random_string(5)
         self._runtime_random_string = utils.get_random_string(5)
@@ -224,7 +225,7 @@ class SqliteTestConfiguration(Configuration):
     SQLITE_OFFLINE_DATABASE_NAME: Path | None = None
     SQLITE_RUNTIME_DATABASE_NAME: Path | None = None
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         # Generate random strings before init
         self._offline_random_string = utils.get_random_string(5)
         self._runtime_random_string = utils.get_random_string(5)

@@ -56,7 +56,7 @@ class TransferTask(luigi.Task):
 
     data_directory = luigi.Parameter(significant=False)
 
-    def output(self):
+    def output(self) -> RunAnywayTarget:
         """
         Defines the output target for this task.
 
@@ -70,7 +70,7 @@ class TransferTask(luigi.Task):
         # Always run this task
         return RunAnywayTarget(self)
 
-    def requires(self):
+    def requires(self) -> list[luigi.Task] | None:
         """
         Defines the dependencies for this task.
 
@@ -82,7 +82,7 @@ class TransferTask(luigi.Task):
         return None
 
     @property
-    def priority(self):
+    def priority(self):  # type: ignore
         """
         Defines the priority of this task.
 
@@ -94,7 +94,7 @@ class TransferTask(luigi.Task):
         """
         return -1000000000
 
-    def run(self):
+    def run(self) -> None:
         """
         Executes the data transfer process.
 

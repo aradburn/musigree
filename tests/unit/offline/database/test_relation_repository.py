@@ -5,10 +5,9 @@ This module tests the RelationRepository class which manages Relation objects
 in the offline database, including CRUD operations and specialized queries.
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch, PropertyMock
-from typing import Any
 
+import pytest
 from sqlalchemy import Result, select
 
 from musigree.config import SqliteTestConfiguration
@@ -33,21 +32,12 @@ class TestRelationRepository:
     @pytest.fixture
     def mock_relation_internal(self) -> RelationInternal:
         """Create a mock internal relation for testing."""
-        return RelationInternal(
-            id=1,
-            subject=100,
-            role="performer",
-            object=200
-        )
+        return RelationInternal(id=1, subject=100, role="performer", object=200)
 
     @pytest.fixture
     def mock_relation_uncommitted(self) -> RelationUncommitted:
         """Create a mock uncommitted relation for testing."""
-        return RelationUncommitted(
-            subject=100,
-            object=200,
-            role_name="performer"
-        )
+        return RelationUncommitted(subject=100, object=200, role_name="performer")
 
     @pytest.fixture
     def mock_relation_table(self) -> RelationTable:
@@ -66,184 +56,199 @@ class TestRelationRepository:
 
     @pytest.mark.asyncio
     async def test_get_one_by_query_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
         mock_relation_table: RelationTable,
-        mock_relation_internal: RelationInternal
+        mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful _get_one_by_query execution."""
         # Arrange
         query = select(RelationTable).where(RelationTable.id == 1)
-        
+
         mock_session = AsyncMock()
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
-            mock_result.scalars.return_value.one_or_none.return_value = mock_relation_table
+            mock_result.scalars.return_value.one_or_none.return_value = (
+                mock_relation_table
+            )
             mock_session.execute.return_value = mock_result
-            
-            with patch.object(RelationDB, 'model_validate') as mock_validate:
+
+            with patch.object(RelationDB, "model_validate") as mock_validate:
                 mock_relation_instance = Mock()
                 mock_relation_instance.to_domain.return_value = mock_relation_internal
                 mock_validate.return_value = mock_relation_instance
-                
+
                 # Act
                 result = await relation_repository._get_one_by_query(query)
-                
+
                 # Assert
                 assert result == mock_relation_internal
                 mock_session.execute.assert_called_once_with(query)
                 mock_validate.assert_called_once_with(mock_relation_table)
 
     @pytest.mark.asyncio
-    async def test_get_one_by_query_not_found(self, relation_repository: RelationRepository) -> None:
+    async def test_get_one_by_query_not_found(
+        self, relation_repository: RelationRepository
+    ) -> None:
         """Test _get_one_by_query when no relation is found."""
         # Arrange
         query = select(RelationTable).where(RelationTable.id == 999)
-        
+
         mock_session = AsyncMock()
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = None
             mock_session.execute.return_value = mock_result
-            
+
             # Act & Assert
             with pytest.raises(NotFoundError):
                 await relation_repository._get_one_by_query(query)
 
     @pytest.mark.asyncio
     async def test_get_all_by_query_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
         mock_relation_table: RelationTable,
-        mock_relation_internal: RelationInternal
+        mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful _get_all_by_query execution."""
         # Arrange
         query = select(RelationTable).where(RelationTable.subject == 100)
-        
+
         mock_session = AsyncMock()
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = [mock_relation_table]
             mock_session.execute.return_value = mock_result
-            
-            with patch.object(RelationDB, 'model_validate') as mock_validate:
+
+            with patch.object(RelationDB, "model_validate") as mock_validate:
                 mock_relation_instance = Mock()
                 mock_relation_instance.to_domain.return_value = mock_relation_internal
                 mock_validate.return_value = mock_relation_instance
-                
+
                 # Act
                 result = await relation_repository._get_all_by_query(query)
-                
+
                 # Assert
                 assert result == [mock_relation_internal]
                 mock_session.execute.assert_called_once_with(query)
                 mock_validate.assert_called_once_with(mock_relation_table)
 
     @pytest.mark.asyncio
-    async def test_get_all_by_query_empty_result(self, relation_repository: RelationRepository) -> None:
+    async def test_get_all_by_query_empty_result(
+        self, relation_repository: RelationRepository
+    ) -> None:
         """Test _get_all_by_query when no relations are found."""
         # Arrange
         query = select(RelationTable).where(RelationTable.subject == 999)
-        
+
         mock_session = AsyncMock()
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = []
             mock_session.execute.return_value = mock_result
-            
+
             # Act
             result = await relation_repository._get_all_by_query(query)
-            
+
             # Assert
             assert result == []
 
     @pytest.mark.asyncio
     async def test_find_by_key_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_internal: RelationInternal
+        mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful find_by_key execution."""
         # Arrange
         key = {"subject": 100, "role_id": 1, "object": 200}
-        
-        with patch.object(relation_repository, '_get_one_by_query') as mock_get_one:
+
+        with patch.object(relation_repository, "_get_one_by_query") as mock_get_one:
             mock_get_one.return_value = mock_relation_internal
-            
+
             # Act
             result = await relation_repository.find_by_key(key)
-            
+
             # Assert
             assert result == mock_relation_internal
             mock_get_one.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_find_by_entity_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_internal: RelationInternal
+        mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful find_by_entity execution."""
         # Arrange
         entity_id = 100
-        
-        with patch.object(relation_repository, '_get_all_by_query') as mock_get_all:
+
+        with patch.object(relation_repository, "_get_all_by_query") as mock_get_all:
             mock_get_all.return_value = [mock_relation_internal]
-            
+
             # Act
             result = await relation_repository.find_by_entity(entity_id)
-            
+
             # Assert
             assert result == [mock_relation_internal]
             mock_get_all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_find_by_entity_and_roles_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_internal: RelationInternal
+        mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful find_by_entity_and_roles execution."""
         # Arrange
         entity_id = 100
         role_ids = [1, 2]
-        
-        with patch.object(relation_repository, '_get_all_by_query') as mock_get_all:
+
+        with patch.object(relation_repository, "_get_all_by_query") as mock_get_all:
             mock_get_all.return_value = [mock_relation_internal]
-            
+
             # Act
-            result = await relation_repository.find_by_entity_and_roles(entity_id, role_ids)
-            
+            result = await relation_repository.find_by_entity_and_roles(
+                entity_id, role_ids
+            )
+
             # Assert
             assert result == [mock_relation_internal]
             mock_get_all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_find_by_entity_and_roles_empty_roles(
-        self, 
-        relation_repository: RelationRepository
+        self, relation_repository: RelationRepository
     ) -> None:
         """Test find_by_entity_and_roles with empty role list."""
         # Arrange
         entity_id = 100
         role_ids: list[int] = []
-        
+
         # Act
         result = await relation_repository.find_by_entity_and_roles(entity_id, role_ids)
-        
+
         # Assert
         assert result == []
 
     @pytest.mark.asyncio
     async def test_create_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_uncommitted: RelationUncommitted
+        mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
         """Test successful create execution."""
         # Arrange
@@ -251,18 +256,24 @@ class TestRelationRepository:
         mock_database_helper = Mock()
         mock_query = Mock()
         mock_database_helper.generate_insert_query.return_value = mock_query
-        
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
-            with patch('musigree.offline.offline_database_manager.OfflineDatabaseManager') as mock_manager:
+            with patch(
+                "musigree.offline.offline_database_manager.OfflineDatabaseManager"
+            ) as mock_manager:
                 mock_manager.offline_database_helper = mock_database_helper
-                
-                with patch('musigree.offline.database.relation_repository.RoleCache') as mock_role_cache:
+
+                with patch(
+                    "musigree.offline.database.relation_repository.RoleCache"
+                ) as mock_role_cache:
                     mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
-                    
+
                     # Act
                     await relation_repository.create(mock_relation_uncommitted)
-                    
+
                     # Assert
                     mock_session.execute.assert_called_once_with(mock_query)
                     mock_session.flush.assert_called_once()
@@ -270,9 +281,9 @@ class TestRelationRepository:
 
     @pytest.mark.asyncio
     async def test_create_bulk_success(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_uncommitted: RelationUncommitted
+        mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
         """Test successful create_bulk execution."""
         # Arrange
@@ -281,37 +292,44 @@ class TestRelationRepository:
         mock_database_helper = Mock()
         mock_query = Mock()
         mock_database_helper.generate_insert_bulk_query.return_value = mock_query
-        
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
-            with patch('musigree.offline.offline_database_manager.OfflineDatabaseManager') as mock_manager:
+            with patch(
+                "musigree.offline.offline_database_manager.OfflineDatabaseManager"
+            ) as mock_manager:
                 mock_manager.offline_database_helper = mock_database_helper
-                
-                with patch('musigree.offline.database.relation_repository.RoleCache') as mock_role_cache:
+
+                with patch(
+                    "musigree.offline.database.relation_repository.RoleCache"
+                ) as mock_role_cache:
                     mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
-                    
+
                     # Act
                     await relation_repository.create_bulk(relations)
-                    
+
                     # Assert
                     mock_session.execute.assert_called_once_with(mock_query)
                     mock_database_helper.generate_insert_bulk_query.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_delete_by_entitys_success(
-        self, 
-        relation_repository: RelationRepository
+        self, relation_repository: RelationRepository
     ) -> None:
         """Test successful delete_by_entitys execution."""
         # Arrange
         entity_id = 100
         mock_session = AsyncMock()
-        
-        with patch.object(RelationRepository, '_session', new_callable=PropertyMock) as mock_session_prop:
+
+        with patch.object(
+            RelationRepository, "_session", new_callable=PropertyMock
+        ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             # Act
             await relation_repository.delete_by_entitys(entity_id)
-            
+
             # Assert
             mock_session.execute.assert_called_once()
             mock_session.flush.assert_called_once()
@@ -326,49 +344,57 @@ class TestRelationRepository:
         assert repo.schema_class == RelationTable
 
     @pytest.mark.asyncio
-    async def test_find_by_key_not_found(self, relation_repository: RelationRepository) -> None:
+    async def test_find_by_key_not_found(
+        self, relation_repository: RelationRepository
+    ) -> None:
         """Test find_by_key when relation is not found."""
         # Arrange
         key = {"subject": 999, "role_name": "performer", "object": 888}
-        
-        with patch.object(relation_repository, '_get_one_by_query') as mock_get_one:
+
+        with patch.object(relation_repository, "_get_one_by_query") as mock_get_one:
             mock_get_one.side_effect = NotFoundError()
-            
-            with patch('musigree.offline.database.relation_repository.RoleCache') as mock_role_cache:
+
+            with patch(
+                "musigree.offline.database.relation_repository.RoleCache"
+            ) as mock_role_cache:
                 mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
-                
+
                 # Act & Assert
                 with pytest.raises(NotFoundError):
                     await relation_repository.find_by_key(key)
 
     @pytest.mark.asyncio
     async def test_create_database_helper_not_initialized(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_uncommitted: RelationUncommitted
+        mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
         """Test create when database helper is not initialized."""
         # Arrange
-        with patch('musigree.offline.offline_database_manager.OfflineDatabaseManager') as mock_manager:
+        with patch(
+            "musigree.offline.offline_database_manager.OfflineDatabaseManager"
+        ) as mock_manager:
             mock_manager.offline_database_helper = None
-            
+
             # Act & Assert
             with pytest.raises(AssertionError):
                 await relation_repository.create(mock_relation_uncommitted)
 
     @pytest.mark.asyncio
     async def test_create_bulk_database_helper_not_initialized(
-        self, 
+        self,
         relation_repository: RelationRepository,
-        mock_relation_uncommitted: RelationUncommitted
+        mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
         """Test create_bulk when database helper is not initialized."""
         # Arrange
         relations = [mock_relation_uncommitted]
-        
-        with patch('musigree.offline.offline_database_manager.OfflineDatabaseManager') as mock_manager:
+
+        with patch(
+            "musigree.offline.offline_database_manager.OfflineDatabaseManager"
+        ) as mock_manager:
             mock_manager.offline_database_helper = None
-            
+
             # Act & Assert
             with pytest.raises(AssertionError):
                 await relation_repository.create_bulk(relations)

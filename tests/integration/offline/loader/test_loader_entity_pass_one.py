@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from musigree.offline.database.entity_repository import EntityRepository
@@ -8,7 +10,9 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestLoaderEntityPassOne(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_loader_entity_pass_one(self, offline_database_setup):
+    async def test_loader_entity_pass_one(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
 
         # WHEN

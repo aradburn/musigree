@@ -28,6 +28,7 @@ import logging
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Query, Request
+from typing import Annotated
 
 import musigree.utils
 from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError
@@ -92,7 +93,7 @@ async def route__api__entity_type__relations__entity_id(
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+        raise BadRequestError(message="Bad Entity Type") from None
 
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
@@ -121,8 +122,8 @@ async def route__api__entity_type__network__entity_id(
     entity_type_str: str,
     entity_id: str,
     request: Request,
-    roles: list[str] | None = Query(None),
-    year: int | None = Query(None),
+    roles: Annotated[list[str] | None, Query()] = None,
+    year: Annotated[int | None, Query()] = None,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
@@ -161,7 +162,7 @@ async def route__api__entity_type__network__entity_id(
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+        raise BadRequestError(message="Bad Entity Type") from None
 
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
@@ -260,7 +261,7 @@ async def route__api__entity_type__details__entity_id(
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+        raise BadRequestError(message="Bad Entity Type") from None
 
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
@@ -291,7 +292,7 @@ async def route__api__entity_type__details__entity_id(
 
 @router.get("/random")
 async def route__api__random(
-    _: None = Depends(rate_limiter(max_requests=60, period=60))
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, str]:
     """
     Retrieves a random entity.
@@ -319,15 +320,16 @@ async def route__api__random(
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         try:
-            entity_id, entity_type = await (
-                RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
-                    entity_repository
-                )
+            (
+                entity_id,
+                entity_type,
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
+                entity_repository
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random", exc_info=True)
-            raise DatabaseError(message="API error")
+            raise DatabaseError(message="API error") from None
 
     data = {"center": f"{entity_type.name.lower()}-{entity_id}"}
     return data
@@ -335,7 +337,7 @@ async def route__api__random(
 
 @router.get("/roles")
 async def route__api__role(
-    _: None = Depends(rate_limiter(max_requests=60, period=60))
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
     Retrieves all available roles.

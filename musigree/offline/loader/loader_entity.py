@@ -3,8 +3,9 @@ import logging
 import pickle
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
+from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
@@ -14,8 +15,12 @@ from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_entity import ParserEntity
 from musigree.offline.loader.worker_entity_deleter import delete_entities_worker
 from musigree.offline.loader.worker_entity_inserter import insert_entities_worker
-from musigree.offline.loader.worker_entity_pass_three import process_entity_pass_three_worker
-from musigree.offline.loader.worker_entity_pass_two import process_entity_pass_two_worker
+from musigree.offline.loader.worker_entity_pass_three import (
+    process_entity_pass_three_worker,
+)
+from musigree.offline.loader.worker_entity_pass_two import (
+    process_entity_pass_two_worker,
+)
 from musigree.offline.loader.worker_entity_updater import update_entities_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -28,7 +33,7 @@ class LoaderEntity(LoaderBase):
     @classmethod
     # @timeit
     async def loader_entity_pass_one(
-        cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts=False
+        cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts: bool = False
     ) -> int:
         log.debug(f"loader entity pass one - artist - date: {data_date}")
         entity_repository = EntityRepository()
@@ -59,8 +64,13 @@ class LoaderEntity(LoaderBase):
         return artists_loaded + labels_loaded
 
     @classmethod
-    async def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int, executor: ProcessPoolExecutor,
-                    concurrency_count: int) -> None:
+    async def insert_bulk(
+        cls,
+        bulk_inserts: list[dict[str, Any]],
+        inserted_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk insert operation for entities.
 
@@ -75,14 +85,23 @@ class LoaderEntity(LoaderBase):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, insert_entities_worker, bulk_inserts, inserted_count)
+            future = loop.run_in_executor(
+                executor, insert_entities_worker, bulk_inserts, inserted_count
+            )
         else:
-            future = loop.run_in_executor(None, insert_entities_worker, bulk_inserts, inserted_count)
+            future = loop.run_in_executor(
+                None, insert_entities_worker, bulk_inserts, inserted_count
+            )
         return await future
 
     @classmethod
-    async def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int, executor: ProcessPoolExecutor,
-                    concurrency_count: int) -> None:
+    async def update_bulk(
+        cls,
+        bulk_updates: list[dict[str, Any]],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk update operation for entties.
 
@@ -97,14 +116,23 @@ class LoaderEntity(LoaderBase):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, update_entities_worker, bulk_updates, processed_count)
+            future = loop.run_in_executor(
+                executor, update_entities_worker, bulk_updates, processed_count
+            )
         else:
-            future = loop.run_in_executor(None, update_entities_worker, bulk_updates, processed_count)
+            future = loop.run_in_executor(
+                None, update_entities_worker, bulk_updates, processed_count
+            )
         return await future
 
     @classmethod
-    async def delete_bulk(cls, bulk_deletes: list[int], processed_count: int, executor: ProcessPoolExecutor,
-                    concurrency_count: int) -> None:
+    async def delete_bulk(
+        cls,
+        bulk_deletes: list[int],
+        processed_count: int,
+        executor: ProcessPoolExecutor,
+        concurrency_count: int,
+    ) -> None:
         """
         Performs a bulk delete operation for entities.
 
@@ -119,13 +147,17 @@ class LoaderEntity(LoaderBase):
         """
         loop = asyncio.get_running_loop()
         if concurrency_count > 1:
-            future = loop.run_in_executor(executor, delete_entities_worker, bulk_deletes, processed_count)
+            future = loop.run_in_executor(
+                executor, delete_entities_worker, bulk_deletes, processed_count
+            )
         else:
-            future = loop.run_in_executor(None, delete_entities_worker, bulk_deletes, processed_count)
+            future = loop.run_in_executor(
+                None, delete_entities_worker, bulk_deletes, processed_count
+            )
         return await future
 
     @classmethod
-    async def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         """
         Retrieves a set of entity IDs from the database.
 
@@ -139,6 +171,7 @@ class LoaderEntity(LoaderBase):
         async with offline_transaction():
             entity_repository = EntityRepository()
             """Instance of EntityRepository for database operations on entities."""
+            assert entity_type is not None, "Entity type must be specified"
             ids = await entity_repository.get_ids_by_type(entity_type)
         set_of_ids = set(ids)
         return set_of_ids
@@ -156,7 +189,7 @@ class LoaderEntity(LoaderBase):
         await cls.loader_start_workers(process_entity_pass_three_worker)
 
     @classmethod
-    async def loader_start_workers(cls, worker_function) -> None:
+    async def loader_start_workers(cls, worker_function: Callable) -> None:
         number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
         async with offline_transaction():
@@ -172,9 +205,14 @@ class LoaderEntity(LoaderBase):
             with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                 async with asyncio.TaskGroup() as task_group:
                     for ids in batched_ids:
-                        future = cls.run_worker_function(worker_function,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            worker_function,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
                         current_total += number_in_batch
         else:
@@ -182,16 +220,21 @@ class LoaderEntity(LoaderBase):
             for ids in batched_ids:
                 with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
                     async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(worker_function,
-                                                         ids, current_total, total_count,
-                                                         executor, concurrency_count)
+                        future = cls.run_worker_function(
+                            worker_function,
+                            ids,
+                            current_total,
+                            total_count,
+                            executor,
+                            concurrency_count,
+                        )
                         task_group.create_task(future)
                         current_total += number_in_batch
 
     @classmethod
     # @timeit
     async def loader_create_text_search_index(cls, text_search_path: Path) -> None:
-        log.debug(f"loader entity create text search index")
+        log.debug("loader entity create text search index")
         if not text_search_path.exists():
             text_search_index = await cls.loader_init_text_search_index_from_database()
             cls.save_text_search_index_to_file(text_search_path, text_search_index)
@@ -201,7 +244,7 @@ class LoaderEntity(LoaderBase):
     @classmethod
     # @timeit
     async def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
-        log.debug(f"loader entity init text search index from database")
+        log.debug("loader entity init text search index from database")
         text_search_index = TextSearchIndex()
 
         async with offline_transaction():

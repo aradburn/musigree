@@ -44,8 +44,10 @@ class EntityDetailsIndex:
     @staticmethod
     def split_country(country: str) -> list[str]:
         # Match regex pattern for country names that should not be split
-        if match := re.search(r"(.*),(\s*)(Democratic Republic of the|Republic of the|Republic of|Isle of|The)$",
-                              country):
+        if match := re.search(
+            r"(.*),(\s*)(Democratic Republic of the|Republic of the|Republic of|Isle of|The)$",
+            country,
+        ):
             country = match.group(3).strip() + " " + match.group(1).strip()
         return re.split(r"[&,/]", country)
 

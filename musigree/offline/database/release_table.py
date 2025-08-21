@@ -101,7 +101,7 @@ class ReleaseTable(OfflineBase):
     Information about the tracks included in the release. Stored as a JSON object.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the ReleaseTable object.
 
@@ -111,4 +111,4 @@ class ReleaseTable(OfflineBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])
