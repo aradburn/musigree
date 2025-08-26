@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, Mock, patch, mock_open
 
 import pytest
 
-from musigree.exceptions import NotFoundError
 from musigree.offline.domain.role import RoleUncommitted
 from musigree.offline.loader.loader_role import LoaderRole
 

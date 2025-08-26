@@ -55,7 +55,6 @@ It interacts with `musigree.offline.database` for database related operations,
 `musigree.offline.offline_database_manager` for managing concurrency.
 """
 
-import asyncio
 import logging
 import multiprocessing
 import pprint
@@ -68,12 +67,10 @@ from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.entity import Entity
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -81,9 +78,7 @@ The logger for the worker entity updater module.
 """
 
 
-def update_entities_worker(
-    bulk_updates: list[dict[str, Any]], processed_count: int
-) -> None:
+async def update_entities_worker(bulk_updates: list[dict[str, Any]], processed_count: int, total_count: int) -> None:
     """
     Worker function for updating or inserting entity records.
 
@@ -93,7 +88,7 @@ def update_entities_worker(
     Args:
         bulk_updates (list[dict[str, Any]]): A list of entity data to update or insert.
         processed_count (int): The number of entities processed so far.
-
+        total_count (int): The total number of entities to process.
     Raises:
         NotFoundError: If an entity is not found during the update process.
         DatabaseError: If there's an error during database operations.
@@ -107,137 +102,119 @@ def update_entities_worker(
     inserted_count = 0
     """Counter for the number of entities inserted."""
 
-    async def process_entities(_bulk_updates: list[dict[str, Any]]) -> None:
-        """Async function to handle entity processing."""
-        nonlocal updated_count, inserted_count
+    async with offline_transaction():
+        for data in bulk_updates:
+            """Iterate over the entity data."""
 
-        async with offline_transaction():
-            for data in _bulk_updates:
-                """Iterate over the entity data."""
+            """Ensure that database operations are performed within a transaction."""
+            entity_repository = EntityRepository()
+            """Instance of EntityRepository for database operations on entities."""
+            updated_entity = Entity(**data)
+            """Create a new Entity object from the data."""
+            try:
+                """Attempt to update the entity."""
+                if LOGGING_TRACE:
+                    """Log if trace logging is enabled."""
+                    log.debug(
+                        f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                    )
 
-                """Ensure that database operations are performed within a transaction."""
-                entity_repository = EntityRepository()
-                """Instance of EntityRepository for database operations on entities."""
-                updated_entity = Entity(**data)
-                """Create a new Entity object from the data."""
-                try:
-                    """Attempt to update the entity."""
+                db_entity = (
+                    await entity_repository.get_by_entity_id_and_entity_type(
+                        updated_entity.entity_id, updated_entity.entity_type
+                    )
+                )
+                """Retrieve the existing entity from the database."""
+
+                is_changed = False
+                """Flag to check if any changes were made."""
+                update_payload: dict[str, Any] = {}
+                """Dictionary to store the update payload."""
+
+                if db_entity.entity_name != updated_entity.entity_name:
+                    """Check if the entity name has changed."""
+                    # Update name
+                    db_entity.entity_name = updated_entity.entity_name
+                    update_payload[EntityTable.entity_name.key] = (
+                        db_entity.entity_name
+                    )
+                    """Update the entity name."""
+
+                    # Update search_content
+                    db_entity.search_content = normalise_search_content(
+                        updated_entity.entity_name
+                    )
+                    update_payload[EntityTable.search_content.key] = (
+                        db_entity.search_content
+                    )
+                    """Update the search content."""
+                    is_changed = True
+                    """Set the changed flag."""
+
+                # Update metadata
+                differences = DeepDiff(
+                    db_entity,
+                    updated_entity,
+                    include_paths=[
+                        "entity_metadata",
+                    ],
+                    ignore_numeric_type_changes=True,
+                )
+                """Compare the entity metadata."""
+                diff = pprint.pformat(differences)
+                """Format the diff for logging."""
+                if diff != "{}":
+                    """If there are any differences."""
                     if LOGGING_TRACE:
-                        """Log if trace logging is enabled."""
-                        log.debug(
-                            f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
-                        )
+                        """Log the differences if trace logging is enabled."""
+                        log.debug(f"diff: {diff}")
+                    # log.debug(f"db_entity     : {db_entity}")
+                    # log.debug(f"updated_entity: {updated_entity}")
 
-                    db_entity = (
-                        await entity_repository.get_by_entity_id_and_entity_type(
-                            updated_entity.entity_id, updated_entity.entity_type
-                        )
+                    db_entity.entity_metadata = updated_entity.entity_metadata
+                    """Update the entity metadata."""
+
+                    update_payload[EntityTable.entity_metadata.key] = (
+                        db_entity.entity_metadata
                     )
-                    """Retrieve the existing entity from the database."""
+                    """Add the metadata to the update payload."""
+                    is_changed = True
+                    """Set the changed flag."""
 
-                    is_changed = False
-                    """Flag to check if any changes were made."""
-                    update_payload: dict[str, Any] = {}
-                    """Dictionary to store the update payload."""
-
-                    if db_entity.entity_name != updated_entity.entity_name:
-                        """Check if the entity name has changed."""
-                        # Update name
-                        db_entity.entity_name = updated_entity.entity_name
-                        update_payload[EntityTable.entity_name.key] = (
-                            db_entity.entity_name
-                        )
-                        """Update the entity name."""
-
-                        # Update search_content
-                        db_entity.search_content = normalise_search_content(
-                            updated_entity.entity_name
-                        )
-                        update_payload[EntityTable.search_content.key] = (
-                            db_entity.search_content
-                        )
-                        """Update the search content."""
-                        is_changed = True
-                        """Set the changed flag."""
-
-                    # Update metadata
-                    differences = DeepDiff(
-                        db_entity,
-                        updated_entity,
-                        include_paths=[
-                            "entity_metadata",
-                        ],
-                        ignore_numeric_type_changes=True,
-                    )
-                    """Compare the entity metadata."""
-                    diff = pprint.pformat(differences)
-                    """Format the diff for logging."""
-                    if diff != "{}":
-                        """If there are any differences."""
-                        if LOGGING_TRACE:
-                            """Log the differences if trace logging is enabled."""
-                            log.debug(f"diff: {diff}")
-                        # log.debug(f"db_entity     : {db_entity}")
-                        # log.debug(f"updated_entity: {updated_entity}")
-
-                        db_entity.entity_metadata = updated_entity.entity_metadata
-                        """Update the entity metadata."""
-
-                        update_payload[EntityTable.entity_metadata.key] = (
-                            db_entity.entity_metadata
-                        )
-                        """Add the metadata to the update payload."""
-                        is_changed = True
-                        """Set the changed flag."""
-
-                    if is_changed:
-                        """If any changes were made, update the entity."""
-                        await entity_repository.update(db_entity.id, update_payload)
-                        """Update the entity."""
-                        await entity_repository.commit()
-                        """Commit the transaction."""
-                        updated_count += 1
-                        """Increment the updated count."""
-                except NotFoundError:
-                    """Handle the case where the entity is not found."""
-                    # log.debug(
-                    #     f"New insert in update_entities_worker: {updated_entity.entity_id}-{updated_entity.entity_type}"
-                    # )
-                    try:
-                        """Attempt to create a new entity."""
-                        await entity_repository.create(updated_entity)
-                        """Create the entity."""
-                        await entity_repository.commit()
-                        """Commit the transaction."""
-                        inserted_count += 1
-                        """Increment the inserted count."""
-                    except DatabaseError as e:
-                        """Handle database errors."""
-                        log.exception("Error in update_entities_worker")
-                        raise e
+                if is_changed:
+                    """If any changes were made, update the entity."""
+                    await entity_repository.update(db_entity.id, update_payload)
+                    """Update the entity."""
+                    await entity_repository.commit()
+                    """Commit the transaction."""
+                    updated_count += 1
+                    """Increment the updated count."""
+            except NotFoundError:
+                """Handle the case where the entity is not found."""
+                # log.debug(
+                #     f"New insert in update_entities_worker: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                # )
+                try:
+                    """Attempt to create a new entity."""
+                    await entity_repository.create(updated_entity)
+                    """Create the entity."""
+                    await entity_repository.commit()
+                    """Commit the transaction."""
+                    inserted_count += 1
+                    """Increment the inserted count."""
                 except DatabaseError as e:
                     """Handle database errors."""
-                    log.exception("Error in update_entities_worker", e)
+                    log.exception("Error in update_entities_worker")
                     raise e
+            except DatabaseError as e:
+                """Handle database errors."""
+                log.exception("Error in update_entities_worker")
+                raise e
 
-        log.info(
-            f"[{proc_name}] processed_count: {processed_count}, "
-            + f"updated: {updated_count}, inserted: {inserted_count}"
-        )
-        """Log the number of entities processed, updated, and inserted."""
+    log.info(
+        f"[{proc_name}] processed_count: {processed_count}, "
+        + f"updated: {updated_count}, inserted: {inserted_count}"
+    )
+    """Log the number of entities processed, updated, and inserted."""
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(process_entities(bulk_updates))

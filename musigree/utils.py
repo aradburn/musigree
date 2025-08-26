@@ -1,3 +1,4 @@
+import asyncio
 import enum
 import itertools
 import json
@@ -11,10 +12,10 @@ import sys
 import textwrap
 import time
 import unicodedata
-from collections.abc import Mapping, Iterator
+from collections.abc import Mapping, Iterator, Sequence, Iterable, AsyncIterable
 from datetime import datetime, date
 from io import BufferedWriter
-from typing import Protocol, Any, TypeVar, Sequence, AsyncGenerator
+from typing import Protocol, Any, TypeVar, AsyncGenerator, Coroutine, Generator, Callable
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -141,13 +142,17 @@ def parse_request_args(
     return roles_list, year
 
 
-def batched(iterable: Sequence[T], n: int) -> Iterator[list[T]]:
+def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], None, None]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
-    it = iter(iterable)
-    while batch := list(itertools.islice(it, n)):
-        yield batch
+    if isinstance(iterable, Sequence):
+        it = iter(iterable)
+        while batch := list(itertools.islice(it, n)):
+            yield batch
+    else:
+        while batch := list(itertools.islice(iterable, n)):
+            yield batch
 
 
 # def iter_in_slices(iterator, size=None):
@@ -166,7 +171,7 @@ def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
-    return batched(seq, math.ceil(num_items / num_chunks))
+    return batched(iter(seq), math.ceil(num_items / num_chunks))
 
 
 async def async_chunks(
@@ -230,6 +235,8 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 
 
 def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
+    """Normalize a dictionary into a formatted string representation, skipping specified keys and types."""
+    skip_keys = skip_keys or []
     preprocessor = SkipFilter(keys=skip_keys)
 
     def list_public_attributes(input_var: dict[str, Any]) -> dict[str, Any]:
@@ -278,6 +285,7 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
 
 
 def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
+    """Normalize a list of dictionaries into a formatted string representation."""
     def sorted_itemgetter(*items: str) -> Any:
         if len(items) == 1:
             item = items[0]
@@ -314,22 +322,41 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
 
 
 def normalize_str_list(list_obj: list[str]) -> str:
+    """Normalize a list of strings into a formatted string representation."""
+    if list_obj is None or len(list_obj) == 0:
+        return "[\n" + "\n]\n"
     return "[\n" + ",\n".join(textwrap.indent(_, "    ") for _ in list_obj) + "\n]\n"
 
 
 def strip_input(input_str: str) -> str:
+    """Remove leading indentation and the first newline from the input string."""
     return textwrap.dedent(input_str).replace("\n", "", 1)
 
 
 def strip_trailing_newline(input_str: str) -> str:
+    """Remove a trailing newline from the input string, if present."""
     return input_str.removesuffix("\n")
 
 
 def table2dict(table: DeclarativeBase) -> dict[str, Any]:
+    """Convert a SQLAlchemy table object to a dictionary.
+    Args:
+        table (DeclarativeBase): The SQLAlchemy table object.
+    Returns:
+        dict[str, Any]: A dictionary representation of the table object.
+    """
     return {c.name: getattr(table, c.name) for c in table.__table__.columns}  # type: ignore
 
 
 def is_latin(_string: str) -> bool:
+    """Check if all characters in the string are Latin characters.
+    Args:
+        _string (str): The input string to check.
+    Returns:
+        bool: True if all characters are Latin, False otherwise.
+    """
+    if _string is None or _string == "":
+        return False
     try:
         return all(["LATIN" in unicodedata.name(c) for c in _string])
     except ValueError:
@@ -337,6 +364,12 @@ def is_latin(_string: str) -> bool:
 
 
 def to_ascii(_string: str) -> str:
+    """Convert a unicode string to a plain ASCII string.
+    Args:
+        _string (str): The input unicode string.
+    Returns:
+        str: The converted plain ASCII string.
+    """
     if _string is None:
         return ""
     # Transliterate the unicode string into a plain ASCII string
@@ -346,6 +379,14 @@ def to_ascii(_string: str) -> str:
 
 
 def sleep_with_backoff(multiplier: int) -> None:
+    """Sleep for a random amount of time based on the given multiplier.
+    The sleep time is calculated as a random value between 1 and the multiplier,
+    capped at a maximum of 60 seconds.
+    Args:
+        multiplier (int): The maximum multiplier for the sleep time.
+    """
+    if multiplier < 1:
+        multiplier = 1
     time_in_secs = int(multiplier * (1.0 + random.random()))
     if time_in_secs > 60:
         time_in_secs = 60
@@ -358,6 +399,11 @@ def sleep_with_backoff(multiplier: int) -> None:
 def download_file(
     input_url: str, output_file: SupportsWrite | BufferedWriter
 ) -> None:
+    """Download a file from a URL and write it to the provided output file-like object.
+    Args:
+        input_url (str): The URL of the file to download.
+        output_file (SupportsWrite | BufferedWriter): A file-like object to write the downloaded content to.
+    """
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()
         shutil.copyfileobj(response.raw, output_file, length=10 * 1024)
@@ -366,6 +412,13 @@ def download_file(
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:
+    """Construct the URL for a Discogs data dump based on the date and type.
+    Args:
+        dump_date (date): The date of the dump.
+        dump_type (str): The type of dump (e.g., "artists", "releases").
+    Returns:
+        str: The constructed URL for the Discogs data dump.
+    """
     from musigree.constants import DISCOGS_FILE_TEMPLATE
     from musigree.constants import DISCOGS_BASE_URL
 
@@ -378,6 +431,13 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
 
 
 def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
+    """Generate a list of dates representing the first day of each month between start_date and end_date.
+    Args:
+        start_date (date): The start date of the range.
+        end_date (date): The end date of the range.
+    Returns:
+        list[date]: A list of dates representing the first day of each month in the range.
+    """
     date_list = []
     curr_date = start_date
     while curr_date <= end_date:
@@ -388,6 +448,12 @@ def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
 
 
 def calculate_size(obj: Any) -> int:
+    """Recursively calculates the memory size of an object and its contents.
+    Args:
+        obj (Any): The object to calculate the size of.
+    Returns:
+        int: The total memory size of the object in bytes.
+    """
     size = sys.getsizeof(obj)
     if isinstance(obj, dict):
         size += sum(calculate_size(v) for v in obj.values())
@@ -412,4 +478,159 @@ def calculate_size(obj: Any) -> int:
 
 
 def get_random_string(length: int) -> str:
+    """Generate a random string of fixed length.
+    Args:
+        length (int): The length of the random string to generate.
+    Returns:
+        str: A random string of the specified length.
+    """
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+def worker_generator(
+    worker_coroutine: Callable[[list[T], int, int], Coroutine[Any, Any, None]],
+    records: Iterable[list[T]],
+    total_count: int,
+) -> Generator[Coroutine[Any, Any, None], None, None]:
+    """A generator that yields worker coroutines for processing records.
+    Args:
+        worker_coroutine (Callable[[list[T], int, int], Coroutine[Any, Any, None]]): The worker coroutine function to be called for each batch of records.
+        records (Iterable[list[T]]): An iterable of lists of records to be processed.
+        total_count (int): The total number of records to be processed.
+    Yields:
+        Coroutine[Any, Any, None]: A coroutine that processes a batch of records.
+    """
+    processed_count: int = 0
+    for record in records:
+        yield worker_coroutine(record, processed_count, total_count)
+        processed_count += len(record)
+
+async def async_worker_generator(
+    worker_coroutine: Callable[[list[T], int, int], Coroutine[Any, Any, None]],
+    records: AsyncIterable[list[T]],
+    total_count: int,
+) -> AsyncGenerator[Coroutine[Any, Any, None], None]:
+    """A generator that yields worker coroutines for processing records.
+    Args:
+        worker_coroutine (Callable[[list[T], int, int], Coroutine[Any, Any, None]]): The worker coroutine function to be called for each batch of records.
+        records (Iterable[list[T]]): An iterable of lists of records to be processed.
+        total_count (int): The total number of records to be processed.
+    Yields:
+        Coroutine[Any, Any, None]: A coroutine that processes a batch of records.
+    """
+    processed_count: int = 0
+    async for record in records:
+        yield worker_coroutine(record, processed_count, total_count)
+        processed_count += len(record)
+
+async def queue_worker(name: str, queue: asyncio.Queue[Coroutine[None, None, None]]) -> None:
+    """A worker that processes items from the queue.
+    Args:
+        name (str): The name of the worker.
+        queue (asyncio.Queue): The queue to process items from.
+    """
+    while True:
+        # Get a "work item" out of the queue.
+        worker_function = await queue.get()
+
+        # Run the worker_function
+        await worker_function
+
+        # Notify the queue that the "work item" has been processed.
+        queue.task_done()
+
+async def queue_worker_functions(
+    max_concurrent: int,
+    worker_coroutines: Generator[Coroutine[Any, Any, None], None, None],
+) -> Any:
+    """Run worker coroutines with a maximum number of concurrent workers.
+    Args:
+        max_concurrent (int): The maximum number of concurrent workers.
+        worker_coroutines (Generator[Coroutine[Any, Any, None], None, None]): A generator of worker coroutines.
+    """
+    if max_concurrent < 1:
+        max_concurrent = 1
+    number_of_workers = 0
+    started_at = time.monotonic()
+
+    # Create a queue that we will use to store our "workload".
+    queue: asyncio.Queue[Coroutine[Any, Any, None]] = asyncio.Queue()
+    tasks = []
+
+    async with asyncio.TaskGroup() as task_group:
+
+        for worker_coroutine in worker_coroutines:
+            # Create max_concurrent worker tasks to process the queue concurrently.
+            if number_of_workers < max_concurrent:
+                task = task_group.create_task(queue_worker(f"worker-{number_of_workers}", queue))
+                tasks.append(task)
+                number_of_workers += 1
+            await queue.put(worker_coroutine)
+
+        # Wait until the queue is fully processed.
+        await queue.join()
+
+        # Cancel our worker tasks.
+        for task in tasks:
+            task.cancel()
+
+        # Wait until all worker tasks are cancelled.
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    total_processing_time = time.monotonic() - started_at
+    log.debug(f"total processing time: {total_processing_time:.2f} seconds")
+
+async def queue_async_worker_functions(
+    max_concurrent: int,
+    worker_coroutines: AsyncGenerator[Coroutine[Any, Any, None], None],
+) -> Any:
+    """Run worker coroutines with a maximum number of concurrent workers.
+    Args:
+        max_concurrent (int): The maximum number of concurrent workers.
+        worker_coroutines (Generator[Coroutine[Any, Any, None], None, None]): A generator of worker coroutines.
+    """
+    if max_concurrent < 1:
+        max_concurrent = 1
+    number_of_workers = 0
+    started_at = time.monotonic()
+
+    # Create a queue that we will use to store our "workload".
+    queue: asyncio.Queue[Coroutine[Any, Any, None]] = asyncio.Queue()
+    tasks = []
+
+    async with asyncio.TaskGroup() as task_group:
+        async for worker_coroutine in worker_coroutines:
+            # Create max_concurrent worker tasks to process the queue concurrently.
+            if number_of_workers < max_concurrent:
+                task = task_group.create_task(queue_worker(f"worker-{number_of_workers}", queue))
+                tasks.append(task)
+                number_of_workers += 1
+            await queue.put(worker_coroutine)
+
+        # Wait until the queue is fully processed.
+        await queue.join()
+
+        # Cancel our worker tasks.
+        for task in tasks:
+            task.cancel()
+
+        # Wait until all worker tasks are cancelled.
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    total_processing_time = time.monotonic() - started_at
+    log.debug(f"total processing time: {total_processing_time:.2f} seconds")
+
+def generator_with_id_accumulator(
+    records: Iterable[dict[str, Any]], id_accumulator: list[int], id_attr: str
+) -> Generator[dict[str, Any], None, None]:
+    """A generator that yields records and accumulates their IDs.
+    Args:
+        records (Iterable[dict[str, Any]]): An iterable of records (dictionaries).
+        id_accumulator (list[int]): A list to accumulate the IDs.
+        id_attr (str): The attribute name in the record that contains the ID.
+    Yields:
+        dict[str, Any]: The next record from the input iterable.
+    """
+    for record in records:
+        _id = int(record[id_attr])
+        id_accumulator.append(_id)
+        yield record

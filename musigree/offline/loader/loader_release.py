@@ -55,12 +55,11 @@ The module utilizes `logging` for logging operations, `pickle` for serialization
 and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
 
-import asyncio
 import logging
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Coroutine
 
+from musigree import utils
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
@@ -149,99 +148,17 @@ class LoaderRelease(LoaderBase):
         )
         return releases_loaded
 
-    @classmethod
-    async def insert_bulk(
-        cls,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk insert operation for releases.
+    @staticmethod
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+        return insert_releases_worker
 
-        This method is called to insert a batch of release records into the
-        database using the `insert_releases_worker` function.
+    @staticmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+        return update_releases_worker
 
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The list of release records to insert.
-            inserted_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        loop.set_debug(True)
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, insert_releases_worker, bulk_inserts, inserted_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, insert_releases_worker, bulk_inserts, inserted_count
-            )
-        await future
-
-    @classmethod
-    async def update_bulk(
-        cls,
-        bulk_updates: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk update operation for releases.
-
-        This method is called to update a batch of release records in the
-        database using the `update_releases_worker` function.
-
-        Args:
-            bulk_updates (list[dict[str, Any]]): The list of release records to update.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, update_releases_worker, bulk_updates, processed_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, update_releases_worker, bulk_updates, processed_count
-            )
-        await future
-
-    @classmethod
-    async def delete_bulk(
-        cls,
-        bulk_deletes: list[int],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk delete operation for releases.
-
-        This method is called to delete a batch of release records from the
-        database using the `delete_releases_worker` function.
-
-        Args:
-            bulk_deletes (list[int]): The list of release IDs to delete.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, delete_releases_worker, bulk_deletes, processed_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, delete_releases_worker, bulk_deletes, processed_count
-            )
-        await future
+    @staticmethod
+    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:
+        return delete_releases_worker
 
     @classmethod
     async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
@@ -287,40 +204,6 @@ class LoaderRelease(LoaderBase):
             )
         """Get the release ids in batches."""
 
-        current_total = 0
-        """Counter for the total number of releases processed."""
-        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
+        worker_coroutines = utils.worker_generator(process_release_pass_two_worker, batched_release_ids, total_count)
 
-        if concurrency_count > 1:
-            # Multi-threaded execution
-            # Use ProcessPoolExecutor to run the worker function concurrently
-            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                async with asyncio.TaskGroup() as task_group:
-                    for ids in batched_release_ids:
-                        """Iterate over the batches of release IDs."""
-                        future = cls.run_worker_function(
-                            process_release_pass_two_worker,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
-                        current_total += number_in_batch
-        else:
-            # Single-threaded execution
-            for ids in batched_release_ids:
-                """Iterate over the batches of release IDs."""
-                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                    async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(
-                            process_release_pass_two_worker,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
-                        current_total += number_in_batch
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)

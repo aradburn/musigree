@@ -23,7 +23,6 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from asyncio import AbstractEventLoop
 from typing import Type, List, Any
 
 from sqlalchemy import Table
@@ -127,29 +126,6 @@ class RuntimeDatabaseHelper(ABC):
     async def shutdown_database() -> None:
         """Shuts down the database connection."""
         pass
-
-    @classmethod
-    def initialize(cls, loop: AbstractEventLoop) -> None:
-        """
-        Initializes the database connection for a new process.
-
-        Ensures that the parent process's database connections are not touched in
-        the new connection pool.
-        """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling initialize()"
-        )
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
-            is not None
-        ), "runtime_async_engine must be initialized before calling initialize()"
-        loop.run_until_complete(
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
-                close=False
-            )
-        )
 
     @staticmethod
     @abstractmethod

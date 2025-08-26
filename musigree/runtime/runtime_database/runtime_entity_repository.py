@@ -21,7 +21,8 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
-from typing import Any, List, Sequence, Iterator, AsyncGenerator
+from collections.abc import Sequence, Iterator
+from typing import Any, List, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -319,7 +320,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
                 internal entity IDs.
         """
         ids = await self.get_ids()
-        return utils.batched(ids, num_in_batch)
+        return utils.batched(iter(ids), num_in_batch)
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
         """

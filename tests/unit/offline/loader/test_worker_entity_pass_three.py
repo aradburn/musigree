@@ -178,192 +178,127 @@ class TestWorkerEntityPassThree:
         actual_payload = call_args[0][1]
         assert actual_payload[EntityTable.relation_counts.key] == expected_counts
 
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseManager.get_concurrency_count"
-    )
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseHelper.initialize"
-    )
-    @patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction")
-    def test_process_entity_pass_three_worker_single_threaded(
+    @pytest.mark.asyncio
+    async def test_process_entity_pass_three_worker_single_threaded(
         self,
-        mock_offline_transaction: Mock,
-        mock_db_helper_init: Mock,
-        mock_concurrency_count: Mock,
     ) -> None:
         """Test process_entity_pass_three_worker with single-threaded execution."""
         # Arrange
-        mock_concurrency_count.return_value = 1
-        mock_offline_transaction.return_value.__aenter__ = AsyncMock()
-        mock_offline_transaction.return_value.__aexit__ = AsyncMock()
+        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-        # Mock the async functions that would be called
-        with patch(
-            "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
-        ) as mock_worker_single:
-            mock_worker_single.return_value = None
-
-            with patch("asyncio.get_running_loop") as mock_get_loop:
-                mock_get_loop.side_effect = RuntimeError("No loop")
-
-                with patch("asyncio.new_event_loop") as mock_new_loop:
-                    mock_loop = Mock()
-                    mock_new_loop.return_value = mock_loop
-
-                    with patch("asyncio.set_event_loop") as mock_set_loop:
-                        # Act
-                        ids = [1, 2, 3]
-                        current_total = 0
-                        total_count = 100
-
-                        process_entity_pass_three_worker(
-                            ids, current_total, total_count
-                        )
-
-                        # Assert
-                        mock_concurrency_count.assert_called_once()
-                        mock_db_helper_init.assert_not_called()  # Should not be called for single-threaded
-                        mock_new_loop.assert_called_once()
-                        mock_set_loop.assert_called_once_with(mock_loop)
-                        mock_loop.run_until_complete.assert_called_once()
-
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseManager.get_concurrency_count"
-    )
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseHelper.initialize"
-    )
-    @patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction")
-    def test_process_entity_pass_three_worker_multi_threaded(
-        self,
-        mock_offline_transaction: Mock,
-        mock_db_helper_init: Mock,
-        mock_concurrency_count: Mock,
-    ) -> None:
-        """Test process_entity_pass_three_worker with multi-threaded execution."""
-        # Arrange
-        mock_concurrency_count.return_value = 4
-        mock_offline_transaction.return_value.__aenter__ = AsyncMock()
-        mock_offline_transaction.return_value.__aexit__ = AsyncMock()
-
-        with patch(
-            "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
-        ) as mock_worker_single:
-            mock_worker_single.return_value = None
-
-            with patch("asyncio.get_running_loop") as mock_get_loop:
-                mock_loop = Mock()
-                mock_get_loop.return_value = mock_loop
+            with patch(
+                "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
+            ) as mock_worker_single:
+                mock_worker_single.return_value = None
 
                 # Act
                 ids = [1, 2, 3]
                 current_total = 0
                 total_count = 100
 
-                process_entity_pass_three_worker(ids, current_total, total_count)
+                await process_entity_pass_three_worker(
+                    ids, current_total, total_count
+                )
 
                 # Assert
-                mock_concurrency_count.assert_called_once()
-                mock_db_helper_init.assert_called_once_with(
-                    mock_loop
-                )  # Should be called for multi-threaded
-                mock_loop.run_until_complete.assert_called_once()
+                assert mock_worker_single.call_count == len(ids)
 
+    @pytest.mark.asyncio
+    async def test_process_entity_pass_three_worker_multi_threaded(
+        self,
+    ) -> None:
+        """Test process_entity_pass_three_worker with multi-threaded execution."""
+        # Arrange
+        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
+
+            with patch(
+                "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
+            ) as mock_worker_single:
+                mock_worker_single.return_value = None
+
+                # Act
+                ids = [1, 2, 3]
+                current_total = 0
+                total_count = 100
+
+                await process_entity_pass_three_worker(ids, current_total, total_count)
+
+                # Assert
+                assert mock_worker_single.call_count == len(ids)
+
+    @pytest.mark.asyncio
     @patch(
         "musigree.offline.loader.worker_entity_pass_three.LoaderBase.BULK_REPORTING_SIZE",
         2,
     )
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseManager.get_concurrency_count"
-    )
-    @patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction")
-    def test_process_entity_pass_three_worker_with_reporting(
+    async def test_process_entity_pass_three_worker_with_reporting(
         self,
-        mock_offline_transaction: Mock,
-        mock_concurrency_count: Mock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test process_entity_pass_three_worker with progress reporting."""
         # Arrange
-        mock_concurrency_count.return_value = 1
-        mock_offline_transaction.return_value.__aenter__ = AsyncMock()
-        mock_offline_transaction.return_value.__aexit__ = AsyncMock()
+        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-        with patch(
-            "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
-        ) as mock_worker_single:
-            mock_worker_single.return_value = None
+            with patch(
+                "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
+            ) as mock_worker_single:
+                mock_worker_single.return_value = None
 
-            with patch("asyncio.get_running_loop") as mock_get_loop:
-                mock_get_loop.side_effect = RuntimeError("No loop")
+                # Act
+                ids = [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                ]  # 5 entities, should trigger reporting at 2 and 4
+                current_total = 0
+                total_count = 100
 
-                with patch("asyncio.new_event_loop") as mock_new_loop:
-                    mock_loop = Mock()
-                    mock_new_loop.return_value = mock_loop
+                with caplog.at_level(logging.DEBUG):
+                    await process_entity_pass_three_worker(
+                        ids, current_total, total_count
+                    )
 
-                    with patch("asyncio.set_event_loop"):
-                        # Act
-                        ids = [
-                            1,
-                            2,
-                            3,
-                            4,
-                            5,
-                        ]  # 5 entities, should trigger reporting at 2 and 4
-                        current_total = 0
-                        total_count = 100
+                # Assert that the worker was called for all entities
+                assert mock_worker_single.call_count == len(ids)
 
-                        with caplog.at_level(logging.DEBUG):
-                            process_entity_pass_three_worker(
-                                ids, current_total, total_count
-                            )
-
-                        # Assert that reporting and final logging would occur
-                        mock_loop.run_until_complete.assert_called_once()
-
-    @patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction")
-    def test_process_entity_pass_three_worker_database_error_handling(
+    @pytest.mark.asyncio
+    async def test_process_entity_pass_three_worker_database_error_handling(
         self,
-        mock_offline_transaction: Mock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test process_entity_pass_three_worker handles database errors properly."""
         # Arrange
-        mock_offline_transaction.return_value.__aenter__ = AsyncMock()
-        mock_offline_transaction.return_value.__aexit__ = AsyncMock()
-
-        with patch(
-            "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
-        ) as mock_worker_single:
-            mock_worker_single.side_effect = DatabaseError(message="Test error")
+        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
             with patch(
-                "musigree.offline.loader.worker_entity_pass_three.OfflineDatabaseManager.get_concurrency_count"
-            ) as mock_concurrency:
-                mock_concurrency.return_value = 1
+                "musigree.offline.loader.worker_entity_pass_three.worker_pass_three_single"
+            ) as mock_worker_single:
+                mock_worker_single.side_effect = DatabaseError(message="Test error")
 
-                with patch("asyncio.get_running_loop") as mock_get_loop:
-                    mock_get_loop.side_effect = RuntimeError("No loop")
+                # Act & Assert
+                ids = [1]
+                current_total = 0
+                total_count = 100
 
-                    with patch("asyncio.new_event_loop") as mock_new_loop:
-                        mock_loop = Mock()
-                        mock_new_loop.return_value = mock_loop
-
-                        # Make run_until_complete raise the DatabaseError from the async function
-                        async def failing_async_func(_ids: list[int]) -> None:
-                            raise DatabaseError(message="Test error")
-
-                        mock_loop.run_until_complete.side_effect = DatabaseError(
-                            message="Test error"
-                        )
-
-                        with patch("asyncio.set_event_loop"):
-                            # Act & Assert
-                            ids = [1]
-                            current_total = 0
-                            total_count = 100
-
-                            with pytest.raises(DatabaseError):
-                                process_entity_pass_three_worker(
-                                    ids, current_total, total_count
-                                )
+                with pytest.raises(DatabaseError):
+                    await process_entity_pass_three_worker(
+                        ids, current_total, total_count
+                    )

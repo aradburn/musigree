@@ -2,9 +2,8 @@ import csv
 import json
 import logging
 from abc import abstractmethod
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Coroutine
 
 from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
 from musigree.exceptions import DatabaseError
@@ -241,37 +240,16 @@ class LoaderRole(LoaderBase):
     #     log.debug(f"Added {added_count} roles")
     #     return added_count
 
-    @classmethod
-    @abstractmethod
-    async def insert_bulk(
-        cls,
-        bulk_inserts: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
+    @staticmethod
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
-    @classmethod
-    @abstractmethod
-    async def update_bulk(
-        cls,
-        bulk_updates: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
+    @staticmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
-    @classmethod
-    @abstractmethod
-    async def delete_bulk(
-        cls,
-        bulk_deletes: list[int],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
+    @staticmethod
+    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
     @classmethod

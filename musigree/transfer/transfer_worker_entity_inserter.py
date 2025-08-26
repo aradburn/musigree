@@ -46,7 +46,6 @@ exception and `retrying` for retry. It interacts with
 and `musigree.runtime.runtime_database_manager` for managing concurrency.
 """
 
-import asyncio
 import logging
 import multiprocessing
 from typing import Any
@@ -56,14 +55,11 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
 
 
-def transfer_worker_entity_inserter(
-    bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int
-) -> None:
+async def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int) -> None:
     """
     A worker process for inserting entity records into the runtime database.
     This function is designed to be run in a separate process to handle the
@@ -71,43 +67,22 @@ def transfer_worker_entity_inserter(
     runtime database, improving the efficiency of the data transfer process
     """
 
-    async def insert_entities(_bulk_inserts: list[dict[str, Any]]) -> None:
-        """Async function to handle entity insertion."""
-        async with runtime_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            runtime_entity_repository = RuntimeEntityRepository()
-            """Instance of RuntimeEntityRepository for database operations on entities."""
-            try:
-                """Attempt to insert the entities."""
-                await runtime_entity_repository.save_all(_bulk_inserts)
-                """Insert the entities."""
-                await runtime_entity_repository.commit()
-                """Commit the transaction."""
-            except DatabaseError:
-                """Handle potential database errors."""
-                log.error("Error in transfer_worker_entity_inserter")
-
-        log.info(f"[{proc_name}] inserted {inserted_count} entities of {total_count}")
-        """Log the number of entities inserted."""
-
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
+    async with runtime_transaction():
+        """Ensure that database operations are performed within a transaction."""
+        runtime_entity_repository = RuntimeEntityRepository()
+        """Instance of RuntimeEntityRepository for database operations on entities."""
+        try:
+            """Attempt to insert the entities."""
+            await runtime_entity_repository.save_all(bulk_inserts)
+            """Insert the entities."""
+            await runtime_entity_repository.commit()
+            """Commit the transaction."""
+        except DatabaseError:
+            """Handle potential database errors."""
+            log.error("Error in transfer_worker_entity_inserter")
 
-    if RuntimeDatabaseManager.get_concurrency_count() > 1:
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling initialize()"
-        )
-        """Check if concurrency is enabled."""
-        RuntimeDatabaseManager.runtime_database_helper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(insert_entities(bulk_inserts))
+    log.info(f"[{proc_name}] inserted {inserted_count} entities of {total_count}")
+    """Log the number of entities inserted."""

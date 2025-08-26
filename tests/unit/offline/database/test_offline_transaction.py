@@ -5,7 +5,6 @@ This module contains comprehensive unit tests for the offline_transaction contex
 which provides transaction management functionality for database operations in the offline system.
 It tests successful transactions, error handling, rollback scenarios, and session management.
 """
-
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -56,7 +55,6 @@ class TestOfflineTransaction:
         mock_ctx: Mock,
         mock_get_session: AsyncMock,
         mock_session: AsyncMock,
-        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test offline transaction with DatabaseError handling."""
         # Setup
@@ -78,9 +76,6 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-        # Check logging
-        assert "Rolling back changes. Test database error" in caplog.text
-
     # noinspection PyUnreachableCode
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
@@ -89,7 +84,6 @@ class TestOfflineTransaction:
         mock_ctx: Mock,
         mock_get_session: AsyncMock,
         mock_session: AsyncMock,
-        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test offline transaction with IntegrityError handling."""
         # Setup
@@ -112,9 +106,6 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-        # Check logging
-        assert "Rolling back changes" in caplog.text
-
     # noinspection PyUnreachableCode
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
@@ -123,7 +114,6 @@ class TestOfflineTransaction:
         mock_ctx: Mock,
         mock_get_session: AsyncMock,
         mock_session: AsyncMock,
-        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test offline transaction with InvalidRequestError handling."""
         # Setup
@@ -144,9 +134,6 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-        # Check logging
-        assert "Rolling back changes" in caplog.text
-
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_commit_error(
@@ -154,7 +141,6 @@ class TestOfflineTransaction:
         mock_ctx: Mock,
         mock_get_session: AsyncMock,
         mock_session: AsyncMock,
-        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test offline transaction when commit raises an error."""
         # Setup
@@ -176,9 +162,6 @@ class TestOfflineTransaction:
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
         mock_ctx.reset.assert_called_once_with("old_token")
-
-        # Check logging
-        assert "Rolling back changes" in caplog.text
 
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")

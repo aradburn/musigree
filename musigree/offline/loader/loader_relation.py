@@ -36,12 +36,10 @@ The module utilizes `logging` for logging operations, `SortedSet` for managing
 sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
 
-import asyncio
 import logging
-from abc import abstractmethod
-from concurrent.futures import ProcessPoolExecutor
-from typing import Any
+from typing import Any, Callable, Coroutine
 
+from musigree import utils
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
@@ -88,121 +86,24 @@ class LoaderRelation(LoaderBase):
             """Instance of ReleaseRepository for database operations on releases."""
             total_count = await release_repository.count()
             """Total number of releases in the database."""
-            batched_release_ids = await release_repository.get_batched_ids(
-                number_in_batch
-            )
-        """Get the release ids in batches."""
+            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
+            """Get the release ids in batches."""
 
-        current_total = 0
-        """Counter for the total number of releases processed."""
-        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
+        worker_coroutines = utils.worker_generator(process_relation_pass_one_worker, batched_release_ids, total_count)
 
-        if concurrency_count > 1:
-            # Multi-threaded execution
-            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                async with asyncio.TaskGroup() as task_group:
-                    for ids in batched_release_ids:
-                        """Iterate over the batches of release IDs."""
-                        future = cls.run_worker_function(
-                            process_relation_pass_one_worker,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count() * 2, worker_coroutines)
 
-                        """Add the future to the list."""
-                        current_total += number_in_batch
-                        """Update the counter."""
-        else:
-            # Single-threaded execution
-            for ids in batched_release_ids:
-                """Iterate over the batches of release IDs."""
-                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                    async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(
-                            process_relation_pass_one_worker,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
 
-                        """Add the future to the list."""
-                        current_total += number_in_batch
-                        """Update the counter."""
-
-    @classmethod
-    @abstractmethod
-    async def insert_bulk(
-        cls,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Placeholder for bulk insert operations.
-
-        This method is inherited from `LoaderBase` but is not used in
-        `LoaderRelation`.
-
-        Args:
-            bulk_inserts: The data to be inserted.
-            inserted_count: The number of items already inserted.
-            executor: The executor to run the insert operation.
-            concurrency_count: The number of concurrent operations allowed.
-        """
+    @staticmethod
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
-    @classmethod
-    @abstractmethod
-    async def update_bulk(
-        cls,
-        bulk_updates: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Placeholder for bulk update operations.
-
-        This method is inherited from `LoaderBase` but is not used in
-        `LoaderRelation`.
-
-        Args:
-            bulk_updates: The data to be updated.
-            processed_count: The number of items already processed.
-            executor: The executor to run the update operation.
-            concurrency_count: The number of concurrent operations allowed.
-        """
+    @staticmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
-    @classmethod
-    @abstractmethod
-    async def delete_bulk(
-        cls,
-        bulk_deletes: list[int],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Placeholder for bulk delete operations.
-
-        This method is inherited from `LoaderBase` but is not used in
-        `LoaderRelation`.
-
-        Args:
-            bulk_deletes: The data to be deleted.
-            processed_count: The number of items already processed.
-            executor: The executor to run the delete operation.
-            concurrency_count: The number of concurrent operations allowed.
-        """
+    @staticmethod
+    def get_delete_worker_function() -> Callable[[list[int], int], Coroutine[Any, Any, None]]:  # type: ignore
         pass
 
     @classmethod

@@ -46,16 +46,13 @@ managing concurrency.
 
 import logging
 import multiprocessing
-import asyncio
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -63,9 +60,7 @@ The logger for the worker entity pass three module.
 """
 
 
-def process_entity_pass_three_worker(
-    ids: list[int], current_total: int, total_count: int
-) -> None:
+async def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing entity records in the third pass.
 
@@ -88,62 +83,37 @@ def process_entity_pass_three_worker(
     end_count = count + len(ids)
     """Counter for the number of entities processed."""
 
-    async def process_entities(_ids: list[int]) -> None:
-        nonlocal count, end_count, proc_name
-        async with offline_transaction():
-            for _id in _ids:
-                """Iterate over the entity IDs."""
-                await process_entity(_id)
-                count += 1
-                if (
-                    count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == end_count
-                ):
-                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
-
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
-        """Log the total number of entities processed."""
-
-    async def process_entity(entity_id: int) -> None:
-        """Async function to handle entity processing."""
-
+    async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
+
         entity_repository = EntityRepository()
         """Instance of EntityRepository for database operations on entities."""
         relation_repository = RelationRepository()
         """Instance of RelationRepository for database operations on relations."""
-        try:
-            """Attempt to process the entity."""
-            await worker_pass_three_single(
-                entity_repository,
-                relation_repository,
-                id_=entity_id,
-            )
-            """Process the entity."""
-        except DatabaseError as e:
-            """Handle potential database errors."""
-            log.exception(
-                f"Database Error for entity id: {entity_id} in process {proc_name}",
-                exc_info=True,
-            )
-            raise e
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
+        for entity_id in ids:
+            """Iterate over the entity IDs."""
+            try:
+                """Attempt to process the entity."""
+                await worker_pass_three_single(
+                    entity_repository,
+                    relation_repository,
+                    entity_id,
+                )
+                """Process the entity."""
+                count += 1
+                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
+            except DatabaseError as e:
+                """Handle potential database errors."""
+                log.exception(
+                    f"Database Error for entity id: {entity_id} in process {proc_name}",
+                    exc_info=True,
+                )
+                raise e
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(process_entities(ids))
-
+    log.info(f"[{proc_name}] processed {count} of {total_count}")
+    """Log the total number of entities processed."""
 
 async def worker_pass_three_single(
     entity_repository: EntityRepository,

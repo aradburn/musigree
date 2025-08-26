@@ -1,6 +1,6 @@
 import logging
-from collections.abc import Iterator, Sequence
-from typing import Any, AsyncGenerator
+from collections.abc import Iterator, Sequence, AsyncGenerator
+from typing import Any
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -139,16 +139,6 @@ class EntityRepository(BaseRepository[EntityTable]):
         )
         async for row in result:
             yield row[0], row[1]
-
-        # with await self._session.stream(
-        #     query, execution_options={"yield_per": 1000}
-        # ) as result:
-        #     # async for result in cursor:
-        #     yield result[0], result[1]
-        # for partition in results.partitions():
-        #     partition is an iterable that will be at most 1000 items
-        # for row in partition:
-        #     yield row[0], row[1]
 
     async def get_by_id(self, id_: int) -> Entity:
         """
@@ -302,7 +292,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             List[List[int]]: A list of batches, where each batch is a list of entity IDs.
         """
         ids = await self.get_ids()
-        return utils.batched(ids, num_in_batch)
+        return utils.batched(iter(ids), num_in_batch)
 
     async def find_by_search_content(self, search_string: str) -> list[Entity]:
         """

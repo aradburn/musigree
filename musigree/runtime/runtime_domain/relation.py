@@ -28,6 +28,7 @@ __all__ = [
     "RuntimeRelation",
     "RuntimeRelationInternal",
     "RuntimeRelationResult",
+    "to_runtime_relation_db_dict",
 ]
 
 import logging
@@ -40,6 +41,7 @@ from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -241,6 +243,20 @@ class RuntimeRelation(_RuntimeRelationBase):
         ]
         return "-".join(str(_) for _ in pieces)
 
+    def to_db(self) -> "RuntimeRelationDB":
+        """
+        Converts the runtime relation to its database representation.
+
+        This method prepares the `RuntimeRelation` instance for storage in the
+        database by transforming its attributes into the format expected by
+        the database schema (`RuntimeRelationDB`).
+
+        Returns:
+            RuntimeRelationDB: The database representation of the runtime relation.
+        """
+        relation_dict: dict = self.model_dump()
+        return RuntimeRelationDB.model_validate(relation_dict)
+
 
 class RuntimeRelationResult(RuntimeRelation):
     """
@@ -348,3 +364,15 @@ class RuntimeRelationInternal(_RuntimeRelationBase):
             if relation:
                 relations.append(relation)
         return relations
+
+
+def to_runtime_relation_db_dict(relation_db: RelationDB) -> dict[str, Any]:
+    """
+    Converts a Relation instance to a dictionary suitable for RuntimeRelationDB.
+    Args:
+        relation_db (RelationDB): The RelationDB instance to convert.
+    Returns:
+        dict[str, Any]: The dictionary representation of the RuntimeRelationDB.
+    """
+    runtime_relation_db = RuntimeRelationDB(**relation_db.model_dump())
+    return runtime_relation_db.model_dump()

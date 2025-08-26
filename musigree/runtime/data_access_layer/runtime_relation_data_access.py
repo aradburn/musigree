@@ -1,14 +1,18 @@
 import logging
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.domain.relation import RelationDB
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_domain.relation import (
     RuntimeRelation,
     RuntimeRelationInternal,
+    to_runtime_relation_db_dict,
 )
 
 log = logging.getLogger(__name__)
@@ -132,3 +136,14 @@ class RuntimeRelationDataAccess:
     #     # relation_links = {relation.link_key: relation for relation in relations}
     #     # log.debug(f"relation_links: {relation_links}")
     #     # return relation_links
+
+    @staticmethod
+    async def get_runtime_relation_dicts_from_relations(
+        relation_dbs: AsyncGenerator[RelationDB, None],
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        async for relation_db in relation_dbs:
+            runtime_relation_dict = to_runtime_relation_db_dict(relation_db)
+            yield runtime_relation_dict

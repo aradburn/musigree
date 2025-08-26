@@ -35,16 +35,13 @@ The module utilizes `logging` for logging operations and `sqlalchemy.exc.Databas
 for database related exceptions.
 """
 
-import asyncio
 import logging
 import multiprocessing
 from typing import Any
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -52,10 +49,7 @@ The logger for the worker release inserter module.
 """
 
 
-def insert_releases_worker(
-    bulk_inserts: list[dict[str, Any]],
-    inserted_count: int,
-) -> None:
+async def insert_releases_worker(bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int) -> None:
     """
     Worker function for inserting release records into the database.
 
@@ -65,48 +59,29 @@ def insert_releases_worker(
     Args:
         bulk_inserts (list[dict[str, Any]]): A list of release records to insert.
         inserted_count (int): The number of releases already inserted.
-
+        total_count (int): The total number of releases to be inserted.
     Raises:
         DatabaseError: If there's an error during database operations.
     """
 
-    async def insert_releases(_bulk_inserts: list[dict[str, Any]]) -> None:
-        """Async function to handle release insertion."""
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        proc_name = multiprocessing.current_process().name
-        """Get the name of the current process."""
+    async with offline_transaction():
+        """Ensure that database operations are performed within a transaction."""
+        release_repository = ReleaseRepository()
+        """Instance of ReleaseRepository for database operations on releases."""
+        try:
+            """Attempt to insert the releases."""
+            await release_repository.save_all(bulk_inserts)
+            """Insert the releases."""
+            await release_repository.commit()
+            """Commit the transaction."""
+        except DatabaseError:
+            """Handle potential database errors."""
+            log.error("Error in insert_releases_worker")
+            # log.exception("Error in insert_releases_worker", exc_info=True)
+            # raise
 
-        async with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            release_repository = ReleaseRepository()
-            """Instance of ReleaseRepository for database operations on releases."""
-            try:
-                """Attempt to insert the releases."""
-                await release_repository.save_all(_bulk_inserts)
-                """Insert the releases."""
-                await release_repository.commit()
-                """Commit the transaction."""
-            except DatabaseError:
-                """Handle potential database errors."""
-                log.error("Error in insert_releases_worker")
-                # log.exception("Error in insert_releases_worker", exc_info=True)
-                # raise
-
-        log.info(f"[{proc_name}] inserted_count: {inserted_count}")
-        """Log the number of releases inserted."""
-
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
-
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(insert_releases(bulk_inserts))
+    log.info(f"[{proc_name}] inserted_count: {inserted_count}")
+    """Log the number of releases inserted."""

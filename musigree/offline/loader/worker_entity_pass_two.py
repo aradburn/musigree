@@ -53,7 +53,6 @@ related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
 """
 
-import asyncio
 import logging
 import multiprocessing
 
@@ -62,11 +61,9 @@ from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.entity import Entity
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -74,9 +71,7 @@ The logger for the worker entity pass two module.
 """
 
 
-def process_entity_pass_two_worker(
-    ids: list[int], current_total: int, total_count: int
-) -> None:
+async def process_entity_pass_two_worker(ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing entity records in the second pass.
 
@@ -101,59 +96,33 @@ def process_entity_pass_two_worker(
     """Counter for the number of entities processed."""
     end_count = count + len(ids)
 
-    async def process_entities(_ids: list[int]) -> None:
-        nonlocal count, end_count
-        async with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            entity_repository = EntityRepository()
-            """Instance of EntityRepository for database operations on entities."""
+    async with offline_transaction():
+        """Ensure that database operations are performed within a transaction."""
+        entity_repository = EntityRepository()
+        """Instance of EntityRepository for database operations on entities."""
 
-            for _id in _ids:
-                # log.debug(f"[{proc_name}] processing entity id: {_id}")
-                """Iterate over the entity IDs."""
-                await process_entity(entity_repository, _id)
+        for entity_id in ids:
+            # log.debug(f"[{proc_name}] processing entity id: {_id}")
+            """Iterate over the entity IDs."""
+            try:
+                """Attempt to process the entity."""
+                entity = await entity_repository.get_by_id(entity_id)
+                """Retrieve the entity."""
+                await worker_pass_two_single(entity_repository, entity, proc_name)
+                """Process the entity."""
                 count += 1
                 # """Increment the entity counter."""
-                if (
-                    count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == end_count
-                ):
+                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
                     """Log the progress."""
-                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
+            except NotFoundError:
+                """Handle the case where the entity is not found."""
+                log.warning(f"Database NotFoundError: entity with id {entity_id} in process: {proc_name}")
+                await entity_repository.rollback()
+                """Rollback the transaction."""
 
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
+                log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
-    async def process_entity(entity_repository: EntityRepository, entity_id: int) -> None:
-        """Async function to handle entity processing."""
-        try:
-            """Attempt to process the entity."""
-            entity = await entity_repository.get_by_id(entity_id)
-            """Retrieve the entity."""
-            await worker_pass_two_single(entity_repository, entity, proc_name)
-            """Process the entity."""
-        except NotFoundError:
-            """Handle the case where the entity is not found."""
-            log.warning(
-                f"Database NotFoundError: entity with id {entity_id} in process: {proc_name}"
-            )
-            await entity_repository.rollback()
-            """Rollback the transaction."""
-
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
-
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(process_entities(ids))
-
+    log.info(f"[{proc_name}] processed {count} of {total_count}")
 
 async def worker_pass_two_single(
     entity_repository: EntityRepository, entity: Entity, proc_name: str

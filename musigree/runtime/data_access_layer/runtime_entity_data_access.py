@@ -1,14 +1,16 @@
 import logging
-from typing import cast
+from collections.abc import AsyncGenerator
+from typing import cast, Any
 
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
@@ -178,3 +180,12 @@ class RuntimeEntityDataAccess:
                 cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
 
         return id_
+
+    @staticmethod
+    async def get_runtime_entity_dicts_from_entities(entities: AsyncGenerator[Entity, None]) -> AsyncGenerator[dict[str, Any], None]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        async for entity in entities:
+            runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+            yield runtime_entity_dict

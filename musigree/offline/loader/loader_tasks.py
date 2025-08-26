@@ -68,8 +68,8 @@ operations, `urllib.parse` for URL parsing and `musigree` library.
 import asyncio
 import datetime
 import logging
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 from urllib.parse import urlparse
 
 import luigi

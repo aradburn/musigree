@@ -49,14 +49,11 @@ database related operations and `musigree.offline.offline_database_manager` for
 managing concurrency.
 """
 
-import asyncio
 import logging
 import multiprocessing
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
@@ -69,9 +66,7 @@ The logger for the worker release pass two module.
 """
 
 
-def process_release_pass_two_worker(
-    release_ids: list[int], current_total: int, total_count: int
-) -> None:
+async def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing release records in the second pass.
 
@@ -87,75 +82,43 @@ def process_release_pass_two_worker(
         DatabaseError: If there's an error during database operations.
     """
 
-    async def process_releases(_release_ids: list[int]) -> None:
-        proc_name = multiprocessing.current_process().name
-        """Get the name of the current process."""
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        count = current_total
-        """Counter for the number of releases processed."""
-        end_count = count + len(release_ids)
-        """The total number of releases to process."""
+    count = current_total
+    """Counter for the number of releases processed."""
+    end_count = count + len(release_ids)
+    """The total number of releases to process."""
 
-        async with offline_transaction():
-            for _id in _release_ids:
-                """Iterate over the release IDs."""
-                await process_release(_id)
-
-                count += 1
-                """Increment the processed counter."""
-                if (
-                    count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == end_count
-                ):
-                    """Log every BULK_REPORTING_SIZE."""
-                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
-
-        log.info(f"[{proc_name}] processed {count} of {total_count}")
-        """Log the total number of releases processed."""
-
-    async def process_release(release_id: int) -> None:
-        """Ensure that database operations are performed within a transaction."""
+    async with offline_transaction():
         entity_repository = EntityRepository()
         """Instance of EntityRepository for database operations on entities."""
         release_repository = ReleaseRepository()
         """Instance of ReleaseRepository for database operations on releases."""
-        try:
-            """Attempt to process the release."""
-            await worker_pass_two_single(
-                entity_repository=entity_repository,
-                release_repository=release_repository,
-                id_=release_id,
-            )
-            """Process the release."""
-        except DatabaseError as e:
-            """Handle potential database errors."""
-            log.exception(
-                "Database Error in process_release_pass_two_worker", exc_info=True
-            )
-            raise e
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
+        for release_id in release_ids:
+            """Iterate over the release IDs."""
+            try:
+                """Attempt to process the release."""
+                await worker_pass_two_single(entity_repository, release_repository, release_id)
+                """Process the release."""
+                count += 1
+                """Increment the processed counter."""
+                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                    """Log every BULK_REPORTING_SIZE."""
+                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
+            except DatabaseError as e:
+                """Handle potential database errors."""
+                log.exception("Database Error in process_release_pass_two_worker", exc_info=True)
+                raise e
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(process_releases(release_ids))
-
+    log.info(f"[{proc_name}] processed {count} of {total_count}")
+    """Log the total number of releases processed."""
 
 async def worker_pass_two_single(
-    *,
     entity_repository: EntityRepository,
     release_repository: ReleaseRepository,
-    id_: int,
+    release_id: int,
 ) -> None:
     """
     Processes a single release record in the second pass.
@@ -168,12 +131,12 @@ async def worker_pass_two_single(
             operations.
         release_repository (ReleaseRepository): The repository for release
             operations.
-        id_: The ID of the release to process.
+        release_id: The ID of the release to process.
 
     Raises:
         DatabaseError: If there's an error during database operations.
     """
-    release = await release_repository.get_by_id(id_)
+    release = await release_repository.get_by_id(release_id)
     """Retrieve the release."""
     changed = await EntityDataAccess.resolve_release_references(
         entity_repository, release
@@ -184,7 +147,7 @@ async def worker_pass_two_single(
         """If any changes were made to the release."""
 
         await release_repository.update(
-            id_,
+            release_id,
             {
                 ReleaseTable.labels.key: release.labels,
                 ReleaseTable.companies.key: release.companies,

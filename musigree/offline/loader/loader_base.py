@@ -29,13 +29,12 @@ functions, `musigree.offline.offline_database_manager` for database management,
 for loader-specific utilities, and `musigree.logging_config` for logging.
 """
 
-import asyncio
 import gzip
 import logging
 from abc import abstractmethod, ABC
-from concurrent.futures import ProcessPoolExecutor
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator, Callable
+from typing import Any, Generator, Callable, Coroutine
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -66,23 +65,48 @@ class LoaderBase(ABC):
         BULK_INSERT_BATCH_SIZE (int): The batch size for bulk insert operations.
         BULK_UPDATE_BATCH_SIZE (int): The batch size for bulk update operations.
         BULK_REPORTING_SIZE (int): The number of records to process before reporting progress.
-        MAX_RETRYS (int): The maximum number of retries for database operations.
         _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
     """
 
-    BULK_INSERT_BATCH_SIZE = 1000
+    BULK_INSERT_BATCH_SIZE = 10000
     """The batch size for bulk insert operations."""
-    BULK_UPDATE_BATCH_SIZE = 100
+    BULK_UPDATE_BATCH_SIZE = 1000
     """The batch size for bulk update operations."""
-    BULK_REPORTING_SIZE = 1000
+    BULK_REPORTING_SIZE = 10000
     """The number of records to process before reporting progress."""
     # BULK_INSERT_BATCH_SIZE = 10000
     # BULK_UPDATE_BATCH_SIZE = 1000
     # BULK_REPORTING_SIZE = 10000
-    MAX_RETRYS = 10
+    # MAX_RETRYS = 10
     """The maximum number of retries for database operations."""
     _tags_to_fields_mapping: dict[str, Any] | None = None
     """A mapping from XML tags to database fields and procedures."""
+
+    @staticmethod
+    def process_xml(
+        parser: ParserBase,
+        xml_path: str,
+        xml_tag: str,
+        skip_without: list[str],
+    ) -> Generator[dict[str, Any], None, None]:
+        with gzip.GzipFile(xml_path, "r") as file_pointer:
+            iterator = ParserUtils.iterparse(file_pointer, xml_tag)
+
+            for element in iterator:
+                try:
+                    data = parser.tags_to_fields(element)
+                    if skip_without:
+                        if any(not data.get(_) for _ in skip_without):
+                            continue
+                    # if element.get("id"):
+                    #     data[id_attr] = element.get("id")
+                    # log.debug(f"data: {data}")
+
+                    yield data
+
+                except DataError as e:
+                    log.exception("Error in loader_pass_one", exc_info=True)
+                    raise e
 
     @classmethod
     async def loader_pass_one_manager(
@@ -122,6 +146,8 @@ class LoaderBase(ABC):
 
         """
         # Loader pass one.
+        id_accumulator: list[int] = []
+        """A list to accumulate IDs of processed records."""
         set_of_updated_ids: SortedSet[int] = SortedSet()
         """A sorted set to keep track of updated IDs."""
 
@@ -133,307 +159,71 @@ class LoaderBase(ABC):
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
 
-        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
+        worker = cls.get_insert_worker_function() if is_bulk_inserts else cls.get_update_worker_function()
 
-        with gzip.GzipFile(xml_path, "r") as file_pointer:
-            iterator = ParserUtils.iterparse(file_pointer, xml_tag)
-            bulk_records: list[dict[str, Any]] = []
+        records = cls.process_xml(parser, xml_path, xml_tag, skip_without)
 
-            if concurrency_count > 1:
-                # Multi-threaded execution
-                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                    async with asyncio.TaskGroup() as task_group:
-                        for _, element in enumerate(iterator):
-                            try:
-                                data = parser.tags_to_fields(element)
-                                if skip_without:
-                                    if any(not data.get(_) for _ in skip_without):
-                                        continue
-                                # if element.get("id"):
-                                #     data[id_attr] = element.get("id")
-                                # log.debug(f"data: {data}")
+        records_with_accumulated_ids = utils.generator_with_id_accumulator(records, id_accumulator, id_attr)
 
-                                set_of_updated_ids.add(int(data[id_attr]))
+        batch_records = utils.batched(records_with_accumulated_ids, LoaderBase.BULK_INSERT_BATCH_SIZE)
 
-                                bulk_records.append(data)
-                                processed_count += 1
+        worker_coroutines = utils.worker_generator(worker, batch_records, 0)
 
-                                if (
-                                    len(bulk_records)
-                                    >= LoaderBase.BULK_INSERT_BATCH_SIZE
-                                ):
-                                    if is_bulk_inserts:
-                                        future = cls.insert_bulk(
-                                            bulk_records,
-                                            processed_count,
-                                            executor,
-                                            concurrency_count,
-                                        )
-                                    else:
-                                        future = cls.update_bulk(
-                                            bulk_records,
-                                            processed_count,
-                                            executor,
-                                            concurrency_count,
-                                        )
-                                    task_group.create_task(future)
-                                    bulk_records = []
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
-                            except DataError as e:
-                                log.exception("Error in loader_pass_one", exc_info=True)
-                                raise e
+        for _id in id_accumulator:
+            set_of_updated_ids.add(_id)
 
-                        if len(bulk_records) > 0:
-                            if is_bulk_inserts:
-                                future = cls.insert_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                    executor,
-                                    concurrency_count,
-                                )
-                            else:
-                                future = cls.update_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                    executor,
-                                    concurrency_count,
-                                )
-                            task_group.create_task(future)
-            else:
-                # Single-threaded execution
+        async with offline_transaction():
+            repository_count = await repository.count()
+        log.debug(f"repository_count: {repository_count}")
 
-                for _, element in enumerate(iterator):
-                    try:
-                        data = parser.tags_to_fields(element)
-                        if skip_without:
-                            if any(not data.get(_) for _ in skip_without):
-                                continue
-                        # if element.get("id"):
-                        #     data[id_attr] = element.get("id")
-                        # log.debug(f"data: {data}")
+        new_inserts_count = repository_count - initial_count
+        log.debug(f"processed_count: {processed_count}")
+        log.debug(f"new_inserts_count: {new_inserts_count}")
 
-                        set_of_updated_ids.add(int(data[id_attr]))
+        entity_type: EntityType | None = None
+        if xml_tag == "artist":
+            entity_type = EntityType.ARTIST
+        elif xml_tag == "label":
+            entity_type = EntityType.LABEL
 
-                        bulk_records.append(data)
-                        processed_count += 1
+        set_of_database_ids: set[int] = await cls.get_set_of_ids(entity_type)
 
-                        if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
-                            with ProcessPoolExecutor(
-                                max_workers=concurrency_count
-                            ) as executor:
-                                async with asyncio.TaskGroup() as task_group:
-                                    if is_bulk_inserts:
-                                        future = cls.insert_bulk(
-                                            bulk_records,
-                                            processed_count,
-                                            executor,
-                                            concurrency_count,
-                                        )
-                                    else:
-                                        future = cls.update_bulk(
-                                            bulk_records,
-                                            processed_count,
-                                            executor,
-                                            concurrency_count,
-                                        )
-                                    task_group.create_task(future)
-                                    bulk_records = []
+        # Check if any records need to be deleted
+        # (present in database and not present in the xml dump)
+        ids_to_be_deleted: set[int] = set_of_database_ids - set_of_updated_ids
 
-                    except DataError as e:
-                        log.exception("Error in loader_pass_one", exc_info=True)
-                        raise e
+        log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
+        log.debug(f"number of database ids: {len(set_of_database_ids)}")
+        log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
 
-                if len(bulk_records) > 0:
-                    with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                        async with asyncio.TaskGroup() as task_group:
-                            if is_bulk_inserts:
-                                future = cls.insert_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                    executor,
-                                    concurrency_count,
-                                )
-                            else:
-                                future = cls.update_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                    executor,
-                                    concurrency_count,
-                                )
-                            task_group.create_task(future)
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
 
-            async with offline_transaction():
-                repository_count = await repository.count()
-            log.debug(f"repository_count: {repository_count}")
+        if len(ids_to_be_deleted) > 0:
+            delete_worker = cls.get_delete_worker_function()
 
-            new_inserts_count = repository_count - initial_count
-            log.debug(f"processed_count: {processed_count}")
-            log.debug(f"new_inserts_count: {new_inserts_count}")
+            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(list(ids_to_be_deleted), number_in_batch)
 
-            if xml_tag == "artist":
-                entity_type = EntityType.ARTIST
-            elif xml_tag == "label":
-                entity_type = EntityType.LABEL
-            elif xml_tag == "release":
-                entity_type = None
-            set_of_database_ids: set[int] = await cls.get_set_of_ids(entity_type)
+            worker_coroutines = utils.worker_generator(delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted))
 
-            # Check if any records need to be deleted
-            # (present in database and not present in the xml dump)
-            ids_to_be_deleted: set[int] = set_of_database_ids - set_of_updated_ids
-
-            log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
-            log.debug(f"number of database ids: {len(set_of_database_ids)}")
-            log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
-
-            number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
-
-            if len(ids_to_be_deleted) > 0:
-                if concurrency_count > 1:
-                    # Multi-threaded execution
-                    with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                        async with asyncio.TaskGroup() as task_group:
-                            batched_ids_to_be_deleted: Iterator[list[int]] = (
-                                utils.batched(list(ids_to_be_deleted), number_in_batch)
-                            )
-
-                            for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                                future = cls.delete_bulk(
-                                    batch_of_ids_to_be_deleted,
-                                    len(batch_of_ids_to_be_deleted),
-                                    executor,
-                                    concurrency_count,
-                                )
-                                task_group.create_task(future)
-                else:
-                    # Single-threaded execution
-                    batched_ids_to_be_deleted = utils.batched(
-                        list(ids_to_be_deleted), number_in_batch
-                    )
-
-                    for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                        with ProcessPoolExecutor(
-                            max_workers=concurrency_count
-                        ) as executor:
-                            async with asyncio.TaskGroup() as task_group:
-                                future = cls.delete_bulk(
-                                    batch_of_ids_to_be_deleted,
-                                    len(batch_of_ids_to_be_deleted),
-                                    executor,
-                                    concurrency_count,
-                                )
-                                task_group.create_task(future)
+            await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
         return processed_count
 
-    @classmethod
-    async def run_worker_function(
-        cls,
-        worker_function: Callable,
-        ids: list[int],
-        current_total: int,
-        total_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> Any:
-        """
-        Performs a bulk delete operation for entities.
-
-        This method is called to update a batch of entity records in the
-        database using the `update_entities_worker` function.
-
-        Args:
-            worker_function (callable): The worker function to execute.
-            ids (list[int]): The list of IDs to process.
-            current_total (int): The current total number of records processed.
-            total_count (int): The total number of records to process.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, worker_function, ids, current_total, total_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, worker_function, ids, current_total, total_count
-            )
-        return await future
-
-    @classmethod
+    @staticmethod
     @abstractmethod
-    async def insert_bulk(
-        cls,
-        bulk_inserts: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk insert operation.
-
-        This method is called to insert a batch of records into the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
-
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The list of records to insert.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count: The number of concurrent operations allowed.
-
-        """
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
         pass
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    async def update_bulk(
-        cls,
-        bulk_updates: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk update operation.
-
-        This method is called to update a batch of records in the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
-
-        Args:
-            bulk_updates (list[dict[str, Any]]): The list of records to update.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count: The number of concurrent operations allowed.
-
-        """
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
         pass
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    async def delete_bulk(
-        cls,
-        bulk_deletes: list[int],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk delete operation.
-
-        This method is called to delete a batch of records from the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
-
-        Args:
-            bulk_deletes (list[int]): The list of IDs to delete.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count: The number of concurrent operations allowed.
-
-        """
+    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:
         pass
 
     @classmethod

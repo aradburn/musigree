@@ -35,15 +35,12 @@ The module utilizes `logging` for logging operations and `sqlalchemy.exc.Databas
 for database related exceptions.
 """
 
-import asyncio
 import logging
 import multiprocessing
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -51,7 +48,7 @@ The logger for the worker release deleter module.
 """
 
 
-def delete_releases_worker(bulk_deletes: list[int], processed_count: int) -> None:
+async def delete_releases_worker(bulk_deletes: list[int], processed_count: int, total_count: int) -> None:
     """
     Worker function for deleting release records from the database.
 
@@ -61,55 +58,37 @@ def delete_releases_worker(bulk_deletes: list[int], processed_count: int) -> Non
     Args:
         bulk_deletes (list[int]): A list of release IDs to delete.
         processed_count (int): The number of releases processed so far.
-
+        total_count (int): The total number of releases to process.
     Raises:
         DatabaseError: If there's an error during database operations.
     """
 
-    async def delete_releases(_bulk_deletes: list[int]) -> None:
-        """Async function to handle release deletion."""
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
+    deleted_count = 0
+    """Counter for the number of releases deleted."""
 
-        proc_name = multiprocessing.current_process().name
-        """Get the name of the current process."""
-        deleted_count = 0
-        """Counter for the number of releases deleted."""
+    async with offline_transaction():
+        release_repository = ReleaseRepository()
+        """Instance of ReleaseRepository for database operations on releases."""
 
-        async with offline_transaction():
-            for _id in _bulk_deletes:
-                """Iterate through the release IDs to delete."""
+        for release_id in bulk_deletes:
+            """Iterate through the release IDs to delete."""
 
-                """Ensure that database operations are performed within a transaction."""
-                release_repository = ReleaseRepository()
-                """Instance of ReleaseRepository for database operations on releases."""
-                try:
-                    """Attempt to delete the release."""
-                    await release_repository.delete_by_id(_id)
-                    """Delete the release."""
-                    deleted_count += 1
-                    """Increment the deletion counter."""
-                except DatabaseError:
-                    """Handle potential database errors."""
-                    log.error("Error in delete_releases_worker")
-                    # log.exception("Error in delete_releases_worker", exc_info=True)
-                    raise
+            """Ensure that database operations are performed within a transaction."""
+            try:
+                """Attempt to delete the release."""
+                await release_repository.delete_by_id(release_id)
+                """Delete the release."""
+                deleted_count += 1
+                """Increment the deletion counter."""
+            except DatabaseError:
+                """Handle potential database errors."""
+                log.error("Error in delete_releases_worker")
+                # log.exception("Error in delete_releases_worker", exc_info=True)
+                raise
 
-        log.info(
-            f"[{proc_name}] processed: {processed_count}, deleted: {deleted_count}"
-        )
-        """Log the progress and number of deleted releases."""
+    log.info(f"[{proc_name}] processed: {processed_count}, deleted: {deleted_count}")
+    """Log the progress and number of deleted releases."""
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(delete_releases(bulk_deletes))

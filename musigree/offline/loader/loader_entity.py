@@ -1,10 +1,9 @@
-import asyncio
 import logging
 import pickle
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable, Coroutine, Any
 
+from musigree import utils
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
@@ -63,98 +62,17 @@ class LoaderEntity(LoaderBase):
         )
         return artists_loaded + labels_loaded
 
-    @classmethod
-    async def insert_bulk(
-        cls,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk insert operation for entities.
+    @staticmethod
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+        return insert_entities_worker
 
-        This method is called to insert a batch of entity records in the
-        database using the `insert_entities_worker` function.
+    @staticmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+        return update_entities_worker
 
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The list of release records to update.
-            inserted_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, insert_entities_worker, bulk_inserts, inserted_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, insert_entities_worker, bulk_inserts, inserted_count
-            )
-        return await future
-
-    @classmethod
-    async def update_bulk(
-        cls,
-        bulk_updates: list[dict[str, Any]],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk update operation for entties.
-
-        This method is called to update a batch of release records in the
-        database using the `update_entities_worker` function.
-
-        Args:
-            bulk_updates (list[dict[str, Any]]): The list of entity records to update.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, update_entities_worker, bulk_updates, processed_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, update_entities_worker, bulk_updates, processed_count
-            )
-        return await future
-
-    @classmethod
-    async def delete_bulk(
-        cls,
-        bulk_deletes: list[int],
-        processed_count: int,
-        executor: ProcessPoolExecutor,
-        concurrency_count: int,
-    ) -> None:
-        """
-        Performs a bulk delete operation for entities.
-
-        This method is called to update a batch of entity records in the
-        database using the `update_entities_worker` function.
-
-        Args:
-            bulk_deletes (list[dict[str, Any]]): The list of release records to update.
-            processed_count (int): The number of records processed so far.
-            executor (ProcessPoolExecutor): The executor to submit the work to.
-            concurrency_count (int): The number of concurrent operations allowed.
-        """
-        loop = asyncio.get_running_loop()
-        if concurrency_count > 1:
-            future = loop.run_in_executor(
-                executor, delete_entities_worker, bulk_deletes, processed_count
-            )
-        else:
-            future = loop.run_in_executor(
-                None, delete_entities_worker, bulk_deletes, processed_count
-            )
-        return await future
+    @staticmethod
+    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:
+        return delete_entities_worker
 
     @classmethod
     async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
@@ -197,39 +115,9 @@ class LoaderEntity(LoaderBase):
             total_count = await entity_repository.count()
             batched_ids = await entity_repository.get_batched_ids(number_in_batch)
 
-        current_total = 0
-        concurrency_count = OfflineDatabaseManager.get_concurrency_count()
+        worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
 
-        if concurrency_count > 1:
-            # Use ProcessPoolExecutor for concurrent processing
-            with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                async with asyncio.TaskGroup() as task_group:
-                    for ids in batched_ids:
-                        future = cls.run_worker_function(
-                            worker_function,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
-                        current_total += number_in_batch
-        else:
-            # Use single-threaded execution
-            for ids in batched_ids:
-                with ProcessPoolExecutor(max_workers=concurrency_count) as executor:
-                    async with asyncio.TaskGroup() as task_group:
-                        future = cls.run_worker_function(
-                            worker_function,
-                            ids,
-                            current_total,
-                            total_count,
-                            executor,
-                            concurrency_count,
-                        )
-                        task_group.create_task(future)
-                        current_total += number_in_batch
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
     @classmethod
     # @timeit

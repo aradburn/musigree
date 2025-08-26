@@ -1,4 +1,3 @@
-from typing import AsyncGenerator
 
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
@@ -246,9 +245,9 @@ class TestRuntimeRoleRepository:
             async def __anext__(self) -> tuple[Mock]:
                 if self.index >= len(self.data):
                     raise StopAsyncIteration
-                result = self.data[self.index]
+                _result = self.data[self.index]
                 self.index += 1
-                return result
+                return _result
 
         mock_stream_result = MockStreamResult()
         mock_session.stream.return_value = mock_stream_result

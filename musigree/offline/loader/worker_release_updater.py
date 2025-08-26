@@ -49,7 +49,6 @@ interacts with `musigree.offline.database` for database related operations,
 and `musigree.offline.offline_database_manager` for managing concurrency.
 """
 
-import asyncio
 import logging
 import pprint
 from typing import Any
@@ -58,13 +57,11 @@ from deepdiff import DeepDiff
 
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_id import to_entity_label_internal_id
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.release import Release
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -72,9 +69,7 @@ The logger for the update_releases_worker module.
 """
 
 
-def update_releases_worker(
-    bulk_updates: list[dict[str, Any]], processed_count: int
-) -> None:
+async def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int) -> None:
     """
     A worker function for updating or inserting release records.
 
@@ -101,7 +96,7 @@ def update_releases_worker(
     Args:
         bulk_updates (list[dict[str, Any]]): A list of release data to update or insert.
         processed_count (int): The number of releases processed so far.
-
+        _total_count (int): The total number of releases to process (unused).
     Raises:
         NotFoundError: When a release is not found in the database during update.
         DatabaseError: When there's an error with database operations.
@@ -112,142 +107,121 @@ def update_releases_worker(
     inserted_count = 0
     """Counter for the number of releases inserted."""
 
-    async def update_releases(_bulk_updates: list[dict[str, Any]]) -> None:
-        async with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            for _data in _bulk_updates:
-                """Iterate over the release data."""
-                await update_release(_data)
+    async with offline_transaction():
+        """Ensure that database operations are performed within a transaction."""
 
-        log.info(
-            f"worker updated {updated_count} inserted {inserted_count} releases total"
-            f" processed {processed_count}"
-        )
-        """Log the number of updated and inserted releases."""
-
-    async def update_release(_data: dict[str, Any]) -> None:
-        nonlocal updated_count, inserted_count
         release_repository = ReleaseRepository()
         """Instance of ReleaseRepository for database operations on releases."""
-        updated_release = Release(**_data)
 
-        # If it has got an id, change it for an internal id
-        if updated_release.labels:
-            for entry in updated_release.labels:
-                if "id" in entry:
-                    id_ = entry["id"]
-                    entry["id"] = to_entity_label_internal_id(id_)
+        for data in bulk_updates:
+            """Iterate over the release data."""
+            updated_release = Release(**data)
 
-        if updated_release.companies:
-            for entry in updated_release.companies:
-                if "id" in entry:
-                    id_ = entry["id"]
-                    entry["id"] = to_entity_label_internal_id(id_)
+            # If it has got an id, change it for an internal id
+            if updated_release.labels:
+                for entry in updated_release.labels:
+                    if "id" in entry:
+                        id_ = entry["id"]
+                        entry["id"] = to_entity_label_internal_id(id_)
 
-        """Create a new Release object from the data."""
-        try:
-            """Attempt to update the release."""
-            if LOGGING_TRACE:
-                """Log if trace logging is enabled."""
-                log.debug(f"update: {updated_release.release_id}")
+            if updated_release.companies:
+                for entry in updated_release.companies:
+                    if "id" in entry:
+                        id_ = entry["id"]
+                        entry["id"] = to_entity_label_internal_id(id_)
 
-            db_release = await release_repository.get_by_id(updated_release.release_id)
-            """Retrieve the existing release from the database."""
-
-            is_changed = False
-            """Flag to check if any changes were made."""
-            update_payload: dict[str, Any] = {}
-            """Dictionary to store the update payload."""
-
-            if db_release.title != updated_release.title:
-                """Check if the release title has changed."""
-                db_release.title = updated_release.title
-                update_payload[ReleaseTable.title.key] = db_release.title
-                """Update the release title."""
-                is_changed = True
-                """Set the changed flag."""
-
-            # Update metadata
-            differences = DeepDiff(
-                db_release,
-                updated_release,
-                exclude_paths=[
-                    "dirty_fields",
-                    "_dirty",
-                ],
-                ignore_numeric_type_changes=True,
-            )
-            """Compare the release metadata."""
-            diff = pprint.pformat(differences)
-            """Format the diff for logging."""
-            if diff != "{}":
-                """If there are any differences."""
+            """Create a new Release object from the data."""
+            try:
+                """Attempt to update the release."""
                 if LOGGING_TRACE:
-                    """Log the differences if trace logging is enabled."""
-                    log.debug(f"diff: {diff}")
+                    """Log if trace logging is enabled."""
+                    log.debug(f"update: {updated_release.release_id}")
 
-                # Update all fields that have changed
-                update_fields: dict[str, Any] = {
-                    ReleaseTable.artists.key: updated_release.artists,
-                    ReleaseTable.companies.key: updated_release.companies,
-                    ReleaseTable.country.key: updated_release.country,
-                    ReleaseTable.extra_artists.key: updated_release.extra_artists,
-                    ReleaseTable.formats.key: updated_release.formats,
-                    ReleaseTable.genres.key: updated_release.genres,
-                    ReleaseTable.identifiers.key: updated_release.identifiers,
-                    ReleaseTable.labels.key: updated_release.labels,
-                    ReleaseTable.master_id.key: updated_release.master_id,
-                    ReleaseTable.notes.key: updated_release.notes,
-                    ReleaseTable.release_date.key: updated_release.release_date,
-                    ReleaseTable.styles.key: updated_release.styles,
-                    ReleaseTable.tracklist.key: updated_release.tracklist,
-                }
-                """Update payload for metadata fields."""
-                update_payload.update(update_fields)
-                """Add metadata fields to the update payload."""
-                is_changed = True
-                """Set the changed flag."""
+                db_release = await release_repository.get_by_id(updated_release.release_id)
+                """Retrieve the existing release from the database."""
 
-            if is_changed:
-                """If any changes were made."""
-                await release_repository.update(
-                    updated_release.release_id, update_payload
+                is_changed = False
+                """Flag to check if any changes were made."""
+                update_payload: dict[str, Any] = {}
+                """Dictionary to store the update payload."""
+
+                if db_release.title != updated_release.title:
+                    """Check if the release title has changed."""
+                    db_release.title = updated_release.title
+                    update_payload[ReleaseTable.title.key] = db_release.title
+                    """Update the release title."""
+                    is_changed = True
+                    """Set the changed flag."""
+
+                # Update metadata
+                differences = DeepDiff(
+                    db_release,
+                    updated_release,
+                    exclude_paths=[
+                        "dirty_fields",
+                        "_dirty",
+                    ],
+                    ignore_numeric_type_changes=True,
                 )
-                """Update the release in the database."""
-                await release_repository.commit()
-                """Commit the transaction."""
-                updated_count += 1
-                """Increment the updated counter."""
+                """Compare the release metadata."""
+                diff = pprint.pformat(differences)
+                """Format the diff for logging."""
+                if diff != "{}":
+                    """If there are any differences."""
+                    if LOGGING_TRACE:
+                        """Log the differences if trace logging is enabled."""
+                        log.debug(f"diff: {diff}")
 
-        except NotFoundError:
-            """If the release is not found in the database."""
-            if LOGGING_TRACE:
-                """Log if trace logging is enabled."""
-                log.debug(f"insert: {updated_release.release_id}")
+                    # Update all fields that have changed
+                    update_fields: dict[str, Any] = {
+                        ReleaseTable.artists.key: updated_release.artists,
+                        ReleaseTable.companies.key: updated_release.companies,
+                        ReleaseTable.country.key: updated_release.country,
+                        ReleaseTable.extra_artists.key: updated_release.extra_artists,
+                        ReleaseTable.formats.key: updated_release.formats,
+                        ReleaseTable.genres.key: updated_release.genres,
+                        ReleaseTable.identifiers.key: updated_release.identifiers,
+                        ReleaseTable.labels.key: updated_release.labels,
+                        ReleaseTable.master_id.key: updated_release.master_id,
+                        ReleaseTable.notes.key: updated_release.notes,
+                        ReleaseTable.release_date.key: updated_release.release_date,
+                        ReleaseTable.styles.key: updated_release.styles,
+                        ReleaseTable.tracklist.key: updated_release.tracklist,
+                    }
+                    """Update payload for metadata fields."""
+                    update_payload.update(update_fields)
+                    """Add metadata fields to the update payload."""
+                    is_changed = True
+                    """Set the changed flag."""
 
-            await release_repository.create(updated_release)
-            """Insert the new release into the database."""
-            inserted_count += 1
-            """Increment the inserted counter."""
+                if is_changed:
+                    """If any changes were made."""
+                    await release_repository.update(updated_release.release_id, update_payload)
+                    """Update the release in the database."""
+                    await release_repository.commit()
+                    """Commit the transaction."""
+                    updated_count += 1
+                    """Increment the updated counter."""
 
-        except DatabaseError as e:
-            """If there's a database error."""
-            log.error(f"Database error: {e}")
-            """Log the database error."""
-            raise e
+            except NotFoundError:
+                """If the release is not found in the database."""
+                if LOGGING_TRACE:
+                    """Log if trace logging is enabled."""
+                    log.debug(f"insert: {updated_release.release_id}")
 
-    # Run the async function
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
+                await release_repository.create(updated_release)
+                """Insert the new release into the database."""
+                inserted_count += 1
+                """Increment the inserted counter."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
+            except DatabaseError as e:
+                """If there's a database error."""
+                log.error(f"Database error: {e}")
+                """Log the database error."""
+                raise e
 
-    loop.run_until_complete(update_releases(bulk_updates))
+    log.info(
+        f"worker updated {updated_count} inserted {inserted_count} releases total"
+        f" processed {processed_count}"
+    )
+    """Log the number of updated and inserted releases."""

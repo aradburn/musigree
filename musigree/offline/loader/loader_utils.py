@@ -49,8 +49,9 @@ import glob
 import gzip
 import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
-from typing import List, Iterator
+from typing import List
 
 from musigree.offline.loader.parser_utils import ParserUtils
 

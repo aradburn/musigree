@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from asyncio import AbstractEventLoop
 from typing import Type, List, Any
 
 from sqlalchemy import Table
@@ -58,31 +57,6 @@ class OfflineDatabaseHelper(ABC):
         Abstract method to shut down the database connection.
         """
         pass
-
-    @classmethod
-    def initialize(cls, loop: AbstractEventLoop) -> None:
-        """
-        Initializes the database connection for a new process.
-
-        Ensures that the parent process's database connections are not touched in
-        the new connection pool.
-        """
-        from musigree.offline.offline_database_manager import OfflineDatabaseManager
-
-        assert OfflineDatabaseManager.offline_database_helper is not None, (
-            "OfflineDatabaseManager.offline_database_helper must be initialized before calling initialize()"
-        )
-        assert (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine
-            is not None
-        ), (
-            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling initialize()"
-        )
-        loop.run_until_complete(
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
-                close=False
-            )
-        )
 
     @staticmethod
     @abstractmethod

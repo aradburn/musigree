@@ -38,17 +38,14 @@ The module utilizes `logging` for logging operations and `sqlalchemy.exc.Databas
 for database related exceptions.
 """
 
-import asyncio
 import logging
 import multiprocessing
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -56,79 +53,58 @@ The logger for the worker entity deleter module.
 """
 
 
-def delete_entities_worker(
-    ids: list[int],
-    processed_count: int,
-) -> None:
-    """
-    Worker function for deleting entity records and their associated relations.
-
+async def delete_entities_worker(ids: list[int], current_total: int, total_count: int) -> None:
+    """Worker function for deleting entity records from the database.
     This function is designed to be used with ProcessPoolExecutor to perform
-    concurrent deletion of entities, including both the entity record and any
-    associated relations.
-
+    concurrent deletion of entity records.
     Args:
         ids (list[int]): A list of entity IDs to delete.
-        processed_count (int): The number of entities processed so far.
-
+        current_total (int): The number of entities processed so far.
+        total_count (int): The total number of entities to be processed.
     Raises:
         DatabaseError: If there's an error during database operations.
     """
 
-    async def delete_entities(_ids: list[int]) -> None:
-        proc_name = multiprocessing.current_process().name
-        """Get the name of the current process."""
-        count = 0
-        """Counter for the number of entities deleted."""
-        end_count = count + len(ids)
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
+    count = 0
+    """Counter for the number of entities deleted."""
+    end_count = count + len(ids)
 
-        async with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            for _id in _ids:
-                """Iterate through the entity IDs to delete."""
-                await delete_entity(_id)
-                count += 1
-                if (
-                    count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == end_count
-                ):
-                    log.debug(
-                        f"[{proc_name}] processed {processed_count} deleted {count}"
-                    )
-
-        log.info(f"[{proc_name}] processed {processed_count} deleted {count}")
-        """Log the progress and number of deleted entities."""
-
-    async def delete_entity(entity_id: int) -> None:
-        """Async function to handle entity deletion."""
-
+    async with offline_transaction():
+        """Ensure that database operations are performed within a transaction."""
         entity_repository = EntityRepository()
         """Instance of EntityRepository for database operations on entities."""
         relation_repository = RelationRepository()
         """Instance of RelationRepository for database operations on relations."""
-        try:
-            """Attempt to delete the entity and its relations."""
-            await relation_repository.delete_by_entitys(entity_id)
-            """Delete the relations associated with the entity."""
-            await entity_repository.delete_by_id(entity_id)
-            """Delete the entity itself."""
-        except DatabaseError:
-            """Handle potential database errors."""
-            log.error(f"Error in delete_entities_worker for id: {entity_id}")
-            raise
+        for entity_id in ids:
+            """Iterate through the entity IDs to delete."""
+            await delete_single_entity(entity_repository, relation_repository, entity_id)
+            count += 1
+            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                log.debug(f"[{proc_name}] deleted {count}")
 
-    # Run the async function
+    log.info(f"[{proc_name}] processed {current_total} deleted {count} of {total_count}")
+    """Log the progress and number of deleted entities."""
+
+async def delete_single_entity(
+    entity_repository: EntityRepository, relation_repository: RelationRepository, entity_id: int
+) -> None:
+    """Async function to handle entity deletion.
+        Args:
+            entity_repository (EntityRepository): The repository for entity operations.
+            relation_repository (RelationRepository): The repository for relation operations.
+            entity_id (int): The ID of the entity to delete.
+        Raises:
+            DatabaseError: If there's an error during database operations.
+        """
     try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        """Check if the event loop is already running."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        """Set a new event loop if none exists."""
-
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseHelper.initialize(loop)
-        """Initialize the database helper."""
-
-    loop.run_until_complete(delete_entities(ids))
+        """Attempt to delete the entity and its relations."""
+        await relation_repository.delete_by_entitys(entity_id)
+        """Delete the relations associated with the entity."""
+        await entity_repository.delete_by_id(entity_id)
+        """Delete the entity itself."""
+    except DatabaseError:
+        """Handle potential database errors."""
+        log.error(f"Error in delete_entities_worker for id: {entity_id}")
+        raise

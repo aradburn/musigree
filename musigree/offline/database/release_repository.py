@@ -39,7 +39,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         """
         query = select(ReleaseTable)
         result = await self._session.stream(
-            query, execution_options={"yield_per": 100}
+            query, execution_options={"yield_per": 1000}
         )
         async for row in result:
             yield Release.model_validate(row[0])
@@ -112,7 +112,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             List[List[int]]: A list of batches, where each batch is a list of release IDs.
         """
         ids = await self.get_ids()
-        return utils.batched(ids, num_in_batch)
+        return utils.batched(iter(ids), num_in_batch)
 
     async def update(
         self,
