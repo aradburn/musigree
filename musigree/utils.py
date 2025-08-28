@@ -13,9 +13,11 @@ import textwrap
 import time
 import unicodedata
 from collections.abc import Mapping, Iterator, Sequence, Iterable, AsyncIterable
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, date
+from functools import partial
 from io import BufferedWriter
-from typing import Protocol, Any, TypeVar, AsyncGenerator, Coroutine, Generator, Callable
+from typing import Protocol, Any, TypeVar, AsyncGenerator, Generator, Callable
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -487,134 +489,72 @@ def get_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 def worker_generator(
-    worker_coroutine: Callable[[list[T], int, int], Coroutine[Any, Any, None]],
+    worker_function: Callable[[list[T], int, int], None],
     records: Iterable[list[T]],
     total_count: int,
-) -> Generator[Coroutine[Any, Any, None], None, None]:
-    """A generator that yields worker coroutines for processing records.
+) -> Generator[partial, None, None]:
+    """A generator that yields worker functions for processing records.
     Args:
-        worker_coroutine (Callable[[list[T], int, int], Coroutine[Any, Any, None]]): The worker coroutine function to be called for each batch of records.
+        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
         records (Iterable[list[T]]): An iterable of lists of records to be processed.
         total_count (int): The total number of records to be processed.
     Yields:
-        Coroutine[Any, Any, None]: A coroutine that processes a batch of records.
+        Callable[..., None]: A partial that processes a batch of records.
     """
     processed_count: int = 0
     for record in records:
-        yield worker_coroutine(record, processed_count, total_count)
+        yield partial(worker_function, record, processed_count, total_count)
         processed_count += len(record)
 
 async def async_worker_generator(
-    worker_coroutine: Callable[[list[T], int, int], Coroutine[Any, Any, None]],
+    worker_function: Callable[[list[T], int, int], None],
     records: AsyncIterable[list[T]],
     total_count: int,
-) -> AsyncGenerator[Coroutine[Any, Any, None], None]:
-    """A generator that yields worker coroutines for processing records.
+) -> list[partial]:
+    """A generator that yields worker functions for processing records.
     Args:
-        worker_coroutine (Callable[[list[T], int, int], Coroutine[Any, Any, None]]): The worker coroutine function to be called for each batch of records.
+        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
         records (Iterable[list[T]]): An iterable of lists of records to be processed.
         total_count (int): The total number of records to be processed.
     Yields:
-        Coroutine[Any, Any, None]: A coroutine that processes a batch of records.
+        Callable[..., None]: A partial that processes a batch of records.
     """
+    partials: list[partial] = []
     processed_count: int = 0
     async for record in records:
-        yield worker_coroutine(record, processed_count, total_count)
+        partials.append(partial(worker_function, record, processed_count, total_count))
         processed_count += len(record)
-
-async def queue_worker(name: str, queue: asyncio.Queue[Coroutine[None, None, None]]) -> None:
-    """A worker that processes items from the queue.
-    Args:
-        name (str): The name of the worker.
-        queue (asyncio.Queue): The queue to process items from.
-    """
-    while True:
-        # Get a "work item" out of the queue.
-        worker_function = await queue.get()
-
-        # Run the worker_function
-        await worker_function
-
-        # Notify the queue that the "work item" has been processed.
-        queue.task_done()
+    return partials
 
 async def queue_worker_functions(
     max_concurrent: int,
-    worker_coroutines: Generator[Coroutine[Any, Any, None], None, None],
+    worker_partials: Generator[partial, None, None] | list[partial],
 ) -> Any:
     """Run worker coroutines with a maximum number of concurrent workers.
     Args:
         max_concurrent (int): The maximum number of concurrent workers.
-        worker_coroutines (Generator[Coroutine[Any, Any, None], None, None]): A generator of worker coroutines.
+        worker_partials (Generator[Callable[..., None], None, None]): A generator of worker coroutines.
     """
     if max_concurrent < 1:
         max_concurrent = 1
-    number_of_workers = 0
     started_at = time.monotonic()
 
-    # Create a queue that we will use to store our "workload".
-    queue: asyncio.Queue[Coroutine[Any, Any, None]] = asyncio.Queue()
     tasks = []
+    loop = asyncio.get_running_loop()
+    if max_concurrent > 1:
+        with ProcessPoolExecutor(max_workers=max_concurrent) as executor:
+            for worker_partial in worker_partials:
+                # Create max_concurrent worker tasks to process the queue concurrently.
+                future = loop.run_in_executor(executor, worker_partial.func, *worker_partial.args)
+                tasks.append(future)
 
-    async with asyncio.TaskGroup() as task_group:
-
-        for worker_coroutine in worker_coroutines:
-            # Create max_concurrent worker tasks to process the queue concurrently.
-            if number_of_workers < max_concurrent:
-                task = task_group.create_task(queue_worker(f"worker-{number_of_workers}", queue))
-                tasks.append(task)
-                number_of_workers += 1
-            await queue.put(worker_coroutine)
-
-        # Wait until the queue is fully processed.
-        await queue.join()
-
-        # Cancel our worker tasks.
-        for task in tasks:
-            task.cancel()
-
-        # Wait until all worker tasks are cancelled.
-        await asyncio.gather(*tasks, return_exceptions=True)
-
-    total_processing_time = time.monotonic() - started_at
-    log.debug(f"total processing time: {total_processing_time:.2f} seconds")
-
-async def queue_async_worker_functions(
-    max_concurrent: int,
-    worker_coroutines: AsyncGenerator[Coroutine[Any, Any, None], None],
-) -> Any:
-    """Run worker coroutines with a maximum number of concurrent workers.
-    Args:
-        max_concurrent (int): The maximum number of concurrent workers.
-        worker_coroutines (Generator[Coroutine[Any, Any, None], None, None]): A generator of worker coroutines.
-    """
-    if max_concurrent < 1:
-        max_concurrent = 1
-    number_of_workers = 0
-    started_at = time.monotonic()
-
-    # Create a queue that we will use to store our "workload".
-    queue: asyncio.Queue[Coroutine[Any, Any, None]] = asyncio.Queue()
-    tasks = []
-
-    async with asyncio.TaskGroup() as task_group:
-        async for worker_coroutine in worker_coroutines:
-            # Create max_concurrent worker tasks to process the queue concurrently.
-            if number_of_workers < max_concurrent:
-                task = task_group.create_task(queue_worker(f"worker-{number_of_workers}", queue))
-                tasks.append(task)
-                number_of_workers += 1
-            await queue.put(worker_coroutine)
-
-        # Wait until the queue is fully processed.
-        await queue.join()
-
-        # Cancel our worker tasks.
-        for task in tasks:
-            task.cancel()
-
-        # Wait until all worker tasks are cancelled.
-        await asyncio.gather(*tasks, return_exceptions=True)
+            for done in asyncio.as_completed(tasks):
+                await done
+    else:
+        for worker_partial in worker_partials:
+            # Create a worker tasks to process the queue one by one.
+            future = loop.run_in_executor(None, worker_partial.func, *worker_partial.args)
+            await future
 
     total_processing_time = time.monotonic() - started_at
     log.debug(f"total processing time: {total_processing_time:.2f} seconds")
@@ -634,3 +574,57 @@ def generator_with_id_accumulator(
         _id = int(record[id_attr])
         id_accumulator.append(_id)
         yield record
+
+# def iter_over_async(ait: AsyncGenerator[T, None]) -> Generator[T, None, None]:
+#     """Convert an async generator to a regular generator."""
+#
+#     async def consume_generator() -> list[T]:
+#         result = []
+#         async for _item in ait:
+#             result.append(_item)
+#         return result
+#
+#     # Create a new event loop if none is running
+#     try:
+#         loop = asyncio.get_running_loop()
+#         # We're in an async context, use create_task
+#         task = asyncio.create_task(consume_generator())
+#         items = loop.run_until_complete(task)
+#     except RuntimeError:
+#         # No running loop, create a new one
+#         items = asyncio.run(consume_generator())
+#
+#     for item in items:
+#         yield item
+
+# def iter_over_async(ait: AsyncGenerator[T, None]) -> Generator[T, None, None]:
+#     """Convert an async generator to a regular generator.
+#
+#     This function is designed to be used outside of an async context.
+#
+#     Args:
+#         ait: The async generator to convert.
+#
+#     Yields:
+#         The values from the async generator.
+#     """
+#     loop = asyncio.get_running_loop()
+#     print(f"loop: {loop}")
+#     async def get_next() -> tuple[bool, Any]:
+#         try:
+#             _obj = await ait.__anext__()
+#             return False, _obj
+#         except StopAsyncIteration:
+#             return True, None
+#
+#     while True:
+#         # task = asyncio.run_coroutine_threadsafe(get_next(), loop)
+#         # done, obj = loop.run_until_complete(task)
+#         # task = asyncio.run_coroutine_threadsafe(get_next(), loop)
+#         # done, obj = task.result()
+#         # done, obj = loop.run_until_complete(get_next())
+#         task = asyncio.create_task(get_next())
+#         done, obj = loop.run_until_complete(task)
+#         if done:
+#             break
+#         yield obj
