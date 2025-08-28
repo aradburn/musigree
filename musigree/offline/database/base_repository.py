@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Generic, Type, AsyncGenerator
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, update, insert
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
@@ -166,9 +166,10 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             DatabaseError: If there is an error during the database operation.
         """
         try:
-            instances = [self.schema_class(**payload) for payload in payloads]
-            self._session.add_all(instances)
-            await self._session.flush()
+            await self._session.execute(
+                insert(self.schema_class),
+                payloads,
+            )
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
