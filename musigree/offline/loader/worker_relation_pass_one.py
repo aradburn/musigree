@@ -43,7 +43,7 @@ The `process_relation_pass_one_worker` function interacts with the following com
 The module utilizes `logging` for logging operations and handles various database
 exceptions including `DatabaseError`, `IntegrityError`, and `OperationalError`.
 """
-
+import asyncio
 import logging
 import multiprocessing
 from typing import List
@@ -66,6 +66,7 @@ from musigree.offline.domain.relation_release_year import (
 from musigree.offline.domain.release import Release
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -73,7 +74,7 @@ The logger for the worker relation pass one module.
 """
 
 
-async def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+async def process_relation_pass_one_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing relations in the first pass.
 
@@ -368,3 +369,20 @@ async def process_relation_release_years(
             relation_release_year_repository, _relation_release_years
         )
         """Create the remaining mappings in bulk."""
+
+def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+        """Initialize the database engine."""
+
+    loop.run_until_complete(process_relation_pass_one_worker_async(release_ids, current_total, total_count))

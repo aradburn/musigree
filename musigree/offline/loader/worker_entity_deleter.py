@@ -37,7 +37,7 @@ The `delete_entities_worker` function interacts with the following components:
 The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
-
+import asyncio
 import logging
 import multiprocessing
 
@@ -46,6 +46,7 @@ from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.loader.loader_base import LoaderBase
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -53,7 +54,7 @@ The logger for the worker entity deleter module.
 """
 
 
-async def delete_entities_worker(ids: list[int], current_total: int, total_count: int) -> None:
+async def delete_entities_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
     """Worker function for deleting entity records from the database.
     This function is designed to be used with ProcessPoolExecutor to perform
     concurrent deletion of entity records.
@@ -108,3 +109,20 @@ async def delete_single_entity(
         """Handle potential database errors."""
         log.error(f"Error in delete_entities_worker for id: {entity_id}")
         raise
+
+def delete_entities_worker(ids: list[int], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+        """Initialize the database engine."""
+
+    loop.run_until_complete(delete_entities_worker_async(ids, current_total, total_count))

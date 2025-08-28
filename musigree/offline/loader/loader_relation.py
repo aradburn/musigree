@@ -37,7 +37,7 @@ sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent 
 """
 
 import logging
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
@@ -77,7 +77,7 @@ class LoaderRelation(LoaderBase):
         between entities (artists, releases, etc.) in the database.
         """
         log.debug("loader relation pass one")
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
+        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
         """Determine the number of releases to process in each batch."""
 
         async with offline_transaction():
@@ -91,21 +91,24 @@ class LoaderRelation(LoaderBase):
 
         worker_coroutines = utils.worker_generator(process_relation_pass_one_worker, batched_release_ids, total_count)
 
-        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count() * 2, worker_coroutines)
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
-
+    # noinspection Mypy
     @staticmethod
-    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @staticmethod
-    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @staticmethod
-    def get_delete_worker_function() -> Callable[[list[int], int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @classmethod
     def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore
         """

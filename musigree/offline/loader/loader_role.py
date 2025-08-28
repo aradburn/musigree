@@ -3,7 +3,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable
 
 from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
 from musigree.exceptions import DatabaseError
@@ -240,19 +240,23 @@ class LoaderRole(LoaderBase):
     #     log.debug(f"Added {added_count} roles")
     #     return added_count
 
+    # noinspection Mypy
     @staticmethod
-    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @staticmethod
-    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @staticmethod
-    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:  # type: ignore
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:  # type: ignore
         pass
 
+    # noinspection Mypy
     @classmethod
     @abstractmethod
-    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore
         pass

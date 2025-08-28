@@ -48,7 +48,7 @@ related exception and `pprint` for pretty print the diff between releases. It
 interacts with `musigree.offline.database` for database related operations,
 and `musigree.offline.offline_database_manager` for managing concurrency.
 """
-
+import asyncio
 import logging
 import pprint
 from typing import Any
@@ -62,6 +62,7 @@ from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.release import Release
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -69,7 +70,7 @@ The logger for the update_releases_worker module.
 """
 
 
-async def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int) -> None:
+async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int) -> None:
     """
     A worker function for updating or inserting release records.
 
@@ -225,3 +226,20 @@ async def update_releases_worker(bulk_updates: list[dict[str, Any]], processed_c
         f" processed {processed_count}"
     )
     """Log the number of updated and inserted releases."""
+
+def update_releases_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+        """Initialize the database engine."""
+
+    loop.run_until_complete(update_releases_worker_async(bulk_updates, current_total, total_count))

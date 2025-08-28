@@ -43,7 +43,7 @@ for database related exception. It interacts with `musigree.offline.database` fo
 database related operations and `musigree.offline.offline_database_manager` for
 managing concurrency.
 """
-
+import asyncio
 import logging
 import multiprocessing
 
@@ -53,6 +53,7 @@ from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_base import LoaderBase
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -60,7 +61,7 @@ The logger for the worker entity pass three module.
 """
 
 
-async def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
+async def process_entity_pass_three_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing entity records in the third pass.
 
@@ -185,3 +186,20 @@ async def worker_pass_three_single(
             exc_info=True,
         )
         raise e
+
+def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+        """Initialize the database engine."""
+
+    loop.run_until_complete(process_entity_pass_three_worker_async(ids, current_total, total_count))

@@ -48,7 +48,7 @@ for database related exception. It interacts with `musigree.offline.database` fo
 database related operations and `musigree.offline.offline_database_manager` for
 managing concurrency.
 """
-
+import asyncio
 import logging
 import multiprocessing
 
@@ -59,6 +59,7 @@ from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.loader.loader_base import LoaderBase
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -66,7 +67,7 @@ The logger for the worker release pass two module.
 """
 
 
-async def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+async def process_release_pass_two_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing release records in the second pass.
 
@@ -156,3 +157,20 @@ async def worker_pass_two_single(
         """Update the release in the database."""
         await release_repository.commit()
         """Commit the transaction."""
+
+def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    if OfflineDatabaseManager.get_concurrency_count() > 1:
+        """Check if concurrency is enabled."""
+        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+        """Initialize the database engine."""
+
+    loop.run_until_complete(process_release_pass_two_worker_async(release_ids, current_total, total_count))

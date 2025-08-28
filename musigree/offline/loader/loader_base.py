@@ -34,7 +34,7 @@ import logging
 from abc import abstractmethod, ABC
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Generator, Callable, Coroutine
+from typing import Any, Generator, Callable
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -68,11 +68,11 @@ class LoaderBase(ABC):
         _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
     """
 
-    BULK_INSERT_BATCH_SIZE = 10000
+    BULK_INSERT_BATCH_SIZE = 1000
     """The batch size for bulk insert operations."""
-    BULK_UPDATE_BATCH_SIZE = 1000
+    BULK_UPDATE_BATCH_SIZE = 100
     """The batch size for bulk update operations."""
-    BULK_REPORTING_SIZE = 10000
+    BULK_REPORTING_SIZE = 1000
     """The number of records to process before reporting progress."""
     # BULK_INSERT_BATCH_SIZE = 10000
     # BULK_UPDATE_BATCH_SIZE = 1000
@@ -213,17 +213,17 @@ class LoaderBase(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
         pass
 
     @staticmethod
     @abstractmethod
-    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
         pass
 
     @staticmethod
     @abstractmethod
-    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:
         pass
 
     @classmethod

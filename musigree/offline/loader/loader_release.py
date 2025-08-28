@@ -57,7 +57,7 @@ and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
@@ -149,15 +149,15 @@ class LoaderRelease(LoaderBase):
         return releases_loaded
 
     @staticmethod
-    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
         return insert_releases_worker
 
     @staticmethod
-    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], Coroutine[Any, Any, None]]:
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
         return update_releases_worker
 
     @staticmethod
-    def get_delete_worker_function() -> Callable[[list[int], int, int], Coroutine[Any, Any, None]]:
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:
         return delete_releases_worker
 
     @classmethod
