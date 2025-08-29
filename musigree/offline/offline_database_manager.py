@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import os
+from asyncio import AbstractEventLoop
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
@@ -118,3 +119,19 @@ class OfflineDatabaseManager:
             await OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose()
 
         await OfflineDatabaseManager.offline_database_helper.shutdown_database()
+
+    @classmethod
+    def reinitialize_offline_database_async_engine(cls, loop: AbstractEventLoop) -> None:
+        """
+        Initializes the database connection for a new process.
+
+        Ensures that the parent process's database connections are not touched in
+        the new connection pool.
+        """
+        if (OfflineDatabaseManager.offline_database_helper is not None and
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
+            loop.run_until_complete(
+                OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
+                    close=False
+                )
+            )
