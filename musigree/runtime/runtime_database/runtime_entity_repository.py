@@ -21,12 +21,11 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
-from collections.abc import Sequence, Iterator
+from collections.abc import Sequence
 from typing import Any, List, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
-from musigree import utils
 from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
@@ -308,19 +307,19 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         )
         return result.scalar_one_or_none()
 
-    async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-        """
-        Retrieves all internal entity IDs in batches.
-
-        Args:
-            num_in_batch: The number of IDs per batch.
-
-        Returns:
-            Generator[list[int], None, None]: A generator yielding lists of
-                internal entity IDs.
-        """
-        ids = await self.get_ids()
-        return utils.batched(iter(ids), num_in_batch)
+    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
+    #     """
+    #     Retrieves all internal entity IDs in batches.
+    #
+    #     Args:
+    #         num_in_batch: The number of IDs per batch.
+    #
+    #     Returns:
+    #         Generator[list[int], None, None]: A generator yielding lists of
+    #             internal entity IDs.
+    #     """
+    #     ids = await self.get_ids()
+    #     return utils.batched(iter(ids), num_in_batch)
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
         """
