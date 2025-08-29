@@ -1,4 +1,4 @@
-from sqlalchemy import String, Enum
+from sqlalchemy import String, Enum, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
@@ -33,7 +33,7 @@ class RoleTable(OfflineBase):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
     The primary key of the table, an auto-incrementing integer representing the unique identifier for the role.
     """
@@ -45,17 +45,15 @@ class RoleTable(OfflineBase):
     """
     The main category to which the role belongs (e.g., 'Production', 'Management'). Stored as an Enum.
     """
-    role_subcategory: Mapped[RoleType.Subcategory] = mapped_column(
-        Enum(RoleType.Subcategory)
-    )
+    role_subcategory: Mapped[RoleType.Subcategory] = mapped_column(Enum(RoleType.Subcategory))
     """
     The subcategory to which the role belongs (e.g., 'Mix', 'Executive'). Stored as an Enum.
     """
-    role_category_name: Mapped[str] = mapped_column(String)
+    role_category_name: Mapped[str] = mapped_column(String, nullable=False)
     """
     The name of the main category to which the role belongs.
     """
-    role_subcategory_name: Mapped[str] = mapped_column(String)
+    role_subcategory_name: Mapped[str] = mapped_column(String, nullable=True)
     """
      The name of the subcategory to which the role belongs.
     """

@@ -33,11 +33,11 @@ class EntityTable(OfflineBase):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
      The primary key of the table, an auto-incrementing integer.
     """
-    entity_id: Mapped[int] = mapped_column(Integer)
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
     """
     The external ID of the entity (e.g., from Discogs).
     """

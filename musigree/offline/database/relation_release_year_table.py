@@ -35,11 +35,11 @@ class RelationReleaseYearTable(OfflineBase):
 
     # COLUMNS
 
-    relation_release_year_id: Mapped[int] = mapped_column(primary_key=True)
+    relation_release_year_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
     The primary key of the table, an auto-incrementing integer.
     """
-    relation_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    relation_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
     """
     The ID of the relation associated with this entry.
     """
@@ -52,14 +52,14 @@ class RelationReleaseYearTable(OfflineBase):
     The year of the release.
     """
 
-    __table_args__: tuple[Index, dict] = (
-        Index(
-            "idx_relation_release_year_relation_ids",
-            relation_id,
-            unique=False,
-        ),
-        {},
-    )
+    # __table_args__: tuple[Index, dict] = (
+    #     Index(
+    #         "idx_relation_release_year_relation_ids",
+    #         relation_id,
+    #         unique=False,
+    #     ),
+    #     {},
+    # )
     """
     Additional table arguments, including:
         - idx_relation_release_year_relation_ids: A non-unique index on the

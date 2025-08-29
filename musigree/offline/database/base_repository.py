@@ -181,7 +181,8 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             AsyncGenerator[ConcreteTable]: An async iterator that yields each
                 database row as an object.
         """
-        result: Result = await self.execute(select(self.schema_class))
+        query = select(self.schema_class)
+        result: Result = await self.execute(query)
         schemas = result.scalars().all()
 
         for schema in schemas:

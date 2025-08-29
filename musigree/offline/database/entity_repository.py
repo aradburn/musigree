@@ -1,10 +1,9 @@
 import logging
-from collections.abc import Iterator, Sequence, AsyncGenerator
+from collections.abc import Sequence, AsyncGenerator
 from typing import Any
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
-from musigree import utils
 from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.base_repository import BaseRepository
@@ -49,7 +48,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Raises:
             NotFoundError: If no entity is found matching the query.
         """
-        result: Result = await self.execute(query)
+        result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -69,8 +68,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             List[Entity]: A list of retrieved entities.
         """
-        result: Result = await self.execute(query)
-
+        result = await self.execute(query)
         instances = result.scalars().all()
         entity_dbs = [Entity.model_validate(instance) for instance in instances]
         entities = [entity_db.to_domain() for entity_db in entity_dbs]
@@ -94,7 +92,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             .select_from(self.schema_class)
             .where(EntityTable.entity_type == entity_type)
         )
-        result: Result = await self.execute(query)
+        result = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -185,8 +183,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             Sequence[int]: A sequence of all entity IDs.
         """
-        result = await self._session.scalars(select(EntityTable.id))
-        return result.all()
+        query = select(EntityTable.id)
+        result = await self._session.execute(query)
+        return result.scalars().all()
 
     async def get_ids_by_type(self, entity_type: EntityType) -> Sequence[int]:
         """
@@ -198,10 +197,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             Sequence[int]: A sequence of entity IDs of the specified type.
         """
-        result = await self._session.scalars(
-            select(EntityTable.id).where(EntityTable.entity_type == entity_type)
-        )
-        return result.all()
+        query = select(EntityTable.id).where(EntityTable.entity_type == entity_type)
+        result = await self._session.execute(query)
+        return result.scalars().all()
 
     async def get_entity_ids_by_type(self, entity_type: EntityType) -> Sequence[int]:
         """
@@ -213,10 +211,9 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             Sequence[int]: A sequence of external entity IDs of the specified type.
         """
-        result = await self._session.scalars(
-            select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
-        )
-        return result.all()
+        query = select(EntityTable.entity_id).where(EntityTable.entity_type == entity_type)
+        result = await self._session.execute(query)
+        return result.scalars().all()
 
     async def get_entity_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
@@ -231,12 +228,10 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             int | None: The external entity ID, or None if no matching entity is found.
         """
-        result = await self._session.execute(
-            select(EntityTable.entity_id).where(
-                (EntityTable.entity_name == entity_name)
-                & (EntityTable.entity_type == entity_type)
-            )
+        query = select(EntityTable.entity_id).where(
+            (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
+        result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
     async def get_id_by_entity_type_and_entity_name(
@@ -252,12 +247,10 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             int | None: The entity ID, or None if no matching entity is found.
         """
-        result = await self._session.execute(
-            select(EntityTable.id).where(
-                (EntityTable.entity_name == entity_name)
-                & (EntityTable.entity_type == entity_type)
-            )
+        query = select(EntityTable.id).where(
+            (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
+        result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
     async def get_id_by_entity_type_and_entity_id(
@@ -273,26 +266,24 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             int | None: The entity ID, or None if no matching entity is found.
         """
-        result = await self._session.execute(
-            select(EntityTable.id).where(
-                (EntityTable.entity_id == entity_id)
-                & (EntityTable.entity_type == entity_type)
-            )
+        query = select(EntityTable.id).where(
+            (EntityTable.entity_id == entity_id) & (EntityTable.entity_type == entity_type)
         )
+        result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-        """
-        Retrieves all entity IDs in batches.
-
-        Args:
-            num_in_batch: The number of IDs in each batch.
-
-        Returns:
-            List[List[int]]: A list of batches, where each batch is a list of entity IDs.
-        """
-        ids = await self.get_ids()
-        return utils.batched(iter(ids), num_in_batch)
+    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
+    #     """
+    #     Retrieves all entity IDs in batches.
+    #
+    #     Args:
+    #         num_in_batch: The number of IDs in each batch.
+    #
+    #     Returns:
+    #         List[List[int]]: A list of batches, where each batch is a list of entity IDs.
+    #     """
+    #     ids = await self.get_ids()
+    #     return utils.batched(iter(ids), num_in_batch)
 
     async def find_by_search_content(self, search_string: str) -> list[Entity]:
         """
@@ -377,7 +368,8 @@ class EntityRepository(BaseRepository[EntityTable]):
         Args:
             id_: The ID of the entity to delete.
         """
-        await self.execute(delete(self.schema_class).where(EntityTable.id == id_))
+        query = delete(self.schema_class).where(EntityTable.id == id_)
+        await self.execute(query)
         await self._session.flush()
 
     async def search_multi(

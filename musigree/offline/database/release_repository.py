@@ -1,9 +1,8 @@
 import logging
-from typing import List, Any, Sequence, Iterator, AsyncGenerator
+from typing import List, Any, Sequence, AsyncGenerator
 
 from sqlalchemy import select, Result, update, delete
 
-from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.release_table import ReleaseTable
@@ -98,21 +97,22 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         Returns:
             Sequence[int]: A sequence of all release IDs.
         """
-        result = await self._session.scalars(select(ReleaseTable.release_id))
-        return result.all()
+        query = select(ReleaseTable.release_id)
+        result: Result = await self._session.execute(query)
+        return result.scalars().all()
 
-    async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-        """
-        Retrieves all release IDs in batches.
-
-        Args:
-            num_in_batch: The number of IDs in each batch.
-
-        Returns:
-            List[List[int]]: A list of batches, where each batch is a list of release IDs.
-        """
-        ids = await self.get_ids()
-        return utils.batched(iter(ids), num_in_batch)
+    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
+    #     """
+    #     Retrieves all release IDs in batches.
+    #
+    #     Args:
+    #         num_in_batch: The number of IDs in each batch.
+    #
+    #     Returns:
+    #         List[List[int]]: A list of batches, where each batch is a list of release IDs.
+    #     """
+    #     ids = await self.get_ids()
+    #     return utils.batched(iter(ids), num_in_batch)
 
     async def update(
         self,

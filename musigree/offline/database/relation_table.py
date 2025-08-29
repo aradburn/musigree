@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    ForeignKey,
     Index,
     Integer,
 )
@@ -7,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
 from musigree.offline.database.base_table import OfflineBase
-from musigree.offline.database.role_table import RoleTable
 
 
 class RelationTable(OfflineBase):
@@ -34,19 +32,20 @@ class RelationTable(OfflineBase):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """The primary key of the table, an auto-incrementing integer."""
-    subject: Mapped[int] = mapped_column(Integer)
+    subject: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the subject entity in the relation."""
-    predicate: Mapped[int] = mapped_column(ForeignKey(RoleTable.id))
+    predicate: Mapped[int] = mapped_column(Integer, nullable=False)
+    # predicate: Mapped[int] = mapped_column(ForeignKey(RoleTable.id))
     """
     The ID of the role (predicate) defining the relation.
     This is a foreign key referencing the RoleTable.
     """
-    object: Mapped[int] = mapped_column(Integer)
+    object: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the object entity in the relation."""
 
-    __table_args__: tuple[Index, Index, Index, dict] = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_relation",
             subject,
@@ -54,16 +53,16 @@ class RelationTable(OfflineBase):
             object,
             unique=True,
         ),
-        Index(
-            "idx_relation_subject",
-            subject,
-            unique=False,
-        ),
-        Index(
-            "idx_relation_object",
-            object,
-            unique=False,
-        ),
+        # Index(
+        #     "idx_relation_subject",
+        #     subject,
+        #     unique=False,
+        # ),
+        # Index(
+        #     "idx_relation_object",
+        #     object,
+        #     unique=False,
+        # ),
         {},
     )
     """

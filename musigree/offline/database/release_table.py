@@ -50,7 +50,7 @@ class ReleaseTable(OfflineBase):
 
     # COLUMNS
 
-    release_id: Mapped[int] = mapped_column(primary_key=True)
+    release_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
     The primary key of the table, representing the unique identifier for the release.
     """

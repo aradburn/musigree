@@ -114,7 +114,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             raise NotFoundError
         return RelationDB.model_validate(instance)
 
-    async def get_id_by_key(self, key: dict) -> int:
+    async def get_id_by_key(self, key: dict[str, int]) -> int:
         """
         Retrieves the ID of a relation by its key.
 
@@ -132,7 +132,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             (RelationTable.subject == key["subject"])
             & (RelationTable.predicate == key["role_id"])
             & (RelationTable.object == key["object"])
-        )
+        ).limit(1)
         result: Result = await self._session.execute(query)
 
         if not (instance := result.scalar()):
