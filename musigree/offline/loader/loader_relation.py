@@ -77,7 +77,7 @@ class LoaderRelation(LoaderBase):
         between entities (artists, releases, etc.) in the database.
         """
         log.debug("loader relation pass one")
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
+        number_in_batch = LoaderBase.BULK_INSERT_BATCH_SIZE
         """Determine the number of releases to process in each batch."""
 
         async with offline_transaction():
@@ -86,8 +86,9 @@ class LoaderRelation(LoaderBase):
             """Instance of ReleaseRepository for database operations on releases."""
             total_count = await release_repository.count()
             """Total number of releases in the database."""
-            batched_release_ids = await release_repository.get_batched_ids(number_in_batch)
-            """Get the release ids in batches."""
+            release_ids = await release_repository.get_ids()
+
+        batched_release_ids = utils.batched(release_ids, number_in_batch)
 
         worker_coroutines = utils.worker_generator(process_relation_pass_one_worker, batched_release_ids, total_count)
 

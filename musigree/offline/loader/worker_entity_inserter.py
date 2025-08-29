@@ -67,6 +67,7 @@ async def insert_entities_worker_async(bulk_inserts: list[dict[str, Any]], curre
 
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
+    count = 0
 
     async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
@@ -78,13 +79,14 @@ async def insert_entities_worker_async(bulk_inserts: list[dict[str, Any]], curre
             """Insert the entities."""
             await entity_repository.commit()
             """Commit the transaction."""
+            count += len(bulk_inserts)
         except DatabaseError:
             """Handle potential database errors."""
             log.error("Error in insert_entities_worker")
             # log.exception("Error in insert_entities_worker", exc_info=True)
             # raise
 
-    log.info(f"[{proc_name}] inserted {current_total} of {total_count}")
+    log.info(f"[{proc_name}] inserted {current_total + count}")
     """Log the number of entities inserted."""
 
 def insert_entities_worker(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:

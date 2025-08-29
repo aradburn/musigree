@@ -113,7 +113,9 @@ class LoaderEntity(LoaderBase):
         async with offline_transaction():
             entity_repository = EntityRepository()
             total_count = await entity_repository.count()
-            batched_ids = await entity_repository.get_batched_ids(number_in_batch)
+            ids = await entity_repository.get_ids()
+
+        batched_ids = utils.batched(ids, number_in_batch)
 
         worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
 

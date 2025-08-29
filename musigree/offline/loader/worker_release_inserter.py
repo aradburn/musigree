@@ -68,6 +68,8 @@ async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inser
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
 
+    count = 0
+
     async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
         release_repository = ReleaseRepository()
@@ -78,13 +80,14 @@ async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inser
             """Insert the releases."""
             await release_repository.commit()
             """Commit the transaction."""
+            count += len(bulk_inserts)
         except DatabaseError:
             """Handle potential database errors."""
             log.error("Error in insert_releases_worker")
             # log.exception("Error in insert_releases_worker", exc_info=True)
             # raise
 
-    log.info(f"[{proc_name}] inserted_count: {inserted_count}")
+    log.info(f"[{proc_name}] inserted_count: {inserted_count + count}")
     """Log the number of releases inserted."""
 
 def insert_releases_worker(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
