@@ -93,6 +93,7 @@ class TestTransferManager:
                     # noinspection PyUnreachableCode
                     async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
                         return
+                        # noinspection PyTypeChecker
                         yield  # pragma: no cover
 
                     mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
@@ -205,6 +206,7 @@ class TestTransferManager:
                     # noinspection PyUnreachableCode
                     async def empty_relation_dicts() -> AsyncGenerator[dict[str, Any], None]:
                         return
+                        # noinspection PyTypeChecker
                         yield  # pragma: no cover
 
                     mock_runtime_relation_data_access.get_runtime_relation_dicts_from_relations.return_value = empty_relation_dicts()
@@ -503,6 +505,7 @@ class TestTransferManager:
             # noinspection PyUnreachableCode
             async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
                 return
+                # noinspection PyTypeChecker
                 yield  # pragma: no cover
 
             mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
@@ -616,6 +619,7 @@ class TestTransferManager:
                 # noinspection PyUnreachableCode
                 async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
                     return
+                    # noinspection PyTypeChecker
                     yield  # pragma: no cover
 
                 mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()

@@ -19,6 +19,7 @@ from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.domain.relation import Relation
 from musigree.offline.loader.worker_entity_pass_three import (
     process_entity_pass_three_worker,
+    process_entity_pass_three_worker_async,
     worker_pass_three_single,
 )
 
@@ -185,6 +186,7 @@ class TestWorkerEntityPassThree:
         """Test process_entity_pass_three_worker with single-threaded execution."""
         # Arrange
         with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)
@@ -200,9 +202,7 @@ class TestWorkerEntityPassThree:
                 current_total = 0
                 total_count = 100
 
-                await process_entity_pass_three_worker(
-                    ids, current_total, total_count
-                )
+                await process_entity_pass_three_worker_async(ids, current_total, total_count)
 
                 # Assert
                 assert mock_worker_single.call_count == len(ids)
@@ -229,7 +229,7 @@ class TestWorkerEntityPassThree:
                 current_total = 0
                 total_count = 100
 
-                await process_entity_pass_three_worker(ids, current_total, total_count)
+                await process_entity_pass_three_worker_async(ids, current_total, total_count)
 
                 # Assert
                 assert mock_worker_single.call_count == len(ids)
@@ -268,9 +268,7 @@ class TestWorkerEntityPassThree:
                 total_count = 100
 
                 with caplog.at_level(logging.DEBUG):
-                    await process_entity_pass_three_worker(
-                        ids, current_total, total_count
-                    )
+                    await process_entity_pass_three_worker_async(ids, current_total, total_count)
 
                 # Assert that the worker was called for all entities
                 assert mock_worker_single.call_count == len(ids)
@@ -299,6 +297,4 @@ class TestWorkerEntityPassThree:
                 total_count = 100
 
                 with pytest.raises(DatabaseError):
-                    await process_entity_pass_three_worker(
-                        ids, current_total, total_count
-                    )
+                    await process_entity_pass_three_worker_async(ids, current_total, total_count)

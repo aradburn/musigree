@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, Mock, patch, PropertyMock
 import pytest
 from sqlalchemy import Result, select
 
+from musigree import utils
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -301,7 +302,8 @@ class TestEntityRepository:
             mock_get_ids.return_value = all_ids
 
             # Act
-            result = await entity_repository.get_batched_ids(batch_size)
+            ids = await entity_repository.get_ids()
+            result = utils.batched(ids, batch_size)
 
             # Assert - get_batched_ids returns a generator, so convert to list
             batches = list(result)
@@ -320,7 +322,8 @@ class TestEntityRepository:
             mock_get_ids.return_value = []
 
             # Act
-            result = await entity_repository.get_batched_ids(batch_size)
+            ids = await entity_repository.get_ids()
+            result = utils.batched(ids, batch_size)
 
             # Assert - convert generator to list
             batches = list(result)

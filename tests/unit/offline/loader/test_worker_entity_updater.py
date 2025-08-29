@@ -17,7 +17,7 @@ from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.domain.entity import Entity
-from musigree.offline.loader.worker_entity_updater import update_entities_worker
+from musigree.offline.loader.worker_entity_updater import update_entities_worker, update_entities_worker_async
 
 
 class TestWorkerEntityUpdater:
@@ -96,11 +96,11 @@ class TestWorkerEntityUpdater:
         processed_count = 0
         total_count = 100
 
-        await update_entities_worker(bulk_updates, processed_count, total_count)
+        await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
         # Assert
         mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
-            12345, EntityType.ARTIST
+            sample_entity_data["entity_id"], sample_entity_data["entity_type"]
         )
         mock_repo.update.assert_called_once()
         mock_repo.commit.assert_called_once()
@@ -137,10 +137,12 @@ class TestWorkerEntityUpdater:
         processed_count = 0
         total_count = 100
 
-        await update_entities_worker(bulk_updates, processed_count, total_count)
+        await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
         # Assert
-        mock_repo.get_by_entity_id_and_entity_type.assert_called_once()
+        mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+            sample_entity_data["entity_id"], sample_entity_data["entity_type"]
+        )
         mock_repo.create.assert_called_once()
         mock_repo.commit.assert_called_once()
 
@@ -192,12 +194,16 @@ class TestWorkerEntityUpdater:
         processed_count = 0
         total_count = 100
 
-        await update_entities_worker(bulk_updates, processed_count, total_count)
+        await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
-        # Assert - no update or insert should be called
-        mock_repo.get_by_entity_id_and_entity_type.assert_called_once()
+        # Assert
+        mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+            entity_data["entity_id"], entity_data["entity_type"]
+        )
+        # Should not call update or create since no changes are needed
         mock_repo.update.assert_not_called()
         mock_repo.create.assert_not_called()
+        mock_repo.commit.assert_not_called()
 
     @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
     @pytest.mark.asyncio
@@ -230,7 +236,7 @@ class TestWorkerEntityUpdater:
             total_count = 100
 
             with pytest.raises(DatabaseError):
-                await update_entities_worker(bulk_updates, processed_count, total_count)
+                await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
     @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
     @pytest.mark.asyncio
@@ -264,7 +270,7 @@ class TestWorkerEntityUpdater:
             total_count = 100
 
             with pytest.raises(DatabaseError):
-                await update_entities_worker(bulk_updates, processed_count, total_count)
+                await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
     @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
     @patch("musigree.offline.loader.worker_entity_updater.LOGGING_TRACE", True)
@@ -300,15 +306,14 @@ class TestWorkerEntityUpdater:
             total_count = 100
 
             with caplog.at_level(logging.DEBUG):
-                await update_entities_worker(bulk_updates, processed_count, total_count)
+                await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
-            # Assert that trace logging occurred (checking for debug messages)
-            _debug_messages = [
-                record.message
-                for record in caplog.records
-                if record.levelno == logging.DEBUG
-            ]
-            # The exact trace logging content will depend on the implementation
+            # Assert
+            mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+                sample_entity_data["entity_id"], sample_entity_data["entity_type"]
+            )
+            mock_repo.update.assert_called_once()
+            mock_repo.commit.assert_called_once()
 
     def test_entity_name_change_detection(self) -> None:
         """Test that changes in entity name are properly detected."""
