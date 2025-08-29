@@ -68,19 +68,20 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
                 await connection.execute(text("pragma integrity_check;"))
 
                 # Setup Sqlite
-                # connection.execute(text("pragma journal_mode=MEMORY;"))
-                # connection.execute(text("pragma synchronous=OFF;"))
-                # connection.execute(text("pragma cache_size=-10000;"))
-                # connection.execute(text("pragma temp_store=MEMORY;"))
-                # connection.execute(text("pragma foreign_keys=ON;"))
-
-                # Setup Sqlite
-                await connection.execute(text("pragma journal_mode=WAL;"))
+                await connection.execute(text("pragma journal_mode=MEMORY;"))
                 await connection.execute(text("pragma journal_size_limit = 6144000;"))
-                await connection.execute(text("pragma synchronous=NORMAL;"))
+                await connection.execute(text("pragma synchronous=OFF;"))
                 await connection.execute(text("pragma cache_size=-10000;"))
                 await connection.execute(text("pragma temp_store=MEMORY;"))
                 await connection.execute(text("pragma foreign_keys=ON;"))
+
+                # Setup Sqlite
+                # await connection.execute(text("pragma journal_mode=WAL;"))
+                # await connection.execute(text("pragma journal_size_limit = 6144000;"))
+                # await connection.execute(text("pragma synchronous=NORMAL;"))
+                # await connection.execute(text("pragma cache_size=-10000;"))
+                # await connection.execute(text("pragma temp_store=MEMORY;"))
+                # await connection.execute(text("pragma foreign_keys=ON;"))
 
                 await connection.commit()
                 log.info("Offline Database connected OK.")
