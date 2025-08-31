@@ -35,7 +35,6 @@ from typing import Any
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
-from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.domain.relation import Relation, RelationUncommitted
 from musigree.offline.domain.release import Release
@@ -281,7 +280,7 @@ class RelationDataAccess:
         sorted_triples = sorted(list(triples_set))
         relations = []
         for subject_id, role, object_id in sorted_triples:
-            relation = dict(
+            relation: dict[str, Any] = dict(
                 subject=subject_id,
                 role=role,
                 object=object_id,
@@ -290,89 +289,27 @@ class RelationDataAccess:
                 relation["release_id"] = release.release_id
                 if release.release_date is not None:
                     relation["year"] = release.release_date.year
+                else:
+                    relation["year"] = None
             relations.append(relation)
         return relations
 
     @classmethod
-    async def find_relation_by_key(
+    async def get_relation_by_key(
         cls,
-        *,
-        _entity_repository: EntityRepository,
-        _relation_repository: RelationRepository,
-        _key: dict[str, Any],
-    ) -> list[Relation]:
+        relation_repository: RelationRepository,
+        key: dict[str, Any],
+    ) -> Relation | None:
         """
-        Finds relations by a given key.
-
-        This method searches for relations using a specific key and returns
-        a list of matching relations.
+        Retrieves a relation by its key.
 
         Args:
-            _entity_repository (EntityRepository): The entity repository (unused in current implementation).
-            _relation_repository (RelationRepository): The relation repository for database operations.
-            _key (dict[str, Any]): The key to search for.
+            relation_repository: The relation repository.
+            key: The key to search for.
 
         Returns:
-            list[Relation]: A list of relations matching the key.
+            Relation: The found relation.
         """
-        # noinspection PyBroadException
-        try:
-            relation_internal = await _relation_repository.find_by_key(_key)
-            relation = relation_internal.to_relation()
-            return [relation] if relation else []
-        except Exception:
-            return []
-
-    # @classmethod
-    # def relation_internal_dict_to_relation_external_dict(
-    #     cls, relation_internal_dict: dict[str, Any]
-    # ) -> dict[str, Any] | None:
-    #     """
-    #     Converts a relation internal dictionary to an external dictionary.
-    #
-    #     This method takes a dictionary representing an internal relation and
-    #     converts it to an external representation.
-    #
-    #     Args:
-    #         relation_internal_dict (dict[str, Any]): The internal relation dictionary.
-    #
-    #     Returns:
-    #         dict[str, Any] | None: The external relation dictionary, or None if conversion fails.
-    #     """
-    #     relation_internal_dict["id"] = 0
-    #     """Set the id to 0 for internal processing."""
-    #     relation_internal = RelationInternal.model_validate(relation_internal_dict)
-    #     relation = relation_internal.to_relation()
-    #     if relation is None:
-    #         return None
-    #     relation_external_dict = relation.model_dump(exclude={"id", "releases"})
-    #     """Exclude internal details"""
-    #     relation_external_dict["release_id"] = relation_internal_dict["release_id"]
-    #     relation_external_dict["year"] = relation_internal_dict["year"]
-    #     return relation_external_dict
-
-    # @classmethod
-    # def relation_internal_dicts_to_relation_external_dicts(
-    #     cls, relation_internal_dicts: list[dict[str, Any]]
-    # ) -> list[dict[str, Any]]:
-    #     """
-    #     Converts a list of relation internal dictionaries to external dictionaries.
-    #
-    #     This method takes a list of dictionaries representing internal relations
-    #     and converts them to external representations.
-    #
-    #     Args:
-    #         relation_internal_dicts (list[dict[str, Any]]): The list of internal
-    #             relation dictionaries.
-    #
-    #     Returns:
-    #         list[dict[str, Any]]: The list of external relation dictionaries.
-    #     """
-    #     external_dicts = []
-    #     for relation_internal_dict in relation_internal_dicts:
-    #         external_dict = cls.relation_internal_dict_to_relation_external_dict(
-    #             relation_internal_dict
-    #         )
-    #         if external_dict is not None:
-    #             external_dicts.append(external_dict)
-    #     return external_dicts
+        relation_internals = await relation_repository.find_by_key(key)
+        relation = Relation.from_relation_internals(relation_internals)
+        return relation
