@@ -288,25 +288,20 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
 
 def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
     """Normalize a list of dictionaries into a formatted string representation."""
-    def sorted_itemgetter(*items: str) -> Any:
-        if len(items) == 1:
-            item = items[0]
-
-            def g(obj: dict[str, Any]) -> Any:
-                return obj[item]
-
-        else:
-
-            def g(obj: dict[str, Any]) -> Any:
-                return tuple(obj[item_] for item_ in items)
-
-        return g
+    def make_sortable_key(obj: dict[str, Any]) -> str:
+        """Create a sortable key from a dictionary by converting it to a normalized JSON string."""
+        try:
+            # Create a normalized version for sorting by converting to JSON with sorted keys
+            return json.dumps(obj, sort_keys=True, separators=(',', ':'), default=str)
+        except (TypeError, ValueError):
+            # Fallback: convert the entire dict to string if JSON serialization fails
+            return str(sorted(obj.items()))
 
     if list_obj is None or len(list_obj) == 0:
         return "[\n" + "\n]\n"
 
-    dict_keys = sorted(list_obj[0].keys())
-    sorted_list_obj = sorted(list_obj, key=sorted_itemgetter(*dict_keys))
+    # Sort the list using the normalized JSON representation as the key
+    sorted_list_obj = sorted(list_obj, key=make_sortable_key)
 
     return (
         "[\n"
