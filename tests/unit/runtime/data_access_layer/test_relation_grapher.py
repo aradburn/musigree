@@ -341,7 +341,6 @@ class TestRelationGrapher:
 
         relation_links: dict[str, RuntimeRelationResult] = {
             "link1": RuntimeRelationResult(
-                id=1,
                 entity_one_id=123,
                 entity_one_type=EntityType.ARTIST,
                 entity_two_id=456,
@@ -351,7 +350,6 @@ class TestRelationGrapher:
                 distance=None,
             ),
             "link2": RuntimeRelationResult(
-                id=2,
                 entity_one_id=456,
                 entity_one_type=EntityType.LABEL,
                 entity_two_id=789,
@@ -680,7 +678,6 @@ class TestRelationGrapher:
 
         mock_relations = [
             RuntimeRelationResult(
-                id=1,
                 entity_one_id=123,
                 entity_one_type=EntityType.ARTIST,
                 entity_two_id=456,
@@ -741,7 +738,6 @@ class TestRelationGrapher:
 
         mock_structural_relations = {
             "struct_link1": RuntimeRelationResult(
-                id=1,
                 entity_one_id=123,
                 entity_one_type=EntityType.ARTIST,
                 entity_two_id=456,
@@ -843,7 +839,6 @@ class TestRelationGrapher:
 
         # Create a link between them
         relation = RuntimeRelationResult(
-            id=1,
             entity_one_id=123,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=456,

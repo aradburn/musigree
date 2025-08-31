@@ -32,12 +32,25 @@ class TestRelationRepository:
     @pytest.fixture
     def mock_relation_internal(self) -> RelationInternal:
         """Create a mock internal relation for testing."""
-        return RelationInternal(id=1, subject=100, role="performer", object=200)
+        return RelationInternal(
+            id=1,
+            subject=100,
+            role="performer",
+            object=200,
+            release_id=0,
+            year=0,
+        )
 
     @pytest.fixture
     def mock_relation_uncommitted(self) -> RelationUncommitted:
         """Create a mock uncommitted relation for testing."""
-        return RelationUncommitted(subject=100, object=200, role_name="performer")
+        return RelationUncommitted(
+            subject=100,
+            object=200,
+            role_name="performer",
+            release_id=0,
+            year=0,
+        )
 
     @pytest.fixture
     def mock_relation_table(self) -> RelationTable:
@@ -176,15 +189,15 @@ class TestRelationRepository:
         # Arrange
         key = {"subject": 100, "role_id": 1, "object": 200}
 
-        with patch.object(relation_repository, "_get_one_by_query") as mock_get_one:
-            mock_get_one.return_value = mock_relation_internal
+        with patch.object(relation_repository, "_get_all_by_query") as mock_get_all:
+            mock_get_all.return_value = [mock_relation_internal]
 
             # Act
             result = await relation_repository.find_by_key(key)
 
             # Assert
-            assert result == mock_relation_internal
-            mock_get_one.assert_called_once()
+            assert result == [mock_relation_internal]
+            mock_get_all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_find_by_entity_success(
@@ -351,17 +364,19 @@ class TestRelationRepository:
         # Arrange
         key = {"subject": 999, "role_name": "performer", "object": 888}
 
-        with patch.object(relation_repository, "_get_one_by_query") as mock_get_one:
-            mock_get_one.side_effect = NotFoundError()
+        with patch.object(relation_repository, "_get_all_by_query") as mock_get_all:
+            mock_get_all.return_value = []
 
             with patch(
                 "musigree.offline.database.relation_repository.RoleCache"
             ) as mock_role_cache:
                 mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
 
-                # Act & Assert
-                with pytest.raises(NotFoundError):
-                    await relation_repository.find_by_key(key)
+                # Act
+                result = await relation_repository.find_by_key(key)
+
+                # Assert
+                assert result == []
 
     @pytest.mark.asyncio
     async def test_create_database_helper_not_initialized(

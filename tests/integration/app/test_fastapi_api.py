@@ -105,130 +105,88 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
         actual = response.json()
-        expected = {
-            "results": [
-                {"releases": {}, "role": "Turntables"},
-                {"releases": {}, "role": "Producer"},
-                {"releases": {}, "role": "Producer"},
-                {"releases": {}, "role": "Producer"},
-                {"releases": {}, "role": "Producer"},
-                {"releases": {}, "role": "Producer"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Compiled On"},
-                {"releases": {}, "role": "Remix"},
-                {"releases": {}, "role": "Remix"},
-                {"releases": {}, "role": "Remix"},
-                {"releases": {}, "role": "Remix"},
-                {"releases": {}, "role": "Mixed By"},
-                {"releases": {}, "role": "Written By"},
-                {"releases": {}, "role": "Written By"},
-                {"releases": {}, "role": "Written By"},
-                {"releases": {}, "role": "Written By"},
-            ]
-        }
-        # expected = {
-        #     "results": [
-        #         {
-        #             "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
-        #             "role": "Turntables",
-        #         },
-        #         {"releases": {"2455278": 2010}, "role": "Producer"},
-        #         {"releases": {"2455278": 2010}, "role": "Producer"},
-        #         {"releases": {"102382": 1995, "134822": 1996}, "role": "Producer"},
-        #         {
-        #             "releases": {
-        #                 "1530077": 2002,
-        #                 "1741441": None,
-        #                 "2317370": 2009,
-        #                 "29372": 1992,
-        #                 "29373": 1992,
-        #                 "315067": 1992,
-        #                 "3564784": 1992,
-        #                 "549": 1992,
-        #             },
-        #             "role": "Producer",
-        #         },
-        #         {
-        #             "releases": {
-        #                 "1530077": 2002,
-        #                 "1741441": None,
-        #                 "2317370": 2009,
-        #                 "29372": 1992,
-        #                 "29373": 1992,
-        #                 "315067": 1992,
-        #                 "3564784": 1992,
-        #                 "549": 1992,
-        #             },
-        #             "role": "Producer",
-        #         },
-        #         {"releases": {"315067": 1992}, "role": "Compiled On"},
-        #         {"releases": {"51781": 1993}, "role": "Compiled On"},
-        #         {"releases": {"51781": 1993}, "role": "Compiled On"},
-        #         {
-        #             "releases": {
-        #                 "1530077": 2002,
-        #                 "1741441": None,
-        #                 "2317370": 2009,
-        #                 "29372": 1992,
-        #                 "29373": 1992,
-        #                 "3564784": 1992,
-        #                 "548125": 1992,
-        #                 "549": 1992,
-        #             },
-        #             "role": "Compiled On",
-        #         },
-        #         {"releases": {"170322": 1994}, "role": "Compiled On"},
-        #         {"releases": {"548125": 1992}, "role": "Compiled On"},
-        #         {"releases": {"2455278": 2010}, "role": "Remix"},
-        #         {"releases": {"2455278": 2010}, "role": "Remix"},
-        #         {
-        #             "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
-        #             "role": "Remix",
-        #         },
-        #         {"releases": {"89013": 1995}, "role": "Remix"},
-        #         {
-        #             "releases": {"102382": 1995, "134822": 1996, "3097008": 1996},
-        #             "role": "Mixed By",
-        #         },
-        #         {
-        #             "releases": {"102382": 1995, "134822": 1996, "89013": 1995},
-        #             "role": "Written By",
-        #         },
-        #         {
-        #             "releases": {
-        #                 "1530077": 2002,
-        #                 "1741441": None,
-        #                 "2317370": 2009,
-        #                 "29372": 1992,
-        #                 "29373": 1992,
-        #                 "315067": 1992,
-        #                 "3564784": 1992,
-        #                 "549": 1992,
-        #             },
-        #             "role": "Written By",
-        #         },
-        #         {"releases": {"85213": 1994, "89013": 1995}, "role": "Written By"},
-        #         {
-        #             "releases": {
-        #                 "1530077": 2002,
-        #                 "1741441": None,
-        #                 "2317370": 2009,
-        #                 "29372": 1992,
-        #                 "29373": 1992,
-        #                 "315067": 1992,
-        #                 "3564784": 1992,
-        #                 "549": 1992,
-        #             },
-        #             "role": "Written By",
-        #         },
-        #     ]
-        # }
+        print(f'actual["results"]: {actual["results"]}')
+
+        expected = [
+            {
+                "releases": {
+                    "102382": 1995,
+                    "134822": 1996,
+                    "1530077": 2002,
+                    "1741441": None,
+                    "2317370": 2009,
+                    "2455278": 2010,
+                    "29372": 1992,
+                    "29373": 1992,
+                    "315067": 1992,
+                    "3564784": 1992,
+                    "549": 1992
+                },
+                "role": "Producer"
+            },
+            {
+                "releases": {
+                    "102382": 1995,
+                    "134822": 1996,
+                    "1530077": 2002,
+                    "1741441": None,
+                    "2317370": 2009,
+                    "29372": 1992,
+                    "29373": 1992,
+                    "315067": 1992,
+                    "3564784": 1992,
+                    "549": 1992,
+                    "85213": 1994,
+                    "89013": 1995
+                },
+                "role": "Written By"
+            },
+            {
+                "releases": {
+                    "102382": 1995,
+                    "134822": 1996,
+                    "3097008": 1996
+                },
+                "role": "Mixed By"
+            },
+            {
+                "releases": {
+                    "1530077": 2002,
+                    "170322": 1994,
+                    "1741441": None,
+                    "2317370": 2009,
+                    "29372": 1992,
+                    "29373": 1992,
+                    "315067": 1992,
+                    "3564784": 1992,
+                    "51781": 1993,
+                    "548125": 1992,
+                    "549": 1992
+                },
+                "role": "Compiled On"
+            },
+            {
+                "releases": {
+                    "2267734": 1990,
+                    "2455278": 2010,
+                    "4625": 1990,
+                    "61862": 1993,
+                    "89013": 1995
+                },
+                "role": "Remix"
+            },
+            {
+                "releases": {
+                    "2267734": 1990,
+                    "4625": 1990,
+                    "61862": 1993
+                },
+                "role": "Turntables"
+            },
+        ]
+
         actual_str = normalize_dict_list(actual["results"])
-        expected_str = normalize_dict_list(expected["results"])
+        expected_str = normalize_dict_list(expected)
         assert actual_str == expected_str
 
     @pytest.mark.asyncio

@@ -239,7 +239,6 @@ class TestStructuralRolesToRelations:
             assert relation.entity_two_type == EntityType.ARTIST
             assert relation.releases is None
             assert relation.distance is None
-            assert relation.id == 0
 
     def test_structural_roles_to_relations_artist_alias_empty_values(self) -> None:
         """Test structural_roles_to_relations for artist with empty alias values."""

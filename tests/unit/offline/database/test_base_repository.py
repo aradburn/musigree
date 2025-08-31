@@ -202,8 +202,7 @@ class TestBaseRepository:
             await repo.save_all(payloads)
 
             # Verify
-            mock_session.add_all.assert_called_once()
-            mock_session.flush.assert_called_once()
+            mock_session.execute.assert_called_once()
 
     async def test_save_all_integrity_error(self) -> None:
         """Test save_all operation with IntegrityError."""
@@ -221,17 +220,13 @@ class TestBaseRepository:
             repo = TestRepository()
             payloads = [{"name": "test1"}, {"name": "test2"}]
 
-            # Mock the schema class to raise IntegrityError during instantiation
-            with patch.object(
-                repo,
-                "schema_class",
-                side_effect=IntegrityError(
-                    "Integrity error", None, Exception("Original error")
-                ),
-            ):
-                # Execute & Verify
-                with pytest.raises(DatabaseError):
-                    await repo.save_all(payloads)
+            # Mock the execute method to raise IntegrityError
+            mock_session.execute.side_effect = IntegrityError(
+                "Integrity error", None, Exception("Original error")
+            )
+            # Execute & Verify
+            with pytest.raises(DatabaseError):
+                await repo.save_all(payloads)
 
     async def test_commit(self) -> None:
         """Test commit operation."""

@@ -9,7 +9,6 @@ from musigree.library.fields.entity_type import EntityType
 def test_creates_runtime_relation_with_valid_data() -> None:
     # noinspection PyTypeChecker
     relation = RuntimeRelation(
-        id=1,
         entity_one_id=100,
         entity_one_type=EntityType.ARTIST,
         entity_two_id=200,
@@ -17,7 +16,6 @@ def test_creates_runtime_relation_with_valid_data() -> None:
         role="Producer",
         releases={"release1": 1},
     )
-    assert relation.id == 1
     assert relation.entity_one_id == 100
     assert relation.entity_one_type == EntityType.ARTIST
     assert relation.entity_two_id == 200
@@ -30,7 +28,6 @@ def test_raises_value_error_for_unrecognized_entity_one_type() -> None:
     with pytest.raises(ValueError):
         # noinspection PyTypeChecker
         relation = RuntimeRelation(
-            id=1,
             entity_one_id=100,
             entity_one_type="UNKNOWN_TYPE",  # type: ignore
             entity_two_id=200,
@@ -45,7 +42,6 @@ def test_raises_value_error_for_unrecognized_entity_two_type() -> None:
     with pytest.raises(ValueError):
         # noinspection PyTypeChecker
         relation = RuntimeRelation(
-            id=1,
             entity_one_id=100,
             entity_one_type=EntityType.ARTIST,
             entity_two_id=200,
@@ -58,7 +54,6 @@ def test_raises_value_error_for_unrecognized_entity_two_type() -> None:
 
 def test_generates_correct_json_entity_one_key() -> None:
     relation = RuntimeRelation(
-        id=1,
         entity_one_id=100,
         entity_one_type=EntityType.ARTIST,
         entity_two_id=200,
@@ -71,7 +66,6 @@ def test_generates_correct_json_entity_one_key() -> None:
 
 def test_generates_correct_json_entity_two_key() -> None:
     relation = RuntimeRelation(
-        id=1,
         entity_one_id=100,
         entity_one_type=EntityType.ARTIST,
         entity_two_id=200,
@@ -84,7 +78,6 @@ def test_generates_correct_json_entity_two_key() -> None:
 
 def test_generates_correct_link_key() -> None:
     relation = RuntimeRelation(
-        id=1,
         entity_one_id=100,
         entity_one_type=EntityType.ARTIST,
         entity_two_id=200,
@@ -97,7 +90,6 @@ def test_generates_correct_link_key() -> None:
 
 def test_converts_runtime_relation_result_to_json() -> None:
     relation_result = RuntimeRelationResult(
-        id=1,
         entity_one_id=100,
         entity_one_type=EntityType.ARTIST,
         entity_two_id=200,

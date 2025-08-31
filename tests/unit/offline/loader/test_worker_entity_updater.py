@@ -17,7 +17,7 @@ from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.domain.entity import Entity
-from musigree.offline.loader.worker_entity_updater import update_entities_worker, update_entities_worker_async
+from musigree.offline.loader.worker_entity_updater import update_entities_worker_async
 
 
 class TestWorkerEntityUpdater:

@@ -1,7 +1,7 @@
 import datetime
 import time
 from collections.abc import AsyncGenerator
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -57,7 +57,7 @@ def test_split_list_3() -> None:
 def test_split_list_4() -> None:
     """Test split_list raises ValueError for empty sequence."""
     with pytest.raises(ValueError):
-        input_seq: List[int] = []
+        input_seq: list[int] = []
         num_chunks = 3
         list(utils.split_list(num_chunks, input_seq))
 
@@ -146,7 +146,7 @@ def test_normalize_dict_02() -> None:
     assert actual == utils.normalize_dict(expected)
 
 
-def test_normalize_nested_dict() -> None:
+def test_normalize_nested_dict_01() -> None:
     """Test normalize_dict with nested dictionary containing mixed EntityType formats."""
     input_dict = {
         "artist-430141-member-of-artist-307": {
@@ -187,7 +187,7 @@ def test_normalize_nested_dict() -> None:
     assert actual == utils.strip_input(expected)
 
 
-def test_normalize_dict_list() -> None:
+def test_normalize_dict_list_01() -> None:
     """Test normalize_dict_list with list of dictionaries."""
     input_list = [
         {
@@ -230,6 +230,272 @@ def test_normalize_dict_list() -> None:
     """
     assert actual == utils.strip_input(expected)
 
+def test_normalize_dict_list_2() -> None:
+    """Test normalize_dict_list with list of dictionaries containing complex nested data."""
+    input_list = [
+        {
+            "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
+            "role": "Turntables",
+        },
+        {"releases": {"2455278": 2010}, "role": "Producer"},
+        {"releases": {"2455278": 2010}, "role": "Producer"},
+        {"releases": {"102382": 1995, "134822": 1996}, "role": "Producer"},
+        {
+            "releases": {
+                "1530077": 2002,
+                "1741441": None,
+                "2317370": 2009,
+                "29372": 1992,
+                "29373": 1992,
+                "315067": 1992,
+                "3564784": 1992,
+                "549": 1992,
+            },
+            "role": "Producer",
+        },
+        {
+            "releases": {
+                "1530077": 2002,
+                "1741441": None,
+                "2317370": 2009,
+                "29372": 1992,
+                "29373": 1992,
+                "315067": 1992,
+                "3564784": 1992,
+                "549": 1992,
+            },
+            "role": "Producer",
+        },
+        {"releases": {"315067": 1992}, "role": "Compiled On"},
+        {"releases": {"51781": 1993}, "role": "Compiled On"},
+        {"releases": {"51781": 1993}, "role": "Compiled On"},
+        {
+            "releases": {
+                "1530077": 2002,
+                "1741441": None,
+                "2317370": 2009,
+                "29372": 1992,
+                "29373": 1992,
+                "3564784": 1992,
+                "548125": 1992,
+                "549": 1992,
+            },
+            "role": "Compiled On",
+        },
+        {"releases": {"170322": 1994}, "role": "Compiled On"},
+        {"releases": {"548125": 1992}, "role": "Compiled On"},
+        {"releases": {"2455278": 2010}, "role": "Remix"},
+        {"releases": {"2455278": 2010}, "role": "Remix"},
+        {
+            "releases": {"2267734": 1990, "4625": 1990, "61862": 1993},
+            "role": "Remix",
+        },
+        {"releases": {"89013": 1995}, "role": "Remix"},
+        {
+            "releases": {"102382": 1995, "134822": 1996, "3097008": 1996},
+            "role": "Mixed By",
+        },
+        {
+            "releases": {"102382": 1995, "134822": 1996, "89013": 1995},
+            "role": "Written By",
+        },
+        {
+            "releases": {
+                "1530077": 2002,
+                "1741441": None,
+                "2317370": 2009,
+                "29372": 1992,
+                "29373": 1992,
+                "315067": 1992,
+                "3564784": 1992,
+                "549": 1992,
+            },
+            "role": "Written By",
+        },
+        {"releases": {"85213": 1994, "89013": 1995}, "role": "Written By"},
+        {
+            "releases": {
+                "1530077": 2002,
+                "1741441": None,
+                "2317370": 2009,
+                "29372": 1992,
+                "29373": 1992,
+                "315067": 1992,
+                "3564784": 1992,
+                "549": 1992,
+            },
+            "role": "Written By",
+        },
+    ]
+
+    actual = utils.normalize_dict_list(input_list)
+    # The function should successfully normalize this complex data without errors
+    assert isinstance(actual, str)
+    assert actual.startswith("[\n")
+    assert actual.endswith("\n]\n")
+    # Verify that the JSON structure is valid
+    assert '"releases"' in actual
+    assert '"role"' in actual
+
+
+def test_normalize_dict_list_empty_list() -> None:
+    """Test normalize_dict_list with empty list."""
+    actual = utils.normalize_dict_list([])
+    expected = "[\n" + "\n]\n"
+    assert actual == expected
+
+
+def test_normalize_dict_list_none_input() -> None:
+    """Test normalize_dict_list with None input."""
+    actual = utils.normalize_dict_list(None)  # type: ignore
+    expected = "[\n" + "\n]\n"
+    assert actual == expected
+
+
+def test_normalize_dict_list_single_item() -> None:
+    """Test normalize_dict_list with single dictionary."""
+    input_list = [{"key": "value", "number": 42}]
+    actual = utils.normalize_dict_list(input_list)
+    expected = """[
+    {
+        "key": "value",
+        "number": 42
+    }
+]
+"""
+    assert actual == expected
+
+
+def test_normalize_dict_list_different_keys() -> None:
+    """Test normalize_dict_list with dictionaries having different keys."""
+    input_list = [
+        {"a": 1, "b": 2},
+        {"c": 3, "d": 4},
+        {"a": 5, "c": 6},
+    ]
+    actual = utils.normalize_dict_list(input_list)
+    # Should not raise an error and should produce valid output
+    assert isinstance(actual, str)
+    assert actual.startswith("[\n")
+    assert actual.endswith("\n]\n")
+
+
+def test_normalize_dict_list_with_none_values() -> None:
+    """Test normalize_dict_list with None values in dictionaries."""
+    input_list = [
+        {"key1": None, "key2": "value"},
+        {"key1": "value", "key2": None},
+        {"key1": None, "key2": None},
+    ]
+    actual = utils.normalize_dict_list(input_list)  # type: ignore
+    assert isinstance(actual, str)
+    assert "null" in actual  # JSON representation of None
+
+
+def test_normalize_dict_list_with_various_types() -> None:
+    """Test normalize_dict_list with various data types."""
+    input_list = [
+        {"string": "hello", "int": 42, "float": 3.14, "bool": True, "none": None},
+        {"string": "world", "int": -1, "float": 0.0, "bool": False, "none": None},
+    ]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    assert '"string"' in actual
+    assert '"int"' in actual
+    assert '"float"' in actual
+    assert '"bool"' in actual
+    assert "null" in actual
+
+
+def test_normalize_dict_list_deeply_nested() -> None:
+    """Test normalize_dict_list with deeply nested structures."""
+    input_list = [
+        {"level1": {"level2": {"level3": {"deep": "value"}}}},
+        {"level1": {"level2": {"other": "data"}}},
+    ]
+    actual = utils.normalize_dict_list(input_list)  # type: ignore
+    assert isinstance(actual, str)
+    assert '"level1"' in actual
+    assert '"level2"' in actual
+    assert '"level3"' in actual
+
+
+def test_normalize_dict_list_unicode_characters() -> None:
+    """Test normalize_dict_list with unicode characters."""
+    input_list = [
+        {"name": "José", "city": "São Paulo"},
+        {"name": "Михаил", "city": "Москва"},
+        {"name": "张三", "city": "北京"},
+    ]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    # Verify unicode characters are preserved
+    assert "José" in actual or "Jos" in actual  # Might be normalized
+
+
+def test_normalize_dict_list_large_data() -> None:
+    """Test normalize_dict_list with large dictionaries."""
+    large_dict = {f"key_{i}": f"value_{i}" for i in range(100)}
+    input_list = [large_dict, large_dict.copy()]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    assert len(actual) > 1000  # Should be substantial in size
+
+
+def test_normalize_dict_list_mixed_complexity() -> None:
+    """Test normalize_dict_list with mixed simple and complex dictionaries."""
+    input_list = [
+        {"simple": "value"},
+        {"complex": {"nested": {"deeply": "nested"}}},
+        {"mixed": "simple", "complex": {"nested": "complex"}},
+    ]
+    actual = utils.normalize_dict_list(input_list)  # type: ignore
+    assert isinstance(actual, str)
+    assert '"simple"' in actual
+    assert '"complex"' in actual
+    assert '"nested"' in actual
+
+
+def test_normalize_dict_list_boolean_and_numeric_keys() -> None:
+    """Test normalize_dict_list with boolean and numeric keys."""
+    input_list = [
+        {1: "one", True: "true", False: "false"},
+        {2: "two", False: "false2", True: "true2"},
+    ]
+    actual = utils.normalize_dict_list(input_list)  # type: ignore
+    assert isinstance(actual, str)
+    # JSON will convert boolean keys to strings
+    assert '"true"' in actual
+    assert '"false"' in actual
+
+
+def test_normalize_dict_list_empty_dicts() -> None:
+    """Test normalize_dict_list with empty dictionaries."""
+    input_list = [{}, {}, {"key": "value"}]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    assert "{}" in actual
+
+
+def test_normalize_dict_list_duplicate_entries() -> None:
+    """Test normalize_dict_list with duplicate dictionary entries."""
+    duplicate_dict = {"key": "value", "number": 42}
+    input_list = [duplicate_dict, duplicate_dict, duplicate_dict]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    # Should handle duplicates gracefully
+    assert actual.count('"key": "value"') == 3
+
+
+def test_normalize_dict_list_extreme_values() -> None:
+    """Test normalize_dict_list with extreme numeric values."""
+    input_list = [
+        {"max_int": 2**63 - 1, "min_int": -2**63, "max_float": 1e308, "min_float": -1e308},
+        {"zero": 0, "neg_zero": -0.0, "inf": float('inf'), "neg_inf": float('-inf')},
+    ]
+    actual = utils.normalize_dict_list(input_list)
+    assert isinstance(actual, str)
+    # Should handle extreme values (though some might be converted to null or string)
 
 def test_normalize_str_list() -> None:
     """Test normalize_str_list with list of formatted strings."""
@@ -354,8 +620,8 @@ def test_batched_invalid_n() -> None:
 
 def test_batched_empty_sequence() -> None:
     """Test batched with empty sequence."""
-    result: List[List[Any]] = list(utils.batched([], 3))
-    expected: List[List[Any]] = []
+    result: list[list[Any]] = list(utils.batched([], 3))
+    expected: list[list[Any]] = []
     assert result == expected
 
 
@@ -442,7 +708,7 @@ def test_skip_filter_allow_empty() -> None:
     filter_obj = utils.SkipFilter(keys=["all"], allow_empty=True)
     data = {"all": "skip"}
     result = filter_obj.filter(data)
-    expected: Dict[str, Any] = {}
+    expected: dict[str, Any] = {}
     assert result == expected
 
 
@@ -578,7 +844,7 @@ def test_batched_single_element() -> None:
 
 def test_parse_request_args_no_year() -> None:
     """Test parse_request_args with no year argument."""
-    args: Dict[str, str] = {}
+    args: dict[str, str] = {}
     roles, year = utils.parse_request_args(args)
     assert year is None
 

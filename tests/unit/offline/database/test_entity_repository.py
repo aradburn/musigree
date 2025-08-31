@@ -168,9 +168,11 @@ class TestEntityRepository:
         """Test successful get_ids execution."""
         # Arrange
         expected_ids = [1, 2, 3, 4, 5]
+        mock_scalars_result = Mock()
+        mock_scalars_result.all.return_value = expected_ids
         mock_result = Mock()
-        mock_result.all.return_value = expected_ids
-        mock_session.scalars.return_value = mock_result
+        mock_result.scalars.return_value = mock_scalars_result
+        mock_session.execute.return_value = mock_result
 
         with patch.object(
             EntityRepository, "_session", new_callable=PropertyMock
@@ -182,7 +184,7 @@ class TestEntityRepository:
 
             # Assert
             assert result == expected_ids
-            mock_session.scalars.assert_called_once()
+            mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_ids_by_type_success(
@@ -192,9 +194,11 @@ class TestEntityRepository:
         # Arrange
         entity_type = EntityType.ARTIST
         expected_ids = [1, 3, 5]
+        mock_scalars_result = Mock()
+        mock_scalars_result.all.return_value = expected_ids
         mock_result = Mock()
-        mock_result.all.return_value = expected_ids
-        mock_session.scalars.return_value = mock_result
+        mock_result.scalars.return_value = mock_scalars_result
+        mock_session.execute.return_value = mock_result
 
         with patch.object(
             EntityRepository, "_session", new_callable=PropertyMock
@@ -206,7 +210,7 @@ class TestEntityRepository:
 
             # Assert
             assert result == expected_ids
-            mock_session.scalars.assert_called_once()
+            mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_by_id_success(
@@ -255,9 +259,11 @@ class TestEntityRepository:
         # Arrange
         entity_type = EntityType.LABEL
         expected_ids = [100, 200, 300]
+        mock_scalars_result = Mock()
+        mock_scalars_result.all.return_value = expected_ids
         mock_result = Mock()
-        mock_result.all.return_value = expected_ids
-        mock_session.scalars.return_value = mock_result
+        mock_result.scalars.return_value = mock_scalars_result
+        mock_session.execute.return_value = mock_result
 
         with patch.object(
             EntityRepository, "_session", new_callable=PropertyMock
@@ -269,7 +275,7 @@ class TestEntityRepository:
 
             # Assert
             assert result == expected_ids
-            mock_session.scalars.assert_called_once()
+            mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_find_by_search_content_success(

@@ -18,7 +18,6 @@ from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.domain.relation import Relation
 from musigree.offline.loader.worker_entity_pass_three import (
-    process_entity_pass_three_worker,
     process_entity_pass_three_worker_async,
     worker_pass_three_single,
 )

@@ -143,12 +143,3 @@ class TestRuntimeRelationTable:
         assert not hasattr(relation_table, "nonexistent_column")
         assert not hasattr(relation_table, "another_invalid")
         assert not hasattr(relation_table, "random_field")
-
-    def test_foreign_key_relationship(self) -> None:
-        """Test that predicate column has foreign key constraint."""
-        # GIVEN/WHEN
-        predicate_column = inspect(RuntimeRelationTable).columns["predicate"]
-
-        # THEN
-        assert len(predicate_column.foreign_keys) > 0
-

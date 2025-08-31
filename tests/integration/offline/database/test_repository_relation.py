@@ -72,6 +72,8 @@ class TestRepositoryRelation(AbstractDatabaseTest):
             subject=id_1,
             object=id_2,
             role="Composed By",
+            release_id=0,
+            year=0,
         )
         relation_dict = relation.model_dump()
         relation_dicts = [relation_dict]
@@ -80,6 +82,7 @@ class TestRepositoryRelation(AbstractDatabaseTest):
         async with offline_transaction():
             relation_repository = RelationRepository()
             relations = RelationUncommitted.from_dicts(relation_dicts)
+            created_relation_internals: list[RelationInternal] = []
 
             await relation_repository.create(relations[0])
             async for created_relation_db in relation_repository.all():
@@ -87,18 +90,20 @@ class TestRepositoryRelation(AbstractDatabaseTest):
                 assert created_relation_db is not None, (
                     "Created relation db should not be None"
                 )
-            created_relation = created_relation_db.to_domain().to_relation()
-            assert created_relation is not None, "Created relation should not be None"
+                created_relation_internal = created_relation_db.to_domain()
+                assert created_relation_internal is not None, "Created relation should not be None"
+                created_relation_internals.append(created_relation_internal)
+            created_relation = Relation.from_relation_internals(created_relation_internals)
             actual = utils.normalize_dict(created_relation.model_dump())
 
         # THEN
         expected_relation = Relation(
-            id=1,
             entity_one_id=created_entity_1.entity_id,
             entity_one_type=created_entity_1.entity_type,
             entity_two_id=created_entity_2.entity_id,
             entity_two_type=created_entity_2.entity_type,
             role="Composed By",
+            releases={"0": 0},
         )
         expected = utils.normalize_dict(expected_relation.model_dump())
         assert actual == expected

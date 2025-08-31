@@ -222,27 +222,34 @@ class TestRelationDataAccess:
         assert relation["release_id"] == 123
 
     @pytest.mark.asyncio
-    async def test_find_relation_by_key(self) -> None:
+    async def test_get_relation_by_key(self) -> None:
         """Test finding relation by key."""
         # Arrange
-        mock_entity_repo = Mock()
         mock_relation_repo = AsyncMock()
         mock_key = {"subject": 1, "role": "producer", "object": 2}
 
+        # Create a proper mock RelationInternal with the required attributes
         mock_relation_internal = Mock()
+        mock_relation_internal.subject = 1
+        mock_relation_internal.role = "producer"
+        mock_relation_internal.object = 2
+        mock_relation_internal.release_id = 123
+        mock_relation_internal.year = 2020
+        
         mock_relation = Mock(spec=Relation)
         mock_relation_internal.to_relation.return_value = mock_relation
-        mock_relation_repo.find_by_key.return_value = mock_relation_internal
+        mock_relation_repo.find_by_key.return_value = [mock_relation_internal]
 
         # Act
-        result = await RelationDataAccess.find_relation_by_key(
-            _entity_repository=mock_entity_repo,
-            _relation_repository=mock_relation_repo,
-            _key=mock_key,
+        result = await RelationDataAccess.get_relation_by_key(
+            relation_repository=mock_relation_repo,
+            key=mock_key,
         )
 
         # Assert
-        assert result == [mock_relation]
+        assert result is not None
+        assert isinstance(result, Relation)
+        assert result.role == "producer"
         mock_relation_repo.find_by_key.assert_called_once_with(mock_key)
 
     # def test_relation_internal_dict_to_relation_external_dict_valid(self):

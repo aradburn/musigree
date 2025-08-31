@@ -91,6 +91,8 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
             subject=id_1,
             object=id_2,
             role="Composed By",
+            release_id=12,
+            year=1999,
         )
         relation_dict = relation.model_dump()
         relation_dicts = [relation_dict]
@@ -103,24 +105,26 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
             )
 
             await relation_repository.create(uncommitted_relations[0])
+            created_relations: list[RuntimeRelationInternal] = []
             async for created_relation_db in relation_repository.all():
                 """Retrieve all created relations."""
                 assert created_relation_db is not None, (
                     "Created relation db should not be None"
                 )
-            created_relation = created_relation_db.to_relation()
+                created_relations.append(created_relation_db)
+
+            created_relation = RuntimeRelation.from_relation_internals(created_relations)
             assert created_relation is not None, "Created relation should not be None"
             actual = utils.normalize_dict(created_relation.model_dump())
 
         # THEN
         expected_relation = RuntimeRelation(
-            id=1,
             entity_one_id=created_entity_1.entity_id,
             entity_one_type=created_entity_1.entity_type,
             entity_two_id=created_entity_2.entity_id,
             entity_two_type=created_entity_2.entity_type,
             role="Composed By",
-            releases=None,
+            releases={"12": 1999},
         )
         expected = utils.normalize_dict(expected_relation.model_dump())
         assert actual == expected

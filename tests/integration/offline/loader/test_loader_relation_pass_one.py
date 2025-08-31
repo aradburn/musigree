@@ -5,10 +5,7 @@ import pytest
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
-from musigree.offline.database.relation_release_year_repository import (
-    RelationReleaseYearRepository,
-)
+from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
@@ -28,7 +25,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
             actual = await relation_repository.count()
 
         # THEN
-        expected = 16550
+        expected = 28932
         assert actual == expected
 
     @pytest.mark.asyncio
@@ -53,10 +50,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -170,10 +165,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -217,10 +210,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -333,10 +324,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -378,10 +367,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -421,10 +408,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None
@@ -462,10 +447,8 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
-            relation = await OfflineDatabaseHelper.get_relation_by_key(
+            relation = await RelationDataAccess.get_relation_by_key(
                 relation_repository,
-                relation_release_year_repository,
                 key,
             )
             assert relation is not None

@@ -58,7 +58,7 @@ class TestRuntimeRelationRepository:
 
             with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
                 expected_relation = RuntimeRelationDB(
-                    id=relation_id, subject=12345, predicate=3, object=67890
+                    id=relation_id, subject=12345, predicate=3, object=67890, release_id=12, year=1999,
                 )
                 mock_validate.return_value = expected_relation
 
@@ -195,15 +195,15 @@ class TestRuntimeRelationRepository:
 
             mock_result = Mock(spec=Result)
             mock_scalars = Mock()
-            mock_scalars.one_or_none.return_value = mock_instance
+            mock_scalars.all.return_value = mock_instance
             mock_result.scalars.return_value = mock_scalars
             mock_execute.return_value = mock_result
 
             with patch.object(
-                RuntimeRelationRepository, "_get_one_by_query"
-            ) as mock_get_one:
+                RuntimeRelationRepository, "_get_all_by_query"
+            ) as mock_get_all:
                 mock_relation = Mock()
-                mock_get_one.return_value = mock_relation
+                mock_get_all.return_value = mock_relation
 
                 # WHEN
                 result = await self.repository.find_by_key(key)
@@ -289,7 +289,11 @@ class TestRuntimeRelationRepository:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         relation_data = RuntimeRelationUncommitted(
-            subject=12345, role_name="Producer", object=67890
+            subject=12345,
+            role_name="Producer",
+            object=67890,
+            release_id=12,
+            year=1999,
         )
 
         # Set up context variable
