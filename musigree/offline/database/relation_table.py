@@ -38,12 +38,14 @@ class RelationTable(OfflineBase):
     """The ID of the subject entity in the relation."""
     predicate: Mapped[int] = mapped_column(Integer, nullable=False)
     # predicate: Mapped[int] = mapped_column(ForeignKey(RoleTable.id))
-    """
-    The ID of the role (predicate) defining the relation.
-    This is a foreign key referencing the RoleTable.
-    """
+    """The ID of the role (predicate) defining the relation.
+       This is a foreign key referencing the RoleTable."""
     object: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the object entity in the relation."""
+    release_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    """The ID of the release associated with this entry."""
+    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    """The year of the release."""
 
     __table_args__: tuple[Index, dict] = (
         Index(
@@ -51,7 +53,7 @@ class RelationTable(OfflineBase):
             subject,
             predicate,
             object,
-            unique=True,
+            unique=False,
         ),
         # Index(
         #     "idx_relation_subject",

@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Type, List, Any
+from typing import Type
 
 from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
@@ -9,11 +9,6 @@ from sqlalchemy.sql.dml import Insert
 
 from musigree.config import Configuration
 from musigree.offline.database.base_table import OfflineBase, ConcreteTable
-from musigree.offline.database.relation_release_year_repository import (
-    RelationReleaseYearRepository,
-)
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.domain.relation import Relation
 
 log = logging.getLogger(__name__)
 
@@ -113,7 +108,7 @@ class OfflineDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    async def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         """
         Drops tables from the database.
 
@@ -226,69 +221,3 @@ class OfflineDatabaseHelper(ABC):
             Insert[tuple[ConcreteTable]]: The bulk insert query.
         """
         pass
-
-    # @classmethod
-    # def get_relations_by_entity_id_and_entity_type(
-    #     cls,
-    #     entity_repository: EntityRepository,
-    #     relation_repository: RelationRepository,
-    #     relation_release_year_repository: RelationReleaseYearRepository,
-    #     entity_id: int,
-    #     entity_type: EntityType,
-    # ) -> dict[str, Any]:
-    #     entity = entity_repository.get_by_entity_id_and_entity_type(
-    #         entity_id, entity_type
-    #     )
-    #     relations = relation_repository.find_by_entity(entity.id)
-    #
-    #     data = []
-    #     for relation in relations:
-    #         relation_release_years = relation_release_year_repository.get(relation.id)
-    #         relation_releases = {}
-    #         for relation_release_year in relation_release_years:
-    #             relation_releases[relation_release_year.release_id] = (
-    #                 relation_release_year.year
-    #             )
-    #
-    #         # category = RoleType.role_definitions[relation.role]
-    #         # if category is None:
-    #         #     continue
-    #         datum = {
-    #             "role": relation.role,
-    #             "releases": relation_releases,
-    #         }
-    #         data.append(datum)
-    #     data = {"results": tuple(data)}
-    #     return data
-
-    @classmethod
-    async def get_relation_by_key(
-        cls,
-        relation_repository: RelationRepository,
-        relation_release_year_repository: RelationReleaseYearRepository,
-        key: dict[str, Any],
-    ) -> Relation | None:
-        """
-        Retrieves a relation by its key.
-
-        Args:
-            relation_repository: The relation repository.
-            relation_release_year_repository: The relation release year repository.
-            key: The key to search for.
-
-        Returns:
-            Relation: The found relation.
-        """
-        relation_internal = await relation_repository.find_by_key(key)
-        relation = relation_internal.to_relation()
-
-        if relation is not None:
-            relation_release_years = await relation_release_year_repository.get(
-                relation.id
-            )
-            relation.releases = {}
-            for relation_release_year in relation_release_years:
-                relation.releases[str(relation_release_year.release_id)] = (
-                    relation_release_year.year
-                )
-        return relation

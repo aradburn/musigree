@@ -114,30 +114,30 @@ class RelationRepository(BaseRepository[RelationTable]):
             raise NotFoundError
         return RelationDB.model_validate(instance)
 
-    async def get_id_by_key(self, key: dict[str, int]) -> int:
-        """
-        Retrieves the ID of a relation by its key.
-
-        Args:
-            key: A dictionary representing the key of the relation, containing
-                'subject', 'role_id', and 'object'.
-
-        Returns:
-            int: The ID of the relation.
-
-        Raises:
-            NotFoundError: If no relation is found with the given key.
-        """
-        query = select(RelationTable.id).where(
-            (RelationTable.subject == key["subject"])
-            & (RelationTable.predicate == key["role_id"])
-            & (RelationTable.object == key["object"])
-        ).limit(1)
-        result: Result = await self._session.execute(query)
-
-        if not (instance := result.scalar()):
-            raise NotFoundError
-        return int(instance)
+    # async def get_id_by_key(self, key: dict[str, int]) -> int:
+    #     """
+    #     Retrieves the ID of a relation by its key.
+    #
+    #     Args:
+    #         key: A dictionary representing the key of the relation, containing
+    #             'subject', 'role_id', and 'object'.
+    #
+    #     Returns:
+    #         int: The ID of the relation.
+    #
+    #     Raises:
+    #         NotFoundError: If no relation is found with the given key.
+    #     """
+    #     query = select(RelationTable.id).where(
+    #         (RelationTable.subject == key["subject"])
+    #         & (RelationTable.predicate == key["role_id"])
+    #         & (RelationTable.object == key["object"])
+    #     ).limit(1)
+    #     result: Result = await self._session.execute(query)
+    #
+    #     if not (instance := result.scalar()):
+    #         raise NotFoundError
+    #     return int(instance)
 
     async def find_by_id(self, relation_id: int) -> RelationInternal:
         """
@@ -159,7 +159,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         )
         return await self._get_one_by_query(query)
 
-    async def find_by_key(self, key: dict) -> RelationInternal:
+    async def find_by_key(self, key: dict) -> list[RelationInternal]:
         """
         Retrieves a relation by its key components (subject, role, object).
 
@@ -185,7 +185,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             & (RelationTable.predicate == key["role_id"])
             & (RelationTable.object == key["object"])
         )
-        return await self._get_one_by_query(query)
+        return await self._get_all_by_query(query)
 
     async def find_by_entity(self, id_: int) -> list[RelationInternal]:
         """

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Any, Sequence, AsyncGenerator
+from typing import Any, Sequence, AsyncGenerator
 
 from sqlalchemy import select, Result, update, delete
 
@@ -61,7 +61,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             raise NotFoundError
         return Release.model_validate(instance)
 
-    async def get_by_master_id(self, master_id: int) -> List[Release]:
+    async def get_by_master_id(self, master_id: int) -> list[Release]:
         """
         Retrieves all releases associated with a given master ID.
 
