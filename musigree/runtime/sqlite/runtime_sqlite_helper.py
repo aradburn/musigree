@@ -51,7 +51,7 @@ runtime operation.
 """
 
 import logging
-from typing import Type, List
+from typing import Type
 
 from sqlalchemy import text, NullPool
 from sqlalchemy.dialects.sqlite import insert, Insert
@@ -173,14 +173,14 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
-    async def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         """
         Creates tables in the SQLite database.
 
         This method creates database tables using the SQLAlchemy metadata.
 
         Args:
-            tables (List[str], optional): An optional list of table names to
+            tables (list[str], optional): An optional list of table names to
                 create. If None, all tables defined in
                 `RuntimeBase.metadata` will be created. Defaults to None.
         """
@@ -189,7 +189,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Create the table."""
 
     @classmethod
-    async def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         """
         Drops tables from the SQLite database.
 
@@ -286,7 +286,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
-        values_list: List[dict],
+        values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

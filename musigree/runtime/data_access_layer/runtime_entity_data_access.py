@@ -63,7 +63,6 @@ class RuntimeEntityDataAccess:
                         continue
                     ids = sorted((entity_id, entity.entity_id))
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=ids[0],
                         entity_one_type=entity.entity_type,
                         entity_two_id=ids[1],
@@ -80,7 +79,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity_id,
@@ -95,7 +93,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity.entity_id,
@@ -112,7 +109,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity_id,
@@ -127,7 +123,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity.entity_id,

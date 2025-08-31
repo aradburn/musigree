@@ -132,6 +132,7 @@ class TransferManager:
         )
 
         # Countries
+        log.debug("Running transfer_entity_details: countries")
         sorted_countries = sorted(
             RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list
         )
@@ -144,6 +145,7 @@ class TransferManager:
                 await runtime_country_repository.commit()
 
         # Genres
+        log.debug("Running transfer_entity_details: genres")
         sorted_genres = sorted(
             RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list
         )
@@ -156,6 +158,7 @@ class TransferManager:
                 await runtime_genre_repository.commit()
 
         # Styles
+        log.debug("Running transfer_entity_details: styles")
         sorted_styles = sorted(
             RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list
         )

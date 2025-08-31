@@ -1,7 +1,7 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Type, List
+from typing import Type
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
@@ -216,12 +216,12 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
             log.exception("Offline Database Connection Error", exc_info=True)
 
     @classmethod
-    async def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         log.info("Create Offline Postgres tables")
         await super().create_tables(tables=tables)
 
     @classmethod
-    async def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         log.info("Drop Offline Postgres tables")
         await super().drop_tables(tables=tables)
 
@@ -290,7 +290,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
-        values_list: List[dict],
+        values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:

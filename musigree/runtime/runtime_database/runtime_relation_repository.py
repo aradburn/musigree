@@ -1,5 +1,5 @@
 import logging
-from typing import List, AsyncGenerator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select, Select, delete
 
@@ -65,7 +65,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
     async def _get_all_by_query(
         self, query: Select[tuple[RuntimeRelationTable]]
-    ) -> List[RuntimeRelationInternal]:
+    ) -> list[RuntimeRelationInternal]:
         """
         Executes a query that should return multiple RuntimeRelations.
 
@@ -163,7 +163,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         )
         return await self._get_one_by_query(query)
 
-    async def find_by_key(self, key: dict) -> RuntimeRelationInternal:
+    async def find_by_key(self, key: dict) -> list[RuntimeRelationInternal]:
         """
         Retrieves a relation by its key components (subject, role, object).
 
@@ -189,9 +189,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             & (RuntimeRelationTable.predicate == key["role_id"])
             & (RuntimeRelationTable.object == key["object"])
         )
-        return await self._get_one_by_query(query)
+        return await self._get_all_by_query(query)
 
-    async def find_by_entity(self, id_: int) -> List[RuntimeRelationInternal]:
+    async def find_by_entity(self, id_: int) -> list[RuntimeRelationInternal]:
         """
         Retrieves all relations associated with a given entity ID.
 
@@ -209,7 +209,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
     async def find_by_entity_and_roles(
         self, id_: int, role_ids: list[int]
-    ) -> List[RuntimeRelationInternal]:
+    ) -> list[RuntimeRelationInternal]:
         """
         Retrieves all relations associated with a given entity ID and specific roles.
 
@@ -278,7 +278,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
     async def create_bulk(
         self,
-        relations: List[RuntimeRelationUncommitted],
+        relations: list[RuntimeRelationUncommitted],
         on_conflict_do_nothing: bool = False,
     ) -> None:
         """

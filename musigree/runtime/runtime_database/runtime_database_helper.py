@@ -23,7 +23,7 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Type, List, Any
+from typing import Type, Any
 
 from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
@@ -141,7 +141,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    async def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         """
         Creates database tables.
 
@@ -156,7 +156,7 @@ class RuntimeDatabaseHelper(ABC):
             log.debug(f"table definition for: {table_class.__tablename__}")
         for table_name in RuntimeBase.metadata.tables:
             log.debug(f"table in metadata: {table_name}")
-        table_definitions: List[Table] = [
+        table_definitions: list[Table] = [
             RuntimeBase.metadata.tables[table_name] for table_name in tables
         ]
         for table in table_definitions:
@@ -180,7 +180,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @classmethod
     @abstractmethod
-    async def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         """
         Drops database tables.
 
@@ -199,7 +199,7 @@ class RuntimeDatabaseHelper(ABC):
         ), "runtime_async_engine must be initialized before calling drop_tables()"
 
         if tables is not None:
-            table_definitions: List[Table] = [
+            table_definitions: list[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
@@ -298,7 +298,7 @@ class RuntimeDatabaseHelper(ABC):
         entity_id: int,
         entity_type: EntityType,
         on_mobile: bool,
-        roles: List[str],
+        roles: list[str],
     ) -> dict[str, Any] | None:
         """
         Retrieves a network of entities and relations.
@@ -488,23 +488,19 @@ class RuntimeDatabaseHelper(ABC):
         entity = await entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
         )
-        relations = await relation_repository.find_by_entity(entity.id)
+        relation_internals = await relation_repository.find_by_entity(entity.id)
+
+        role_dict: dict[str, dict[str, int | None]] = {}
+        for relation_internal in relation_internals:
+            releases_dict: dict[str, int | None] = role_dict.get(relation_internal.role) or {}
+            releases_dict.update({str(relation_internal.release_id): relation_internal.year})
+            role_dict.update({relation_internal.role: releases_dict})
 
         data = []
-        for relation in relations:
-            # relation_release_years = relation_release_year_repository.get(relation.id)
-            relation_releases: dict[int, int] = {}
-            # for relation_release_year in relation_release_years:
-            #     relation_releases[relation_release_year.release_id] = (
-            #         relation_release_year.year
-            #     )
-
-            # category = RoleType.role_definitions[relation.role]
-            # if category is None:
-            #     continue
+        for role in role_dict.keys():
             datum = {
-                "role": relation.role,
-                "releases": relation_releases,
+                "role": role,
+                "releases": role_dict[role],
             }
             data.append(datum)
         result = {"results": tuple(data)}

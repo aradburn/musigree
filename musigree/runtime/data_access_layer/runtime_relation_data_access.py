@@ -63,12 +63,22 @@ class RuntimeRelationDataAccess:
             # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)
 
-        relations = []
+        # Group relation_internals by link_key
+        relations_map: dict[str, list[RuntimeRelationInternal]] = {}
         for relation_internal in relation_internals:
-            if relation_internal is not None:
-                relation = relation_internal.to_relation()
-                if relation is not None:
-                    relations.append(relation)
+            key = relation_internal.link_key
+            if key in relations_map:
+                relation_internal_list = relations_map[key]
+            else:
+                relation_internal_list = []
+            relation_internal_list.append(relation_internal)
+            relations_map.update({key: relation_internal_list})
+
+        relations: list[RuntimeRelation] = []
+        for relation_internals in relations_map.values():
+            relation = RuntimeRelation.from_relation_internals(relation_internals)
+            relations.append(relation)
+
         # log.debug(f"    -> relations: {relations}")
         return relations
 

@@ -51,7 +51,6 @@ import logging
 import os
 from collections.abc import Iterator
 from pathlib import Path
-from typing import List
 
 from musigree.offline.loader.parser_utils import ParserUtils
 
@@ -108,7 +107,7 @@ class LoaderUtils:
         return full_path_files
 
     @staticmethod
-    def get_role_paths(roles_directory: Path) -> List[str]:
+    def get_role_paths(roles_directory: Path) -> list[str]:
         """
         Gets a list of paths to role CSV files.
 

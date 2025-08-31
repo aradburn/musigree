@@ -63,7 +63,7 @@ and runtime operation.
 
 import logging
 import shutil
-from typing import Type, List
+from typing import Type
 
 from pathlib import Path
 
@@ -329,7 +329,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             log.exception("Runtime Database Connection Error", exc_info=True)
 
     @classmethod
-    async def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         """
         Creates tables in the PostgreSQL database.
 
@@ -445,7 +445,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
-        values_list: List[dict],
+        values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

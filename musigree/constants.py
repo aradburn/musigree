@@ -50,7 +50,6 @@ ALL_OFFLINE_DATABASE_TABLE_NAMES = [
     "relation",
     "release",
     "role",
-    "relation_release_year",
     "metadata",
 ]
 ALL_RUNTIME_DATABASE_TABLE_NAMES = [

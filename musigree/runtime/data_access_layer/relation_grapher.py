@@ -262,7 +262,6 @@ class RelationGrapher:
                 # log.debug(f"                relation_results: {relation_results}")
                 for relation in relation_results:
                     relation_links[relation.link_key] = RuntimeRelationResult(
-                        id=relation.id,
                         entity_one_id=relation.entity_one_id,
                         entity_one_type=relation.entity_one_type,
                         entity_two_id=relation.entity_two_id,

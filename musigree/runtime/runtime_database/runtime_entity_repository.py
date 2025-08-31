@@ -22,7 +22,7 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 
 import logging
 from collections.abc import Sequence
-from typing import Any, List, AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
@@ -83,7 +83,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
     async def _get_all_by_query(
         self, query: Select[tuple[RuntimeEntityTable]]
-    ) -> List[RuntimeEntity]:
+    ) -> list[RuntimeEntity]:
         """
         Executes a query that should return multiple `RuntimeEntity` objects.
 
@@ -402,7 +402,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
     async def search_multi(
         self, entity_keys: list[tuple[int, EntityType]]
-    ) -> List[RuntimeEntity]:
+    ) -> list[RuntimeEntity]:
         """
         Retrieves multiple entities based on a list of entity keys.
 
@@ -413,8 +413,8 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Returns:
             List[RuntimeEntity]: A list of retrieved entities.
         """
-        artist_ids: List[int] = []
-        label_ids: List[int] = []
+        artist_ids: list[int] = []
+        label_ids: list[int] = []
         for entity_id, entity_type in entity_keys:
             if entity_type == EntityType.ARTIST:
                 artist_ids.append(entity_id)

@@ -46,26 +46,17 @@ exceptions including `DatabaseError`, `IntegrityError`, and `OperationalError`.
 import asyncio
 import logging
 import multiprocessing
-from typing import List
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.relation_release_year_repository import (
-    RelationReleaseYearRepository,
-)
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
-from musigree.offline.domain.relation_release_year import (
-    RelationReleaseYearUncommitted,
-)
 from musigree.offline.domain.release import Release
 from musigree.offline.loader.loader_base import LoaderBase
-from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -99,20 +90,10 @@ async def process_relation_pass_one_worker_async(release_ids: list[int], current
     end_count = count + len(release_ids)
     """The total number of releases to process."""
 
-    relation_release_years: list[RelationReleaseYearUncommitted] = []
-    """List to store relation-release-year mappings."""
-
     async with offline_transaction():
         for release_id in release_ids:
             """Iterate over the release IDs."""
-            await process_release(release_id, relation_release_years)
-
-            if len(relation_release_years) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
-                """If the batch size is reached."""
-                await process_relation_release_years(relation_release_years)
-                """Create the mappings in bulk."""
-                relation_release_years = []
-                """Clear the list."""
+            await process_release(release_id)
 
             count += 1
             """Increment the processed counter."""
@@ -120,9 +101,6 @@ async def process_relation_pass_one_worker_async(release_ids: list[int], current
             if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
                 """Log every BULK_REPORTING_SIZE."""
                 log.debug(f"[{proc_name}] processed {count} of {total_count}")
-
-        if len(relation_release_years) > 0:
-            await process_relation_release_years(relation_release_years)
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of releases processed."""
@@ -188,103 +166,7 @@ async def create_relation_bulk(
         log.debug("OperationalError in worker process")
         raise e
 
-async def to_relation_release_years(
-    relation_repository: RelationRepository,
-    relation: RelationUncommitted,
-    release_id: int,
-    year: int | None,
-) -> List[RelationReleaseYearUncommitted]:
-    """
-    Creates relation-release-year mappings for a given relation.
-
-    Args:
-        relation_repository (RelationRepository): The repository for relation operations.
-        relation (RelationUncommitted): The relation to create mappings for.
-        release_id (int): The ID of the release.
-        year (int | None): The year of the release.
-
-    Returns:
-        List[RelationReleaseYearUncommitted]: The list of relation-release-year mappings.
-
-    Raises:
-        OperationalError: If there's an operational error during database operations.
-    """
-    relation_release_years = []
-    """Initialize the list of mappings."""
-    try:
-        """Attempt to create the mapping."""
-        role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
-        """Get the role ID from the cache."""
-
-        key = {
-            "subject": relation.subject,
-            "role_id": role_id,
-            "object": relation.object,
-        }
-        """Create the key for the relation lookup."""
-        relation_id = await relation_repository.get_id_by_key(key)
-        """Get the relation ID."""
-        relation_release_year_uncommitted = RelationReleaseYearUncommitted(
-            relation_id=relation_id,
-            release_id=release_id,
-            year=year,
-        )
-        """Create the mapping."""
-        relation_release_years.append(relation_release_year_uncommitted)
-        """Add the mapping to the list."""
-    except NotFoundError:
-        """Handle the case where the relation is not found."""
-        await relation_repository.rollback()
-        """Rollback the transaction."""
-        if LOGGING_TRACE:
-            """Log if trace logging is enabled."""
-            log.debug("Error cannot find relation")
-    except DatabaseError:
-        """Handle database errors."""
-        await relation_repository.rollback()
-        """Rollback the transaction."""
-        log.debug("Error cannot find relation")
-    except OperationalError as e:
-        """Handle operational errors."""
-        await relation_repository.rollback()
-        """Rollback the transaction."""
-        raise e
-    return relation_release_years
-
-async def create_relation_release_year_bulk(
-    relation_release_year_repository: RelationReleaseYearRepository,
-    relation_release_years: List[RelationReleaseYearUncommitted],
-) -> None:
-    """
-    Creates relation-release-year mappings in bulk.
-
-    Args:
-        relation_release_year_repository (RelationReleaseYearRepository): The repository for mapping operations.
-        relation_release_years (List[RelationReleaseYearUncommitted]): The list of mappings to create.
-
-    Raises:
-        OperationalError: If there's an operational error during database operations.
-    """
-    try:
-        """Attempt to create mappings in bulk."""
-        await relation_release_year_repository.create_bulk(relation_release_years)
-        """Create the mappings."""
-        await relation_release_year_repository.commit()
-        """Commit the transaction."""
-    except DatabaseError:
-        """Handle database errors."""
-        await relation_release_year_repository.rollback()
-        """Rollback the transaction."""
-        log.debug("Error cannot create RelationReleaseYear")
-    except OperationalError as e:
-        """Handle operational errors."""
-        await relation_release_year_repository.rollback()
-        """Rollback the transaction."""
-        raise e
-
-async def process_release(
-    release_id: int, _relation_release_years: list[RelationReleaseYearUncommitted]
-) -> None:
+async def process_release(release_id: int) -> None:
     """Async function to handle relation processing."""
     """Ensure that database operations are performed within a transaction."""
     release_repository = ReleaseRepository()
@@ -318,57 +200,6 @@ async def process_release(
             relations,
         )
         """Create the relations in bulk."""
-
-        for relation in relations:
-            """Iterate over the relations."""
-
-            # try:
-            #     """Attempt to create individual relation."""
-            #     await relation_repository.create(relation, on_conflict_do_nothing: bool = True)
-            #     """Create the relation."""
-            #     await relation_repository.commit()
-            #     """Commit the transaction."""
-            #     # log.debug(f"create single ok")
-            # except DatabaseError as ex:
-            #     """Handle database errors."""
-            #     await relation_repository.rollback()
-            #     """Rollback the transaction."""
-            #     log.exception(ex)
-            # except IntegrityError:
-            #     log.debug(f"IntegrityError in relation worker process individual")
-            #     """Handle integrity errors."""
-            #     await relation_repository.rollback()
-            #     """Rollback the transaction."""
-
-            year = (
-                release.release_date.year
-                if release.release_date is not None
-                and release.release_date.year is not None
-                else None
-            )
-            """Extract the year from the release date."""
-            new_relation_release_years = await to_relation_release_years(
-                relation_repository=relation_repository,
-                relation=relation,
-                release_id=release_id,
-                year=year,
-            )
-            """Create relation-release-year mappings."""
-            _relation_release_years.extend(new_relation_release_years)
-            """Add the mappings to the list."""
-
-async def process_relation_release_years(
-    _relation_release_years: list[RelationReleaseYearUncommitted],
-) -> None:
-    if len(_relation_release_years) > 0:
-        """If there are remaining mappings to process."""
-
-        relation_release_year_repository = RelationReleaseYearRepository()
-        """Instance of RelationReleaseYearRepository for database operations."""
-        await create_relation_release_year_bulk(
-            relation_release_year_repository, _relation_release_years
-        )
-        """Create the remaining mappings in bulk."""
 
 def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
