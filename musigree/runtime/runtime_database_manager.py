@@ -127,10 +127,32 @@ class RuntimeDatabaseManager:
         Ensures that the parent process's database connections are not touched in
         the new connection pool.
         """
-        if (
-            RuntimeDatabaseManager.runtime_database_helper is not None
-            and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
-        ):
-            loop.run_until_complete(
-                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False)
-            )
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            """Check if concurrency is enabled."""
+
+            if (
+                RuntimeDatabaseManager.runtime_database_helper is not None
+                and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
+            ):
+                loop.run_until_complete(
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False)
+                )
+
+    @classmethod
+    def dispose_runtime_database_async_engine(cls, loop: AbstractEventLoop) -> None:
+        """
+        Closes the database connection for a new process.
+
+        Ensures that the parent process's database connections are not touched in
+        the new connection pool.
+        """
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            """Check if concurrency is enabled."""
+
+            if (
+                RuntimeDatabaseManager.runtime_database_helper is not None
+                and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
+            ):
+                loop.run_until_complete(
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=True)
+                )

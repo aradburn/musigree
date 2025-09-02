@@ -288,6 +288,7 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
 
 def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
     """Normalize a list of dictionaries into a formatted string representation."""
+
     def make_sortable_key(obj: dict[str, Any]) -> str:
         """Create a sortable key from a dictionary by converting it to a normalized JSON string."""
         try:
@@ -306,14 +307,14 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
     return (
         "[\n"
         + ",\n".join(
-            textwrap.indent(
-                strip_trailing_newline(
-                    normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
-                ),
-                "    ",
-            )
-            for _ in sorted_list_obj
+        textwrap.indent(
+            strip_trailing_newline(
+                normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
+            ),
+            "    ",
         )
+        for _ in sorted_list_obj
+    )
         + "\n]\n"
     )
 
@@ -483,6 +484,7 @@ def get_random_string(length: int) -> str:
     """
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
+
 def worker_generator(
     worker_function: Callable[[list[T], int, int], None],
     records: Iterable[list[T]],
@@ -500,6 +502,7 @@ def worker_generator(
     for record in records:
         yield partial(worker_function, record, processed_count, total_count)
         processed_count += len(record)
+
 
 async def async_worker_generator(
     worker_function: Callable[[list[T], int, int], None],
@@ -521,6 +524,7 @@ async def async_worker_generator(
         processed_count += len(record)
     return partials
 
+
 async def queue_worker_functions(
     max_concurrent: int,
     worker_partials: Generator[partial, None, None] | list[partial],
@@ -532,19 +536,35 @@ async def queue_worker_functions(
     """
     if max_concurrent < 1:
         max_concurrent = 1
+    if max_concurrent > 8:
+        max_concurrent = 8
     started_at = time.monotonic()
 
     tasks = []
     loop = asyncio.get_running_loop()
     if max_concurrent > 1:
+        # loop.set_debug(True)
         with ProcessPoolExecutor(max_workers=max_concurrent) as executor:
             for worker_partial in worker_partials:
+                # log.debug("Get next worker_partial")
                 # Create max_concurrent worker tasks to process the queue concurrently.
                 future = loop.run_in_executor(executor, worker_partial.func, *worker_partial.args)
+                # log.debug("Got next worker_partial future")
                 tasks.append(future)
 
-            for done in asyncio.as_completed(tasks):
-                await done
+                if len(tasks) >= max_concurrent:
+                    task = tasks.pop(0)
+                    # log.debug("awaiting future")
+                    for completed_future in asyncio.as_completed([task]):
+                        await completed_future
+                    # await asyncio.wait([task])
+                    # log.debug("completed future")
+                    await asyncio.sleep(1)
+            # log.debug("Done all worker_partials")
+
+            for completed_future in asyncio.as_completed(tasks):
+                # log.debug(f"Get as_completed on future: {completed_future}")
+                await completed_future
     else:
         for worker_partial in worker_partials:
             # Create a worker tasks to process the queue one by one.
@@ -553,6 +573,7 @@ async def queue_worker_functions(
 
     total_processing_time = time.monotonic() - started_at
     log.debug(f"total processing time: {total_processing_time:.2f} seconds")
+
 
 def generator_with_id_accumulator(
     records: Iterable[dict[str, Any]], id_accumulator: list[int], id_attr: str
@@ -569,57 +590,3 @@ def generator_with_id_accumulator(
         _id = int(record[id_attr])
         id_accumulator.append(_id)
         yield record
-
-# def iter_over_async(ait: AsyncGenerator[T, None]) -> Generator[T, None, None]:
-#     """Convert an async generator to a regular generator."""
-#
-#     async def consume_generator() -> list[T]:
-#         result = []
-#         async for _item in ait:
-#             result.append(_item)
-#         return result
-#
-#     # Create a new event loop if none is running
-#     try:
-#         loop = asyncio.get_running_loop()
-#         # We're in an async context, use create_task
-#         task = asyncio.create_task(consume_generator())
-#         items = loop.run_until_complete(task)
-#     except RuntimeError:
-#         # No running loop, create a new one
-#         items = asyncio.run(consume_generator())
-#
-#     for item in items:
-#         yield item
-
-# def iter_over_async(ait: AsyncGenerator[T, None]) -> Generator[T, None, None]:
-#     """Convert an async generator to a regular generator.
-#
-#     This function is designed to be used outside of an async context.
-#
-#     Args:
-#         ait: The async generator to convert.
-#
-#     Yields:
-#         The values from the async generator.
-#     """
-#     loop = asyncio.get_running_loop()
-#     print(f"loop: {loop}")
-#     async def get_next() -> tuple[bool, Any]:
-#         try:
-#             _obj = await ait.__anext__()
-#             return False, _obj
-#         except StopAsyncIteration:
-#             return True, None
-#
-#     while True:
-#         # task = asyncio.run_coroutine_threadsafe(get_next(), loop)
-#         # done, obj = loop.run_until_complete(task)
-#         # task = asyncio.run_coroutine_threadsafe(get_next(), loop)
-#         # done, obj = task.result()
-#         # done, obj = loop.run_until_complete(get_next())
-#         task = asyncio.create_task(get_next())
-#         done, obj = loop.run_until_complete(task)
-#         if done:
-#             break
-#         yield obj

@@ -195,20 +195,21 @@ class LoaderRole(LoaderBase):
     @classmethod
     async def save_roles(cls, roles: list[RoleUncommitted]) -> int:
         log.debug("Adding roles to RoleRepository")
+        if roles is None or len(roles) == 0:
+            return 0
+
+        role_repository = RoleRepository()
+
         async with offline_transaction():
-            added_count = 0
-            role_repository = RoleRepository()
 
-            for role_uncommitted in roles:
-                try:
-                    await role_repository.create(role_uncommitted)
-                    await role_repository.commit()
-                    added_count += 1
-                except DatabaseError:
-                    await role_repository.rollback()
+            try:
+                await role_repository.create_bulk(roles, on_conflict_do_nothing=True)
+                await role_repository.commit()
+            except DatabaseError:
+                await role_repository.rollback()
 
-        log.debug(f"Added {added_count} roles")
-        return added_count
+        log.debug(f"Added {len(roles)} roles")
+        return len(roles)
 
     # @classmethod
     # async def save_roles(cls, roles: list[RoleUncommitted]) -> int:

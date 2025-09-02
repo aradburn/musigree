@@ -105,6 +105,7 @@ async def process_relation_pass_one_worker_async(release_ids: list[int], current
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of releases processed."""
 
+
 async def create_relation_bulk(
     relation_repository: RelationRepository,
     relations: list[RelationUncommitted],
@@ -166,6 +167,7 @@ async def create_relation_bulk(
         log.debug("OperationalError in worker process")
         raise e
 
+
 async def process_release(release_id: int) -> None:
     """Async function to handle relation processing."""
     """Ensure that database operations are performed within a transaction."""
@@ -201,6 +203,7 @@ async def process_release(release_id: int) -> None:
         )
         """Create the relations in bulk."""
 
+
 def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -211,9 +214,10 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(process_relation_pass_one_worker_async(release_ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

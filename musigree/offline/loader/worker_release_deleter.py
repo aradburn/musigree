@@ -92,6 +92,7 @@ async def delete_releases_worker_async(bulk_deletes: list[int], processed_count:
     log.info(f"[{proc_name}] processed: {processed_count}, deleted: {deleted_count}")
     """Log the progress and number of deleted releases."""
 
+
 def delete_releases_worker(bulk_deletes: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -102,9 +103,10 @@ def delete_releases_worker(bulk_deletes: list[int], current_total: int, total_co
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(delete_releases_worker_async(bulk_deletes, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

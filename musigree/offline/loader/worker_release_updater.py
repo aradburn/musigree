@@ -70,7 +70,8 @@ The logger for the update_releases_worker module.
 """
 
 
-async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int) -> None:
+async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int,
+                                       _total_count: int) -> None:
     """
     A worker function for updating or inserting release records.
 
@@ -227,6 +228,7 @@ async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], proce
     )
     """Log the number of updated and inserted releases."""
 
+
 def update_releases_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -237,9 +239,10 @@ def update_releases_worker(bulk_updates: list[dict[str, Any]], current_total: in
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(update_releases_worker_async(bulk_updates, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

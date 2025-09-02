@@ -63,13 +63,15 @@ class OfflineDatabaseManager:
 
         def engine_on_connect(dbapi_con, connection_record) -> None:  # type: ignore
             if LOGGING_TRACE:
-                log.debug(f"New engine connection: {dbapi_con}")
+                log.debug(f"Connect engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
 
         def engine_on_checkout(dbapi_con, connection_record, connection_proxy) -> None:  # type: ignore
             pid = os.getpid()
+            # log.debug(f"Checkout engine connection: {dbapi_con}")
+
             if connection_record.info["pid"] != pid:
-                log.error(f"New engine checkout using wrong pid: {dbapi_con}")
+                log.error(f"Checkout engine connection using wrong pid: {dbapi_con}")
 
                 connection_record.dbapi_connection = (
                     connection_proxy.dbapi_connection
@@ -80,9 +82,19 @@ class OfflineDatabaseManager:
                     % (connection_record.info["pid"], pid)
                 )
 
+        def engine_on_checkin(dbapi_con, connection_record) -> None:  # type: ignore
+            log.debug(f"Checkin engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
+        def engine_on_close(dbapi_con, connection_record) -> None:  # type: ignore
+            log.debug(f"Close engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
         if OfflineDatabaseManager.get_concurrency_count() > 1:
             listen(async_engine.sync_engine, "connect", engine_on_connect)
             listen(async_engine.sync_engine, "checkout", engine_on_checkout)
+            # listen(async_engine.sync_engine, "checkin", engine_on_checkin)
+            # listen(async_engine.sync_engine, "close", engine_on_close)
 
         # a async_sessionmaker(), also in the same scope as the engine
         OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = async_sessionmaker(
@@ -128,10 +140,32 @@ class OfflineDatabaseManager:
         Ensures that the parent process's database connections are not touched in
         the new connection pool.
         """
-        if (OfflineDatabaseManager.offline_database_helper is not None and
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
-            loop.run_until_complete(
-                OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
-                    close=False
+        if OfflineDatabaseManager.get_concurrency_count() > 1:
+            """Check if concurrency is enabled."""
+
+            if (OfflineDatabaseManager.offline_database_helper is not None and
+                OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
+                loop.run_until_complete(
+                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
+                        close=False
+                    )
                 )
-            )
+
+    @classmethod
+    def dispose_offline_database_async_engine(cls, loop: AbstractEventLoop) -> None:
+        """
+        Closes the database connection for a new process.
+
+        Ensures that the parent process's database connections are not touched in
+        the new connection pool.
+        """
+        if OfflineDatabaseManager.get_concurrency_count() > 1:
+            """Check if concurrency is enabled."""
+
+            if (OfflineDatabaseManager.offline_database_helper is not None and
+                OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
+                loop.run_until_complete(
+                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
+                        close=True
+                    )
+                )

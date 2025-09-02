@@ -79,7 +79,8 @@ The logger for the worker entity updater module.
 """
 
 
-async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int, total_count: int) -> None:
+async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int,
+                                       total_count: int) -> None:
     """
     Worker function for updating or inserting entity records.
 
@@ -98,17 +99,20 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], proce
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
 
+    # log.debug(f"Starting update_entities_worker_async: {proc_name}")
+
     updated_count = 0
     """Counter for the number of entities updated."""
     inserted_count = 0
     """Counter for the number of entities inserted."""
 
+    """Ensure that database operations are performed within a transaction."""
+    entity_repository = EntityRepository()
+
     async with offline_transaction():
         for data in bulk_updates:
             """Iterate over the entity data."""
 
-            """Ensure that database operations are performed within a transaction."""
-            entity_repository = EntityRepository()
             """Instance of EntityRepository for database operations on entities."""
             updated_entity = Entity(**data)
             """Create a new Entity object from the data."""
@@ -218,6 +222,7 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], proce
     )
     """Log the number of entities processed, updated, and inserted."""
 
+
 def update_entities_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -228,10 +233,10 @@ def update_entities_worker(bulk_updates: list[dict[str, Any]], current_total: in
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(update_entities_worker_async(bulk_updates, current_total, total_count))
 
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

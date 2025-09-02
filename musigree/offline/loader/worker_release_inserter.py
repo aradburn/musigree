@@ -50,7 +50,8 @@ The logger for the worker release inserter module.
 """
 
 
-async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int) -> None:
+async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inserted_count: int,
+                                       total_count: int) -> None:
     """
     Worker function for inserting release records into the database.
 
@@ -90,6 +91,7 @@ async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inser
     log.info(f"[{proc_name}] inserted_count: {inserted_count + count}")
     """Log the number of releases inserted."""
 
+
 def insert_releases_worker(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -100,9 +102,10 @@ def insert_releases_worker(bulk_inserts: list[dict[str, Any]], current_total: in
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(insert_releases_worker_async(bulk_inserts, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

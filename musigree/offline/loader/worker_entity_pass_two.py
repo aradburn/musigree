@@ -125,6 +125,7 @@ async def process_entity_pass_two_worker_async(ids: list[int], current_total: in
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
 
+
 async def worker_pass_two_single(
     entity_repository: EntityRepository, entity: Entity, proc_name: str
 ) -> None:
@@ -173,6 +174,7 @@ async def worker_pass_two_single(
             )
             raise e
 
+
 def process_entity_pass_two_worker(ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -183,9 +185,10 @@ def process_entity_pass_two_worker(ids: list[int], current_total: int, total_cou
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(process_entity_pass_two_worker_async(ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

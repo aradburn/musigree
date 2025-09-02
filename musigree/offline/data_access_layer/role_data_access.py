@@ -34,7 +34,7 @@ class RoleDataAccess:
             RoleCache.role_name_set,
             # score_hint=90,
         )
-        if top_role_name[1] > 90:
+        if top_role_name is not None and top_role_name[1] > 90:
             return top_role_name[0], int(top_role_name[1])
         else:
             return None
@@ -78,7 +78,7 @@ class RoleDataAccess:
             else:
                 # Long sentence makes processing too complex, so split in two
                 word_list_part_one = word_list[: len(word_list) // 2]
-                word_list_part_two = word_list[len(word_list) // 2 :]
+                word_list_part_two = word_list[len(word_list) // 2:]
                 part_1 = " ".join(word_list_part_one)
                 part_2 = " ".join(word_list_part_two)
                 queue.append(part_1)

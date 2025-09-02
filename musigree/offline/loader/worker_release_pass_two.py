@@ -116,6 +116,7 @@ async def process_release_pass_two_worker_async(release_ids: list[int], current_
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of releases processed."""
 
+
 async def worker_pass_two_single(
     entity_repository: EntityRepository,
     release_repository: ReleaseRepository,
@@ -158,6 +159,7 @@ async def worker_pass_two_single(
         await release_repository.commit()
         """Commit the transaction."""
 
+
 def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -168,9 +170,10 @@ def process_release_pass_two_worker(release_ids: list[int], current_total: int, 
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(process_release_pass_two_worker_async(release_ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

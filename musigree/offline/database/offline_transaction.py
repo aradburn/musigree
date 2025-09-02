@@ -51,7 +51,9 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
     """Set the new session to the context manager."""
 
     try:
+        # log.debug("Transaction: yield session")
         yield session
+        # log.debug("Transaction: after yield session")
         """Yield the session to be used in the transaction block."""
         await session.commit()
         """Commit the session, persist the changes to DB."""
@@ -75,6 +77,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         await session.rollback()
         """Rollback all the change made in this session."""
     finally:
+        # log.debug("Transaction: close session")
         await session.close()
         CTX_OFFLINE_SESSION.reset(old_token)
         """Close the session."""

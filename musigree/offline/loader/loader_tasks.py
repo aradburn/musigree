@@ -419,13 +419,19 @@ class LoaderTaskForDateAndStage(luigi.Task):
             """
             log.debug(f"Running stage: {self.stage} for date: {self.dump_date}")
             if int(str(self.stage)) < len(stages):
-                await stages[int(str(self.stage))]
+                await stages[int(str(self.stage))]()
                 await self.output().done()
             else:
                 log.error(f"Invalid stage: {self.stage} for date: {self.dump_date}")
 
         try:
-            loop = asyncio.get_running_loop()
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                """Check if the event loop is already running."""
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                """Set a new event loop if none exists."""
             task = loop.create_task(worker_function())
             # Add task to the set. This creates a strong reference.
             background_tasks.add(task)
@@ -434,10 +440,8 @@ class LoaderTaskForDateAndStage(luigi.Task):
             # make each task remove its own reference from the set after
             # completion:
             task.add_done_callback(background_tasks.discard)
+            loop.run_until_complete(task)
 
-            # asyncio.run()
-            # Mark task done in the database
-            # await self.output().done()
         except RuntimeError as e:
             log.exception(e, exc_info=True)
 

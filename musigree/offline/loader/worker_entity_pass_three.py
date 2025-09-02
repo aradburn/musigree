@@ -84,13 +84,13 @@ async def process_entity_pass_three_worker_async(ids: list[int], current_total: 
     end_count = count + len(ids)
     """Counter for the number of entities processed."""
 
+    entity_repository = EntityRepository()
+    """Instance of EntityRepository for database operations on entities."""
+    relation_repository = RelationRepository()
+    """Instance of RelationRepository for database operations on relations."""
+
     async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
-
-        entity_repository = EntityRepository()
-        """Instance of EntityRepository for database operations on entities."""
-        relation_repository = RelationRepository()
-        """Instance of RelationRepository for database operations on relations."""
 
         for entity_id in ids:
             """Iterate over the entity IDs."""
@@ -115,6 +115,7 @@ async def process_entity_pass_three_worker_async(ids: list[int], current_total: 
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of entities processed."""
+
 
 async def worker_pass_three_single(
     entity_repository: EntityRepository,
@@ -187,6 +188,7 @@ async def worker_pass_three_single(
         )
         raise e
 
+
 def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -197,9 +199,10 @@ def process_entity_pass_three_worker(ids: list[int], current_total: int, total_c
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(process_entity_pass_three_worker_async(ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

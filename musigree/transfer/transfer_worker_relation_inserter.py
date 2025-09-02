@@ -13,7 +13,8 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int) -> None:
+async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, Any]], inserted_count: int,
+                                                  total_count: int) -> None:
     """
     A worker process for inserting relation records into the runtime database.
     This function is designed to be run in a separate process to handle the
@@ -42,6 +43,7 @@ async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, A
     log.info(f"[{proc_name}] inserted {inserted_count} relations of {total_count}")
     """Log the number of entities inserted."""
 
+
 def transfer_worker_relation_inserter(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -52,9 +54,10 @@ def transfer_worker_relation_inserter(bulk_inserts: list[dict[str, Any]], curren
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if RuntimeDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
-        """Initialize the database engine."""
+    RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(transfer_worker_relation_inserter_async(bulk_inserts, current_total, total_count))
+
+    RuntimeDatabaseManager.dispose_runtime_database_async_engine(loop)
+    """Close the database engine."""

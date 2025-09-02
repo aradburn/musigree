@@ -121,6 +121,8 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 )
                 engine = create_async_engine(
                     url_object,
+                    # poolclass=NullPool,
+                    # poolclass=StaticPool,
                     poolclass=AsyncAdaptedQueuePool,
                     pool_size=OfflineDatabaseManager.get_concurrency_count(),
                     pool_timeout=30,
@@ -154,14 +156,21 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     port=config.POSTGRES_DATABASE_PORT,
                     database=config.POSTGRES_OFFLINE_DATABASE_NAME,
                 )
+                log.debug(f"pool size: {OfflineDatabaseManager.get_concurrency_count()}")
                 engine = create_async_engine(
                     url_object,
-                    pool_size=OfflineDatabaseManager.get_concurrency_count() + 4,
-                    pool_timeout=300,
-                    pool_recycle=300,
-                    connect_args={
-                        "connect_timeout": 1000,
-                    },
+                    # echo=True,
+                    # poolclass=NullPool,
+                    # poolclass=StaticPool,
+                    poolclass=AsyncAdaptedQueuePool,
+                    pool_size=OfflineDatabaseManager.get_concurrency_count() * 2,
+                    pool_timeout=30,
+                    pool_recycle=1,
+                    pool_pre_ping=True,
+                    # echo_pool=True,
+                    # connect_args={
+                    #     "connect_timeout": 1000,
+                    # },
                     # isolation_level="REPEATABLE READ",
                     # isolation_level="SERIALIZABLE",
                     # execution_options={
@@ -247,26 +256,10 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
         log.info(f"{query}")
 
-        # try:
-        #     loop = asyncio.get_running_loop()
-        # except RuntimeError:
-        #     """Check if the event loop is already running."""
-        #     loop = asyncio.new_event_loop()
-        #     asyncio.set_event_loop(loop)
-        #     """Set a new event loop if none exists."""
-        #
-        # if OfflineDatabaseManager.get_concurrency_count() > 1:
-        #     """Check if concurrency is enabled."""
-        #     cls.initialize(loop)
-        #     """Initialize the database helper."""
         autocommit_engine = engine.execution_options(isolation_level="AUTOCOMMIT")
         async with autocommit_engine.connect() as connection:
             await connection.execute(text(query))
             await connection.commit()
-
-        # async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
-        #     await connection.execute(text(query))
-        #     await connection.commit()
 
     @staticmethod
     def is_vacuum_full() -> bool:

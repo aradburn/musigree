@@ -92,3 +92,30 @@ class RoleRepository(BaseRepository[RoleTable]):
         """
         instance: RoleTable = await self._save(role.model_dump())
         return Role.model_validate(instance)
+
+    async def create_bulk(
+        self, roles: list[RoleUncommitted], on_conflict_do_nothing: bool = False
+    ) -> None:
+        """
+        Creates multiple relations in the database in bulk.
+
+        Args:
+            roles: A list of RoleUncommitted objects to create.
+            on_conflict_do_nothing: If True, ignore conflicts during insertion.
+        """
+        from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_bulk()"
+        )
+
+        role_dicts = []
+        for role in roles:
+            role_dict = role.model_dump()
+            role_dicts.append(role_dict)
+        query = (
+            OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
+                self.schema_class, role_dicts, on_conflict_do_nothing
+            )
+        )
+        await self._session.execute(query)

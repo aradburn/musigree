@@ -88,6 +88,7 @@ async def delete_entities_worker_async(ids: list[int], current_total: int, total
     log.info(f"[{proc_name}] processed {current_total} deleted {count} of {total_count}")
     """Log the progress and number of deleted entities."""
 
+
 async def delete_single_entity(
     entity_repository: EntityRepository, relation_repository: RelationRepository, entity_id: int
 ) -> None:
@@ -110,6 +111,7 @@ async def delete_single_entity(
         log.error(f"Error in delete_entities_worker for id: {entity_id}")
         raise
 
+
 def delete_entities_worker(ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
@@ -120,9 +122,10 @@ def delete_entities_worker(ids: list[int], current_total: int, total_count: int)
         asyncio.set_event_loop(loop)
         """Set a new event loop if none exists."""
 
-    if OfflineDatabaseManager.get_concurrency_count() > 1:
-        """Check if concurrency is enabled."""
-        OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
-        """Initialize the database engine."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
 
     loop.run_until_complete(delete_entities_worker_async(ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""
