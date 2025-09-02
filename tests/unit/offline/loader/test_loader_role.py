@@ -258,8 +258,8 @@ class TestLoaderRole:
         mock_role_repository.assert_called_once()
 
         # Verify create and commit were called for each role
-        assert mock_repo_instance.create.call_count == 2
-        assert mock_repo_instance.commit.call_count == 2
+        assert mock_repo_instance.create_bulk.call_count == 1
+        assert mock_repo_instance.commit.call_count == 1
         assert result == 2  # Number of roles added
 
     @patch("musigree.offline.loader.loader_role.offline_transaction")
@@ -280,10 +280,10 @@ class TestLoaderRole:
         result = await LoaderRole.save_roles([])
 
         # Verify
-        mock_transaction.assert_called_once()
-        mock_role_repository.assert_called_once()
+        mock_transaction.assert_not_called()
+        mock_role_repository.assert_not_called()
         # No create/commit calls should be made for empty list
-        mock_repo_instance.create.assert_not_called()
+        mock_repo_instance.create_bulk.assert_not_called()
         mock_repo_instance.commit.assert_not_called()
         assert result == 0  # Number of roles added
 

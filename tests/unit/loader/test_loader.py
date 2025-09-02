@@ -1,7 +1,7 @@
 """
 Unit tests for musigree.loader.loader module.
 """
-
+from functools import partial
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
@@ -45,7 +45,7 @@ class TestLoaderFunctions:
         mock_stage1 = AsyncMock()
         mock_stage2 = AsyncMock()
 
-        mock_get_stages.return_value = [mock_stage1(), mock_stage2()]
+        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2)]
 
         # Act
         await load_offline_tables(mock_data_directory, mock_date, is_bulk_inserts=True)
@@ -64,7 +64,7 @@ class TestLoaderFunctions:
         mock_stage2 = AsyncMock()
         mock_stage3 = AsyncMock()
 
-        mock_get_stages.return_value = [mock_stage1(), mock_stage2(), mock_stage3()]
+        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2), partial(mock_stage3)]
 
         # Act
         await load_offline_table_stage(
@@ -122,13 +122,6 @@ class TestLoaderFunctions:
         # Assert
         assert isinstance(result, list)
         assert len(result) > 0
-        # Check that the result contains awaitable objects
-        import inspect
-
-        # All stages should be either coroutines or other awaitable objects
-        assert all(
-            inspect.iscoroutine(stage) or inspect.isawaitable(stage) for stage in result
-        )
 
     @patch("musigree.loader.loader.OfflineDatabaseManager")
     def test_get_load_offline_table_stages_assertion_error_no_helper(
@@ -206,7 +199,7 @@ class TestLoaderFunctions:
         mock_stage1 = AsyncMock()
         mock_stage2 = AsyncMock()
 
-        mock_get_stages.return_value = [mock_stage1(), mock_stage2()]
+        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2)]
 
         # Act
         await load_runtime_tables(mock_data_directory, "2024-11-01")
@@ -244,6 +237,12 @@ class TestLoaderFunctions:
         mock_offline_db_manager.setup_database = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
 
+        # Mock offline database helper
+        mock_offline_helper = Mock()
+        mock_offline_helper.drop_tables = AsyncMock()
+        mock_offline_helper.create_tables = AsyncMock()
+        mock_offline_db_manager.offline_database_helper = mock_offline_helper
+
         # Mock runtime database helper
         mock_runtime_helper = Mock()
         mock_runtime_helper.drop_tables = AsyncMock()
@@ -259,6 +258,8 @@ class TestLoaderFunctions:
         mock_cache_manager.get_cache.assert_called_once()
         mock_offline_db_manager.setup_database.assert_called_once()
         mock_runtime_db_manager.setup_database.assert_called_once()
+        mock_offline_helper.drop_tables.assert_called_once()
+        mock_offline_helper.create_tables.assert_called_once()
         mock_runtime_helper.drop_tables.assert_called_once()
         mock_runtime_helper.create_tables.assert_called_once()
         mock_luigi.build.assert_called_once()
@@ -339,7 +340,7 @@ class TestLoaderIntegration:
             mock_stage2 = AsyncMock()
             mock_stage3 = AsyncMock()
 
-            mock_stages = [mock_stage1(), mock_stage2(), mock_stage3()]
+            mock_stages = [partial(mock_stage1), partial(mock_stage2), partial(mock_stage3)]
             mock_get_stages.return_value = mock_stages
 
             data_directory = Path("/test/data")
@@ -365,7 +366,7 @@ class TestLoaderIntegration:
             mock_stage2 = AsyncMock()
 
             # Return AsyncMock coroutines
-            mock_stages = [mock_stage1(), mock_stage2()]
+            mock_stages = [partial(mock_stage1), partial(mock_stage2)]
             mock_get_stages.return_value = mock_stages
 
             # Test valid stages
@@ -446,7 +447,7 @@ class TestLoaderEdgeCases:
             "Text search file not found"
         )
 
-        mock_get_stages.return_value = [mock_stage_that_fails()]
+        mock_get_stages.return_value = [partial(mock_stage_that_fails)]
 
         # Act & Assert - Should raise FileNotFoundError
         with pytest.raises(FileNotFoundError, match="Text search file not found"):

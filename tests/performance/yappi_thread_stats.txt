@@ -2,14 +2,590 @@ YAPPI THREAD STATISTICS
 ================================================================================
 
 Thread: Thread
-Total Time: 207.564548s
-----------------------------------------
-Thread: Connection
-Total Time: 57.629989s
+Total Time: 122.910457s
 ----------------------------------------
 Thread: _MainThread
-Total Time: 45.586664s
+Total Time: 72.812592s
+----------------------------------------
+Thread: Connection
+Total Time: 57.632923s
 ----------------------------------------
 Thread: Thread
-Total Time: 0.000211s
+Total Time: 10.642030s
+----------------------------------------
+Thread: Thread
+Total Time: 3.625212s
+----------------------------------------
+Thread: Connection
+Total Time: 2.735334s
+----------------------------------------
+Thread: Connection
+Total Time: 0.150424s
+----------------------------------------
+Thread: Connection
+Total Time: 0.061642s
+----------------------------------------
+Thread: Connection
+Total Time: 0.018293s
+----------------------------------------
+Thread: Connection
+Total Time: 0.005095s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004823s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004668s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004569s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004554s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004465s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004380s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004323s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004321s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004317s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004311s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004306s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004283s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004278s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004265s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004264s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004263s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004252s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004226s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004211s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004206s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004195s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004192s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004192s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004191s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004184s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004178s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004178s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004174s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004168s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004166s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004155s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004150s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004149s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004147s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004144s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004141s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004121s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004113s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004109s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004101s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004091s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004089s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004082s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004070s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004063s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004062s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004060s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004058s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004053s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004051s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004040s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004040s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004038s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004032s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004030s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004030s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004023s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004010s
+----------------------------------------
+Thread: Connection
+Total Time: 0.004008s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003995s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003993s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003990s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003981s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003973s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003958s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003949s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003946s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003931s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003915s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003915s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003883s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003881s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003876s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003871s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003853s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003844s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003837s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003836s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003835s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003827s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003816s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003815s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003814s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003800s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003796s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003792s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003784s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003777s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003777s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003758s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003756s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003712s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003705s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003701s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003699s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003686s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003663s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003657s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003642s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003634s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003622s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003603s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003602s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003568s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003567s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003564s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003561s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003534s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003529s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003526s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003520s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003499s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003499s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003496s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003482s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003477s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003467s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003454s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003452s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003449s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003438s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003428s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003414s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003397s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003396s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003387s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003363s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003359s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003358s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003317s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003313s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003299s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003276s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003245s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003243s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003209s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003192s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003124s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003079s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003079s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003060s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003056s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003040s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003026s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003003s
+----------------------------------------
+Thread: Connection
+Total Time: 0.003001s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002981s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002973s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002931s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002904s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002902s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002822s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002804s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002796s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002762s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002740s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002714s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002713s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002703s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002695s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002644s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002641s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002585s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002579s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002577s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002573s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002564s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002560s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002517s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002511s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002493s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002431s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002428s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002420s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002408s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002357s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002312s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002273s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002251s
+----------------------------------------
+Thread: Connection
+Total Time: 0.002239s
+----------------------------------------
+Thread: Connection
+Total Time: 0.001783s
+----------------------------------------
+Thread: Connection
+Total Time: 0.001732s
+----------------------------------------
+Thread: Connection
+Total Time: 0.001664s
+----------------------------------------
+Thread: Thread
+Total Time: 0.000394s
+----------------------------------------
+Thread: Thread
+Total Time: 0.000316s
+----------------------------------------
+Thread: Thread
+Total Time: 0.000249s
 ----------------------------------------
