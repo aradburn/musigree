@@ -51,7 +51,7 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 minversion = "6.0"
-addopts = "-ra -q"
+addopts = "-ra -q -s"
 testpaths = [
     "tests/unit",
     "tests/integration",
