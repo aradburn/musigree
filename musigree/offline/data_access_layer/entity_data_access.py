@@ -125,6 +125,8 @@ class EntityDataAccess:
                         entity.entities[section][entity_name] = id_
                         is_resolved = True
             return is_resolved
+        else:
+            raise ValueError
 
     @staticmethod
     async def resolve_release_references(

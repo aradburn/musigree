@@ -6,7 +6,6 @@ It provides a mechanism for creating and managing SQLAlchemy async sessions,
 handling database errors, and using context variables to manage sessions in
 concurrent environments.
 """
-from asyncio import current_task
 from contextvars import ContextVar
 from typing import Any
 

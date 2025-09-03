@@ -208,13 +208,14 @@ class TestLoaderFunctions:
         mock_get_stages.assert_called_once_with(mock_data_directory, "2024-11-01")
 
     @patch("musigree.loader.loader.luigi")
-    @patch("musigree.loader.loader.atexit")
+    @patch("musigree.loader.loader.asyncio_atexit")
     @patch("musigree.loader.loader.RuntimeDatabaseManager")
     @patch("musigree.loader.loader.OfflineDatabaseManager")
     @patch("musigree.loader.loader.CacheManager")
     @patch("musigree.loader.loader.setup_logging")
     @patch("musigree.loader.loader.sys")
-    def test_loader_main_success(
+    @pytest.mark.asyncio
+    async def test_loader_main_success(
         self,
         _mock_sys: Mock,
         mock_setup_logging: Mock,
@@ -250,7 +251,7 @@ class TestLoaderFunctions:
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
         # Act
-        loader_main()
+        await loader_main()
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -271,7 +272,8 @@ class TestLoaderFunctions:
     @patch("musigree.loader.loader.CacheManager")
     @patch("musigree.loader.loader.setup_logging")
     @patch("musigree.loader.loader.sys")
-    def test_loader_main_cache_error(
+    @pytest.mark.asyncio
+    async def test_loader_main_cache_error(
         self,
         mock_sys: Mock,
         mock_setup_logging: Mock,
@@ -299,7 +301,7 @@ class TestLoaderFunctions:
 
         # Act & Assert
         with pytest.raises(SystemExit):
-            loader_main()
+            await loader_main()
 
         # Verify setup calls before exit
         mock_setup_logging.assert_called_once()

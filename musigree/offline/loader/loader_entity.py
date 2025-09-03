@@ -33,7 +33,7 @@ class LoaderEntity(LoaderBase):
     # @timeit
     async def loader_entity_pass_one(
         cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts: bool = False
-    ) -> int:
+    ) -> None:
         log.debug(f"loader entity pass one - artist - date: {data_date}")
         entity_repository = EntityRepository()
         entity_parser = ParserEntity()
@@ -47,6 +47,8 @@ class LoaderEntity(LoaderBase):
             skip_without=["entity_name"],
             is_bulk_inserts=is_bulk_inserts,
         )
+        log.info(f"Artists loaded: {artists_loaded}")
+
         log.debug(f"loader entity pass one - label - date: {data_date}")
         entity_repository = EntityRepository()
         entity_parser = ParserEntity()
@@ -60,7 +62,7 @@ class LoaderEntity(LoaderBase):
             skip_without=["entity_name"],
             is_bulk_inserts=is_bulk_inserts,
         )
-        return artists_loaded + labels_loaded
+        log.info(f"Labels loaded : {labels_loaded}")
 
     @staticmethod
     def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:

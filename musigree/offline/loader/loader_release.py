@@ -114,7 +114,7 @@ class LoaderRelease(LoaderBase):
     # @timeit
     async def loader_release_pass_one(
         cls, discogs_data_directory: Path, date: str, is_bulk_inserts: bool = False
-    ) -> int:
+    ) -> None:
         """
         Performs the first pass of loading release data.
 
@@ -126,9 +126,6 @@ class LoaderRelease(LoaderBase):
             discogs_data_directory (Path): The directory containing the Discogs data files.
             date (str): The date of the data to load.
             is_bulk_inserts (bool): Whether to use bulk inserts for better performance.
-
-        Returns:
-            int: The number of releases loaded.
         """
         log.debug(f"loader release pass one - date: {date}")
 
@@ -146,7 +143,7 @@ class LoaderRelease(LoaderBase):
             skip_without=["title"],
             is_bulk_inserts=is_bulk_inserts,
         )
-        return releases_loaded
+        log.info(f"Releases loaded: {releases_loaded}")
 
     @staticmethod
     def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
