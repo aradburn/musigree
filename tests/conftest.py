@@ -15,6 +15,7 @@ from musigree.constants import (
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.loader import load_runtime_tables, load_offline_tables
 from musigree.logging_config import setup_logging, shutdown_logging
+from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
@@ -71,6 +72,9 @@ async def offline_database_setup(
 
     if is_load_offline_data_required:
         log.info("Loading test data into offline database")
+
+        LoaderBase.BULK_INSERT_BATCH_SIZE = 1000
+        LoaderBase.BULK_REPORTING_SIZE = 1000
 
         # Load test data
         await load_offline_tables(
@@ -167,6 +171,9 @@ async def runtime_database_setup(
 
     if is_load_runtime_data_required:
         log.info("Loading test data into runtime database")
+
+        LoaderBase.BULK_INSERT_BATCH_SIZE = 1000
+        LoaderBase.BULK_REPORTING_SIZE = 1000
 
         # Load test data
         await load_runtime_tables(
