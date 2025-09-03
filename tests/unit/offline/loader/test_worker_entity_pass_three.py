@@ -113,13 +113,8 @@ class TestWorkerEntityPassThree:
         # Assert
         mock_relation_repo.find_by_entity.assert_called_once_with(entity_id)
 
-        # Should still call update with empty relation counts
-        mock_entity_repo.update.assert_called_once()
-        call_args = mock_entity_repo.update.call_args
-        actual_payload = call_args[0][1]
-        assert actual_payload[EntityTable.relation_counts.key] == {}
-
-        mock_entity_repo.commit.assert_called_once()
+        # Should not call update with empty relation counts
+        mock_entity_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_worker_pass_three_single_database_error(

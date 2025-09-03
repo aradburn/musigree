@@ -169,25 +169,24 @@ async def worker_pass_three_single(
         """Count the unique keys in the set."""
 
     # log.debug(f"Entity (Pass 3) [{id_}]: Relation Counts: {_relation_count_totals}")
+    if len(_relation_count_totals) > 0:
+        try:
+            """Attempt to update the relation counts."""
+            # Update the relation counts for this entity
+            await entity_repository.update(
+                id_, {EntityTable.relation_counts.key: _relation_count_totals}
+            )
+            """Update the entity."""
 
-    try:
-        """Attempt to update the relation counts."""
-        # Update the relation counts for this entity
-        await entity_repository.update(
-            id_, {EntityTable.relation_counts.key: _relation_count_totals}
-        )
-        """Update the entity."""
-
-        await entity_repository.commit()
-        """Commit the transaction."""
-    except DatabaseError as e:
-        """Handle potential database errors."""
-        log.exception(
-            f"Database Error for id: {id_}",
-            exc_info=True,
-        )
-        raise e
-
+            await entity_repository.commit()
+            """Commit the transaction."""
+        except DatabaseError as e:
+            """Handle potential database errors."""
+            log.exception(
+                f"Database Error for id: {id_}",
+                exc_info=True,
+            )
+            raise e
 
 def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
