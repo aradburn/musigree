@@ -12,7 +12,7 @@ All of Musigree's data is derived from the [Discogs](http://www.discogs.com) mus
 
 - 9 million artists
 - 2 million labels
-- 17 million releases
+- 18 million releases
 - Over 100 million different relationships
 
 ## Live Demo
