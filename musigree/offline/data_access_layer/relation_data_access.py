@@ -94,23 +94,25 @@ class RelationDataAccess:
             iterator = itertools.product(artist_ids, release.extra_artists or [])
         """Determine the iterator based on whether the release is a compilation."""
         for object_id, credit in iterator:
-            for roles in credit["roles"]:
-                input_role_str: str = roles["name"]
-                role_str_list = RoleDataUtils.normalise_role_names(input_role_str)
-                """Normalize the role names."""
-                for role_str in role_str_list:
-                    role_name = RoleDataAccess.find_role(role_str)
-                    """Find the normalized role name."""
-                    if role_name is not None:
-                        if role_name in RoleType.aggregate_roles:
-                            if role_name not in aggregate_roles:
-                                aggregate_roles[role_name] = []
-                            if "id" in credit:
-                                aggregate_credit_id = credit["id"]
-                                aggregate_roles[role_name].append(aggregate_credit_id)
-                        else:
-                            if "id" in credit:
-                                triples.add((credit["id"], role_name, object_id))
+            if object_id is not None and credit is not None and "roles" in credit:
+                for roles in credit["roles"]:
+                    if "name" in roles:
+                        input_role_str: str = roles["name"]
+                        role_str_list = RoleDataUtils.normalise_role_names(input_role_str)
+                        """Normalize the role names."""
+                        for role_str in role_str_list:
+                            role_name = RoleDataAccess.find_role(role_str)
+                            """Find the normalized role name."""
+                            if role_name is not None:
+                                if role_name in RoleType.aggregate_roles:
+                                    if role_name not in aggregate_roles:
+                                        aggregate_roles[role_name] = []
+                                    if "id" in credit:
+                                        aggregate_credit_id = credit["id"]
+                                        aggregate_roles[role_name].append(aggregate_credit_id)
+                                else:
+                                    if "id" in credit:
+                                        triples.add((credit["id"], role_name, object_id))
 
         if is_compilation:
             iterator = itertools.product(label_ids, release.companies or [])
@@ -118,23 +120,18 @@ class RelationDataAccess:
             iterator = itertools.product(artist_ids, release.companies or [])
         """Determine the iterator based on whether the release is a compilation."""
         for subject_id, company in iterator:
-            company_role_str = company["entity_type_name"]
-            company_role_strs_list = RoleDataUtils.normalise_role_names(
-                company_role_str
-            )
-            """Normalize the role names."""
-            for role_str in company_role_strs_list:
-                role_name = RoleDataAccess.find_role(role_str)
-                """Find the normalized role name."""
-                if role_name is not None:
-                    if "id" in company:
-                        triples.add(
-                            (
-                                subject_id,
-                                role_name,
-                                company["id"],
-                            )
-                        )
+            if subject_id is not None and company is not None and "entity_type_name" in company:
+                company_role_str = company["entity_type_name"]
+                company_role_strs_list = RoleDataUtils.normalise_role_names(
+                    company_role_str
+                )
+                """Normalize the role names."""
+                for role_str in company_role_strs_list:
+                    role_name = RoleDataAccess.find_role(role_str)
+                    """Find the normalized role name."""
+                    if role_name is not None:
+                        if "id" in company:
+                            triples.add((subject_id, role_name, company["id"]))
 
         all_track_artist_ids: set[int] = set()
         """Set to store all unique artist IDs from tracks."""

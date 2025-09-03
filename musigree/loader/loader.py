@@ -36,6 +36,7 @@ from musigree.constants import (
     INSTRUMENTS_DATA,
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
+    ALL_OFFLINE_DATABASE_TABLE_NAMES,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
 )
 from musigree.library.cache.cache_manager import CacheManager
@@ -357,8 +358,7 @@ async def loader_main() -> None:
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "runtime_database_helper must be initialized before calling initialize()"
     )
-    # await OfflineDatabaseManager.offline_database_helper.drop_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES)
-    # await OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES)
+    await OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES)
     await RuntimeDatabaseManager.runtime_database_helper.drop_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES)
     await RuntimeDatabaseManager.runtime_database_helper.create_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES)
 

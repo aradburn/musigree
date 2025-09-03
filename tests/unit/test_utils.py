@@ -471,7 +471,7 @@ def test_normalize_dict_list_boolean_and_numeric_keys() -> None:
 
 def test_normalize_dict_list_empty_dicts() -> None:
     """Test normalize_dict_list with empty dictionaries."""
-    input_list = [{}, {}, {"key": "value"}]
+    input_list: list[dict[str, Any]] = [{}, {}, {"key": "value"}]
     actual = utils.normalize_dict_list(input_list)
     assert isinstance(actual, str)
     assert "{}" in actual

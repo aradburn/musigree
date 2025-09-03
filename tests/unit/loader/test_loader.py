@@ -240,7 +240,6 @@ class TestLoaderFunctions:
 
         # Mock offline database helper
         mock_offline_helper = Mock()
-        mock_offline_helper.drop_tables = AsyncMock()
         mock_offline_helper.create_tables = AsyncMock()
         mock_offline_db_manager.offline_database_helper = mock_offline_helper
 
@@ -259,14 +258,13 @@ class TestLoaderFunctions:
         mock_cache_manager.get_cache.assert_called_once()
         mock_offline_db_manager.setup_database.assert_called_once()
         mock_runtime_db_manager.setup_database.assert_called_once()
-        mock_offline_helper.drop_tables.assert_called_once()
         mock_offline_helper.create_tables.assert_called_once()
         mock_runtime_helper.drop_tables.assert_called_once()
         mock_runtime_helper.create_tables.assert_called_once()
         mock_luigi.build.assert_called_once()
 
     @patch("musigree.loader.loader.luigi")
-    @patch("musigree.loader.loader.atexit")
+    @patch("musigree.loader.loader.asyncio_atexit")
     @patch("musigree.loader.loader.RuntimeDatabaseManager")
     @patch("musigree.loader.loader.OfflineDatabaseManager")
     @patch("musigree.loader.loader.CacheManager")
