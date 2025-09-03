@@ -63,15 +63,12 @@ class LoaderBase(ABC):
 
     Attributes:
         BULK_INSERT_BATCH_SIZE (int): The batch size for bulk insert operations.
-        BULK_UPDATE_BATCH_SIZE (int): The batch size for bulk update operations.
         BULK_REPORTING_SIZE (int): The number of records to process before reporting progress.
         _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
     """
 
     BULK_INSERT_BATCH_SIZE = 10000
     """The batch size for bulk insert operations."""
-    BULK_UPDATE_BATCH_SIZE = 100
-    """The batch size for bulk update operations."""
     BULK_REPORTING_SIZE = 10000
     """The number of records to process before reporting progress."""
     # BULK_INSERT_BATCH_SIZE = 10000
