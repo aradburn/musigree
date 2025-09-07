@@ -45,7 +45,7 @@ async def get_runtime_session() -> AsyncSession:
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
         is not None
     ), (
-        "RuntimeDatabaseManager.runtime_database_helper.runtime_engine must be initialized before calling get_offline_session()"
+        "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_offline_session()"
     )
 
     async_session_factory = (

@@ -98,21 +98,21 @@ class TestLoaderFunctions:
         mock_helper.is_vacuum_analyze.return_value = True
         mock_helper.offline_async_engine = (
             Mock()
-        )  # Changed from offline_engine to offline_async_engine
+        )
         mock_db_manager.offline_database_helper = mock_helper
 
         # Mock vacuum method to return an AsyncMock coroutine
-        mock_helper.vacuum.return_value = AsyncMock()()
+        mock_helper.vacuum = AsyncMock()
 
         # Mock the static/class methods to return AsyncMock coroutines
-        _mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
-        mock_loader_entity.loader_create_text_search_index.return_value = AsyncMock()()
-        mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
-        mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
-        mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
+        _mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+        mock_loader_entity.loader_entity_pass_one = AsyncMock()
+        mock_loader_entity.loader_entity_pass_two = AsyncMock()
+        mock_loader_entity.loader_entity_pass_three = AsyncMock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
+        mock_loader_release.loader_release_pass_one = AsyncMock()
+        mock_loader_release.loader_release_pass_two = AsyncMock()
+        mock_loader_relation.loader_relation_pass_one = AsyncMock()
 
         # Act
         result = get_load_offline_table_stages(
@@ -169,16 +169,16 @@ class TestLoaderFunctions:
         mock_db_manager.offline_database_helper = mock_helper
 
         # Mock all the loader methods to avoid creating actual coroutines
-        mock_loader_role.load_roles_into_database.return_value = AsyncMock()()
-        mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
-        mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
-        mock_loader_entity.loader_create_text_search_index.return_value = AsyncMock()()
-        mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
-        mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
-        mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
-        mock_helper.vacuum.return_value = AsyncMock()()
+        mock_loader_role.load_roles_into_database = AsyncMock()
+        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+        mock_loader_entity.loader_entity_pass_one = AsyncMock()
+        mock_loader_entity.loader_entity_pass_two = AsyncMock()
+        mock_loader_entity.loader_entity_pass_three = AsyncMock()
+        mock_loader_entity.loader_create_text_search_index = AsyncMock()
+        mock_loader_release.loader_release_pass_one = AsyncMock()
+        mock_loader_release.loader_release_pass_two = AsyncMock()
+        mock_loader_relation.loader_relation_pass_one = AsyncMock()
+        mock_helper.vacuum = AsyncMock()
 
         # Act & Assert
         # The function should raise an assertion error when engine is None
@@ -187,7 +187,7 @@ class TestLoaderFunctions:
                 mock_data_directory, mock_date, is_bulk_inserts=True
             )
 
-        assert "offline_engine must be initialized" in str(excinfo.value)
+        assert "offline_async_engine must be initialized" in str(excinfo.value)
 
     @patch("musigree.loader.loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
@@ -208,15 +208,16 @@ class TestLoaderFunctions:
         mock_get_stages.assert_called_once_with(mock_data_directory, "2024-11-01")
 
     @patch("musigree.loader.loader.luigi")
-    @patch("musigree.loader.loader.asyncio_atexit")
+    @patch("musigree.loader.loader.atexit")
     @patch("musigree.loader.loader.RuntimeDatabaseManager")
     @patch("musigree.loader.loader.OfflineDatabaseManager")
     @patch("musigree.loader.loader.CacheManager")
     @patch("musigree.loader.loader.setup_logging")
     @patch("musigree.loader.loader.sys")
-    @pytest.mark.asyncio
-    async def test_loader_main_success(
+    @patch("musigree.loader.loader.asyncio.Runner")
+    def test_loader_main_success(
         self,
+        mock_runner: Mock,
         _mock_sys: Mock,
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
@@ -249,8 +250,13 @@ class TestLoaderFunctions:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
+        # Mock asyncio.Runner context manager
+        mock_runner_instance = Mock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
+
         # Act
-        await loader_main()
+        loader_main()
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -264,15 +270,16 @@ class TestLoaderFunctions:
         mock_luigi.build.assert_called_once()
 
     @patch("musigree.loader.loader.luigi")
-    @patch("musigree.loader.loader.asyncio_atexit")
+    @patch("musigree.loader.loader.atexit")
     @patch("musigree.loader.loader.RuntimeDatabaseManager")
     @patch("musigree.loader.loader.OfflineDatabaseManager")
     @patch("musigree.loader.loader.CacheManager")
     @patch("musigree.loader.loader.setup_logging")
     @patch("musigree.loader.loader.sys")
-    @pytest.mark.asyncio
-    async def test_loader_main_cache_error(
+    @patch("musigree.loader.loader.asyncio.Runner")
+    def test_loader_main_cache_error(
         self,
+        mock_runner: Mock,
         mock_sys: Mock,
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
@@ -297,9 +304,14 @@ class TestLoaderFunctions:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
+        # Mock asyncio.Runner context manager
+        mock_runner_instance = Mock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
+
         # Act & Assert
         with pytest.raises(SystemExit):
-            await loader_main()
+            loader_main()
 
         # Verify setup calls before exit
         mock_setup_logging.assert_called_once()
@@ -412,18 +424,16 @@ class TestLoaderEdgeCases:
             mock_db_manager.offline_database_helper = mock_helper
 
             # Mock all the loader methods to avoid creating actual coroutines
-            mock_loader_role.load_roles_into_database.return_value = AsyncMock()()
-            mock_role_data_access.load_all_roles_into_cache.return_value = AsyncMock()()
-            mock_loader_entity.loader_entity_pass_one.return_value = AsyncMock()()
-            mock_loader_entity.loader_entity_pass_two.return_value = AsyncMock()()
-            mock_loader_entity.loader_entity_pass_three.return_value = AsyncMock()()
-            mock_loader_entity.loader_create_text_search_index.return_value = (
-                AsyncMock()()
-            )
-            mock_loader_release.loader_release_pass_one.return_value = AsyncMock()()
-            mock_loader_release.loader_release_pass_two.return_value = AsyncMock()()
-            mock_loader_relation.loader_relation_pass_one.return_value = AsyncMock()()
-            mock_helper.vacuum.return_value = AsyncMock()()
+            mock_loader_role.load_roles_into_database = AsyncMock()
+            mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+            mock_loader_entity.loader_entity_pass_one = AsyncMock()
+            mock_loader_entity.loader_entity_pass_two = AsyncMock()
+            mock_loader_entity.loader_entity_pass_three = AsyncMock()
+            mock_loader_entity.loader_create_text_search_index = AsyncMock()
+            mock_loader_release.loader_release_pass_one = AsyncMock()
+            mock_loader_release.loader_release_pass_two = AsyncMock()
+            mock_loader_relation.loader_relation_pass_one = AsyncMock()
+            mock_helper.vacuum = AsyncMock()
 
             # Should not raise error even with empty directory
             stages = get_load_offline_table_stages(

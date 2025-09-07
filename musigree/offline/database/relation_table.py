@@ -48,23 +48,23 @@ class RelationTable(OfflineBase):
     """The year of the release."""
 
     __table_args__: tuple[Index, dict] = (
-        Index(
-            "idx_relation",
-            subject,
-            predicate,
-            object,
-            unique=False,
-        ),
         # Index(
-        #     "idx_relation_subject",
+        #     "idx_relation",
         #     subject,
-        #     unique=False,
-        # ),
-        # Index(
-        #     "idx_relation_object",
+        #     predicate,
         #     object,
         #     unique=False,
         # ),
+        Index(
+            "idx_relation_subject",
+            subject,
+            unique=False,
+        ),
+        Index(
+            "idx_relation_object",
+            object,
+            unique=False,
+        ),
         {},
     )
     """

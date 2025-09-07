@@ -101,19 +101,6 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         result: Result = await self._session.execute(query)
         return result.scalars().all()
 
-    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-    #     """
-    #     Retrieves all release IDs in batches.
-    #
-    #     Args:
-    #         num_in_batch: The number of IDs in each batch.
-    #
-    #     Returns:
-    #         List[List[int]]: A list of batches, where each batch is a list of release IDs.
-    #     """
-    #     ids = await self.get_ids()
-    #     return utils.batched(iter(ids), num_in_batch)
-
     async def update(
         self,
         release_id: int,
@@ -136,15 +123,9 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             update(self.schema_class)
             .where(ReleaseTable.release_id == release_id)
             .values(payload)
-            # .returning(self.schema_class)
         )
         await self._session.execute(query)
         await self._session.flush()
-
-        # if not (schema := result.scalar_one_or_none()):
-        #     raise DatabaseError
-        #
-        # return schema
 
     async def delete_by_id(self, release_id: int) -> None:
         """

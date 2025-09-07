@@ -83,7 +83,7 @@ class OfflineDatabaseHelper(ABC):
             OfflineDatabaseManager.offline_database_helper.offline_async_engine
             is not None
         ), (
-            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
+            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
         )
 
         if tables is None:
@@ -124,7 +124,7 @@ class OfflineDatabaseHelper(ABC):
             OfflineDatabaseManager.offline_database_helper.offline_async_engine
             is not None
         ), (
-            "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling create_tables()"
+            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
         )
 
         if tables is not None:

@@ -22,7 +22,7 @@ class OfflineDatabaseManager:
     @staticmethod
     def get_concurrency_count() -> int:
         if OfflineDatabaseManager._threading_model == ThreadingModel.PROCESS:
-            return multiprocessing.cpu_count() * 2
+            return multiprocessing.cpu_count()
         elif OfflineDatabaseManager._threading_model == ThreadingModel.THREAD:
             return 1
         else:
