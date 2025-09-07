@@ -105,7 +105,7 @@ class TestOfflineDatabaseManager:
         # Check that helper has the expected attributes set
         helper = OfflineDatabaseManager.offline_database_helper
         assert helper is not None
-        assert hasattr(helper, "offline_engine")
+        assert hasattr(helper, "offline_async_engine")
         assert hasattr(helper, "offline_session_factory")
         assert helper.offline_async_engine == mock_engine
         assert helper.offline_async_session_factory == mock_session_factory

@@ -13,8 +13,8 @@ The loader is responsible for:
     - Registering cleanup functions to be run when the application exits.
     - Running the loader process between specified dates.
 """
-
 import asyncio
+import atexit
 import datetime
 import logging
 import sys
@@ -23,7 +23,6 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-import asyncio_atexit  # type: ignore
 import luigi
 
 from musigree.config import (
@@ -117,7 +116,7 @@ def get_load_offline_table_stages(
     assert (
         OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
     ), (
-        "OfflineDatabaseManager.offline_database_helper.offline_engine must be initialized before calling get_load_offline_table_stages()"
+        "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_load_offline_table_stages()"
     )
 
     is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
@@ -289,7 +288,7 @@ def get_load_runtime_table_stages(data_directory: Path, _date: str | None) -> li
     return stages
 
 
-async def shutdown_loader() -> None:
+def shutdown_loader() -> None:
     """
     Shuts down the loader application.
 
@@ -300,14 +299,16 @@ async def shutdown_loader() -> None:
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
     log.info("######## LOADER SHUTDOWN START ########")
-    await OfflineDatabaseManager.shutdown_database()
-    await RuntimeDatabaseManager.shutdown_database()
+    with asyncio.Runner() as runner:
+        runner.run(OfflineDatabaseManager.shutdown_database())
+        runner.run(RuntimeDatabaseManager.shutdown_database())
+
     CacheManager.shutdown_cache()
     shutdown_logging()
     log.info("######## LOADER SHUTDOWN DONE ########")
 
 
-async def loader_main() -> None:
+def loader_main() -> None:
     """
     The main function for the Musigree data loader application.
 
@@ -336,6 +337,9 @@ async def loader_main() -> None:
     offline_config = PostgresDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
 
+    # Note reverse order (last in first out), logging is the last to be shutdown
+    atexit.register(shutdown_loader)
+
     # Setup Cache
     CacheManager.setup_cache(offline_config)
     cache = CacheManager.get_cache()
@@ -346,11 +350,10 @@ async def loader_main() -> None:
         log.debug("Clearing cache")
         CacheManager.clear()
 
-    await OfflineDatabaseManager.setup_database(offline_config)
-    await RuntimeDatabaseManager.setup_database(runtime_config)
-
-    # Note reverse order (last in first out), logging is the last to be shutdown
-    asyncio_atexit.register(shutdown_loader)
+    with asyncio.Runner() as runner:
+        runner.run(OfflineDatabaseManager.setup_database(offline_config))
+        runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
+        runner.close()
 
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "offline_database_helper must be initialized before calling initialize()"
@@ -358,9 +361,13 @@ async def loader_main() -> None:
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "runtime_database_helper must be initialized before calling initialize()"
     )
-    await OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES)
-    await RuntimeDatabaseManager.runtime_database_helper.drop_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES)
-    await RuntimeDatabaseManager.runtime_database_helper.create_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES)
+    with asyncio.Runner() as runner:
+        runner.run(OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES))
+        runner.run(RuntimeDatabaseManager.runtime_database_helper.drop_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES))
+        runner.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES))
+        # Load roles, may be empty if no roles in database yet
+        runner.run(RoleDataAccess.load_all_roles_into_cache())
+        runner.close()
 
     # Run the loader process between these dates
     start_date = datetime.date(2025, 8, 1)
@@ -385,4 +392,4 @@ async def loader_main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(loader_main())
+    loader_main()
