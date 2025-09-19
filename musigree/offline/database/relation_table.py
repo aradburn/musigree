@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import (
     Index,
     Integer,
@@ -47,7 +49,7 @@ class RelationTable(OfflineBase):
     year: Mapped[int] = mapped_column(Integer, nullable=True)
     """The year of the release."""
 
-    __table_args__: tuple[Index, dict] = (
+    __table_args__: tuple[Index, Index, dict[Any, Any]] = (
         # Index(
         #     "idx_relation",
         #     subject,
