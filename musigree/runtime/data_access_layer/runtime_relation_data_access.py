@@ -1,5 +1,4 @@
 import logging
-from collections.abc import AsyncGenerator
 from typing import Any
 
 from musigree.library.cache.role_cache import RoleCache
@@ -148,12 +147,12 @@ class RuntimeRelationDataAccess:
     #     # return relation_links
 
     @staticmethod
-    async def get_runtime_relation_dicts_from_relations(
-        relation_dbs: AsyncGenerator[RelationDB, None],
-    ) -> AsyncGenerator[dict[str, Any], None]:
+    def get_runtime_relation_dicts_from_relations(relation_dbs: list[RelationDB]) -> list[dict[str, Any]]:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None
-        async for relation_db in relation_dbs:
+        runtime_relation_dict_list: list[dict[str, Any]] = []
+        for relation_db in relation_dbs:
             runtime_relation_dict = to_runtime_relation_db_dict(relation_db)
-            yield runtime_relation_dict
+            runtime_relation_dict_list.append(runtime_relation_dict)
+        return runtime_relation_dict_list

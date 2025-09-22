@@ -1,5 +1,4 @@
 import logging
-from collections.abc import AsyncGenerator
 from typing import cast, Any
 
 from musigree.exceptions import NotFoundError
@@ -177,10 +176,16 @@ class RuntimeEntityDataAccess:
         return id_
 
     @staticmethod
-    async def get_runtime_entity_dicts_from_entities(entities: AsyncGenerator[Entity, None]) -> AsyncGenerator[dict[str, Any], None]:
+    def get_runtime_entity_dicts_from_entities(entity_list: list[Entity]) -> list[dict[str, Any]]:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None
-        async for entity in entities:
+        assert RuntimeDatabaseManager.runtime_database_helper.entity_details_index is not None
+
+        runtime_entity_dict_list: list[dict[str, Any]] = []
+
+        for entity in entity_list:
             runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
-            yield runtime_entity_dict
+            runtime_entity_dict_list.append(runtime_entity_dict)
+
+        return runtime_entity_dict_list
