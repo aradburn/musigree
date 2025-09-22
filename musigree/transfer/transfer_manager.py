@@ -2,15 +2,13 @@ import logging
 from pathlib import Path
 
 
-from musigree import utils
 from musigree.exceptions import DatabaseError
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.role_repository import RoleRepository
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.data_access_layer.runtime_relation_data_access import RuntimeRelationDataAccess
 from musigree.runtime.runtime_database.country_repository import CountryRepository
@@ -32,18 +30,14 @@ from musigree.runtime.runtime_domain.genre import Genre
 from musigree.runtime.runtime_domain.role import RuntimeRole
 from musigree.runtime.runtime_domain.style import Style
 from musigree.transfer.transfer_worker_entity_inserter import (
-    transfer_worker_entity_inserter,
+    transfer_worker_entity_inserter_async,
 )
-from musigree.transfer.transfer_worker_relation_inserter import (
-    transfer_worker_relation_inserter,
-)
-from musigree.utils import async_chunks
+from musigree.transfer.transfer_worker_relation_inserter import transfer_worker_relation_inserter_async
 
 log = logging.getLogger(__name__)
 
 
 class TransferManager:
-    BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
     async def transfer_entity() -> None:
@@ -64,17 +58,14 @@ class TransferManager:
         async with offline_transaction():
             offline_entity_repository = EntityRepository()
             total_count = await offline_entity_repository.count()
+            log.debug(f"transfering {total_count} entities...")
             entities = offline_entity_repository.all()
 
-            runtime_entity_dicts = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entities)
-
-            chunked_runtime_entity_dicts = async_chunks(runtime_entity_dicts, TransferManager.BULK_INSERT_BATCH_SIZE)
-
-            async_worker_coroutines = await utils.async_worker_generator(
-                transfer_worker_entity_inserter, chunked_runtime_entity_dicts, total_count
-            )
-
-            await utils.queue_worker_functions(RuntimeDatabaseManager.get_concurrency_count(), async_worker_coroutines)
+            inserted_count = 0
+            async for entity_list in entities:
+                runtime_entity_dicts_list = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entity_list)
+                await transfer_worker_entity_inserter_async(runtime_entity_dicts_list, inserted_count, total_count)
+                inserted_count += len(entity_list)
 
         async with runtime_transaction():
             repository_count = await runtime_entity_repository.count()
@@ -83,9 +74,10 @@ class TransferManager:
     @staticmethod
     async def transfer_relation() -> None:
         log.debug("Running transfer_relation()")
-        async with offline_transaction():
-            offline_relation_repository = RelationRepository()
-            total_count = await offline_relation_repository.count()
+
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper is not None
+        ), "runtime_database_helper must be initialized before calling initialize()"
 
         async with runtime_transaction():
             runtime_relation_repository = RuntimeRelationRepository()
@@ -97,15 +89,26 @@ class TransferManager:
             raise DatabaseError
 
         async with offline_transaction():
+            offline_relation_repository = RelationRepository()
+            total_count = await offline_relation_repository.count()
+            log.debug(f"transfering {total_count} relations...")
+
             relations = offline_relation_repository.all()
-            runtime_relation_dicts = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(relations)
 
-            chunked_runtime_relation_dicts = async_chunks(runtime_relation_dicts, TransferManager.BULK_INSERT_BATCH_SIZE)
+            inserted_count = 0
+            async for relation_dbs in relations:
+                runtime_relation_dicts_list = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(
+                    relation_dbs
+                )
+                await transfer_worker_relation_inserter_async(runtime_relation_dicts_list, inserted_count, total_count)
+                inserted_count += len(relation_dbs)
 
-            async_worker_coroutines = await utils.async_worker_generator(
-                transfer_worker_relation_inserter, chunked_runtime_relation_dicts, total_count
-            )
-            await utils.queue_worker_functions(RuntimeDatabaseManager.get_concurrency_count(), async_worker_coroutines)
+            # chunked_runtime_relation_dicts = async_chunks(runtime_relation_dicts, BULK_INSERT_BATCH_SIZE)
+            #
+            # async_worker_coroutines = await utils.async_worker_generator(
+            #     transfer_worker_relation_inserter, chunked_runtime_relation_dicts, total_count
+            # )
+            # await utils.queue_worker_functions(RuntimeDatabaseManager.get_concurrency_count(), async_worker_coroutines)
 
         async with runtime_transaction():
             repository_count = await runtime_relation_repository.count()
@@ -176,24 +179,15 @@ class TransferManager:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        text_search_index = TextSearchIndex.load_text_search_index_from_file(
-            text_search_path
-        )
-        RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
-            text_search_index
-        )
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
 
     @staticmethod
-    async def transfer_create_entity_details_index() -> None:
-        log.debug("Running transfer create entity details index")
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling initialize()"
-        )
-        async with offline_transaction():
-            offline_release_repository = ReleaseRepository()
-            RuntimeDatabaseManager.runtime_database_helper.entity_details_index = (
-                await ReleaseDataAccess.create_entity_details_index(
-                    offline_release_repository
-                )
-            )
+    async def transfer_load_entity_details_index(entity_details_path: Path) -> None:
+        log.debug("Running transfer load entity details index")
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper is not None
+        ), "runtime_database_helper must be initialized before calling initialize()"
+        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(entity_details_path)
+        RuntimeDatabaseManager.runtime_database_helper.entity_details_index = entity_details_index
             

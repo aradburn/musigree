@@ -60,7 +60,8 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any]], inserted_count: int,
+async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any]],
+                                                inserted_count: int,
                                                 total_count: int) -> None:
     """
     A worker process for inserting entity records into the runtime database.
@@ -72,6 +73,8 @@ async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
 
+    count = 0
+
     async with runtime_transaction():
         """Ensure that database operations are performed within a transaction."""
         runtime_entity_repository = RuntimeEntityRepository()
@@ -82,11 +85,12 @@ async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any
             """Insert the entities."""
             await runtime_entity_repository.commit()
             """Commit the transaction."""
+            count += len(bulk_inserts)
         except DatabaseError:
             """Handle potential database errors."""
             log.error("Error in transfer_worker_entity_inserter")
 
-    log.info(f"[{proc_name}] inserted {inserted_count} entities of {total_count}")
+    log.info(f"[{proc_name}] inserted {inserted_count + count} entities of {total_count}")
     """Log the number of entities inserted."""
 
 

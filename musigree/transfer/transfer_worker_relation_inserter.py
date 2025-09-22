@@ -25,6 +25,8 @@ async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, A
     proc_name = multiprocessing.current_process().name
     """Get the name of the current process."""
 
+    count = 0
+
     """Async function to handle entity insertion."""
     async with runtime_transaction():
         """Ensure that database operations are performed within a transaction."""
@@ -36,11 +38,12 @@ async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, A
             """Insert the entities."""
             await runtime_relation_repository.commit()
             """Commit the transaction."""
+            count += len(bulk_inserts)
         except DatabaseError:
             """Handle potential database errors."""
             log.error("Error in transfer_worker_relation_inserter")
 
-    log.info(f"[{proc_name}] inserted {inserted_count} relations of {total_count}")
+    log.info(f"[{proc_name}] inserted {inserted_count + count} relations of {total_count}")
     """Log the number of entities inserted."""
 
 
