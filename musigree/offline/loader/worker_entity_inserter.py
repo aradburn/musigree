@@ -49,8 +49,9 @@ The logger for the worker entity inserter module.
 """
 
 
-async def insert_entities_worker_async(bulk_inserts: list[dict[str, Any]], current_total: int,
-                                       total_count: int) -> None:
+async def insert_entities_worker_async(bulk_inserts: list[dict[str, Any]],
+                                       current_total: int,
+                                       _total_count: int) -> None:
     """
     Worker function for inserting entity records into the database.
 
@@ -60,7 +61,7 @@ async def insert_entities_worker_async(bulk_inserts: list[dict[str, Any]], curre
     Args:
         bulk_inserts (list[dict[str, Any]]): A list of entity records to insert.
         current_total (int): The number of entities processed so far.
-        total_count (int): The total number of entities to process.
+        _total_count (int): The total number of entities to process.
 
     Raises:
         DatabaseError: If there's an error during database operations.

@@ -1,15 +1,17 @@
 import logging
-import pickle
 from pathlib import Path
 from typing import Callable, Any
 
 from musigree import utils
+from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
+from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_entity import ParserEntity
 from musigree.offline.loader.worker_entity_deleter import delete_entities_worker
@@ -22,6 +24,7 @@ from musigree.offline.loader.worker_entity_pass_two import (
 )
 from musigree.offline.loader.worker_entity_updater import update_entities_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 
@@ -110,14 +113,13 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     async def loader_start_workers(cls, worker_function: Callable) -> None:
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
 
         async with offline_transaction():
             entity_repository = EntityRepository()
             total_count = await entity_repository.count()
             ids = await entity_repository.get_ids()
 
-        batched_ids = utils.batched(ids, number_in_batch)
+        batched_ids = utils.batched(ids, BULK_INSERT_BATCH_SIZE)
 
         worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
 
@@ -129,7 +131,7 @@ class LoaderEntity(LoaderBase):
         log.debug("loader entity create text search index")
         if not text_search_path.exists():
             text_search_index = await cls.loader_init_text_search_index_from_database()
-            cls.save_text_search_index_to_file(text_search_path, text_search_index)
+            text_search_index.save_text_search_index_to_file(text_search_path)
         else:
             log.debug("create text search index - skipping...")
 
@@ -137,24 +139,29 @@ class LoaderEntity(LoaderBase):
     # @timeit
     async def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
         log.debug("loader entity init text search index from database")
-        text_search_index = TextSearchIndex()
 
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.init_text_search_index(
-                entity_repository, text_search_index
-            )
+            text_search_index = await EntityDataAccess.create_text_search_index(entity_repository)
         return text_search_index
 
     @classmethod
     # @timeit
-    def save_text_search_index_to_file(
-        cls, filename: Path, text_search_index: TextSearchIndex
-    ) -> None:
-        log.debug(f"save text search index to file: {filename}")
+    async def loader_create_entity_details_index(cls, entity_details_path: Path) -> None:
+        log.debug("loader entity create entity details index")
+        if not entity_details_path.exists():
+            entity_details_index = await cls.loader_init_entity_details_index_from_database()
+            entity_details_index.save_entity_details_index_to_file(entity_details_path)
+        else:
+            log.debug("create entity details index - skipping...")
 
-        # open a file, where you ant to store the data
-        with open(filename, "wb") as file:
-            # dump information to that file
-            # noinspection PyTypeChecker
-            pickle.dump(text_search_index, file)
+    @classmethod
+    async def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
+        log.debug("Running loader create entity details index")
+        async with offline_transaction():
+            offline_release_repository = ReleaseRepository()
+            entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+
+        return entity_details_index
+
+

@@ -79,8 +79,9 @@ The logger for the worker entity updater module.
 """
 
 
-async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int,
-                                       total_count: int) -> None:
+async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
+                                       processed_count: int,
+                                       _total_count: int) -> None:
     """
     Worker function for updating or inserting entity records.
 
@@ -90,7 +91,7 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]], proce
     Args:
         bulk_updates (list[dict[str, Any]]): A list of entity data to update or insert.
         processed_count (int): The number of entities processed so far.
-        total_count (int): The total number of entities to process.
+        _total_count (int): The total number of entities to process.
     Raises:
         NotFoundError: If an entity is not found during the update process.
         DatabaseError: If there's an error during database operations.

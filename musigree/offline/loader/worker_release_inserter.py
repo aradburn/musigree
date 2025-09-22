@@ -50,8 +50,9 @@ The logger for the worker release inserter module.
 """
 
 
-async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inserted_count: int,
-                                       total_count: int) -> None:
+async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]],
+                                       inserted_count: int,
+                                       _total_count: int) -> None:
     """
     Worker function for inserting release records into the database.
 
@@ -61,7 +62,7 @@ async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]], inser
     Args:
         bulk_inserts (list[dict[str, Any]]): A list of release records to insert.
         inserted_count (int): The number of releases already inserted.
-        total_count (int): The total number of releases to be inserted.
+        _total_count (int): The total number of releases to be inserted.
     Raises:
         DatabaseError: If there's an error during database operations.
     """

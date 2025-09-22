@@ -49,6 +49,7 @@ import multiprocessing
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
 from musigree.offline.database.relation_repository import RelationRepository
@@ -56,7 +57,6 @@ from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
 from musigree.offline.domain.release import Release
-from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ async def process_relation_pass_one_worker_async(release_ids: list[int], current
             count += 1
             """Increment the processed counter."""
 
-            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+            if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
                 """Log every BULK_REPORTING_SIZE."""
                 log.debug(f"[{proc_name}] processed {count} of {total_count}")
 

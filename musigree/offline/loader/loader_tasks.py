@@ -302,7 +302,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
         yield DiscogsDownloaderTaskForDate(
             data_directory=self.data_directory, dump_date=self.dump_date
         )
-        from musigree.loader.loader import get_load_offline_table_stages
+        from musigree.loader.offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
             Path(str(self.data_directory)),
@@ -399,7 +399,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
             f"Run LoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
 
-        from musigree.loader.loader import get_load_offline_table_stages
+        from musigree.loader.offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
             Path(str(self.data_directory)),

@@ -47,12 +47,12 @@ import asyncio
 import logging
 import multiprocessing
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ async def process_entity_pass_three_worker_async(ids: list[int], current_total: 
                 )
                 """Process the entity."""
                 count += 1
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
             except DatabaseError as e:
                 """Handle potential database errors."""

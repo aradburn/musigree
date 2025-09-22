@@ -49,7 +49,9 @@ The logger for the worker release deleter module.
 """
 
 
-async def delete_releases_worker_async(bulk_deletes: list[int], processed_count: int, total_count: int) -> None:
+async def delete_releases_worker_async(bulk_deletes: list[int],
+                                       processed_count: int,
+                                       _total_count: int) -> None:
     """
     Worker function for deleting release records from the database.
 
@@ -59,7 +61,7 @@ async def delete_releases_worker_async(bulk_deletes: list[int], processed_count:
     Args:
         bulk_deletes (list[int]): A list of release IDs to delete.
         processed_count (int): The number of releases processed so far.
-        total_count (int): The total number of releases to process.
+        _total_count (int): The total number of releases to process.
     Raises:
         DatabaseError: If there's an error during database operations.
     """

@@ -60,6 +60,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from musigree import utils
+from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.release_repository import ReleaseRepository
@@ -187,8 +188,6 @@ class LoaderRelease(LoaderBase):
         processes releases in batches using the `process_release_pass_two_worker` function.
         """
         log.debug("loader release pass two")
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-        """Determine the number of releases to process in each batch."""
 
         async with offline_transaction():
             """Ensure that database operations are performed within a transaction."""
@@ -198,7 +197,7 @@ class LoaderRelease(LoaderBase):
             """Total number of releases in the database."""
             release_ids = await release_repository.get_ids()
 
-        batched_release_ids = utils.batched(release_ids, number_in_batch)
+        batched_release_ids = utils.batched(release_ids, BULK_INSERT_BATCH_SIZE)
 
         worker_coroutines = utils.worker_generator(process_release_pass_two_worker, batched_release_ids, total_count)
 

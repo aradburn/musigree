@@ -56,6 +56,7 @@ import asyncio
 import logging
 import multiprocessing
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
@@ -63,7 +64,6 @@ from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.entity import Entity
-from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -113,7 +113,7 @@ async def process_entity_pass_two_worker_async(ids: list[int], current_total: in
                 """Process the entity."""
                 count += 1
                 # """Increment the entity counter."""
-                if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
                     """Log the progress."""
             except NotFoundError:
                 """Handle the case where the entity is not found."""

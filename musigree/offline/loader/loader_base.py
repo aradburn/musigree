@@ -40,6 +40,7 @@ from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
 
 from musigree import utils
+from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
@@ -62,20 +63,9 @@ class LoaderBase(ABC):
     database, handling bulk operations, concurrency, and data preprocessing.
 
     Attributes:
-        BULK_INSERT_BATCH_SIZE (int): The batch size for bulk insert operations.
-        BULK_REPORTING_SIZE (int): The number of records to process before reporting progress.
         _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
     """
 
-    BULK_INSERT_BATCH_SIZE = 10000
-    """The batch size for bulk insert operations."""
-    BULK_REPORTING_SIZE = 10000
-    """The number of records to process before reporting progress."""
-    # BULK_INSERT_BATCH_SIZE = 10000
-    # BULK_UPDATE_BATCH_SIZE = 1000
-    # BULK_REPORTING_SIZE = 10000
-    # MAX_RETRYS = 10
-    """The maximum number of retries for database operations."""
     _tags_to_fields_mapping: dict[str, Any] | None = None
     """A mapping from XML tags to database fields and procedures."""
 
@@ -162,7 +152,7 @@ class LoaderBase(ABC):
 
         records_with_accumulated_ids = utils.generator_with_id_accumulator(records, id_accumulator, id_attr)
 
-        batch_records = utils.batched(records_with_accumulated_ids, LoaderBase.BULK_INSERT_BATCH_SIZE)
+        batch_records = utils.batched(records_with_accumulated_ids, BULK_INSERT_BATCH_SIZE)
 
         worker_coroutines = utils.worker_generator(worker, batch_records, 0)
 
@@ -195,12 +185,10 @@ class LoaderBase(ABC):
         log.debug(f"number of database ids: {len(set_of_database_ids)}")
         log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
 
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
-
         if len(ids_to_be_deleted) > 0:
             delete_worker = cls.get_delete_worker_function()
 
-            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(list(ids_to_be_deleted), number_in_batch)
+            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(list(ids_to_be_deleted), BULK_INSERT_BATCH_SIZE)
 
             worker_coroutines = utils.worker_generator(delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted))
 

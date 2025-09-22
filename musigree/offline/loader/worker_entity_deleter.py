@@ -41,11 +41,11 @@ import asyncio
 import logging
 import multiprocessing
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ async def delete_entities_worker_async(ids: list[int], current_total: int, total
             """Iterate through the entity IDs to delete."""
             await delete_single_entity(entity_repository, relation_repository, entity_id)
             count += 1
-            if count % LoaderBase.BULK_REPORTING_SIZE == 0 and not count == end_count:
+            if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
                 log.debug(f"[{proc_name}] deleted {count}")
 
     log.info(f"[{proc_name}] processed {current_total} deleted {count} of {total_count}")
