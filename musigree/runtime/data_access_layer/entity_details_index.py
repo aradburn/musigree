@@ -1,5 +1,8 @@
 import logging
+import pickle
 import re
+from pathlib import Path
+from typing import Self
 
 from musigree.utils import calculate_size
 
@@ -229,3 +232,33 @@ class EntityDetailsIndex:
         log.debug("\n")
         # for entry in self.entity_styles.items():
         #     print(entry)
+
+    def save_entity_details_index_to_file(self, filename: Path) -> None:
+        log.debug(f"save entity details index to file: {filename}")
+
+        # open a file to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(self, file)
+
+    @classmethod
+    def load_entity_details_index_from_file(cls, filename: Path) -> Self:
+        """
+        Loads a EntityDetailsIndex from a pickled file.
+
+        Args:
+            filename: The path to the pickled file.
+
+        Returns:
+            Self: The loaded EntityDetailsIndex.
+        """
+        log.debug(f"load entity details index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            entity_details_index: EntityDetailsIndex = pickle.load(file)
+
+        # noinspection Mypy
+        return entity_details_index  # type: ignore
