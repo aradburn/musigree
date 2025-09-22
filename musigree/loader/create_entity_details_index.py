@@ -7,7 +7,7 @@ from musigree.config import (
     PostgresDevelopmentConfiguration,
     Configuration,
 )
-from musigree.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
+from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging
 from musigree.offline.loader.loader_entity import LoaderEntity
@@ -16,8 +16,8 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 log = logging.getLogger(__name__)
 
 
-async def create_search_index(_config: Configuration) -> None:
-    """Create search index asynchronously."""
+async def create_entity_details_index(_config: Configuration) -> None:
+    """Create entity_details index asynchronously."""
     setup_logging()
     log.info("")
     log.info("")
@@ -51,10 +51,10 @@ async def create_search_index(_config: Configuration) -> None:
     atexit.register(CacheManager.shutdown_cache)
     atexit.register(OfflineDatabaseManager.shutdown_database)
 
-    text_search_path = _config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    await LoaderEntity().loader_create_text_search_index(text_search_path)
+    entity_details_path = _config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+    await LoaderEntity().loader_create_entity_details_index(entity_details_path)
 
 
 if __name__ == "__main__":
     _config = PostgresDevelopmentConfiguration()
-    asyncio.run(create_search_index(_config))
+    asyncio.run(create_entity_details_index(_config))
