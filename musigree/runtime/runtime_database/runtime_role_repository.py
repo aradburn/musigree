@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
+from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.runtime.runtime_database import RuntimeRoleTable
@@ -42,9 +43,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
             AsyncGenerator[RuntimeRole]: An async iterator yielding each role.
         """
         query = select(RuntimeRoleTable)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for row in result:
             yield RuntimeRole.model_validate(row[0])
 

@@ -26,6 +26,7 @@ from typing import Any, AsyncGenerator
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
+from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
@@ -141,9 +142,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             AsyncGenerator[RuntimeEntity]: An async iterator yielding each entity.
         """
         query = select(RuntimeEntityTable)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for row in result:
             yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
@@ -156,9 +155,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             entity's ID and name as a tuple.
         """
         query = select(RuntimeEntityTable.id, RuntimeEntityTable.entity_name)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for row in result:
             yield row[0], row[1]
 
