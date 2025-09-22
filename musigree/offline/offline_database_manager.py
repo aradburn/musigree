@@ -82,10 +82,12 @@ class OfflineDatabaseManager:
                     % (connection_record.info["pid"], pid)
                 )
 
+        # noinspection PyUnusedLocal
         def engine_on_checkin(dbapi_con, connection_record) -> None:  # type: ignore
             log.debug(f"Checkin engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
 
+        # noinspection PyUnusedLocal
         def engine_on_close(dbapi_con, connection_record) -> None:  # type: ignore
             log.debug(f"Close engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
