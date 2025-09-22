@@ -25,10 +25,10 @@ the index.
 
 import logging
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
-from musigree.offline.loader.loader_base import LoaderBase
 
 log = logging.getLogger(__name__)
 """
@@ -65,64 +65,65 @@ class ReleaseDataAccess:
         entity_details_index = EntityDetailsIndex()
         """Create the entity details index instance."""
         count = 0
-        async for release in release_repository.all():
-            """Iterate through all the releases."""
-            country = release.country
-            """Get the country of the release."""
-            if country is not None:
-                """Check if the release has a country."""
-                if isinstance(release.artists, list):
-                    for artist in release.artists:
-                        """Iterate over artists in the release."""
-                        if "id" in artist:
-                            entity_details_index.index_country(artist["id"], country)
-                            """Index the country for each artist."""
-                if isinstance(release.labels, list):
-                    for label in release.labels:
-                        """Iterate over labels in the release."""
-                        if "id" in label:
-                            entity_details_index.index_country(label["id"], country)
-                            """Index the country for each label."""
-
-            if release.genres is not None:
-                """Check if the release has genres."""
-                for genre in release.genres:
-                    """Iterate over genres in the release."""
+        async for release_list in release_repository.all():
+            for release in release_list:
+                """Iterate through all the releases."""
+                country = release.country
+                """Get the country of the release."""
+                if country is not None:
+                    """Check if the release has a country."""
                     if isinstance(release.artists, list):
                         for artist in release.artists:
                             """Iterate over artists in the release."""
                             if "id" in artist:
-                                entity_details_index.index_genre(artist["id"], genre)
-                                """Index the genre for each artist."""
+                                entity_details_index.index_country(artist["id"], country)
+                                """Index the country for each artist."""
                     if isinstance(release.labels, list):
                         for label in release.labels:
                             """Iterate over labels in the release."""
                             if "id" in label:
-                                entity_details_index.index_genre(label["id"], genre)
-                                """Index the genre for each label."""
+                                entity_details_index.index_country(label["id"], country)
+                                """Index the country for each label."""
 
-            if release.styles is not None:
-                """Check if the release has styles."""
-                for style in release.styles:
-                    """Iterate over styles in the release."""
-                    if isinstance(release.artists, list):
-                        for artist in release.artists:
-                            """Iterate over artists in the release."""
-                            if "id" in artist:
-                                entity_details_index.index_style(artist["id"], style)
-                                """Index the style for each artist."""
-                    if isinstance(release.labels, list):
-                        for label in release.labels:
-                            """Iterate over labels in the release."""
-                            if "id" in label:
-                                entity_details_index.index_style(label["id"], style)
-                                """Index the style for each label."""
+                if release.genres is not None:
+                    """Check if the release has genres."""
+                    for genre in release.genres:
+                        """Iterate over genres in the release."""
+                        if isinstance(release.artists, list):
+                            for artist in release.artists:
+                                """Iterate over artists in the release."""
+                                if "id" in artist:
+                                    entity_details_index.index_genre(artist["id"], genre)
+                                    """Index the genre for each artist."""
+                        if isinstance(release.labels, list):
+                            for label in release.labels:
+                                """Iterate over labels in the release."""
+                                if "id" in label:
+                                    entity_details_index.index_genre(label["id"], genre)
+                                    """Index the genre for each label."""
 
-            count += 1
-            if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
-                log.debug(f"Indexed {count} releases")
-                """Log the indexing progress."""
-        if count % (LoaderBase.BULK_REPORTING_SIZE * 100) != 0:
+                if release.styles is not None:
+                    """Check if the release has styles."""
+                    for style in release.styles:
+                        """Iterate over styles in the release."""
+                        if isinstance(release.artists, list):
+                            for artist in release.artists:
+                                """Iterate over artists in the release."""
+                                if "id" in artist:
+                                    entity_details_index.index_style(artist["id"], style)
+                                    """Index the style for each artist."""
+                        if isinstance(release.labels, list):
+                            for label in release.labels:
+                                """Iterate over labels in the release."""
+                                if "id" in label:
+                                    entity_details_index.index_style(label["id"], style)
+                                    """Index the style for each label."""
+
+                count += 1
+                if count % (BULK_REPORTING_SIZE * 100) == 0:
+                    log.debug(f"Indexed {count} releases")
+                    """Log the indexing progress."""
+        if count % (BULK_REPORTING_SIZE * 100) != 0:
             log.debug(f"Indexed {count} releases")
             """Log the final number of indexed releases."""
         if LOGGING_TRACE:
