@@ -262,6 +262,15 @@ class TextSearchIndex:
         random_index = random.randint(0, count - 1)
         return self.keys[random_index]
 
+    def save_text_search_index_to_file(self, filename: Path) -> None:
+        log.debug(f"save text search index to file: {filename}")
+
+        # open a file to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(self, file)
+
     @classmethod
     def load_text_search_index_from_file(cls, filename: Path) -> Self:
         """
