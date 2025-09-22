@@ -3,6 +3,7 @@ from typing import Any, Sequence, AsyncGenerator
 
 from sqlalchemy import select, Result, update, delete
 
+from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.release_table import ReleaseTable
@@ -29,7 +30,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
     schema_class = ReleaseTable
     """The SQLAlchemy table class for releases."""
 
-    async def all(self) -> AsyncGenerator[Release, None]:
+    async def all(self) -> AsyncGenerator[list[Release], None]:
         """
         Retrieves all releases from the database.
 
@@ -37,11 +38,13 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             AsyncGenerator[Release]: An async iterator yielding each release.
         """
         query = select(ReleaseTable)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
-        async for row in result:
-            yield Release.model_validate(row[0])
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
+        async for partition in result.partitions():
+            # partition is an iterable that will be at most 1000 items
+            releases: list[Release] = []
+            for row in partition:
+                releases.append(Release.model_validate(row[0]))
+            yield releases
 
     async def get_by_id(self, release_id: int) -> Release:
         """

@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 from sqlalchemy import Result, select, Select, delete
 
+from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.database.base_repository import BaseRepository
@@ -78,7 +79,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    async def all(self) -> AsyncGenerator[RelationDB, None]:
+    async def all(self) -> AsyncGenerator[list[RelationDB], None]:
         """
         Retrieves all relations from the database.
 
@@ -86,13 +87,13 @@ class RelationRepository(BaseRepository[RelationTable]):
             AsyncGenerator[RelationDB]: An async iterator yielding each relation.
         """
         query = select(RelationTable)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
-        # for partition in results.partitions():
-        # partition is an iterable that will be at most 1000 items
-        async for row in result:
-            yield RelationDB.model_validate(row[0])
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
+        async for partition in result.partitions():
+            # partition is an iterable that will be at most 1000 items
+            relations: list[RelationDB] = []
+            for row in partition:
+                relations.append(RelationDB.model_validate(row[0]))
+            yield relations
 
     async def get(self, relation_id: int) -> RelationDB:
         """

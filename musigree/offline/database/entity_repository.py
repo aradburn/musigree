@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import Result, select, update, Select, delete, func
 
+from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, UnprocessableError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.base_repository import BaseRepository
@@ -105,7 +106,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         return value
 
-    async def all(self) -> AsyncGenerator[Entity, None]:
+    async def all(self) -> AsyncGenerator[list[Entity], None]:
         """
         Retrieves all entities from the database.
 
@@ -113,17 +114,15 @@ class EntityRepository(BaseRepository[EntityTable]):
             AsyncGenerator[Entity]: An async iterator yielding each entity.
         """
         query = select(EntityTable)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
-        async for row in result:
-            yield Entity.model_validate(row[0])
-            # for partition in results.partitions():
-            #     partition is an iterable that will be at most 1000 items
-            # for row in partition:
-            #     yield Entity.model_validate(row[0])
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
+        async for partition in result.partitions():
+            # partition is an iterable that will be at most 1000 items
+            entities: list[Entity] = []
+            for row in partition:
+                entities.append(Entity.model_validate(row[0]))
+            yield entities
 
-    async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str], None]:
+    async def all_ids_and_names(self) -> AsyncGenerator[list[tuple[int, str]], None]:
         """
         Retrieves all entity IDs and names from the database.
 
@@ -132,11 +131,13 @@ class EntityRepository(BaseRepository[EntityTable]):
                 (entity ID, entity name).
         """
         query = select(EntityTable.id, EntityTable.entity_name)
-        result = await self._session.stream(
-            query, execution_options={"yield_per": 1000}
-        )
-        async for row in result:
-            yield row[0], row[1]
+        result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
+        async for partition in result.partitions():
+            # partition is an iterable that will be at most 1000 items
+            tuples: list[tuple[int, str]] = []
+            for row in partition:
+                tuples.append((row[0], row[1]))
+            yield tuples
 
     async def get_by_id(self, id_: int) -> Entity:
         """
