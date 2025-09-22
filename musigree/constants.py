@@ -62,6 +62,12 @@ ALL_RUNTIME_DATABASE_TABLE_NAMES = [
 ]
 POSTGRESQL_DRIVER_NAME = "postgresql+psycopg"  # uses psycopg3
 
+BULK_INSERT_BATCH_SIZE = 10000
+"""The batch size for bulk insert operations."""
+BULK_REPORTING_SIZE = 10000
+"""The number of records to process before reporting progress."""
+BULK_YIELD_SIZE = 1000
+"""The number of records to stream in a chunk from the database."""
 
 class DatabaseType(enum.Enum):
     POSTGRES = 1
