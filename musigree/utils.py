@@ -17,7 +17,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, date
 from functools import partial
 from io import BufferedWriter
-from typing import Protocol, Any, TypeVar, AsyncGenerator, Generator, Callable
+from typing import Protocol, Any, TypeVar, Generator, Callable
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -90,60 +90,6 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(
-    args: dict[str, Any],
-) -> tuple[list[str], tuple[int, int] | int | None]:
-    from musigree.library.cache.role_cache import RoleCache
-    from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
-
-    year: tuple[int, int] | int | None = None
-    roles = set()
-    for key in args:
-        if key == "year":
-            year_arg = args[key]
-            try:
-                if "-" in year_arg:
-                    start, _, stop = year_arg.partition("-")
-                    start_year = int(start)
-                    stop_year = int(stop)
-                    if start_year <= stop_year:
-                        year = (start_year, stop_year)
-                    else:
-                        year = (stop_year, start_year)
-                else:
-                    year = int(year_arg)
-            except ValueError:
-                log.debug("Invalid year input")
-            log.debug(f"Requested year: {year}")
-        elif key == "roles":
-            roles_arg = args[key]
-            for role_arg in roles_arg:
-                # List is comma-separated, roles that contain commas are escaped by a \
-                unescaped_value = role_arg.replace("\\,", "|")
-                for role_escaped in unescaped_value.split(","):
-                    role = role_escaped.replace("|", ",")
-                    # log.debug(f"Requested role: {role}")
-                    if role in RoleCache.role_category_to_role_name_lookup.keys():
-                        # log.debug(f"Requested role found: {role}")
-                        for role_entry in RoleCache.role_category_to_role_name_lookup[
-                            role
-                        ]:
-                            log.debug(f"Requested role_entry: {role_entry}")
-                            if (
-                                role_entry
-                                in RoleCache.role_name_to_role_id_lookup.keys()
-                            ):
-                                roles.add(role_entry)
-                    elif role in RoleCache.role_name_to_role_id_lookup.keys():
-                        roles.add(role)
-
-    if len(roles) == 0:
-        roles = set(UI_DEFAULT_ROLES)
-    roles_list = list(sorted(roles))
-    # log.debug(f"Requested roles: {roles}")
-    return roles_list, year
-
-
 def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], None, None]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
@@ -156,53 +102,11 @@ def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], N
         while batch := list(itertools.islice(iterable, n)):
             yield batch
 
-
-# def iter_in_slices(iterator, size=None):
-#     while True:
-#         slice_iter = itertools.islice(iterator, size)
-#         # If no first object this is how StopIteration is triggered
-#         try:
-#             peek = next(slice_iter)
-#         except StopIteration:
-#             return
-#         # Put the first object back and return slice
-#         yield itertools.chain([peek], slice_iter)
-
-
 def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
     return batched(iter(seq), math.ceil(num_items / num_chunks))
-
-
-async def async_chunks(
-    async_generator: AsyncGenerator[T, None],
-    size: int,
-) -> AsyncGenerator[list[T], None]:
-    """Generate chunks from an asynchronous sequence.
-
-    Chunks are lists consists of original ``T`` elements.
-    The chunk can't contain more than ``size`` elements.
-    The last chunk might contain less than ``size`` elements,
-    but can't be empty.
-    """
-    finished = False
-
-    while not finished:
-        results: list[T] = []
-
-        for _ in range(size):
-            try:
-                result = await anext(async_generator)
-            except StopAsyncIteration:
-                finished = True
-            else:
-                results.append(result)
-
-        if results:
-            yield results
-
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
     _string = argument.replace("\t", "    ")
