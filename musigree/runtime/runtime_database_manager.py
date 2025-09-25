@@ -37,31 +37,20 @@ class RuntimeDatabaseManager:
         # Based on configuration, use a different database.
         # noinspection PyUnreachableCode
         if config.DATABASE == DatabaseType.POSTGRES:
-            from musigree.runtime.postgres.runtime_postgres_helper import (
-                RuntimePostgresHelper,
-            )
+            from musigree.runtime.postgres.runtime_postgres_helper import RuntimePostgresHelper
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimePostgresHelper()
 
         elif config.DATABASE == DatabaseType.SQLITE:
-            from musigree.runtime.sqlite.runtime_sqlite_helper import (
-                RuntimeSqliteHelper,
-            )
+            from musigree.runtime.sqlite.runtime_sqlite_helper import RuntimeSqliteHelper
 
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        async_engine = (
-            await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
-        )
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = (
-            async_engine
-        )
-        log.debug(
-            f"engine: {RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine}"
-        )
+        async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
 
         def engine_on_connect(dbapi_con, connection_record):  # type: ignore
             if LOGGING_TRACE:
