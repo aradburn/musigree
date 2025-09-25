@@ -32,7 +32,6 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         engine = create_async_engine(
             f"sqlite+aiosqlite:///{target_path}",
             connect_args={
-                # "check_same_thread": True,
                 "check_same_thread": False,
             },
             # poolclass=NullPool,
