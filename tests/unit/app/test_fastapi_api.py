@@ -291,7 +291,6 @@ class TestFastAPIRoutes:
         assert call_args[1]["roles"] == ["Alias", "Member Of"]
 
     @pytest.mark.asyncio
-    @patch("musigree.utils.parse_request_args")
     @patch("musigree.app.fastapi_api.runtime_transaction")
     @patch(
         "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
@@ -306,7 +305,6 @@ class TestFastAPIRoutes:
         mock_relation_repo_class: Mock,
         mock_entity_repo_class: Mock,
         mock_runtime_transaction: Mock,
-        mock_parse_request_args: Mock,
         client: TestClient,
     ) -> None:
         """Test entity network with year query parameter."""
@@ -325,9 +323,6 @@ class TestFastAPIRoutes:
         mock_context_manager.__aexit__.return_value = None
         mock_runtime_transaction.return_value = mock_context_manager
 
-        # Mock parse_request_args to return roles and year
-        mock_parse_request_args.return_value = (["Alias", "Member Of"], 2020)
-
         # Mock the database helper method as async
         mock_db_helper = AsyncMock()
         mock_db_helper.get_network = AsyncMock(
@@ -345,8 +340,6 @@ class TestFastAPIRoutes:
 
         # Verify that get_network was called
         mock_db_helper.get_network.assert_called_once()
-        # Verify parse_request_args was called with year parameter
-        mock_parse_request_args.assert_called_once_with({"year": 2020})
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
