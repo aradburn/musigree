@@ -1,7 +1,7 @@
 import os
 import shutil
 import tempfile
-from typing import Generator
+from typing import Generator, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -354,6 +354,195 @@ class TestCacheManager:
         CacheManager.clear()
 
         mock_cache.clear.assert_called_once()
+
+
+class TestRedisCacheMethods:
+    """Test cases for RedisCache methods that need more coverage."""
+
+    @pytest.fixture
+    def redis_cache(self) -> RedisCache:
+        """Create a RedisCache instance for testing."""
+        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
+            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
+                mock_fake_client = MagicMock()
+                mock_fakeredis.FakeRedis.return_value = mock_fake_client
+                cache = RedisCache()
+                # Override the _client attribute with our mock for testing
+                cache._client = mock_fake_client
+                return cache
+
+    def test_get_redis_client_not_initialized(self) -> None:
+        """Test _get_redis_client when client is None."""
+        cache = RedisCache.__new__(RedisCache)  # Create without calling __init__
+        cache._client = None
+
+        with pytest.raises(RuntimeError, match="Redis client not initialized"):
+            cache._get_redis_client()
+
+    def test_make_key(self, redis_cache: RedisCache) -> None:
+        """Test _make_key method."""
+        result = redis_cache._make_key("test_key")
+        assert result == f"{redis_cache.key_prefix}test_key"
+
+    def test_get_value_not_found(self, redis_cache: RedisCache) -> None:
+        """Test get method when key doesn't exist."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.get.return_value = None
+
+        result = redis_cache.get("nonexistent_key")
+
+        assert result is None
+        mock_client.get.assert_called_once()
+
+    def test_get_value_non_bytes(self, redis_cache: RedisCache) -> None:
+        """Test get method when Redis returns non-bytes value."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.get.return_value = "string_value"  # Not bytes
+
+        result = redis_cache.get("test_key")
+
+        assert result is None
+
+    def test_get_value_pickle_error(self, redis_cache: RedisCache) -> None:
+        """Test get method when pickle.loads raises exception."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.get.return_value = b"invalid_pickle_data"
+
+        with patch("pickle.loads", side_effect=Exception("Pickle error")):
+            result = redis_cache.get("test_key")
+
+        assert result is None
+
+    def test_get_redis_client_exception(self, redis_cache: RedisCache) -> None:
+        """Test get method when Redis client raises exception."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.get.side_effect = Exception("Redis error")
+
+        result = redis_cache.get("test_key")
+
+        assert result is None
+
+    def test_set_with_timeout(self, redis_cache: RedisCache) -> None:
+        """Test set method with custom timeout."""
+        redis_cache.set("test_key", "test_value", timeout=3600)
+
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.setex.assert_called_once()
+        call_args = mock_client.setex.call_args
+        assert call_args[1]["name"] == f"{redis_cache.key_prefix}test_key"
+        assert call_args[1]["time"] == 3600
+
+    def test_set_without_timeout(self, redis_cache: RedisCache) -> None:
+        """Test set method without timeout."""
+        redis_cache.default_timeout = 0
+        redis_cache.set("test_key", "test_value")
+
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.set.assert_called_once()
+
+    def test_set_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test set method when Redis client raises exception."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.setex.side_effect = Exception("Redis error")
+
+        # Should not raise exception
+        redis_cache.set("test_key", "test_value", timeout=3600)
+
+    def test_delete_success(self, redis_cache: RedisCache) -> None:
+        """Test delete method success."""
+        redis_cache.delete("test_key")
+
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.delete.assert_called_once_with(f"{redis_cache.key_prefix}test_key")
+
+    def test_delete_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test delete method when Redis client raises exception."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.delete.side_effect = Exception("Redis error")
+
+        # Should not raise exception
+        redis_cache.delete("test_key")
+
+    def test_clear_success(self, redis_cache: RedisCache) -> None:
+        """Test clear method success."""
+        redis_cache.clear()
+
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.flushdb.assert_called_once()
+
+    def test_clear_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test clear method when Redis client raises exception."""
+        mock_client = cast(MagicMock, redis_cache._client)
+        mock_client.flushdb.side_effect = Exception("Redis error")
+
+        # Should not raise exception
+        redis_cache.clear()
+
+    @patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", True)
+    @patch("musigree.library.cache.cache_manager.redis")
+    @patch("musigree.library.cache.cache_manager.fakeredis")
+    def test_redis_cache_ping_failure(
+        self, mock_fakeredis: MagicMock, mock_redis: MagicMock
+    ) -> None:
+        """Test RedisCache when ping() fails after successful connection."""
+        mock_client = MagicMock()
+        mock_redis.Redis.return_value = mock_client
+        mock_client.ping.side_effect = Exception("Ping failed")
+        
+        mock_fake_client = MagicMock()
+        mock_fakeredis.FakeRedis.return_value = mock_fake_client
+
+        cache = RedisCache()
+        assert cache._client == mock_fake_client
+
+
+class TestCacheManagerUncoveredMethods:
+    """Test cases for CacheManager methods that need more coverage."""
+
+    @pytest.fixture(autouse=True)
+    def cleanup_cache(self) -> Generator[None, None, None]:
+        """Clean up after each test."""
+        yield
+        # Reset the cache manager
+        if hasattr(CacheManager, "cache"):
+            CacheManager.shutdown_cache()
+
+    def test_setup_cache_invalid_type(self) -> None:
+        """Test CacheManager setup_cache with invalid cache type."""
+        config = MagicMock()
+        config.CACHE_TYPE = "invalid_type"
+
+        with pytest.raises(ValueError, match="Invalid CACHE_TYPE in configuration"):
+            CacheManager.setup_cache(config)
+
+    @patch("musigree.library.cache.cache_manager.FileSystemCache")
+    @patch("musigree.library.cache.cache_manager.os.path.exists")
+    @patch("musigree.library.cache.cache_manager.os.makedirs")
+    def test_cache_manager_setup_filesystem_cache_directory_exists(
+        self, mock_makedirs: MagicMock, mock_exists: MagicMock, mock_fs_cache: MagicMock
+    ) -> None:
+        """Test CacheManager setup with filesystem cache when directory already exists."""
+        config = MagicMock()
+        config.CACHE_TYPE = CacheType.FILESYSTEM
+
+        mock_cache_instance = MagicMock()
+        mock_fs_cache.return_value = mock_cache_instance
+        mock_exists.return_value = True  # Directory already exists
+
+        CacheManager.setup_cache(config)
+
+        mock_makedirs.assert_not_called()  # Should not create directory
+        mock_fs_cache.assert_called_once()
+        assert CacheManager.cache == mock_cache_instance
+
+    def test_cache_manager_clear_no_cache(self) -> None:
+        """Test CacheManager clear when no cache is set."""
+        # Ensure cache is not set
+        if hasattr(CacheManager, "cache"):
+            delattr(CacheManager, "cache")
+
+        with pytest.raises(AttributeError):
+            CacheManager.clear()
 
 
 # Note: pytest automatically discovers and runs tests, so no main block is needed
