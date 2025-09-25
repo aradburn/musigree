@@ -1,9 +1,9 @@
 from typing import Any
 
 from sqlalchemy import (
-    Index,
     Integer,
     inspect,
+    Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
