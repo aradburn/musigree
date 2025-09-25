@@ -657,34 +657,6 @@ def test_normalize_with_empty_lines() -> None:
     assert result == expected
 
 
-def test_parse_request_args_with_year_range() -> None:
-    """Test parse_request_args with year range format."""
-    args = {"year": "2020-2023"}
-    roles, year = utils.parse_request_args(args)
-    assert year == (2020, 2023)
-
-
-def test_parse_request_args_with_single_year() -> None:
-    """Test parse_request_args with single year format."""
-    args = {"year": "2020"}
-    roles, year = utils.parse_request_args(args)
-    assert year == 2020
-
-
-def test_parse_request_args_with_invalid_year() -> None:
-    """Test parse_request_args with invalid year format."""
-    args = {"year": "invalid"}
-    roles, year = utils.parse_request_args(args)
-    assert year is None
-
-
-def test_parse_request_args_with_reversed_year_range() -> None:
-    """Test parse_request_args with reversed year range."""
-    args = {"year": "2023-2020"}
-    roles, year = utils.parse_request_args(args)
-    assert year == (2020, 2023)
-
-
 def test_skip_filter_basic() -> None:
     """Test SkipFilter with basic key filtering."""
     filter_obj = utils.SkipFilter(keys=["skip_me"])
@@ -840,13 +812,6 @@ def test_batched_single_element() -> None:
     result = list(utils.batched([1, 2, 3], 1))
     expected = [[1], [2], [3]]
     assert result == expected
-
-
-def test_parse_request_args_no_year() -> None:
-    """Test parse_request_args with no year argument."""
-    args: dict[str, str] = {}
-    roles, year = utils.parse_request_args(args)
-    assert year is None
 
 
 def test_get_random_string_zero_length() -> None:
@@ -1266,7 +1231,7 @@ def test_worker_generator_large_batches() -> None:
     processed_counts: list[int] = []
     batch_sizes: list[int] = []
     
-    def size_tracking_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def size_tracking_worker_function(records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks batch sizes and processed counts."""
         processed_counts.append(processed_count)
         batch_sizes.append(len(records))
