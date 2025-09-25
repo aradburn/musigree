@@ -865,15 +865,15 @@ def test_normalize_empty_string() -> None:
 # Queue Worker Function Tests
 
 # Module-level worker functions for testing
-def _test_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+def _test_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
     """Test worker function that processes records."""
     pass
 
-def _test_failing_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+def _test_failing_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
     """Test worker function that raises an exception."""
     raise ValueError("Test error")
 
-def _test_delay_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+def _test_delay_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
     """Test worker function that simulates some work."""
     time.sleep(0.01)  # Small delay to simulate work
 
@@ -1069,7 +1069,7 @@ async def test_queue_worker_functions_large_number_of_tasks() -> None:
 def test_worker_generator_basic_operation() -> None:
     """Test worker_generator with basic input."""
     # Arrange
-    def mock_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
     
@@ -1093,7 +1093,7 @@ def test_worker_generator_basic_operation() -> None:
 def test_worker_generator_empty_generator() -> None:
     """Test worker_generator with empty input generator."""
     # Arrange
-    def mock_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
 
@@ -1114,7 +1114,7 @@ def test_worker_generator_empty_generator() -> None:
 def test_worker_generator_single_record() -> None:
     """Test worker_generator with single record batch."""
     # Arrange
-    def mock_worker_function(records: list[str], processed_count: int, total_count: int) -> None:
+    def mock_worker_function(_records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
     
@@ -1134,7 +1134,7 @@ def test_worker_generator_single_record() -> None:
 def test_worker_generator_multiple_batches() -> None:
     """Test worker_generator with multiple batches of varying sizes."""
     # Arrange
-    def mock_worker_function(records: list[dict[str, Any]], processed_count: int, total_count: int) -> None:
+    def mock_worker_function(_records: list[dict[str, Any]], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
     
@@ -1160,7 +1160,7 @@ def test_worker_generator_processed_count_tracking() -> None:
     # Arrange
     processed_counts: list[int] = []
     
-    def tracking_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def tracking_worker_function(_records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
     
@@ -1186,7 +1186,7 @@ def test_worker_generator_processed_count_tracking() -> None:
 def test_worker_generator_with_string_records() -> None:
     """Test worker_generator with string record types."""
     # Arrange
-    def string_worker_function(records: list[str], processed_count: int, total_count: int) -> None:
+    def string_worker_function(_records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes string records."""
         pass
     
@@ -1209,7 +1209,7 @@ def test_worker_generator_with_string_records() -> None:
 def test_worker_generator_with_empty_batches() -> None:
     """Test worker_generator with some empty batches."""
     # Arrange
-    def empty_batch_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def empty_batch_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
     
@@ -1236,7 +1236,7 @@ def test_worker_generator_processed_count_with_empty_batches() -> None:
     # Arrange
     processed_counts: list[int] = []
     
-    def tracking_worker_function(records: list[int], processed_count: int, total_count: int) -> None:
+    def tracking_worker_function(_records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
     
@@ -1599,153 +1599,6 @@ def test_generator_with_id_accumulator_boolean_id() -> None:
     assert id_accumulator == [1, 0, 2]
 
 
-# Tests for async_chunks function
-@pytest.mark.asyncio
-async def test_async_chunks_basic_operation() -> None:
-    """Test async_chunks with basic async generator input."""
-    # Arrange
-    async def number_generator() -> AsyncGenerator[int, None]:
-        for i in range(5):
-            yield i
-    
-    # Act
-    chunks: list[list[int]] = []
-    async for chunk in utils.async_chunks(number_generator(), 2):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [[0, 1], [2, 3], [4]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_exact_division() -> None:
-    """Test async_chunks when items divide evenly into chunks."""
-    # Arrange
-    async def number_generator() -> AsyncGenerator[int, None]:
-        for i in range(6):
-            yield i
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(number_generator(), 2):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [[0, 1], [2, 3], [4, 5]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_empty_generator() -> None:
-    """Test async_chunks with empty async generator."""
-    # Arrange
-    # noinspection PyUnreachableCode
-    async def empty_generator() -> AsyncGenerator[int, None]:
-        return
-        # noinspection PyTypeChecker
-        yield  # This line never executes
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(empty_generator(), 3):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == []
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_single_item() -> None:
-    """Test async_chunks with single item in generator."""
-    # Arrange
-    async def single_item_generator() -> AsyncGenerator[str, None]:
-        yield "single"
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(single_item_generator(), 3):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [["single"]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_large_chunk_size() -> None:
-    """Test async_chunks with chunk size larger than available items."""
-    # Arrange
-    async def small_generator() -> AsyncGenerator[int, None]:
-        for i in range(3):
-            yield i
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(small_generator(), 10):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [[0, 1, 2]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_chunk_size_one() -> None:
-    """Test async_chunks with chunk size of one."""
-    # Arrange
-    async def number_generator() -> AsyncGenerator[int, None]:
-        for i in range(4):
-            yield i
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(number_generator(), 1):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [[0], [1], [2], [3]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_with_strings() -> None:
-    """Test async_chunks with string items."""
-    # Arrange
-    async def string_generator() -> AsyncGenerator[str, None]:
-        yield "apple"
-        yield "banana"
-        yield "cherry"
-        yield "date"
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(string_generator(), 2):
-        chunks.append(chunk)
-    
-    # Assert
-    assert chunks == [["apple", "banana"], ["cherry", "date"]]
-
-
-@pytest.mark.asyncio
-async def test_async_chunks_with_complex_objects() -> None:
-    """Test async_chunks with complex object items."""
-    # Arrange
-    async def object_generator() -> AsyncGenerator[dict[str, Any], None]:
-        yield {"id": 1, "name": "Alice"}
-        yield {"id": 2, "name": "Bob"}
-        yield {"id": 3, "name": "Charlie"}
-        yield {"id": 4, "name": "David"}
-        yield {"id": 5, "name": "Eve"}
-    
-    # Act
-    chunks = []
-    async for chunk in utils.async_chunks(object_generator(), 3):
-        chunks.append(chunk)
-    
-    # Assert
-    expected_chunks = [
-        [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}],
-        [{"id": 4, "name": "David"}, {"id": 5, "name": "Eve"}]
-    ]
-    assert chunks == expected_chunks
-
-
 # Tests for download_file function
 @pytest.mark.skip
 @patch('musigree.utils.requests.get')
@@ -1830,7 +1683,7 @@ async def test_async_worker_generator_basic_operation() -> None:
     # Arrange
     results: list[int] = []
     
-    def mock_worker(records: list[int], processed_count: int, total_count: int) -> None:
+    def mock_worker(records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         results.extend(records)
     
@@ -1856,7 +1709,7 @@ async def test_async_worker_generator_basic_operation() -> None:
 async def test_async_worker_generator_empty_generator() -> None:
     """Test async_worker_generator with empty async generator."""
     # Arrange
-    def mock_worker(records: list[int], processed_count: int, total_count: int) -> None:
+    def mock_worker(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
 
@@ -1879,7 +1732,7 @@ async def test_async_worker_generator_processed_count_tracking() -> None:
     # Arrange
     processed_counts: list[int] = []
     
-    def tracking_worker(records: list[int], processed_count: int, total_count: int) -> None:
+    def tracking_worker(_records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
     
@@ -1908,7 +1761,7 @@ async def test_async_worker_generator_with_string_records() -> None:
     # Arrange
     results: list[str] = []
     
-    def string_worker(records: list[str], processed_count: int, total_count: int) -> None:
+    def string_worker(records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes string records."""
         results.extend(records)
     
@@ -1937,7 +1790,7 @@ async def test_async_worker_generator_large_batches() -> None:
     processed_counts: list[int] = []
     batch_sizes: list[int] = []
     
-    def size_tracking_worker(records: list[int], processed_count: int, total_count: int) -> None:
+    def size_tracking_worker(records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks batch sizes and processed counts."""
         processed_counts.append(processed_count)
         batch_sizes.append(len(records))
@@ -1960,19 +1813,3 @@ async def test_async_worker_generator_large_batches() -> None:
     expected_sizes = [100, 50, 200]
     assert processed_counts == expected_counts
     assert batch_sizes == expected_sizes
-
-
-# Simple test for async_chunks to verify it works
-@pytest.mark.asyncio
-async def test_async_chunks_simple() -> None:
-    """Test async_chunks with a simple async generator."""
-    async def simple_generator() -> AsyncGenerator[int, None]:
-        yield 1
-        yield 2
-        yield 3
-    
-    chunks = []
-    async for chunk in utils.async_chunks(simple_generator(), 2):
-        chunks.append(chunk)
-    
-    assert chunks == [[1, 2], [3]]

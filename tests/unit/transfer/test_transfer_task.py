@@ -1,119 +1,481 @@
 """
-Unit tests for the TransferTask class.
+Unit tests for the runtime loader tasks.
 
-This module contains comprehensive unit tests for the TransferTask class,
-which is a Luigi task responsible for orchestrating data transfer from
-the offline database to the runtime database.
+This module contains comprehensive unit tests for the runtime loader task classes,
+which are Luigi tasks responsible for orchestrating data loading from offline
+to runtime database.
 """
 
+import datetime
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
-from musigree.transfer.transfer_task import TransferTask
+from musigree.transfer.transfer_task import (
+    RuntimeLoaderSetupTask,
+    RuntimeLoaderTask,
+    RuntimeLoaderTaskForDate,
+    RuntimeLoaderTaskForDateAndStage,
+)
 
 
-class TestTransferTask:
-    """Test class for TransferTask."""
+class TestRuntimeLoaderSetupTask:
+    """Test class for RuntimeLoaderSetupTask."""
 
-    def test_transfer_task_initialization(self) -> None:
-        """Test that TransferTask can be initialized with parameters."""
+    def test_initialization(self) -> None:
+        """Test that RuntimeLoaderSetupTask can be initialized with parameters."""
         data_directory = "/test/data"
-        task = TransferTask(data_directory=data_directory)
+        start_date = datetime.date(2023, 1, 1)
+        end_date = datetime.date(2023, 1, 31)
+        
+        task = RuntimeLoaderSetupTask(
+            data_directory=data_directory,
+            start_date=start_date,
+            end_date=end_date
+        )
 
         assert task.data_directory == data_directory
+        assert task.start_date == start_date
+        assert task.end_date == end_date
         assert isinstance(task, luigi.Task)
 
     def test_output_returns_run_anyway_target(self) -> None:
         """Test that output() returns a RunAnywayTarget."""
-        task = TransferTask(data_directory="/test/data")
+        task = RuntimeLoaderSetupTask(
+            data_directory="/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
 
         output = task.output()
 
         assert isinstance(output, RunAnywayTarget)
 
-    def test_requires_returns_none(self) -> None:
-        """Test that requires() returns None (no dependencies)."""
-        task = TransferTask(data_directory="/test/data")
+    def test_data_directory_parameter_significance(self) -> None:
+        """Test that data_directory parameter is not significant for Luigi."""
+        param = RuntimeLoaderSetupTask.data_directory
+        assert param.significant is False
 
-        requires = task.requires()
+    def test_task_family(self) -> None:
+        """Test that RuntimeLoaderSetupTask has correct task family."""
+        task = RuntimeLoaderSetupTask(
+            data_directory="/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
+        
+        assert task.task_family == "RuntimeLoaderSetupTask"
 
-        assert requires is None
+    @patch("musigree.transfer.transfer_task.log")
+    def test_run_configures_logging_and_yields_next_task(self, _mock_log: Mock) -> None:
+        """Test that run() configures logging and yields the next task."""
+        task = RuntimeLoaderSetupTask(
+            data_directory="/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
 
-    def test_priority_returns_very_low_value(self) -> None:
-        """Test that priority property returns a very low value."""
-        task = TransferTask(data_directory="/test/data")
+        # Mock the output target
+        mock_target = Mock()
+        with patch.object(task, "output", return_value=mock_target):
+            # Mock logging configuration
+            with patch("logging.getLogger") as mock_get_logger:
+                mock_luigi_logger = Mock()
+                mock_interface_logger = Mock()
+                mock_musigree_logger = Mock()
+                mock_get_logger.side_effect = lambda name: {
+                    "luigi": mock_luigi_logger,
+                    "luigi-interface": mock_interface_logger,
+                    "musigree": mock_musigree_logger,
+                }[name]
+
+                # Run the task and collect yielded tasks
+                result = list(task.run())
+
+                # Verify logging configuration
+                assert mock_luigi_logger.handlers == mock_musigree_logger.handlers
+                assert mock_luigi_logger.propagate is False
+                mock_luigi_logger.setLevel.assert_called_with(logging.WARNING)
+                
+                assert mock_interface_logger.handlers == mock_musigree_logger.handlers
+                assert mock_interface_logger.propagate is False
+                mock_interface_logger.setLevel.assert_called_with(logging.WARNING)
+
+                # Verify target.done() was called
+                mock_target.done.assert_called_once()
+
+                # Verify next task was yielded
+                assert len(result) == 1
+                assert isinstance(result[0], RuntimeLoaderTask)
+
+
+class TestRuntimeLoaderTask:
+    """Test class for RuntimeLoaderTask."""
+
+    def test_initialization(self) -> None:
+        """Test that RuntimeLoaderTask can be initialized with parameters."""
+        data_directory = "/test/data"
+        start_date = datetime.date(2023, 1, 1)
+        end_date = datetime.date(2023, 1, 31)
+        
+        task = RuntimeLoaderTask(
+            data_directory=data_directory,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        assert task.data_directory == data_directory
+        assert task.start_date == start_date
+        assert task.end_date == end_date
+        assert isinstance(task, luigi.WrapperTask)
+
+    def test_requires_yields_correct_dependencies(self) -> None:
+        """Test that requires() yields the correct dependencies."""
+        task = RuntimeLoaderTask(
+            data_directory="/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
+
+        dependencies = list(task.requires())
+
+        assert len(dependencies) == 2
+        assert isinstance(dependencies[0], RuntimeLoaderSetupTask)
+        assert isinstance(dependencies[1], RuntimeLoaderTaskForDate)
+        
+        # Verify the setup task has correct parameters
+        setup_task = dependencies[0]
+        # noinspection PyUnresolvedReferences
+        assert setup_task.data_directory == task.data_directory
+        # noinspection PyUnresolvedReferences
+        assert setup_task.start_date == task.start_date
+        # noinspection PyUnresolvedReferences
+        assert setup_task.end_date == task.end_date
+        
+        # Verify the date task has correct parameters
+        date_task = dependencies[1]
+        # noinspection PyUnresolvedReferences
+        assert date_task.data_directory == task.data_directory
+        # noinspection PyUnresolvedReferences
+        assert date_task.dump_date == task.end_date
+
+    def test_task_family(self) -> None:
+        """Test that RuntimeLoaderTask has correct task family."""
+        task = RuntimeLoaderTask(
+            data_directory="/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
+        
+        assert task.task_family == "RuntimeLoaderTask"
+
+
+class TestRuntimeLoaderTaskForDate:
+    """Test class for RuntimeLoaderTaskForDate."""
+
+    def test_initialization(self) -> None:
+        """Test that RuntimeLoaderTaskForDate can be initialized with parameters."""
+        data_directory = "/test/data"
+        dump_date = datetime.date(2023, 1, 15)
+        
+        task = RuntimeLoaderTaskForDate(
+            data_directory=data_directory,
+            dump_date=dump_date
+        )
+
+        assert task.data_directory == data_directory
+        assert task.dump_date == dump_date
+        assert isinstance(task, luigi.WrapperTask)
+
+    def test_priority_calculation(self) -> None:
+        """Test that priority is calculated based on date difference."""
+        # Use a past date to ensure positive priority
+        past_date = datetime.date(2020, 1, 1)
+        task = RuntimeLoaderTaskForDate(
+            data_directory="/test/data",
+            dump_date=past_date
+        )
 
         priority = task.priority
 
-        assert priority == -1000000000
+        # Priority should be positive for past dates
+        assert isinstance(priority, int)
+        assert priority > 0
 
-    @patch("musigree.transfer.transfer_task.log")
-    def test_run_logs_task_start(self, mock_log: Mock) -> None:
-        """Test that run() logs the task start."""
-        task = TransferTask(data_directory="/test/data")
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    def test_requires_yields_stage_tasks(self, mock_get_stages: Mock) -> None:
+        """Test that requires() yields stage tasks based on available stages."""
+        # Mock stages
+        mock_get_stages.return_value = [Mock(), Mock(), Mock()]  # 3 stages
+        
+        task = RuntimeLoaderTaskForDate(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15)
+        )
 
-        # Mock the output target
-        mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
-            task.run()
+        dependencies = list(task.requires())
 
-        # Verify logging was called
-        mock_log.debug.assert_called_once_with(f"Running transfer task: {task.task_id}")
+        assert len(dependencies) == 3
+        for i, dep in enumerate(dependencies):
+            assert isinstance(dep, RuntimeLoaderTaskForDateAndStage)
+            assert dep.data_directory == task.data_directory
+            assert dep.dump_date == task.dump_date
+            assert dep.stage == i
 
-        # Verify target.done() was called
-        mock_target.done.assert_called_once()
-
-    def test_run_calls_output_done(self) -> None:
-        """Test that run() calls done() on the output target."""
-        task = TransferTask(data_directory="/test/data")
-
-        # Mock the output target
-        mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
-            task.run()
-
-        # Verify target.done() was called
-        mock_target.done.assert_called_once()
+    def test_task_family(self) -> None:
+        """Test that RuntimeLoaderTaskForDate has correct task family."""
+        task = RuntimeLoaderTaskForDate(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15)
+        )
+        
+        assert task.task_family == "RuntimeLoaderTaskForDate"
 
     def test_data_directory_parameter_significance(self) -> None:
         """Test that data_directory parameter is not significant for Luigi."""
-        # This tests that the parameter was configured with significant=False
-        # We can test this by checking the parameter definition
-        param = TransferTask.data_directory
+        param = RuntimeLoaderTaskForDate.data_directory
         assert param.significant is False
 
-    def test_task_id_generation(self) -> None:
-        """Test that task IDs are generated correctly."""
-        task1 = TransferTask(data_directory="/test/data1")
-        task2 = TransferTask(data_directory="/test/data2")
 
-        # Since data_directory is not significant for Luigi, tasks with different
-        # data_directory values are considered equal by Luigi's design
-        # But they are still different object instances
-        assert task1 is not task2
-        # Task IDs should be the same because data_directory is not significant
-        assert task1.task_id == task2.task_id
+class TestRuntimeLoaderTaskForDateAndStage:
+    """Test class for RuntimeLoaderTaskForDateAndStage."""
 
-    def test_multiple_runs_idempotent(self) -> None:
-        """Test that multiple runs of the same task work correctly."""
-        task = TransferTask(data_directory="/test/data")
+    def test_initialization(self) -> None:
+        """Test that RuntimeLoaderTaskForDateAndStage can be initialized with parameters."""
+        data_directory = "/test/data"
+        dump_date = datetime.date(2023, 1, 15)
+        stage = 2
+        
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory=data_directory,
+            dump_date=dump_date,
+            stage=stage
+        )
 
+        assert task.data_directory == data_directory
+        assert task.dump_date == dump_date
+        assert task.stage == stage
+        assert isinstance(task, luigi.Task)
+
+    def test_priority_calculation_with_stage(self) -> None:
+        """Test that priority is calculated including stage number."""
+        past_date = datetime.date(2020, 1, 1)
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=past_date,
+            stage=5
+        )
+
+        priority = task.priority
+
+        # Priority should be positive and include stage adjustment
+        assert isinstance(priority, int)
+        assert priority > 0
+
+    def test_requires_returns_previous_stage(self) -> None:
+        """Test that requires() returns the previous stage task."""
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=3
+        )
+
+        dependencies = list(task.requires())
+
+        assert len(dependencies) == 1
+        dep = dependencies[0]
+        assert isinstance(dep, RuntimeLoaderTaskForDateAndStage)
+        assert dep.data_directory == task.data_directory
+        assert dep.dump_date == task.dump_date
+        assert dep.stage == 2  # Previous stage
+
+    def test_requires_returns_empty_for_stage_zero(self) -> None:
+        """Test that requires() returns empty for stage 0."""
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=0
+        )
+
+        dependencies = list(task.requires())
+
+        assert len(dependencies) == 0
+
+    def test_output_returns_loader_target(self) -> None:
+        """Test that output() returns a LoaderTarget."""
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=1
+        )
+
+        output = task.output()
+
+        # Import here to avoid circular imports in test setup
+        from musigree.offline.loader.loader_target import LoaderTarget
+        assert isinstance(output, LoaderTarget)
+
+    def test_task_family(self) -> None:
+        """Test that RuntimeLoaderTaskForDateAndStage has correct task family."""
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=2
+        )
+        
+        assert task.task_family == "RuntimeLoaderTaskForDateAndStage"
+
+    def test_data_directory_parameter_significance(self) -> None:
+        """Test that data_directory parameter is not significant for Luigi."""
+        param = RuntimeLoaderTaskForDateAndStage.data_directory
+        assert param.significant is False
+
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    @patch("asyncio.new_event_loop")
+    @patch("asyncio.set_event_loop")
+    @patch("musigree.transfer.transfer_task.log")
+    def test_run_executes_stage_successfully(
+        self, mock_log: Mock, mock_set_loop: Mock, mock_new_loop: Mock, mock_get_stages: Mock
+    ) -> None:
+        """Test that run() executes the stage successfully."""
+        # Mock the async stage function
+        mock_stage_func = AsyncMock()
+        mock_get_stages.return_value = [mock_stage_func, AsyncMock(), AsyncMock()]
+        
+        # Mock the event loop
+        mock_loop = Mock()
+        mock_new_loop.return_value = mock_loop
+        mock_task = Mock()
+        mock_loop.create_task.return_value = mock_task
+        
         # Mock the output target
-        mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
-            # Run the task multiple times
-            task.run()
-            task.run()
+        mock_output = Mock()
+        mock_output.done = AsyncMock()
+        
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=0
+        )
+        
+        with patch.object(task, "output", return_value=mock_output):
+            # Mock RuntimeError to trigger new event loop creation
+            with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+                # Need to patch the second call to get_load_runtime_table_stages in the run method
+                with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
+                    task.run()
 
-        # Verify target.done() was called twice
-        assert mock_target.done.call_count == 2
+        # Verify logging
+        mock_log.debug.assert_called()
+        
+        # Verify event loop setup
+        mock_new_loop.assert_called_once()
+        mock_set_loop.assert_called_once_with(mock_loop)
+        
+        # Verify task creation and execution
+        mock_loop.create_task.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once_with(mock_task)
+
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    @patch("musigree.transfer.transfer_task.log")
+    def test_run_handles_invalid_stage(self, mock_log: Mock, mock_get_stages: Mock) -> None:
+        """Test that run() handles invalid stage numbers."""
+        mock_get_stages.return_value = [AsyncMock()]  # Only 1 stage
+        
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=5  # Invalid stage
+        )
+        
+        # Mock the event loop setup
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+            with patch("asyncio.new_event_loop") as mock_new_loop:
+                with patch("asyncio.set_event_loop") as _mock_set_loop:
+                    mock_loop = Mock()
+                    mock_new_loop.return_value = mock_loop
+                    mock_task = Mock()
+                    mock_loop.create_task.return_value = mock_task
+                    mock_loop.run_until_complete.return_value = None
+                    
+                    # Need to patch the second call to get_load_runtime_table_stages in the run method
+                    with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
+                        task.run()
+
+        # Should still run without error but log the invalid stage
+        mock_log.debug.assert_called()
+
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    @patch("musigree.transfer.transfer_task.log")
+    def test_run_with_existing_event_loop(self, _mock_log: Mock, mock_get_stages: Mock) -> None:
+        """Test that run() works with an existing event loop."""
+        # Mock the async stage function
+        mock_stage_func = AsyncMock()
+        mock_get_stages.return_value = [mock_stage_func]
+        
+        # Mock the output target
+        mock_output = Mock()
+        mock_output.done = AsyncMock()
+        
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=0
+        )
+        
+        with patch.object(task, "output", return_value=mock_output):
+            # Mock existing event loop (no RuntimeError)
+            with patch("asyncio.get_running_loop") as mock_get_loop:
+                mock_loop = Mock()
+                mock_get_loop.return_value = mock_loop
+                mock_task = Mock()
+                mock_loop.create_task.return_value = mock_task
+                
+                # Need to patch the second call to get_load_runtime_table_stages in the run method
+                with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
+                    task.run()
+
+        # Verify existing loop was used
+        mock_get_loop.assert_called_once()
+        mock_loop.create_task.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once_with(mock_task)
+
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    @patch("musigree.transfer.transfer_task.log")
+    def test_run_handles_runtime_error_during_execution(self, mock_log: Mock, mock_get_stages: Mock) -> None:
+        """Test that run() handles RuntimeError during task execution."""
+        mock_get_stages.return_value = [AsyncMock()]
+        
+        task = RuntimeLoaderTaskForDateAndStage(
+            data_directory="/test/data",
+            dump_date=datetime.date(2023, 1, 15),
+            stage=0
+        )
+        
+        # Mock the event loop setup
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+            with patch("asyncio.new_event_loop") as mock_new_loop:
+                with patch("asyncio.set_event_loop") as _mock_set_loop:
+                    mock_loop = Mock()
+                    mock_new_loop.return_value = mock_loop
+                    mock_task = Mock()
+                    mock_loop.create_task.return_value = mock_task
+                    
+                    # Make run_until_complete raise RuntimeError
+                    mock_loop.run_until_complete.side_effect = RuntimeError("Test error")
+                    
+                    # Need to patch the second call to get_load_runtime_table_stages in the run method
+                    with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
+                        task.run()  # Should not raise, should handle the exception
+
+        # Verify the exception was logged
+        mock_log.exception.assert_called_once()
 
 
 class TestTransferTaskLogging:
-    """Test class for TransferTask logging behavior."""
+    """Test class for transfer task logging behavior."""
 
     def test_logger_exists(self) -> None:
         """Test that the module logger is properly configured."""
@@ -122,58 +484,44 @@ class TestTransferTaskLogging:
         assert isinstance(log, logging.Logger)
         assert log.name == "musigree.transfer.transfer_task"
 
-    @patch("musigree.transfer.transfer_task.log")
-    def test_run_logging_with_different_data_directories(self, mock_log: Mock) -> None:
-        """Test that run() logs correctly with different data directories."""
-        data_dir = "/custom/path/to/data"
-        task = TransferTask(data_directory=data_dir)
-
-        # Mock the output target
-        mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
-            task.run()
-
-        # Verify the correct task ID was logged
-        mock_log.debug.assert_called_once()
-        call_args = mock_log.debug.call_args[0][0]
-        assert "Running transfer task:" in call_args
-        assert task.task_id in call_args
-
 
 class TestTransferTaskIntegration:
-    """Integration-style tests for TransferTask without external dependencies."""
+    """Integration-style tests for transfer tasks without external dependencies."""
 
-    def test_full_task_workflow(self) -> None:
-        """Test the complete workflow of a TransferTask."""
-        task = TransferTask(data_directory="/integration/test/data")
+    @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
+    def test_full_workflow_integration(self, mock_get_stages: Mock) -> None:
+        """Test the complete workflow of runtime loader tasks."""
+        mock_get_stages.return_value = [AsyncMock(), AsyncMock()]  # 2 stages
+        
+        # Create the main task
+        main_task = RuntimeLoaderTask(
+            data_directory="/integration/test/data",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 1, 31)
+        )
 
-        # Verify initial state
-        assert task.requires() is None
-        assert task.priority == -1000000000
-
-        # Verify output
-        output = task.output()
-        assert isinstance(output, RunAnywayTarget)
-
-        # Mock the output method to return a mock target with done method
-        mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
-            with patch("musigree.transfer.transfer_task.log") as mock_log:
-                task.run()
-
-                mock_log.debug.assert_called_once()
-                mock_target.done.assert_called_once()
-
-    def test_luigi_task_registration(self) -> None:
-        """Test that TransferTask is properly registered as a Luigi task."""
-        task = TransferTask(data_directory="/test/data")
-
-        # Verify it's a proper Luigi task
-        assert hasattr(task, "task_id")
-        assert hasattr(task, "task_family")
-        assert callable(task.run)
-        assert callable(task.output)
-        assert callable(task.requires)
-
-        # Verify task family
-        assert task.task_family == "TransferTask"
+        # Test the dependency chain
+        dependencies = list(main_task.requires())
+        
+        assert len(dependencies) == 2
+        _setup_task = dependencies[0]
+        date_task = dependencies[1]
+        
+        # Test date task dependencies
+        stage_dependencies = list(date_task.requires())
+        assert len(stage_dependencies) == 2
+        
+        # Verify stage dependencies are correctly chained
+        stage_0 = stage_dependencies[0]
+        stage_1 = stage_dependencies[1]
+        
+        assert stage_0.stage == 0
+        assert stage_1.stage == 1
+        
+        # Stage 0 should have no dependencies
+        assert len(list(stage_0.requires())) == 0
+        
+        # Stage 1 should depend on stage 0
+        stage_1_deps = list(stage_1.requires())
+        assert len(stage_1_deps) == 1
+        assert stage_1_deps[0].stage == 0

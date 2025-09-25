@@ -2,6 +2,8 @@ from typing import AsyncGenerator
 
 import pytest
 
+from musigree.config import Configuration
+from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
@@ -52,11 +54,13 @@ class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_transfer_entities(
         self,
+        runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         # GIVEN
-        await TransferManager.transfer_create_entity_details_index()
+        entity_details_path = runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+        await TransferManager.transfer_load_entity_details_index(entity_details_path)
 
         # WHEN
         await TransferManager.transfer_entity()

@@ -7,20 +7,20 @@ from unittest.mock import Mock, patch
 from fastapi import FastAPI
 
 from musigree.app.fastapi_prod_app import create_production_app, app
-from musigree.config import SqliteProductionConfiguration
+from musigree.config import SqliteReadOnlyProductionConfiguration
 
 
 class TestCreateProductionApp:
     """Test class for create_production_app function."""
 
     @patch("musigree.app.fastapi_prod_app.create_app")
-    @patch("musigree.app.fastapi_prod_app.SqliteProductionConfiguration")
+    @patch("musigree.app.fastapi_prod_app.SqliteReadOnlyProductionConfiguration")
     def test_create_production_app_returns_fastapi_instance(
         self, mock_config_class: Mock, mock_create_app: Mock
     ) -> None:
         """Test that create_production_app returns a FastAPI instance."""
         # Setup
-        mock_config = Mock(spec=SqliteProductionConfiguration)
+        mock_config = Mock(spec=SqliteReadOnlyProductionConfiguration)
         mock_config_class.return_value = mock_config
 
         mock_app = Mock(spec=FastAPI)
@@ -35,13 +35,13 @@ class TestCreateProductionApp:
         assert result == mock_app
 
     @patch("musigree.app.fastapi_prod_app.create_app")
-    @patch("musigree.app.fastapi_prod_app.SqliteProductionConfiguration")
+    @patch("musigree.app.fastapi_prod_app.SqliteReadOnlyProductionConfiguration")
     def test_create_production_app_uses_sqlite_production_config(
         self, mock_config_class: Mock, mock_create_app: Mock
     ) -> None:
-        """Test that create_production_app uses SqliteProductionConfiguration."""
+        """Test that create_production_app uses SqliteReadOnlyProductionConfiguration."""
         # Setup
-        mock_config = Mock(spec=SqliteProductionConfiguration)
+        mock_config = Mock(spec=SqliteReadOnlyProductionConfiguration)
         mock_config_class.return_value = mock_config
 
         mock_app = Mock(spec=FastAPI)

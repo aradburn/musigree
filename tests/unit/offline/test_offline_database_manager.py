@@ -37,7 +37,7 @@ class TestOfflineDatabaseManager:
         result = OfflineDatabaseManager.get_concurrency_count()
 
         # Assert
-        assert result == 8
+        assert result == 4
         mock_cpu_count.assert_called_once()
 
     def test_get_concurrency_count_thread_model(self) -> None:

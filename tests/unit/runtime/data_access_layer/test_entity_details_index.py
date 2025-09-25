@@ -310,3 +310,36 @@ class TestEntityDetailsIndex:
         assert self.index.countries_list == []
         assert self.index.genres_list == []
         assert self.index.styles_list == []
+
+    def test_index_large_entity_id(self) -> None:
+        """Test indexing with large entity IDs."""
+        large_id = 999999999
+        self.index.index_country(large_id, "USA")
+        self.index.index_genre(large_id, "Rock")
+        self.index.index_style(large_id, "Alternative")
+
+        assert self.index.entity_countries[large_id] == [0]
+        assert self.index.entity_genres[large_id] == [0]
+        assert self.index.entity_styles[large_id] == [0]
+
+    def test_index_special_characters(self) -> None:
+        """Test indexing with special characters in values."""
+        self.index.index_country(1, "São Paulo & Rio de Janeiro")
+        self.index.index_genre(1, "Punk/Rock")
+        self.index.index_style(1, "Post-Rock, Ambient")
+
+        # Should handle special characters properly
+        assert len(self.index.countries_list) == 2  # São Paulo, Rio de Janeiro
+        assert len(self.index.genres_list) == 2     # Punk, Rock  
+        assert len(self.index.styles_list) == 2     # Post-Rock, Ambient
+
+    def test_sorted_retrieval(self) -> None:
+        """Test that retrieved values are sorted."""
+        self.index.index_country(1, "USA & Canada & Germany")
+        self.index.index_genre(1, "Rock & Jazz & Classical")
+        self.index.index_style(1, "Alternative & Punk & Indie")
+
+        # Values should be returned sorted
+        assert self.index.get_countries_for_id(1) == "Canada,Germany,USA"
+        assert self.index.get_genres_for_id(1) == "Classical,Jazz,Rock"
+        assert self.index.get_styles_for_id(1) == "Alternative,Indie,Punk"

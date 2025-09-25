@@ -8,7 +8,7 @@ and text search index initialization.
 """
 
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -509,8 +509,8 @@ class TestGetIdByEntityTypeAndEntityName:
         )
 
 
-class TestInitTextSearchIndex:
-    """Test class for init_text_search_index method."""
+class TestCreateTextSearchIndex:
+    """Test class for create_text_search_index method."""
 
     @pytest.fixture
     def mock_entity_repository(self) -> AsyncMock:
@@ -527,13 +527,14 @@ class TestInitTextSearchIndex:
         """Fixture for mock text search index."""
         return Mock()
 
-    async def test_init_text_search_index_success(
+    @patch("musigree.offline.data_access_layer.entity_data_access.TextSearchIndex")
+    async def test_create_text_search_index_success(
         self,
+        mock_text_search_index_class: Mock,
         mock_entity_repository: AsyncMock,
         mock_loader_base: Mock,
-        mock_text_search_index: Mock,
     ) -> None:
-        """Test init_text_search_index with successful execution."""
+        """Test create_text_search_index with successful execution."""
         # Setup
         mock_id_name_pairs = [
             (1, "Artist 1"),
@@ -541,47 +542,125 @@ class TestInitTextSearchIndex:
             (3, "Label 1"),
         ]
 
-        async def mock_all_ids_and_names() -> AsyncGenerator[tuple[int, str], None]:
-            for id_, name in mock_id_name_pairs:
-                yield id_, name
+        async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]], None]:
+            yield mock_id_name_pairs
 
         mock_entity_repository.all_ids_and_names = mock_all_ids_and_names
 
+        # Mock the TextSearchIndex instance
+        mock_index = Mock()
+        mock_text_search_index_class.return_value = mock_index
+
         # Test
-        await EntityDataAccess.init_text_search_index(
-            mock_entity_repository, mock_text_search_index
-        )
+        result = await EntityDataAccess.create_text_search_index(mock_entity_repository)
 
         # Assertions - verify text search index was populated
-        assert mock_text_search_index.index_entry.call_count == 3
-        mock_text_search_index.index_entry.assert_any_call(1, "Artist 1")
-        mock_text_search_index.index_entry.assert_any_call(2, "Artist 2")
-        mock_text_search_index.index_entry.assert_any_call(3, "Label 1")
+        assert result == mock_index
+        assert mock_index.index_entry.call_count == 3
+        mock_index.index_entry.assert_any_call(1, "Artist 1")
+        mock_index.index_entry.assert_any_call(2, "Artist 2")
+        mock_index.index_entry.assert_any_call(3, "Label 1")
+        mock_index.reduce_list_to_set.assert_called_once()
+        mock_index.print_sizes.assert_called_once()
 
-    async def test_init_text_search_index_empty_entities(
+    @patch("musigree.offline.data_access_layer.entity_data_access.TextSearchIndex")
+    async def test_create_text_search_index_empty_entities(
         self,
+        mock_text_search_index_class: Mock,
         mock_entity_repository: AsyncMock,
         mock_loader_base: Mock,
-        mock_text_search_index: Mock,
     ) -> None:
-        """Test init_text_search_index with no entities."""
+        """Test create_text_search_index with no entities."""
 
         # Setup
         # noinspection PyUnreachableCode
-        async def mock_all_ids_and_names() -> AsyncGenerator[None, None]:
-            # Empty async generator
+        async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]], None]:
+            # Empty async generator - yield nothing
             return
+            # noinspection PyTypeChecker
             yield  # Never reached, but makes this a generator function
 
         mock_entity_repository.all_ids_and_names = mock_all_ids_and_names
 
+        # Mock the TextSearchIndex instance
+        mock_index = Mock()
+        mock_text_search_index_class.return_value = mock_index
+
         # Test
-        await EntityDataAccess.init_text_search_index(
-            mock_entity_repository, mock_text_search_index
-        )
+        result = await EntityDataAccess.create_text_search_index(mock_entity_repository)
 
         # Assertions - verify no entries were added to index
-        mock_text_search_index.index_entry.assert_not_called()
+        assert result == mock_index
+        mock_index.index_entry.assert_not_called()
+        mock_index.reduce_list_to_set.assert_called_once()
+        mock_index.print_sizes.assert_called_once()
+
+
+class TestAdditionalEdgeCases:
+    """Test class for additional edge cases."""
+
+    @pytest.fixture
+    def mock_entity_repository(self) -> AsyncMock:
+        """Fixture for mock entity repository."""
+        return AsyncMock()
+
+    @patch(
+        "musigree.offline.data_access_layer.entity_data_access.EntityDataAccess.get_id_by_entity_type_and_entity_name"
+    )
+    async def test_resolve_entity_references_with_empty_alias_value(
+        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test resolve_entity_references with empty alias values."""
+        entities = {"aliases": {"": "some_value", "valid_alias": ""}}
+        entity = TestResolveEntityReferences.create_test_entity(
+            EntityType.ARTIST, entities=entities
+        )
+
+        # Mock get_id to return None for empty values
+        mock_get_id.return_value = None
+
+        result = await EntityDataAccess.resolve_entity_references(
+            mock_entity_repository, entity
+        )
+
+        # Should return False since no valid processing occurred
+        assert result is False
+
+    async def test_resolve_entity_references_with_nested_empty_dict(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test resolve_entity_references with nested empty dictionaries."""
+        entities: dict[str, Any] = {"aliases": {}, "groups": {}, "members": {}}
+        entity = TestResolveEntityReferences.create_test_entity(
+            EntityType.ARTIST, entities=entities
+        )
+
+        result = await EntityDataAccess.resolve_entity_references(
+            mock_entity_repository, entity
+        )
+
+        assert result is False
+
+    @patch(
+        "musigree.offline.data_access_layer.entity_data_access.EntityDataAccess.get_id_by_entity_type_and_entity_name"
+    )
+    async def test_resolve_entity_references_with_exception(
+        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test resolve_entity_references when get_id raises an exception."""
+        entities = {"aliases": {"alias1": ""}}
+        entity = TestResolveEntityReferences.create_test_entity(
+            EntityType.ARTIST, entities=entities
+        )
+
+        # Mock the get_id method to raise an exception
+        mock_get_id.side_effect = Exception("Database error")
+
+        # Exception should propagate since it's not handled in the implementation
+        with pytest.raises(Exception, match="Database error"):
+            await EntityDataAccess.resolve_entity_references(
+                mock_entity_repository, entity
+            )
 
 
 class TestLogging:

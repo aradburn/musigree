@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 
+from musigree import constants
 from musigree.exceptions import DatabaseError
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.transfer.transfer_manager import TransferManager
@@ -10,12 +11,6 @@ from musigree.transfer.transfer_manager import TransferManager
 
 class TestTransferManager:
     """Test cases for the TransferManager class."""
-
-    def test_bulk_insert_batch_size(self) -> None:
-        """Test that BULK_INSERT_BATCH_SIZE is properly defined."""
-        assert hasattr(TransferManager, "BULK_INSERT_BATCH_SIZE")
-        assert isinstance(TransferManager.BULK_INSERT_BATCH_SIZE, int)
-        assert TransferManager.BULK_INSERT_BATCH_SIZE > 0
 
     @patch("musigree.transfer.transfer_manager.offline_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeEntityRepository")
@@ -74,35 +69,20 @@ class TestTransferManager:
                     1  # Single threaded
                 )
 
-                # Mock async_chunks to return empty
-                with patch(
-                    "musigree.transfer.transfer_manager.async_chunks"
-                ) as mock_async_chunks:
-                    # noinspection PyUnreachableCode
-                    async def empty_chunks(
-                        _entities: list[Any], _chunk_size: int
-                    ) -> AsyncGenerator[None, None]:
-                        return
-                        yield  # pragma: no cover
+                # Mock the new RuntimeEntityDataAccess method
+                # noinspection PyUnreachableCode
+                async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
+                    return
+                    # noinspection PyTypeChecker
+                    yield  # pragma: no cover
 
-                    mock_async_chunks.return_value = empty_chunks(
-                        [], TransferManager.BULK_INSERT_BATCH_SIZE
-                    )
+                mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
 
-                    # Mock the new RuntimeEntityDataAccess method
-                    # noinspection PyUnreachableCode
-                    async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
-                        return
-                        # noinspection PyTypeChecker
-                        yield  # pragma: no cover
+                # Call the method
+                await TransferManager.transfer_entity()
 
-                    mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
-
-                    # Call the method
-                    await TransferManager.transfer_entity()
-
-                    # Verify runtime table was checked to be empty
-                    mock_runtime_instance.count.assert_called()
+                # Verify runtime table was checked to be empty
+                mock_runtime_instance.count.assert_called()
 
     @patch("musigree.transfer.transfer_manager.offline_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeEntityRepository")
@@ -114,7 +94,7 @@ class TestTransferManager:
         mock_db_manager: Mock,
         mock_runtime_transaction: Mock,
         mock_runtime_repo: Mock,
-        mock_offline_transaction: Mock,
+        _mock_offline_transaction: Mock,
     ) -> None:
         """Test transfer_entity when runtime table is not empty (should raise error)."""
         # Mock the runtime_database_helper to avoid assertion error
@@ -187,42 +167,29 @@ class TestTransferManager:
                     1  # Single threaded
                 )
 
-                # Mock async_chunks to return empty
-                with patch(
-                    "musigree.transfer.transfer_manager.async_chunks"
-                ) as mock_async_chunks:
-                    # noinspection PyUnreachableCode
-                    async def empty_chunks(
-                        _entities: list[Any], _chunk_size: int
-                    ) -> AsyncGenerator[None, None]:
-                        return
-                        yield  # pragma: no cover
+                # Mock the new RuntimeRelationDataAccess method
+                # noinspection PyUnreachableCode
+                async def empty_relation_dicts() -> AsyncGenerator[dict[str, Any], None]:
+                    return
+                    # noinspection PyTypeChecker
+                    yield  # pragma: no cover
 
-                    mock_async_chunks.return_value = empty_chunks(
-                        [], TransferManager.BULK_INSERT_BATCH_SIZE
-                    )
+                mock_runtime_relation_data_access.get_runtime_relation_dicts_from_relations.return_value = empty_relation_dicts()
 
-                    # Mock the new RuntimeRelationDataAccess method
-                    # noinspection PyUnreachableCode
-                    async def empty_relation_dicts() -> AsyncGenerator[dict[str, Any], None]:
-                        return
-                        # noinspection PyTypeChecker
-                        yield  # pragma: no cover
+                # Call the method
+                await TransferManager.transfer_relation()
 
-                    mock_runtime_relation_data_access.get_runtime_relation_dicts_from_relations.return_value = empty_relation_dicts()
-
-                    # Call the method
-                    await TransferManager.transfer_relation()
-
-                    # Verify runtime table was checked to be empty
-                    mock_runtime_instance.count.assert_called()
+                # Verify runtime table was checked to be empty
+                mock_runtime_instance.count.assert_called()
 
     @patch("musigree.transfer.transfer_manager.offline_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeRelationRepository")
     @patch("musigree.transfer.transfer_manager.runtime_transaction")
+    @patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager")
     @pytest.mark.asyncio
     async def test_transfer_relation_non_empty_runtime_table(
         self,
+        _mock_runtime_database_manager: Mock,
         mock_runtime_transaction: Mock,
         mock_runtime_repo: Mock,
         mock_offline_transaction: Mock,
@@ -412,8 +379,9 @@ class TestTransferManager:
                 assert mock_runtime_db_helper.text_search_index == mock_text_search_index
 
     @pytest.mark.asyncio
-    async def test_transfer_create_entity_details_index(self) -> None:
-        """Test transfer_create_entity_details_index method."""
+    async def test_transfer_load_entity_details_index(self) -> None:
+        """Test transfer_load_entity_details_index method."""
+        from pathlib import Path
         from unittest.mock import Mock, patch
 
         # Mock the RuntimeDatabaseManager
@@ -422,29 +390,22 @@ class TestTransferManager:
             mock_runtime_db_helper = Mock()
             mock_db_manager.runtime_database_helper = mock_runtime_db_helper
 
-            # Mock the offline transaction
-            with patch("musigree.transfer.transfer_manager.offline_transaction") as mock_offline_transaction:
-                mock_offline_transaction.return_value.__aenter__ = AsyncMock()
-                mock_offline_transaction.return_value.__aexit__ = AsyncMock()
+            # Mock the TextSearchIndex.load_text_search_index_from_file method
+            with patch("musigree.transfer.transfer_manager.EntityDetailsIndex") as mock_entity_details_index_class:
+                mock_entity_details_index = Mock()
+                mock_entity_details_index_class.load_entity_details_index_from_file.return_value = (
+                    mock_entity_details_index
+                )
 
-                # Mock the ReleaseRepository
-                with patch("musigree.transfer.transfer_manager.ReleaseRepository") as mock_release_repo_class:
-                    mock_release_repo = Mock()
-                    mock_release_repo_class.return_value = mock_release_repo
+                # Create a test path
+                test_path = Path("/test/path/entity_details.data")
 
-                    # Mock the ReleaseDataAccess.create_entity_details_index method
-                    with patch("musigree.transfer.transfer_manager.ReleaseDataAccess") as mock_release_data_access:
-                        mock_entity_details_index = Mock(spec=EntityDetailsIndex)
-                        # Make the mock return an awaitable
-                        mock_release_data_access.create_entity_details_index = AsyncMock(return_value=mock_entity_details_index)
+                # Call the method
+                await TransferManager.transfer_load_entity_details_index(test_path)
 
-                        # Call the method
-                        await TransferManager.transfer_create_entity_details_index()
-
-                        # Verify the entity details index was created and assigned
-                        mock_release_data_access.create_entity_details_index.assert_called_once_with(mock_release_repo)
-                        # The method should assign the result to the runtime_database_helper
-                        assert mock_runtime_db_helper.entity_details_index == mock_entity_details_index
+                # Verify the text search index was loaded and assigned
+                mock_entity_details_index_class.load_entity_details_index_from_file.assert_called_once_with(test_path)
+                assert mock_runtime_db_helper.entity_details_index == mock_entity_details_index
 
     @pytest.mark.asyncio
     async def test_transfer_entity_multithreaded(self) -> None:
@@ -471,9 +432,6 @@ class TestTransferManager:
             patch(
                 "musigree.transfer.transfer_manager.RuntimeDatabaseManager"
             ) as mock_db_manager,
-            patch(
-                "musigree.transfer.transfer_manager.async_chunks"
-            ) as mock_async_chunks,
             patch("musigree.transfer.transfer_manager.RuntimeEntityDataAccess") as mock_runtime_entity_data_access,
         ):
             # Setup basic mocks to allow the method to complete successfully
@@ -486,20 +444,22 @@ class TestTransferManager:
             mock_offline_repo.return_value = mock_offline_instance
             mock_offline_instance.count.return_value = 5  # Some entities to process
 
+            # Create empty async generator for entities.all()
+            class EmptyAsyncGenerator:
+                def __aiter__(self):
+                    return self
+                    
+                async def __anext__(self):
+                    raise StopAsyncIteration
+
+            mock_offline_instance.all = Mock(return_value=EmptyAsyncGenerator())
+
             mock_db_manager.get_concurrency_count.return_value = (
                 4  # Enable multithreading
             )
+            mock_db_manager.runtime_database_helper = Mock()  # Required by the transfer method
 
-            # Mock async_chunks to return empty iterator (no entities to process)
-            # noinspection PyUnreachableCode
-            async def empty_chunk_generator(
-                _entities: list[Any], _chunk_size: int
-            ) -> AsyncGenerator[None, None]:
-                # Return empty generator - no chunks to process
-                return
-                yield  # unreachable, but makes this an async generator
-
-            mock_async_chunks.side_effect = empty_chunk_generator
+            # async_chunks is no longer used in the transfer manager
 
             # Mock the new RuntimeEntityDataAccess method
             # noinspection PyUnreachableCode
@@ -515,7 +475,7 @@ class TestTransferManager:
 
     @patch("musigree.transfer.transfer_manager.offline_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager")
-    @patch("musigree.transfer.transfer_manager.transfer_worker_entity_inserter")
+    @patch("musigree.transfer.transfer_manager.transfer_worker_entity_inserter_async")
     @patch("musigree.transfer.transfer_manager.EntityRepository")
     @patch("musigree.transfer.transfer_manager.RuntimeEntityRepository")
     @patch("musigree.transfer.transfer_manager.runtime_transaction")
@@ -525,8 +485,8 @@ class TestTransferManager:
         mock_runtime_transaction: Mock,
         mock_runtime_repo: Mock,
         mock_offline_repo: Mock,
-        mock_worker_function: Mock,
-        mock_db_manager: Mock,
+        _mock_worker_function: Mock,
+        _mock_db_manager: Mock,
         mock_offline_transaction: Mock,
     ) -> None:
         """Test transfer_entity error handling when database operations fail."""
@@ -557,7 +517,7 @@ class TestTransferManager:
 
     @patch("musigree.transfer.transfer_manager.offline_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager")
-    @patch("musigree.transfer.transfer_manager.transfer_worker_entity_inserter")
+    @patch("musigree.transfer.transfer_manager.transfer_worker_entity_inserter_async")
     @patch("musigree.transfer.transfer_manager.EntityRepository")
     @patch("musigree.transfer.transfer_manager.RuntimeEntityRepository")
     @patch("musigree.transfer.transfer_manager.runtime_transaction")
@@ -567,7 +527,7 @@ class TestTransferManager:
         mock_runtime_transaction: Mock,
         mock_runtime_repo: Mock,
         mock_offline_repo: Mock,
-        mock_worker_function: Mock,
+        _mock_worker_function: Mock,
         mock_db_manager: Mock,
         mock_offline_transaction: Mock,
     ) -> None:
@@ -601,28 +561,16 @@ class TestTransferManager:
         mock_entity_details.get_genres_for_id.return_value = "Rock,Pop"
         mock_entity_details.get_styles_for_id.return_value = "Alternative,Indie"
 
-        # Mock async_chunks to return empty generator (no processing needed for this test)
-        with patch(
-            "musigree.transfer.transfer_manager.async_chunks"
-        ) as mock_async_chunks:
+        # async_chunks is no longer used in the transfer manager
+        # Mock the new RuntimeEntityDataAccess method
+        with patch("musigree.transfer.transfer_manager.RuntimeEntityDataAccess") as mock_runtime_entity_data_access:
             # noinspection PyUnreachableCode
-            async def empty_chunk_generator(
-                _entities: list[Any], _chunk_size: int
-            ) -> AsyncGenerator[None, None]:
+            async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
                 return
-                yield  # unreachable, but makes this an async generator
+                # noinspection PyTypeChecker
+                yield  # pragma: no cover
 
-            mock_async_chunks.side_effect = empty_chunk_generator
+            mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
 
-            # Mock the new RuntimeEntityDataAccess method
-            with patch("musigree.transfer.transfer_manager.RuntimeEntityDataAccess") as mock_runtime_entity_data_access:
-                # noinspection PyUnreachableCode
-                async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
-                    return
-                    # noinspection PyTypeChecker
-                    yield  # pragma: no cover
-
-                mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
-
-                # The test passes if the method completes without throwing an exception
-                await TransferManager.transfer_entity()
+            # The test passes if the method completes without throwing an exception
+            await TransferManager.transfer_entity()

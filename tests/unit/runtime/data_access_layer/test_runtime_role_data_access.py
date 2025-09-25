@@ -621,6 +621,7 @@ class TestCacheIntegration:
         assert mock_role_cache.role_name_to_role_id_lookup["Vocals"] == 1
         assert mock_role_cache.role_name_to_role_id_lookup["Guitar"] == 2
 
+    # noinspection PyUnusedLocal
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
     @patch(
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",

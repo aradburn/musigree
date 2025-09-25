@@ -125,6 +125,7 @@ class TestCreateAssetsRouter:
         mock_templates.env.globals.update = Mock()
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Verify the asset function uses custom origin
@@ -148,6 +149,7 @@ class TestCreateAssetsRouter:
         mock_templates.env.globals.update = Mock()
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Verify the asset function uses default origin
@@ -175,6 +177,7 @@ class TestDevAssetFunction:
         mock_templates.env.globals.update = Mock()
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Get the asset function
@@ -198,6 +201,7 @@ class TestDevAssetFunction:
         mock_templates.env.globals.update = Mock()
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Get the asset function
@@ -247,6 +251,7 @@ class TestProdAssetFunction:
         mock_file.return_value.read.return_value = json.dumps(manifest_content)
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Get the asset function
@@ -289,6 +294,7 @@ class TestProdAssetFunction:
         mock_file.return_value.read.return_value = json.dumps(manifest_content)
 
         # Test
+        # noinspection PyUnusedLocal
         router, templates = create_assets_router(config)
 
         # Get the asset function

@@ -5,7 +5,6 @@ import pytest
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, TEST_DIR
 from musigree.library.fields.entity_type import EntityType
-from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
@@ -19,11 +18,10 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_init_text_search_index(
         self, offline_database_setup: AsyncGenerator[None, None]
     ) -> None:
-        index = TextSearchIndex()
 
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.init_text_search_index(entity_repository, index)
+            index = await EntityDataAccess.create_text_search_index(entity_repository)
 
         # THEN
         assert len(index.index.items()) == 7221

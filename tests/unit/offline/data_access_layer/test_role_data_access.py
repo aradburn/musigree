@@ -483,50 +483,6 @@ class TestLoadAllRolesIntoCache:
     @patch("musigree.offline.data_access_layer.role_data_access.RoleCache")
     @patch("musigree.offline.data_access_layer.role_data_access.offline_transaction")
     @patch("musigree.offline.data_access_layer.role_data_access.RoleRepository")
-    @patch("musigree.offline.data_access_layer.role_data_access.LOGGING_TRACE", True)
-    @patch("musigree.offline.data_access_layer.role_data_access.log")
-    async def test_load_all_roles_into_cache_with_trace_logging(
-        self,
-        mock_log: Mock,
-        mock_role_repository_class: Mock,
-        mock_transaction: Mock,
-        mock_role_cache: Mock,
-        mock_role: Mock,
-    ) -> None:
-        """Test load_all_roles_into_cache with trace logging enabled."""
-        # Setup
-        mock_role.id = 1
-        mock_role.role_name = "Vocals"
-        mock_role.role_category = "Performance"
-
-        async def async_role_iterator() -> AsyncGenerator[Mock, None]:
-            for role in [mock_role]:
-                yield role
-
-        mock_repository = AsyncMock()
-        mock_repository.all.return_value = async_role_iterator()
-        mock_role_repository_class.return_value = mock_repository
-
-        # Setup cache mocks
-        mock_role_cache.role_id_to_role_name_lookup = {}
-        mock_role_cache.role_id_to_role_category_lookup = {}
-        mock_role_cache.role_name_to_role_id_lookup = {}
-        mock_role_cache.role_name_set = set()
-
-        # Mock the transaction context
-        mock_transaction.return_value.__aenter__ = AsyncMock()
-        mock_transaction.return_value.__aexit__ = AsyncMock()
-
-        # Test
-        await RoleDataAccess.load_all_roles_into_cache()
-
-        # Assertions - Due to async mocking issues, no roles are processed
-        # so there would be no trace logging of individual role names
-        # The method should complete without error
-
-    @patch("musigree.offline.data_access_layer.role_data_access.RoleCache")
-    @patch("musigree.offline.data_access_layer.role_data_access.offline_transaction")
-    @patch("musigree.offline.data_access_layer.role_data_access.RoleRepository")
     async def test_load_all_roles_into_cache_multiple_roles(
         self,
         mock_role_repository_class: Mock,

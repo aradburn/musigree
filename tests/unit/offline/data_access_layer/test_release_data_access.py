@@ -22,6 +22,12 @@ async def async_iterator(items: list) -> AsyncGenerator:
         yield item
 
 
+async def async_batch_iterator(items: list) -> AsyncGenerator[list, None]:
+    """Helper function to create async iterator that yields lists (like repository.all())."""
+    if items:
+        yield items
+
+
 class TestCreateEntityDetailsIndex:
     """Test class for create_entity_details_index method."""
 
@@ -33,7 +39,7 @@ class TestCreateEntityDetailsIndex:
         """Test create_entity_details_index with empty repository."""
         # Setup
         mock_repository = Mock(spec=ReleaseRepository)
-        mock_repository.all.return_value = async_iterator([])
+        mock_repository.all.return_value = async_batch_iterator([])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -62,7 +68,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -94,7 +100,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = ["Rock", "Pop"]
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -129,7 +135,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = ["Alternative Rock", "Indie Pop"]
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -164,7 +170,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -195,7 +201,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -226,7 +232,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -257,7 +263,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = None
         mock_release.styles = None
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -272,15 +278,13 @@ class TestCreateEntityDetailsIndex:
         assert result == mock_index
 
     @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
-    @patch("musigree.offline.data_access_layer.release_data_access.LoaderBase")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_bulk_reporting(
-        self, mock_loader_base: Mock, mock_entity_details_index_class: Mock
+        self, mock_entity_details_index_class: Mock
     ) -> None:
         """Test create_entity_details_index with bulk reporting."""
         # Setup
         mock_repository = Mock(spec=ReleaseRepository)
-        mock_loader_base.BULK_REPORTING_SIZE = 10
 
         # Create multiple mock releases to trigger bulk reporting
         mock_releases = []
@@ -293,7 +297,7 @@ class TestCreateEntityDetailsIndex:
             mock_release.styles = None
             mock_releases.append(mock_release)
 
-        mock_repository.all.return_value = async_iterator(mock_releases)
+        mock_repository.all.return_value = async_batch_iterator(mock_releases)
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index
@@ -332,7 +336,7 @@ class TestCreateEntityDetailsIndex:
         mock_release.genres = ["Electronic", "Ambient"]
         mock_release.styles = ["Downtempo", "Chillout"]
 
-        mock_repository.all.return_value = async_iterator([mock_release])
+        mock_repository.all.return_value = async_batch_iterator([mock_release])
 
         mock_index = Mock(spec=EntityDetailsIndex)
         mock_entity_details_index_class.return_value = mock_index

@@ -229,10 +229,7 @@ class TestWorkerEntityPassThree:
                 assert mock_worker_single.call_count == len(ids)
 
     @pytest.mark.asyncio
-    @patch(
-        "musigree.offline.loader.worker_entity_pass_three.LoaderBase.BULK_REPORTING_SIZE",
-        2,
-    )
+    @patch("musigree.constants.BULK_REPORTING_SIZE", 2)
     async def test_process_entity_pass_three_worker_with_reporting(
         self,
         caplog: pytest.LogCaptureFixture,
