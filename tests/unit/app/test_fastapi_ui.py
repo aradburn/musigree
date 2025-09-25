@@ -4,11 +4,11 @@ import pytest
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 
+from musigree.app.fastapi_dependencies import UI_DEFAULT_ROLES
 from musigree.app.fastapi_ui import (
     router,
     route__index,
     route__entity_type__entity_id,
-    UI_DEFAULT_ROLES,
 )
 from musigree.exceptions import BadRequestError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -28,18 +28,15 @@ class TestFastAPIUI:
     @patch(
         "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
     )
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_index_basic(
         self,
-        mock_parse_args: Mock,
         mock_multiselect: Mock,
         mock_roles_json: Mock,
         mock_templates: Mock,
     ) -> None:
         """Test the basic index route functionality."""
         # Setup mocks
-        mock_parse_args.return_value = None
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
@@ -48,8 +45,8 @@ class TestFastAPIUI:
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
 
-        # Call the route
-        response = await route__index(mock_request, roles=None, year=None)
+        # Call the route with UI_DEFAULT_ROLES since that's what gets set when no roles are provided
+        response = await route__index(mock_request, roles=UI_DEFAULT_ROLES, year=None)
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -71,18 +68,15 @@ class TestFastAPIUI:
     @patch(
         "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
     )
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_index_with_parameters(
         self,
-        mock_parse_args: Mock,
         mock_multiselect: Mock,
         mock_roles_json: Mock,
         mock_templates: Mock,
     ) -> None:
         """Test the index route with roles and year parameters."""
         # Setup mocks
-        mock_parse_args.return_value = (["Artist", "Album"], 2000)
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
@@ -111,11 +105,9 @@ class TestFastAPIUI:
         "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
     )
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_entity_type_entity_id_success(
         self,
-        mock_parse_args: Mock,
         mock_db_manager: Mock,
         mock_multiselect: Mock,
         mock_roles_json: Mock,
@@ -123,7 +115,6 @@ class TestFastAPIUI:
     ) -> None:
         """Test the entity route with valid parameters."""
         # Setup mocks
-        mock_parse_args.return_value = (["Artist"], 2000)
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
@@ -145,7 +136,7 @@ class TestFastAPIUI:
         # Mock the transaction context manager
         with patch("musigree.app.fastapi_ui.runtime_transaction"):
             response = await route__entity_type__entity_id(
-                mock_request, "artist", "123", roles=["Artist"], year=2000
+                mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
             )
 
         # Verify the response
@@ -159,53 +150,31 @@ class TestFastAPIUI:
         assert context["title"] == "Musigree: The Beatles"
         assert "The Beatles" in context["og_title"]
 
-    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @pytest.mark.asyncio
-    async def test_route_entity_type_entity_id_bad_entity_type(
-        self, mock_db_manager: Mock
-    ) -> None:
-        """Test the entity route with invalid entity type."""
-        # Mock the runtime_database_helper to avoid assertion error
-        mock_db_manager.runtime_database_helper = Mock()
-
-        mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
-
+    def test_get_entity_type_invalid(self) -> None:
+        """Test the get_entity_type dependency with invalid entity type."""
+        from musigree.app.fastapi_dependencies import get_entity_type
+        
         with pytest.raises(BadRequestError) as exc_info:
-            await route__entity_type__entity_id(
-                mock_request, "invalid_type", "123", roles=None, year=None
-            )
+            get_entity_type("invalid_type")
 
         assert "Bad Entity Type" in str(exc_info.value)
 
-    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @pytest.mark.asyncio
-    async def test_route_entity_type_entity_id_bad_entity_id(
-        self, mock_db_manager: Mock
-    ) -> None:
-        """Test the entity route with non-numeric entity ID."""
-        # Mock the runtime_database_helper to avoid assertion error
-        mock_db_manager.runtime_database_helper = Mock()
-
-        mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
-
+    def test_get_entity_id_invalid(self) -> None:
+        """Test the get_entity_id dependency with non-numeric entity ID."""
+        from musigree.app.fastapi_dependencies import get_entity_id
+        
         with pytest.raises(BadRequestError) as exc_info:
-            await route__entity_type__entity_id(
-                mock_request, "artist", "not_a_number", roles=None, year=None
-            )
+            get_entity_id("not_a_number")
 
         assert "Bad Entity Id" in str(exc_info.value)
 
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_entity_type_entity_id_no_network_data(
-        self, mock_parse_args: Mock, mock_db_manager: Mock
+        self, mock_db_manager: Mock
     ) -> None:
         """Test the entity route when no network data is found."""
         # Setup mocks
-        mock_parse_args.return_value = (None, None)
         mock_db_manager.runtime_database_helper.get_network = AsyncMock(
             return_value=None
         )
@@ -216,7 +185,7 @@ class TestFastAPIUI:
         with patch("musigree.app.fastapi_ui.runtime_transaction"):
             with pytest.raises(NotFoundError) as exc_info:
                 await route__entity_type__entity_id(
-                    mock_request, "artist", "123", roles=None, year=None
+                    mock_request, EntityType.ARTIST, 123, roles=[], year=None
                 )
 
         assert "No Network Data" in str(exc_info.value)
@@ -232,18 +201,15 @@ class TestFastAPIUI:
     @patch(
         "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
     )
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_index_url_generation(
         self,
-        mock_parse_args: Mock,
         mock_multiselect: Mock,
         mock_roles_json: Mock,
         mock_templates: Mock,
     ) -> None:
         """Test URL generation in the index route."""
         # Setup mocks
-        mock_parse_args.return_value = (["Artist"], 2000)
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
@@ -265,11 +231,9 @@ class TestFastAPIUI:
         "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
     )
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @patch("musigree.utils.parse_request_args")
     @pytest.mark.asyncio
     async def test_route_entity_url_generation(
         self,
-        mock_parse_args: Mock,
         mock_db_manager: Mock,
         mock_multiselect: Mock,
         mock_roles_json: Mock,
@@ -277,7 +241,6 @@ class TestFastAPIUI:
     ) -> None:
         """Test URL generation in the entity route."""
         # Setup mocks
-        mock_parse_args.return_value = (["Artist"], 2000)
         mock_multiselect.return_value = {"test": "mapping"}
         mock_roles_json.return_value = '{"role1": "data"}'
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
@@ -296,7 +259,7 @@ class TestFastAPIUI:
 
         with patch("musigree.app.fastapi_ui.runtime_transaction"):
             _response = await route__entity_type__entity_id(
-                mock_request, "artist", "123", roles=["Artist"], year=2000
+                mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
             )
 
         # Verify template context contains URL - entity route passes context directly
@@ -305,28 +268,17 @@ class TestFastAPIUI:
         assert "og_url" in context
         assert context["og_url"].startswith("/artist/123")
 
-    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
-    @pytest.mark.asyncio
-    async def test_entity_type_validation(self, mock_db_manager: Mock) -> None:
-        """Test entity type validation."""
-        # Mock the runtime_database_helper to avoid assertion error
-        mock_db_manager.runtime_database_helper = Mock()
-
-        mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
-
+    def test_entity_type_validation(self) -> None:
+        """Test entity type validation via dependency function."""
+        from musigree.app.fastapi_dependencies import get_entity_type
+        
         # Valid entity types should work
-        valid_types = ["artist", "label", "release"]
+        valid_types = ["artist", "label"]
         for entity_type in valid_types:
-            try:
-                # This should not raise for valid types
-                EntityType.from_str(entity_type.upper())
-            except NotImplementedError:
-                # If the type is not implemented, that's okay for this test
-                continue
+            # This should not raise for valid types
+            result = get_entity_type(entity_type)
+            assert result is not None
 
         # Invalid entity types should raise BadRequestError
         with pytest.raises(BadRequestError):
-            await route__entity_type__entity_id(
-                mock_request, "invalid", "123", roles=None, year=None
-            )
+            get_entity_type("invalid")
