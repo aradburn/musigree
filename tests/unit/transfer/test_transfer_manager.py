@@ -3,7 +3,6 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 
-from musigree import constants
 from musigree.exceptions import DatabaseError
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.transfer.transfer_manager import TransferManager
@@ -446,10 +445,12 @@ class TestTransferManager:
 
             # Create empty async generator for entities.all()
             class EmptyAsyncGenerator:
-                def __aiter__(self):
+                # noinspection Mypy
+                def __aiter__(self):  # type: ignore
                     return self
-                    
-                async def __anext__(self):
+
+                # noinspection Mypy
+                async def __anext__(self):  # type: ignore
                     raise StopAsyncIteration
 
             mock_offline_instance.all = Mock(return_value=EmptyAsyncGenerator())
