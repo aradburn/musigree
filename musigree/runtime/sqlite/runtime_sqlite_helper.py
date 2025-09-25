@@ -53,13 +53,14 @@ runtime operation.
 import logging
 from typing import Type
 
-from sqlalchemy import text, NullPool
+from sqlalchemy import text, StaticPool, URL, QueuePool, Pool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
+from musigree.constants import SQLITE_DRIVER_NAME
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
     RuntimeConcreteTable,
@@ -105,15 +106,37 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Get the parent folder of the database file."""
         target_parent.mkdir(parents=True, exist_ok=True)
         """Create the parent folder if it does not exist."""
-        log.info(f"Sqlite Database: {target_path}")
+        log.info(f"Sqlite Database path: {target_path}")
+
+        if config.IS_READ_ONLY:
+            query = {
+                "mode": "ro",
+                "immutable": "1",
+            }
+        else:
+            query = {}
+
+        target_url = URL.create(
+            SQLITE_DRIVER_NAME,
+            database=str(target_path),
+            query=query
+        )
+
+        log.info(f"Sqlite Database URL: {target_url}")
+
+        if config.IS_READ_ONLY:
+            poolclass: type[Pool] = QueuePool
+        else:
+            # During loading we have a single thread, so we can use a static pool
+            poolclass=StaticPool
 
         engine = create_async_engine(
-            f"sqlite+aiosqlite:///{target_path}",
+            target_url,
             connect_args={
                 "check_same_thread": False,
                 "timeout": 600,
             },
-            poolclass=NullPool,
+            poolclass=poolclass,
         )
         """Create the engine."""
         return engine
@@ -154,16 +177,25 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
                 """Log the version."""
 
-                await connection.execute(text("pragma journal_mode=WAL;"))
-                """Enable `WAL` journaling."""
-                await connection.execute(text("pragma synchronous=normal;"))
-                """Set `synchronous` to normal."""
-                await connection.execute(text("pragma journal_size_limit = 6144000;"))
-                """Set `journal_size_limit`."""
+                # Setup Sqlite
+                await connection.execute(text("pragma journal_mode=MEMORY;"))
+                await connection.execute(text("pragma journal_size_limit=6144000;"))
+                await connection.execute(text("pragma synchronous=OFF;"))
+                await connection.execute(text("pragma locking_mode=EXCLUSIVE;"))
                 await connection.execute(text("pragma cache_size=-10000;"))
-                """Set `cache_size`."""
                 await connection.execute(text("pragma temp_store=MEMORY;"))
-                """Set `temp_store` to `MEMORY`."""
+                await connection.execute(text("pragma foreign_keys=OFF;"))
+
+                # await connection.execute(text("pragma journal_mode=WAL;"))
+                # """Enable `WAL` journaling."""
+                # await connection.execute(text("pragma synchronous=normal;"))
+                # """Set `synchronous` to normal."""
+                # await connection.execute(text("pragma journal_size_limit = 6144000;"))
+                # """Set `journal_size_limit`."""
+                # await connection.execute(text("pragma cache_size=-10000;"))
+                # """Set `cache_size`."""
+                # await connection.execute(text("pragma temp_store=MEMORY;"))
+                # """Set `temp_store` to `MEMORY`."""
                 await connection.commit()
                 """Commit the operation."""
 
