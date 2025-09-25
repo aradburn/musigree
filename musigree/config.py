@@ -34,6 +34,7 @@ class Configuration(BaseSettings):
 
     # Common settings
     PRODUCTION: bool = False
+    IS_READ_ONLY: bool = False
     DEBUG: bool = True
     TESTING: bool = False
     DATA_DIR: Path = ROOT_DIR / "musigree" / "data"
@@ -176,12 +177,8 @@ class SqliteProductionConfiguration(Configuration):
     CACHE_TYPE: CacheType = CacheType.FILESYSTEM
 
     # SQLite settings
-    SQLITE_OFFLINE_DATABASE_NAME: Path = (
-        ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
-    )
-    SQLITE_RUNTIME_DATABASE_NAME: Path = (
-        ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
-    )
+    SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
+    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
 
 
 class SqliteDevelopmentConfiguration(Configuration):
@@ -197,12 +194,8 @@ class SqliteDevelopmentConfiguration(Configuration):
     CACHE_TYPE: CacheType = CacheType.FILESYSTEM
 
     # SQLite settings
-    SQLITE_OFFLINE_DATABASE_NAME: Path = (
-        ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"
-    )
-    SQLITE_RUNTIME_DATABASE_NAME: Path = (
-        ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_dev.db"
-    )
+    SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"
+    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_dev.db"
 
 
 class SqliteTestConfiguration(Configuration):
@@ -243,3 +236,27 @@ class SqliteTestConfiguration(Configuration):
         )
 
         super().__init__(**data)
+
+
+class PostgresReadOnlyProductionConfiguration(PostgresProductionConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class PostgresReadOnlyDevelopmentConfiguration(PostgresDevelopmentConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class PostgresReadOnlyTestConfiguration(PostgresTestConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyProductionConfiguration(SqliteProductionConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyDevelopmentConfiguration(SqliteDevelopmentConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyTestConfiguration(SqliteTestConfiguration):
+    IS_READ_ONLY: bool = True
