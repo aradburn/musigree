@@ -43,7 +43,7 @@ hinting and interacts with `musigree` library for specific cache and type.
 
 import logging
 
-from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
+from musigree.app.fastapi_dependencies import UI_DEFAULT_ROLES
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
 from musigree.logging_config import LOGGING_TRACE
