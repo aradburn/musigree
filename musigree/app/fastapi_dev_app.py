@@ -23,7 +23,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from musigree.app.fastapi_app import create_app
-from musigree.config import SqliteDevelopmentConfiguration
+from musigree.config import SqliteReadOnlyDevelopmentConfiguration
 
 
 def create_development_app() -> FastAPI:
@@ -38,7 +38,7 @@ def create_development_app() -> FastAPI:
     Returns:
         FastAPI: A configured FastAPI application instance ready for development.
     """
-    runtime_config = SqliteDevelopmentConfiguration()
+    runtime_config = SqliteReadOnlyDevelopmentConfiguration()
     """
     Configuration object for the runtime environment.
 

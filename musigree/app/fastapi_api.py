@@ -27,16 +27,15 @@ role information.
 import logging
 from typing import Any, cast
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from typing import Annotated
 
-import musigree.utils
-from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 
 
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.app.fastapi_dependencies import rate_limiter
+from musigree.app.fastapi_dependencies import rate_limiter, get_entity_type, get_entity_id, get_roles, get_year
 
 log = logging.getLogger(__name__)
 """
@@ -50,13 +49,11 @@ The FastAPI router for the API endpoints.
 This router is used to organize the API routes and their related functionality.
 """
 
-
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/relations/{entity_id}")
 async def route__api__entity_type__relations__entity_id(
-    entity_type_str: str,
-    entity_id: str,
-    request: Request,
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
@@ -66,9 +63,8 @@ async def route__api__entity_type__relations__entity_id(
     identified by its type and ID.
 
     Args:
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        request: The FastAPI request object.
         _: Dependency injection for rate limiting.
 
     Returns:
@@ -90,23 +86,13 @@ async def route__api__entity_type__relations__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type") from None
-
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-
-    entity_id_int = int(entity_id)
-
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
         data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
             entity_repository,
             relation_repository,
-            entity_id_int,
+            entity_id,
             entity_type,
         )
 
@@ -119,11 +105,11 @@ async def route__api__entity_type__relations__entity_id(
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/network/{entity_id}")
 async def route__api__entity_type__network__entity_id(
-    entity_type_str: str,
-    entity_id: str,
-    request: Request,
-    roles: Annotated[list[str] | None, Query()] = None,
-    year: Annotated[int | None, Query()] = None,
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    on_mobile: Annotated[bool, Query()] = False,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
@@ -133,11 +119,11 @@ async def route__api__entity_type__network__entity_id(
     identified by its type and ID. It supports filtering by roles.
 
     Args:
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        request: The FastAPI request object.
         roles: Optional list of roles to filter the network by.
         year: Optional year to filter the network by.
+        on_mobile: Optional flag indicating if the request is from a mobile device.
         _: Dependency injection for rate limiting.
 
     Returns:
@@ -159,52 +145,28 @@ async def route__api__entity_type__network__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type") from None
-
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-
-    entity_id_int = int(entity_id)
-
-    # Convert query parameters to the format expected by the existing code
-    query_params: dict[str, Any] = {}
-    if roles:
-        query_params["roles"] = roles
-    if year is not None:
-        query_params["year"] = year
-
-    parsed_args = musigree.utils.parse_request_args(query_params)
-    original_roles, original_year = parsed_args if parsed_args else (None, None)
-
-    if not original_roles:
-        original_roles = []
-
-    on_mobile = False
-
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
         data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
-            entity_id_int,
+            entity_id,
             entity_type,
             on_mobile=on_mobile,
-            roles=original_roles,
+            roles=roles,
         )
 
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(dict[str, Any], data)
+    return data
 
 
 @router.get("/search/{search_string}")
 async def route__api__search(
-    search_string: str, _: None = Depends(rate_limiter(max_requests=120, period=60))
+    search_string: str,
+    _: None = Depends(rate_limiter(max_requests=120, period=60)),
 ) -> dict[str, Any]:
     """
     Searches for entities based on a search string.
@@ -224,15 +186,14 @@ async def route__api__search(
 
     log.debug(f"search_string: {search_string}")
     data = RuntimeEntitySearch.search_entities(search_string)
-    return cast(dict[str, list[dict[str, Any]]], data)
+    return data
 
 
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/details/{entity_id}")
 async def route__api__entity_type__details__entity_id(
-    entity_type_str: str,
-    entity_id: str,
-    request: Request,
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
@@ -242,9 +203,8 @@ async def route__api__entity_type__details__entity_id(
     its metadata, aliases, groups, members, countries, genres, and styles.
 
     Args:
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        request: The FastAPI request object.
         _: Dependency injection for rate limiting.
 
     Returns:
@@ -258,21 +218,9 @@ async def route__api__entity_type__details__entity_id(
         RuntimeEntityRepository,
     )
 
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type") from None
-
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-
-    entity_id_int = int(entity_id)
-
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
-        entity = await entity_repository.get_by_entity_id_and_entity_type(
-            entity_id_int, entity_type
-        )
+        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
 
     # Convert the entity to a dictionary format suitable for API response
     entity_data = {
@@ -287,7 +235,7 @@ async def route__api__entity_type__details__entity_id(
         "styles": entity.styles,
     }
 
-    return cast(dict[str, Any], entity_data)
+    return entity_data
 
 
 @router.get("/random")
@@ -323,9 +271,7 @@ async def route__api__random(
             (
                 entity_id,
                 entity_type,
-            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
-                entity_repository
-            )
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(entity_repository)
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random", exc_info=True)
