@@ -459,7 +459,7 @@ def test_normalize_dict_list_mixed_complexity() -> None:
 def test_normalize_dict_list_boolean_and_numeric_keys() -> None:
     """Test normalize_dict_list with boolean and numeric keys."""
     input_list = [
-        {1: "one", True: "true", False: "false"},
+        {1: "one", False: "false"},
         {2: "two", False: "false2", True: "true2"},
     ]
     actual = utils.normalize_dict_list(input_list)  # type: ignore
