@@ -103,8 +103,9 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
         Returns:
             str: The URL to the asset.
         """
-        log.debug(f"dev asset: {file_path}")
-        return f"{vite_origin}/assets/{file_path}"
+        asset_path = f"{vite_origin}/assets/{file_path}"
+        log.debug(f"dev asset: {file_path} -> {asset_path}")
+        return asset_path
 
     def prod_asset(file_path: str) -> str:
         """
