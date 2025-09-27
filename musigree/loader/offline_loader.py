@@ -46,6 +46,7 @@ from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 
@@ -231,16 +232,9 @@ def offline_loader_main() -> None:
         6. Defining and executing the Luigi tasks for data loading and transfer.
     """
     setup_logging()
-    log.info("")
-    log.info("")
-    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
-    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
-    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
-    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
-    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
-    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
-    log.info("")
-    log.info("")
+
+    log_banner()
+
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
     offline_config = PostgresDevelopmentConfiguration()

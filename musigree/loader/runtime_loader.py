@@ -46,6 +46,7 @@ from musigree.runtime.data_access_layer.runtime_role_data_access import (
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.transfer.transfer_manager import TransferManager
+from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 
@@ -159,16 +160,9 @@ def runtime_loader_main() -> None:
     from musigree.transfer.transfer_task import RuntimeLoaderSetupTask
 
     setup_logging()
-    log.info("")
-    log.info("")
-    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
-    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
-    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
-    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
-    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
-    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
-    log.info("")
-    log.info("")
+
+    log_banner()
+
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
     offline_config = PostgresDevelopmentConfiguration()
