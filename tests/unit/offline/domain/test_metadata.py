@@ -5,11 +5,11 @@ This module contains comprehensive unit tests for the metadata domain objects,
 including MetadataUncommitted and Metadata classes.
 """
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
 
+# noinspection PyProtectedMember
 from musigree.offline.domain.metadata import (
     _MetadataBase,
     MetadataUncommitted,

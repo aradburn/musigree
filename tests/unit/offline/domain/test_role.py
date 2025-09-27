@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from musigree.library.fields.role_type import RoleType
+# noinspection PyProtectedMember
 from musigree.offline.domain.role import (
     _RoleBase,
     RoleUncommitted,
