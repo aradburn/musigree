@@ -56,6 +56,7 @@ from musigree.runtime.data_access_layer.runtime_role_data_access import (
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.app.fastapi_security import setup_security_middleware
 from musigree.transfer.transfer_manager import TransferManager
+from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 """The logger for the application module."""
@@ -81,6 +82,11 @@ def create_app(config: Configuration) -> FastAPI:
     from musigree.app.fastapi_api import router as api_router
     from musigree.app.fastapi_ui import router as ui_router
     from musigree.app.fastapi_assets import create_assets_router
+
+    # Setup logging
+    setup_logging()
+
+    log_banner()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> Any:
@@ -124,6 +130,8 @@ def create_app(config: Configuration) -> FastAPI:
             "https://musigree.azurewebsites.net",
             "https://www.musigree.com",  # Add your production domain
         ]
+        log.debug("Configuring CORS for production")
+        log.debug(f"Allowed origins: {allowed_origins}")
         # noinspection PyTypeChecker
         app.add_middleware(
             CORSMiddleware,
@@ -135,13 +143,17 @@ def create_app(config: Configuration) -> FastAPI:
     else:
         # Development: more permissive for local development
         # noinspection PyTypeChecker
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8080",
+            "http://127.0.0.1:5000",
+        ]
+        log.debug("Configuring CORS for development")
+        log.debug(f"Allowed origins: {allowed_origins}")
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=[
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:8080",
-            ],
+            allow_origins=allowed_origins,
             allow_methods=["*"],
             allow_headers=["*"],
         )
@@ -235,19 +247,6 @@ async def init_app(config: Configuration) -> None:
     Args:
         config: The application configuration object.
     """
-    # Setup logging
-    setup_logging()
-
-    log.info("")
-    log.info("")
-    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
-    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
-    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
-    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
-    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
-    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
-    log.info("")
-    log.info("")
 
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
