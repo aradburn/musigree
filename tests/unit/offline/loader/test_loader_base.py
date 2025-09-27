@@ -141,7 +141,7 @@ class TestProcessXml:
         mock_iterparse.return_value = [mock_element]
         mock_file = Mock()
         mock_gzip.return_value.__enter__.return_value = mock_file
-        mock_parser.tags_to_fields.side_effect = DataError("statement", "params", "orig")  # type: ignore
+        mock_parser.tags_to_fields.side_effect = DataError("statement", "params", Exception("orig"))  # type: ignore
 
         # Execute & Verify
         with pytest.raises(DataError):
