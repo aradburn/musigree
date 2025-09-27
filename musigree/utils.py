@@ -494,3 +494,17 @@ def generator_with_id_accumulator(
         _id = int(record[id_attr])
         id_accumulator.append(_id)
         yield record
+
+
+def log_banner() -> None:
+    log.info("")
+    log.info("")
+    log.info("##     ## ##     ##  ######  ####  ######   ########  ######## ########")
+    log.info("###   ### ##     ## ##    ##  ##  ##    ##  ##     ## ##       ##      ")
+    log.info("#### #### ##     ## ##        ##  ##        ##     ## ##       ##      ")
+    log.info("## ### ## ##     ##  ######   ##  ##   #### ########  ######   ######  ")
+    log.info("##     ## ##     ##       ##  ##  ##    ##  ##   ##   ##       ##      ")
+    log.info("##     ## ##     ## ##    ##  ##  ##    ##  ##    ##  ##       ##      ")
+    log.info("##     ##  #######   ######  ####  ######   ##     ## ######## ########")
+    log.info("")
+    log.info("")
