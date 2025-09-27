@@ -3,6 +3,7 @@ Unit tests for musigree.app.fastapi_app module.
 """
 
 import logging
+from typing import Union, Awaitable
 from unittest.mock import patch, AsyncMock, MagicMock, Mock
 
 import pytest
@@ -166,7 +167,7 @@ class TestExceptionHandlers:
 
         # Find the exception handler
         handler = None
-        for exc_type, exc_handler in app.exception_handlers.items():  # type: ignore
+        for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
                 break
@@ -174,7 +175,11 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        response: Response = await handler(mock_request, error)  # type: ignore
+        result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+        if hasattr(result, '__await__'):
+            response: Response = await result  # type: ignore
+        else:
+            response = result  # type: ignore
 
         # Assert
         assert isinstance(response, JSONResponse)
@@ -190,7 +195,7 @@ class TestExceptionHandlers:
 
         # Find the exception handler
         handler = None
-        for exc_type, exc_handler in app.exception_handlers.items():  # type: ignore
+        for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
                 break
@@ -198,7 +203,11 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        response: Response = await handler(mock_request, error)  # type: ignore
+        result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+        if hasattr(result, '__await__'):
+            response: Response = await result  # type: ignore
+        else:
+            response = result  # type: ignore
 
         # Assert
         assert response.status_code == 500
@@ -218,7 +227,11 @@ class TestExceptionHandlers:
         assert handler is not None, "404 handler not found"
 
         # Act
-        response: Response = await handler(mock_request, exc)  # type: ignore
+        result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        if hasattr(result, '__await__'):
+            response: Response = await result  # type: ignore
+        else:
+            response = result  # type: ignore
 
         # Assert
         assert response.status_code == 404
@@ -233,11 +246,15 @@ class TestExceptionHandlers:
         exc = Exception("Server error")
 
         # Find the 500 handler
-        handler = app.exception_handlers.get(500)  # type: ignore
+        handler = app.exception_handlers.get(500)
         assert handler is not None, "500 handler not found"
 
         # Act
-        response: Response = await handler(mock_request, exc)  # type: ignore
+        result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        if hasattr(result, '__await__'):
+            response: Response = await result  # type: ignore
+        else:
+            response = result  # type: ignore
 
         # Assert
         assert response.status_code == 500
