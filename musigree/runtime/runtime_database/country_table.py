@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import String, inspect
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,12 +33,14 @@ class CountryTable(RuntimeBase):
     The primary key of the table, an auto-incrementing integer representing
     the unique identifier for the runtime country.
     """
-    country_name: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
+    country_name: Mapped[str] = mapped_column(
+        String, index=True, unique=True, nullable=False
+    )
     """
     The name of the country (e.g., 'UK', 'France'). Indexed for faster lookup.
     """
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a CountryTable instance.
 
@@ -48,15 +52,13 @@ class CountryTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set(
-            [column.name for column in inspect(CountryTable).columns]
-        )
+        column_names = set([column.name for column in inspect(CountryTable).columns])
         superentries = {
             k: entries[k] for k in column_names.intersection(entries.keys())
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the CountryTable instance.
 
@@ -66,4 +68,4 @@ class CountryTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

@@ -31,4 +31,4 @@ class Genre(InternalDomainObject):
     id: int
     """The unique identifier for the genre."""
     genre_name: str
-    """The name of the genre.""" 
+    """The name of the genre."""

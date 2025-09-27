@@ -1,12 +1,12 @@
-from sqlalchemy import String, Enum
+from sqlalchemy import String, Enum, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 from musigree.library.fields.role_type import RoleType
 
 
-class RoleTable(Base):
+class RoleTable(OfflineBase):
     """
     Represents the 'role' table in the database.
 
@@ -33,11 +33,11 @@ class RoleTable(Base):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
     The primary key of the table, an auto-incrementing integer representing the unique identifier for the role.
     """
-    role_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    role_name: Mapped[str] = mapped_column(String, index=True, nullable=False, unique=True)
     """
     The name of the role (e.g., 'Producer', 'Remixer'). Indexed for faster lookup.
     """
@@ -45,22 +45,20 @@ class RoleTable(Base):
     """
     The main category to which the role belongs (e.g., 'Production', 'Management'). Stored as an Enum.
     """
-    role_subcategory: Mapped[RoleType.Subcategory] = mapped_column(
-        Enum(RoleType.Subcategory)
-    )
+    role_subcategory: Mapped[RoleType.Subcategory] = mapped_column(Enum(RoleType.Subcategory))
     """
     The subcategory to which the role belongs (e.g., 'Mix', 'Executive'). Stored as an Enum.
     """
-    role_category_name: Mapped[str] = mapped_column(String)
+    role_category_name: Mapped[str] = mapped_column(String, nullable=False)
     """
     The name of the main category to which the role belongs.
     """
-    role_subcategory_name: Mapped[str] = mapped_column(String)
+    role_subcategory_name: Mapped[str] = mapped_column(String, nullable=True)
     """
      The name of the subcategory to which the role belongs.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RoleTable object.
 
@@ -70,4 +68,4 @@ class RoleTable(Base):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

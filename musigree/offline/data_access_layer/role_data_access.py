@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 
 
 class RoleDataAccess:
-
     @staticmethod
     def role_name_lookup(role_name: str) -> tuple[str, int] | None:
         if role_name in RoleCache.role_name_set:
@@ -35,7 +34,7 @@ class RoleDataAccess:
             RoleCache.role_name_set,
             # score_hint=90,
         )
-        if top_role_name[1] > 90:
+        if top_role_name is not None and top_role_name[1] > 90:
             return top_role_name[0], int(top_role_name[1])
         else:
             return None
@@ -79,7 +78,7 @@ class RoleDataAccess:
             else:
                 # Long sentence makes processing too complex, so split in two
                 word_list_part_one = word_list[: len(word_list) // 2]
-                word_list_part_two = word_list[len(word_list) // 2 :]
+                word_list_part_two = word_list[len(word_list) // 2:]
                 part_1 = " ".join(word_list_part_one)
                 part_2 = " ".join(word_list_part_two)
                 queue.append(part_1)
@@ -93,7 +92,7 @@ class RoleDataAccess:
 
     @staticmethod
     @functools.lru_cache(maxsize=100000)
-    def find_role_inner(role_name: str) -> tuple[str, int] | None:
+    def find_role_inner(role_name: str | None) -> tuple[str, int] | None:
         if role_name is None or role_name == "":
             return None
 
@@ -119,17 +118,33 @@ class RoleDataAccess:
         return role_name
 
     @staticmethod
-    def load_all_roles() -> None:
-        log.info(f"Loading all roles from offline database")
+    async def load_all_roles_into_cache() -> None:
+        """
+        Loads all roles from the offline database and populates the cache.
 
+        This method retrieves all roles from the database and populates various
+        cache structures for efficient role lookups. It clears existing cache
+        data before loading new data.
+
+        The method populates the following cache structures:
+        - role_id_to_role_name_lookup: Maps role IDs to role names
+        - role_id_to_role_category_lookup: Maps role IDs to role categories
+        - role_name_to_role_id_lookup: Maps role names to role IDs
+        - role_name_set: Set of all role names
+
+        After loading the roles, it logs the number of roles loaded.
+        """
+        log.debug("Loading roles from offline RoleRepository")
         RoleCache.role_id_to_role_name_lookup.clear()
         RoleCache.role_id_to_role_category_lookup.clear()
         RoleCache.role_name_to_role_id_lookup.clear()
         RoleCache.role_name_set.clear()
 
-        with offline_transaction():
+        async with offline_transaction():
             role_repository = RoleRepository()
-            roles = list(role_repository.all())
+            roles = []
+            async for role in role_repository.all():
+                roles.append(role)
             for role in roles:
                 RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
                 RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category

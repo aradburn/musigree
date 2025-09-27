@@ -31,17 +31,19 @@ for loader-specific utilities, and `musigree.logging_config` for logging.
 
 import gzip
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABC
+from collections.abc import Iterator
 from pathlib import Path
-from typing import List, Any
+from typing import Any, Generator, Callable
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
 
 from musigree import utils
+from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
-from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.base_repository import BaseRepository
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
@@ -53,7 +55,7 @@ The logger for the LoaderBase module.
 """
 
 
-class LoaderBase:
+class LoaderBase(ABC):
     """
     Abstract base class for data loaders.
 
@@ -61,29 +63,40 @@ class LoaderBase:
     database, handling bulk operations, concurrency, and data preprocessing.
 
     Attributes:
-        BULK_INSERT_BATCH_SIZE (int): The batch size for bulk insert operations.
-        BULK_UPDATE_BATCH_SIZE (int): The batch size for bulk update operations.
-        BULK_REPORTING_SIZE (int): The number of records to process before reporting progress.
-        MAX_RETRYS (int): The maximum number of retries for database operations.
         _tags_to_fields_mapping (dict): A mapping from XML tags to database fields and procedures.
     """
 
-    BULK_INSERT_BATCH_SIZE = 1000
-    """The batch size for bulk insert operations."""
-    BULK_UPDATE_BATCH_SIZE = 100
-    """The batch size for bulk update operations."""
-    BULK_REPORTING_SIZE = 1000
-    """The number of records to process before reporting progress."""
-    # BULK_INSERT_BATCH_SIZE = 10000
-    # BULK_UPDATE_BATCH_SIZE = 1000
-    # BULK_REPORTING_SIZE = 10000
-    MAX_RETRYS = 10
-    """The maximum number of retries for database operations."""
     _tags_to_fields_mapping: dict[str, Any] | None = None
     """A mapping from XML tags to database fields and procedures."""
 
+    @staticmethod
+    def process_xml(
+        parser: ParserBase,
+        xml_path: str,
+        xml_tag: str,
+        skip_without: list[str],
+    ) -> Generator[dict[str, Any], None, None]:
+        with gzip.GzipFile(xml_path, "r") as file_pointer:
+            iterator = ParserUtils.iterparse(file_pointer, xml_tag)
+
+            for element in iterator:
+                try:
+                    data = parser.tags_to_fields(element)
+                    if skip_without:
+                        if any(not data.get(_) for _ in skip_without):
+                            continue
+                    # if element.get("id"):
+                    #     data[id_attr] = element.get("id")
+                    # log.debug(f"data: {data}")
+
+                    yield data
+
+                except DataError as e:
+                    log.exception("Error in loader_pass_one", exc_info=True)
+                    raise e
+
     @classmethod
-    def loader_pass_one_manager(
+    async def loader_pass_one_manager(
         cls,
         repository: BaseRepository,
         parser: ParserBase,
@@ -92,7 +105,7 @@ class LoaderBase:
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-        is_bulk_inserts=False,
+        is_bulk_inserts: bool = False,
     ) -> int:
         """
         Manages the first pass of the data loading process.
@@ -120,180 +133,87 @@ class LoaderBase:
 
         """
         # Loader pass one.
+        id_accumulator: list[int] = []
+        """A list to accumulate IDs of processed records."""
         set_of_updated_ids: SortedSet[int] = SortedSet()
         """A sorted set to keep track of updated IDs."""
 
-        initial_count = repository.count()
-        """The initial count of records in the database."""
+        async with offline_transaction():
+            initial_count = await repository.count()
+        log.debug(f"initial_count: {initial_count}")
 
         processed_count = 0
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
-        with gzip.GzipFile(xml_path, "r") as file_pointer:
-            iterator = ParserUtils.iterparse(file_pointer, xml_tag)
-            bulk_records = []
-            workers = []
-            for i, element in enumerate(iterator):
-                try:
-                    data = parser.tags_to_fields(element)
-                    if skip_without:
-                        if any(not data.get(_) for _ in skip_without):
-                            continue
-                    # if element.get("id"):
-                    #     data[id_attr] = element.get("id")
-                    # log.debug(f"data: {data}")
 
-                    set_of_updated_ids.add(int(data[id_attr]))
+        worker = cls.get_insert_worker_function() if is_bulk_inserts else cls.get_update_worker_function()
 
-                    bulk_records.append(data)
-                    processed_count += 1
+        records = cls.process_xml(parser, xml_path, xml_tag, skip_without)
 
-                    if OfflineDatabaseManager.get_concurrency_count() > 1:
-                        # Can do multi threading
-                        if len(bulk_records) >= LoaderBase.BULK_INSERT_BATCH_SIZE:
-                            if is_bulk_inserts:
-                                worker = cls.insert_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                )
-                            else:
-                                worker = cls.update_bulk(
-                                    bulk_records,
-                                    processed_count,
-                                )
-                            worker.start()
-                            workers.append(worker)
-                            bulk_records.clear()
-                        if (
-                            len(workers)
-                            > OfflineDatabaseManager.get_concurrency_count()
-                        ):
-                            worker = workers.pop(0)
-                            cls.loader_wait_for_worker(worker)
+        records_with_accumulated_ids = utils.generator_with_id_accumulator(records, id_accumulator, id_attr)
 
-                except DataError as e:
-                    log.exception("Error in loader_pass_one", exc_info=True)
-                    raise e
+        batch_records = utils.batched(records_with_accumulated_ids, BULK_INSERT_BATCH_SIZE)
 
-            if len(bulk_records) > 0:
-                if is_bulk_inserts:
-                    worker = cls.insert_bulk(
-                        bulk_records,
-                        processed_count,
-                    )
-                else:
-                    worker = cls.update_bulk(
-                        bulk_records,
-                        processed_count,
-                    )
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
+        worker_coroutines = utils.worker_generator(worker, batch_records, 0)
 
-            while len(workers) > 0:
-                worker = workers.pop(0)
-                cls.loader_wait_for_worker(worker)
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
-            repository_count = repository.count()
-            log.debug(f"repository_count: {repository_count}")
+        for _id in id_accumulator:
+            set_of_updated_ids.add(_id)
 
-            new_inserts_count = repository_count - initial_count
-            log.debug(f"processed_count: {processed_count}")
-            log.debug(f"new_inserts_count: {new_inserts_count}")
+        async with offline_transaction():
+            repository_count = await repository.count()
+        log.debug(f"repository_count: {repository_count}")
 
-            if xml_tag == "artist":
-                entity_type = EntityType.ARTIST
-            elif xml_tag == "label":
-                entity_type = EntityType.LABEL
-            elif xml_tag == "release":
-                entity_type = None
-            set_of_database_ids = cls.get_set_of_ids(entity_type)
+        new_inserts_count = repository_count - initial_count
+        log.debug(f"processed_count: {processed_count}")
+        log.debug(f"new_inserts_count: {new_inserts_count}")
 
-            # Check if any records need to be deleted
-            # (present in database and not present in the xml dump)
-            ids_to_be_deleted = set_of_database_ids - set_of_updated_ids
+        entity_type: EntityType | None = None
+        if xml_tag == "artist":
+            entity_type = EntityType.ARTIST
+        elif xml_tag == "label":
+            entity_type = EntityType.LABEL
 
-            log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
-            log.debug(f"number of database ids: {len(set_of_database_ids)}")
-            log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
+        set_of_database_ids: set[int] = await cls.get_set_of_ids(entity_type)
 
-            number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE / 10)
+        # Check if any records need to be deleted
+        # (present in database and not present in the xml dump)
+        ids_to_be_deleted: set[int] = set_of_database_ids - set_of_updated_ids
 
-            if len(ids_to_be_deleted) > 0:
-                workers = []
-                batched_ids_to_be_deleted = utils.batched(
-                    ids_to_be_deleted, number_in_batch
-                )
+        log.debug(f"number of update ids  : {len(set_of_updated_ids)}")
+        log.debug(f"number of database ids: {len(set_of_database_ids)}")
+        log.debug(f"number to be deleted  : {len(ids_to_be_deleted)}")
 
-                for batch_of_ids_to_be_deleted in batched_ids_to_be_deleted:
-                    worker = cls.delete_bulk(
-                        batch_of_ids_to_be_deleted,
-                        len(batch_of_ids_to_be_deleted),
-                    )
-                    worker.start()
-                    workers.append(worker)
+        if len(ids_to_be_deleted) > 0:
+            delete_worker = cls.get_delete_worker_function()
 
-                    if len(workers) > OfflineDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        cls.loader_wait_for_worker(worker)
+            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(list(ids_to_be_deleted), BULK_INSERT_BATCH_SIZE)
 
-                while len(workers) > 0:
-                    worker = workers.pop(0)
-                    cls.loader_wait_for_worker(worker)
+            worker_coroutines = utils.worker_generator(delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted))
+
+            await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
 
         return processed_count
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], processed_count: int):
-        """
-        Performs a bulk insert operation.
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
+        pass
 
-        This method is called to insert a batch of records into the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
+    @staticmethod
+    @abstractmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
+        pass
 
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The list of records to insert.
-            processed_count (int): The number of records processed so far.
-        """
+    @staticmethod
+    @abstractmethod
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:
         pass
 
     @classmethod
     @abstractmethod
-    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
-        """
-        Performs a bulk update operation.
-
-        This method is called to update a batch of records in the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
-
-        Args:
-            bulk_updates (list[dict[str, Any]]): The list of records to update.
-            processed_count (int): The number of records processed so far.
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
-        """
-        Performs a bulk delete operation.
-
-        This method is called to delete a batch of records from the database.
-        It must be implemented by subclasses to provide database-specific
-        logic.
-
-        Args:
-            bulk_deletes (list[int]): The list of IDs to delete.
-            processed_count (int): The number of records processed so far.
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def get_set_of_ids(cls, entity_type):
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         """
         Retrieves a set of IDs from the database.
 
@@ -302,27 +222,8 @@ class LoaderBase:
 
         Args:
             entity_type: The type of entity to retrieve IDs for.
+
+        Returns:
+            set[int]: The set of IDs.
         """
         pass
-
-    @classmethod
-    def loader_wait_for_worker(cls, worker) -> None:
-        """
-        Waits for a worker process to finish.
-
-        This method waits for a worker process to complete its task and checks
-        for errors.
-
-        Args:
-            worker: The worker process to wait for.
-
-        Raises:
-            RuntimeError: If the worker process exits with a non-zero exit code.
-        """
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name}")
-        worker.join()
-        worker.terminate()
-        if worker.exitcode > 0:
-            log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise RuntimeError("Error in worker process")

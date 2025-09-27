@@ -1,8 +1,9 @@
 """
 Unit tests for musigree.library.cache.role_cache module.
 """
+
 import json
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -18,7 +19,7 @@ class TestRoleCache:
     """Test cases for RoleCache class."""
 
     @staticmethod
-    def setup_method():
+    def setup_method() -> None:
         """Set up test fixtures before each test method."""
         # Clear all class variables to ensure clean state
         RoleCache.role_name_to_role_id_lookup.clear()
@@ -28,7 +29,7 @@ class TestRoleCache:
         RoleCache.role_jstree = RuntimeRoleJSTree()
         RoleCache.role_category_to_role_name_lookup.clear()
 
-    def test_class_variables_initialization(self):
+    def test_class_variables_initialization(self) -> None:
         """Test that class variables are properly initialized."""
         # Assert
         assert isinstance(RoleCache.role_name_to_role_id_lookup, dict)
@@ -38,7 +39,7 @@ class TestRoleCache:
         assert isinstance(RoleCache.role_jstree, RuntimeRoleJSTree)
         assert isinstance(RoleCache.role_category_to_role_name_lookup, dict)
 
-    def test_get_all_roles_empty(self):
+    def test_get_all_roles_empty(self) -> None:
         """Test get_all_roles with empty cache."""
         # Act
         result = RoleCache.get_all_roles()
@@ -46,7 +47,7 @@ class TestRoleCache:
         # Assert
         assert result == {"roles": []}
 
-    def test_get_all_roles_with_data(self):
+    def test_get_all_roles_with_data(self) -> None:
         """Test get_all_roles with populated cache."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Vocalist"
@@ -60,20 +61,20 @@ class TestRoleCache:
         # Assert
         assert "roles" in result
         assert len(result["roles"]) == 2
-        
+
         # Check first role
         role_1 = next(role for role in result["roles"] if role["id"] == 1)
         assert role_1["id"] == 1
         assert role_1["role_name"] == "Vocalist"
         assert role_1["role_category"] == "VOCAL"
-        
+
         # Check second role
         role_2 = next(role for role in result["roles"] if role["id"] == 2)
         assert role_2["id"] == 2
         assert role_2["role_name"] == "Guitarist"
         assert role_2["role_category"] == "INSTRUMENTS"
 
-    def test_get_all_roles_multiple_categories(self):
+    def test_get_all_roles_multiple_categories(self) -> None:
         """Test get_all_roles with multiple role categories."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Producer"
@@ -88,13 +89,13 @@ class TestRoleCache:
 
         # Assert
         assert len(result["roles"]) == 3
-        
+
         categories = [role["role_category"] for role in result["roles"]]
         assert "PRODUCTION" in categories
         assert "VOCAL" in categories
         assert "TECHNICAL" in categories
 
-    def test_get_all_roles_data_structure(self):
+    def test_get_all_roles_data_structure(self) -> None:
         """Test that get_all_roles returns proper data structure."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Test Role"
@@ -107,15 +108,15 @@ class TestRoleCache:
         assert isinstance(result, dict)
         assert "roles" in result
         assert isinstance(result["roles"], list)
-        
+
         role = result["roles"][0]
         assert isinstance(role, dict)
         assert "id" in role
         assert "role_name" in role
         assert "role_category" in role
 
-    @patch.object(RuntimeRoleJSTreeWrapper, 'model_dump_json')
-    def test_get_roles_json_success(self, mock_model_dump_json):
+    @patch.object(RuntimeRoleJSTreeWrapper, "model_dump_json")
+    def test_get_roles_json_success(self, mock_model_dump_json: Mock) -> None:
         """Test get_roles_json method."""
         # Arrange
         expected_json = '{"test": "data"}'
@@ -128,8 +129,8 @@ class TestRoleCache:
         assert result == expected_json
         mock_model_dump_json.assert_called_once()
 
-    @patch.object(RuntimeRoleJSTreeWrapper, 'model_dump_json')
-    def test_get_roles_json_wrapper_creation(self, mock_model_dump_json):
+    @patch.object(RuntimeRoleJSTreeWrapper, "model_dump_json")
+    def test_get_roles_json_wrapper_creation(self, mock_model_dump_json: Mock) -> None:
         """Test that get_roles_json creates proper wrapper."""
         # Arrange
         mock_model_dump_json.return_value = "{}"
@@ -141,7 +142,7 @@ class TestRoleCache:
         # The wrapper should be created with specific parameters
         mock_model_dump_json.assert_called_once()
 
-    def test_get_roles_json_integration(self):
+    def test_get_roles_json_integration(self) -> None:
         """Test get_roles_json integration without mocking."""
         # Act
         result = RoleCache.get_roles_json()
@@ -152,7 +153,7 @@ class TestRoleCache:
         parsed = json.loads(result)
         assert isinstance(parsed, dict)
 
-    def test_role_name_to_role_id_lookup_functionality(self):
+    def test_role_name_to_role_id_lookup_functionality(self) -> None:
         """Test role_name_to_role_id_lookup behavior."""
         # Arrange
         RoleCache.role_name_to_role_id_lookup["test_role"] = 123
@@ -161,7 +162,7 @@ class TestRoleCache:
         assert RoleCache.role_name_to_role_id_lookup["test_role"] == 123
         assert "test_role" in RoleCache.role_name_to_role_id_lookup
 
-    def test_role_name_set_functionality(self):
+    def test_role_name_set_functionality(self) -> None:
         """Test role_name_set behavior."""
         # Arrange
         RoleCache.role_name_set.add("test_role")
@@ -170,16 +171,19 @@ class TestRoleCache:
         assert "test_role" in RoleCache.role_name_set
         assert len(RoleCache.role_name_set) == 1
 
-    def test_role_category_to_role_name_lookup_functionality(self):
+    def test_role_category_to_role_name_lookup_functionality(self) -> None:
         """Test role_category_to_role_name_lookup behavior."""
         # Arrange
         RoleCache.role_category_to_role_name_lookup["VOCAL"] = ["Singer", "Vocalist"]
 
         # Act & Assert
         assert "VOCAL" in RoleCache.role_category_to_role_name_lookup
-        assert RoleCache.role_category_to_role_name_lookup["VOCAL"] == ["Singer", "Vocalist"]
+        assert RoleCache.role_category_to_role_name_lookup["VOCAL"] == [
+            "Singer",
+            "Vocalist",
+        ]
 
-    def test_role_jstree_functionality(self):
+    def test_role_jstree_functionality(self) -> None:
         """Test role_jstree behavior."""
         # Arrange
         original_jstree = RoleCache.role_jstree
@@ -197,7 +201,7 @@ class TestRoleCacheEdgeCases:
     """Test edge cases for RoleCache."""
 
     @staticmethod
-    def setup_method():
+    def setup_method() -> None:
         """Set up test fixtures before each test method."""
         # Clear all class variables to ensure clean state
         RoleCache.role_name_to_role_id_lookup.clear()
@@ -207,7 +211,7 @@ class TestRoleCacheEdgeCases:
         RoleCache.role_jstree = RuntimeRoleJSTree()
         RoleCache.role_category_to_role_name_lookup.clear()
 
-    def test_get_all_roles_missing_category(self):
+    def test_get_all_roles_missing_category(self) -> None:
         """Test get_all_roles when role_id_to_role_category_lookup is missing entry."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Test Role"
@@ -217,7 +221,7 @@ class TestRoleCacheEdgeCases:
         with pytest.raises(KeyError):
             RoleCache.get_all_roles()
 
-    def test_get_all_roles_inconsistent_data(self):
+    def test_get_all_roles_inconsistent_data(self) -> None:
         """Test get_all_roles with inconsistent data between lookups."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Role 1"
@@ -229,7 +233,7 @@ class TestRoleCacheEdgeCases:
         with pytest.raises(KeyError):
             RoleCache.get_all_roles()
 
-    def test_large_dataset(self):
+    def test_large_dataset(self) -> None:
         """Test with large dataset to ensure performance."""
         # Arrange
         for i in range(1000):
@@ -243,10 +247,15 @@ class TestRoleCacheEdgeCases:
         assert len(result["roles"]) == 1000
         assert all(role["role_category"] == "VOCAL" for role in result["roles"])
 
-    def test_role_names_with_special_characters(self):
+    def test_role_names_with_special_characters(self) -> None:
         """Test role names with special characters."""
         # Arrange
-        special_names = ["Role with spaces", "Role-with-dashes", "Role_with_underscores", "Role@#$%"]
+        special_names = [
+            "Role with spaces",
+            "Role-with-dashes",
+            "Role_with_underscores",
+            "Role@#$%",
+        ]
         for i, name in enumerate(special_names, 1):
             RoleCache.role_id_to_role_name_lookup[i] = name
             RoleCache.role_id_to_role_category_lookup[i] = RoleType.Category.VOCAL
@@ -265,7 +274,7 @@ class TestRoleCacheStaticMethods:
     """Test static methods of RoleCache."""
 
     @staticmethod
-    def setup_method():
+    def setup_method() -> None:
         """Set up test fixtures before each test method."""
         # Clear all class variables to ensure clean state
         RoleCache.role_name_to_role_id_lookup.clear()
@@ -275,7 +284,7 @@ class TestRoleCacheStaticMethods:
         RoleCache.role_jstree = RuntimeRoleJSTree()
         RoleCache.role_category_to_role_name_lookup.clear()
 
-    def test_get_all_roles_is_static(self):
+    def test_get_all_roles_is_static(self) -> None:
         """Test that get_all_roles is callable as static method."""
         # Act
         result = RoleCache.get_all_roles()
@@ -284,7 +293,7 @@ class TestRoleCacheStaticMethods:
         assert isinstance(result, dict)
         assert "roles" in result
 
-    def test_get_roles_json_is_static(self):
+    def test_get_roles_json_is_static(self) -> None:
         """Test that get_roles_json is callable as static method."""
         # Act
         result = RoleCache.get_roles_json()
@@ -292,7 +301,7 @@ class TestRoleCacheStaticMethods:
         # Assert
         assert isinstance(result, str)
 
-    def test_multiple_calls_same_result(self):
+    def test_multiple_calls_same_result(self) -> None:
         """Test that multiple calls return same result."""
         # Arrange
         RoleCache.role_id_to_role_name_lookup[1] = "Test Role"
@@ -303,4 +312,4 @@ class TestRoleCacheStaticMethods:
         result2 = RoleCache.get_all_roles()
 
         # Assert
-        assert result1 == result2 
+        assert result1 == result2

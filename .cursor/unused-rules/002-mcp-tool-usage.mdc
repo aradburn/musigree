@@ -10,12 +10,3 @@ alwaysApply: true
   planning.
 - Avoid excessive recursive calls; trigger intelligently only when new progress or significant information is possible.
 - Use **Sequential Thinking MCP** to break down complex tasks into smaller, more manageable steps.
-
-## Playwright
-- Use **Playwright MCP** for automated UI testing, web scraping, and other tasks that require browser automation.
-- **Playwright MCP** can be used to take screenshots of web pages, generate PDFs, and perform automated testing of web applications.
-- **Playwright MCP** can be used to interact with web pages, fill out forms, and click on buttons.
-- **Playwright MCP** can be used to scrape data from web pages and save it to a file or database.
-- **Playwright MCP** can be used to monitor web pages for changes and send notifications when certain conditions are met.
-- **Playwright MCP** can be used to capture console debug messages, network requests, and other information from web pages.
-- **Playwright MCP** can be used to test web applications in different browsers and environments.

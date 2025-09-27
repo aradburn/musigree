@@ -3,7 +3,7 @@ This module defines the common base for all Domain Objects.
 """
 
 import json
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,7 +15,6 @@ __all__ = [
 ]
 
 from musigree import utils
-from musigree.library.fields.entity_type import EntityType
 
 
 def to_camelcase(string: str) -> str:
@@ -38,9 +37,7 @@ def to_camelcase(string: str) -> str:
     return resp
 
 
-_json_encoders: dict[Any, Callable[[Any], Any]] = {
-    EntityType: lambda v: EntityType(v).name,
-}
+# Deprecated json_encoders replaced with field_serializer decorators in subclasses
 
 
 class InternalDomainObject(BaseModel):
@@ -57,7 +54,7 @@ class InternalDomainObject(BaseModel):
             - validate_assignment: True to validate field assignments.
             - arbitrary_types_allowed: False to disallow arbitrary types.
             - from_attributes: True to enable creating models from attributes.
-            - json_encoders: A dictionary of JSON encoders for specific types.
+
     """
 
     model_config = ConfigDict(
@@ -66,7 +63,6 @@ class InternalDomainObject(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=False,
         from_attributes=True,
-        json_encoders=_json_encoders,
     )
 
     def __repr__(self) -> str:
@@ -96,7 +92,7 @@ class PublicDomainObject(BaseModel):
             - validate_assignment: True to validate field assignments.
             - arbitrary_types_allowed: True to allow arbitrary types.
             - from_attributes: True to enable creating models from attributes.
-            - json_encoders: A dictionary of JSON encoders for specific types.
+
             - loc_by_alias: True to locate fields by alias.
             - alias_generator: The function to generate aliases for field names.
     """
@@ -107,12 +103,11 @@ class PublicDomainObject(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
         from_attributes=True,
-        json_encoders=_json_encoders,
         loc_by_alias=True,
         alias_generator=to_camelcase,
     )
 
-    def flat_dict(self, by_alias=True):
+    def flat_dict(self, by_alias: bool = True) -> dict[str, Any]:
         """
         Returns a flattened dictionary representation of the model.
 
@@ -125,7 +120,7 @@ class PublicDomainObject(BaseModel):
         Returns:
             dict: A flattened dictionary representation of the model.
         """
-        return json.loads(self.model_dump_json(by_alias=by_alias))
+        return json.loads(self.model_dump_json(by_alias=by_alias))  # type: ignore
 
 
 _PublicDomainObject = TypeVar("_PublicDomainObject", bound=PublicDomainObject)

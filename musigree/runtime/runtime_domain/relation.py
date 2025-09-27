@@ -28,17 +28,19 @@ __all__ = [
     "RuntimeRelation",
     "RuntimeRelationInternal",
     "RuntimeRelationResult",
+    "to_runtime_relation_db_dict",
 ]
 
 import logging
-from typing import Any, Self
+from typing import Any
 
+from pydantic import field_serializer
 from musigree import utils
-from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -62,6 +64,8 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
         subject (int): The ID of the subject entity.
         role_name (str): The name of the role.
         object (int): The ID of the object entity.
+        release_id (int): The release ID.
+        year (int): The release year.
     """
 
     subject: int
@@ -70,6 +74,26 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     """The name of the role."""
     object: int
     """The ID of the object entity."""
+    release_id: int
+    """The ID of the release."""
+    year: int | None = None
+    """The release year, if available."""
+
+    @staticmethod
+    def from_dicts(
+        relation_dicts: list[dict[str, Any]],
+    ) -> list["RuntimeRelationUncommitted"]:
+        relation_uncommitteds = []
+        for relation_dict in relation_dicts:
+            relation_uncommitted = RuntimeRelationUncommitted(
+                subject=relation_dict["subject"],
+                role_name=relation_dict["role"],
+                object=relation_dict["object"],
+                release_id=relation_dict["release_id"],
+                year=relation_dict["year"],
+            )
+            relation_uncommitteds.append(relation_uncommitted)
+        return relation_uncommitteds
 
 
 class RuntimeRelationDB(_RuntimeRelationBase):
@@ -84,6 +108,8 @@ class RuntimeRelationDB(_RuntimeRelationBase):
         subject (int): The ID of the subject entity.
         predicate (int): The ID of the predicate entity (role ID).
         object (int): The ID of the object entity.
+        release_id (int): The release ID.
+        year (int): The release year.
     """
 
     id: int
@@ -94,6 +120,10 @@ class RuntimeRelationDB(_RuntimeRelationBase):
     """The ID of the predicate entity (role ID)."""
     object: int
     """The ID of the object entity."""
+    release_id: int
+    """The ID of the release."""
+    year: int | None = None
+    """The release year, if available."""
 
     def to_domain(self) -> "RuntimeRelationInternal":
         """
@@ -120,7 +150,6 @@ class RuntimeRelation(_RuntimeRelationBase):
     the role and associated releases.
 
     Attributes:
-        id (int): The unique identifier for the relation.
         entity_one_id (int): The ID of the first entity.
         entity_one_type (EntityType): The type of the first entity.
         entity_two_id (int): The ID of the second entity.
@@ -129,8 +158,6 @@ class RuntimeRelation(_RuntimeRelationBase):
         releases (dict[str, int | None] | None): The releases associated with the relation.
     """
 
-    id: int
-    """The unique identifier for the relation."""
     entity_one_id: int
     """The ID of the first entity."""
     entity_one_type: EntityType
@@ -141,8 +168,13 @@ class RuntimeRelation(_RuntimeRelationBase):
     """The type of the second entity."""
     role: str
     """The role of the relation."""
-    releases: dict[str, int | None] | None = None
+    releases: dict[str, int | None] | None
     """The releases associated with the relation."""
+
+    @field_serializer("entity_one_type", "entity_two_type", when_used="json")
+    def serialize_entity_types(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     @property
     def entity_one_key(self) -> tuple[int, EntityType]:
@@ -179,6 +211,7 @@ class RuntimeRelation(_RuntimeRelationBase):
             return f"artist-{self.entity_one_id}"
         elif self.entity_one_type == EntityType.LABEL:
             return f"label-{self.entity_one_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_one_key)
 
     @property
@@ -196,6 +229,7 @@ class RuntimeRelation(_RuntimeRelationBase):
             return f"artist-{self.entity_two_id}"
         elif self.entity_two_type == EntityType.LABEL:
             return f"label-{self.entity_two_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_two_key)
 
     @property
@@ -219,6 +253,48 @@ class RuntimeRelation(_RuntimeRelationBase):
         ]
         return "-".join(str(_) for _ in pieces)
 
+    def to_db(self) -> "RuntimeRelationDB":
+        """
+        Converts the runtime relation to its database representation.
+
+        This method prepares the `RuntimeRelation` instance for storage in the
+        database by transforming its attributes into the format expected by
+        the database schema (`RuntimeRelationDB`).
+
+        Returns:
+            RuntimeRelationDB: The database representation of the runtime relation.
+        """
+        relation_dict: dict = self.model_dump()
+        return RuntimeRelationDB.model_validate(relation_dict)
+
+    @staticmethod
+    def from_relation_internals(relation_internals: list["RuntimeRelationInternal"]) -> "RuntimeRelation":
+        releases: dict[str, int | None] = {}
+        subjects: set[int] = set()
+        roles: set[str] = set()
+        objects: set[int] = set()
+        for relation_internal in relation_internals:
+            releases.update({str(relation_internal.release_id): relation_internal.year})
+            subjects.add(relation_internal.subject)
+            roles.add(relation_internal.role)
+            objects.add(relation_internal.object)
+        assert len(subjects) == 1, "relations_internals must all have the same subject"
+        assert len(roles) == 1, "relations_internals must all have the same roles"
+        assert len(objects) == 1, "relations_internals must all have the same object"
+        [_subject] = subjects
+        [_role] = roles
+        [_object] = objects
+        entity_one_id, entity_one_type = to_entity_external_id(_subject)
+        entity_two_id, entity_two_type = to_entity_external_id(_object)
+        return RuntimeRelation(
+            entity_one_id=entity_one_id,
+            entity_one_type=entity_one_type,
+            entity_two_id=entity_two_id,
+            entity_two_type=entity_two_type,
+            role=_role,
+            releases=releases,
+        )
+
 
 class RuntimeRelationResult(RuntimeRelation):
     """
@@ -228,13 +304,10 @@ class RuntimeRelationResult(RuntimeRelation):
     attributes relevant to search results, such as distance.
 
     Attributes:
-        id (int): The unique identifier for the relation.
         role (str): The role of the relation.
         distance (int | None): The distance of the relation, if available.
     """
 
-    id: int
-    """The unique identifier for the relation."""
     role: str
     """The role of the relation."""
     distance: int | None = None
@@ -270,6 +343,8 @@ class RuntimeRelationInternal(_RuntimeRelationBase):
         subject (int): The ID of the subject entity.
         role (str): The role of the relation.
         object (int): The ID of the object entity.
+        release_id (int): The release ID.
+        year (int): The year.
     """
 
     id: int
@@ -280,48 +355,40 @@ class RuntimeRelationInternal(_RuntimeRelationBase):
     """The role of the relation."""
     object: int
     """The ID of the object entity."""
+    release_id: int
+    """The ID of the release."""
+    year: int | None
+    """The release year, if available."""
 
-    def to_relation(self) -> RuntimeRelation | None:
+    @property
+    def link_key(self) -> str:
         """
-        Converts the RelationInternal instance to a Relation instance.
+        Returns the link key for the relation.
+
+        The link key is a string representation of the relation, suitable for
+        use as a unique identifier in various contexts.
 
         Returns:
-            Relation | None: The public facing representation of the relation,
-                or None if not found.
+            str: The link key for the relation.
         """
-        try:
-            entity_one_id, entity_one_type = to_entity_external_id(self.subject)
-            entity_two_id, entity_two_type = to_entity_external_id(self.object)
-            return RuntimeRelation(
-                id=self.id,
-                entity_one_id=entity_one_id,
-                entity_one_type=entity_one_type,
-                entity_two_id=entity_two_id,
-                entity_two_type=entity_two_type,
-                role=self.role,
-            )
-        except NotFoundError:
-            return None
+        _subject = self.subject
+        _object = self.object
+        _role = utils.WORD_PATTERN.sub("-", str(self.role)).lower()
+        pieces = [
+            _subject,
+            _role,
+            _object,
+        ]
+        return "-".join(str(_) for _ in pieces)
 
-    @classmethod
-    def to_relations(
-        cls,
-        relation_internals: list[Self],
-    ) -> list[RuntimeRelation]:
-        """
-        Converts a list of RelationInternal instances to a list of Relation
-        instances.
 
-        Args:
-            relation_internals (list[Self]): A list of RelationInternal
-                instances.
-
-        Returns:
-            list[Relation]: A list of public facing Relation instances.
-        """
-        relations = []
-        for relation_internal in relation_internals:
-            relation = relation_internal.to_relation()
-            if relation:
-                relations.append(relation)
-        return relations
+def to_runtime_relation_db_dict(relation_db: RelationDB) -> dict[str, Any]:
+    """
+    Converts a Relation instance to a dictionary suitable for RuntimeRelationDB.
+    Args:
+        relation_db (RelationDB): The RelationDB instance to convert.
+    Returns:
+        dict[str, Any]: The dictionary representation of the RuntimeRelationDB.
+    """
+    runtime_relation_db = RuntimeRelationDB(**relation_db.model_dump())
+    return runtime_relation_db.model_dump()

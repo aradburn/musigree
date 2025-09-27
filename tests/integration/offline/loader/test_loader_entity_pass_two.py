@@ -1,16 +1,24 @@
+from typing import AsyncGenerator
+
+import pytest
+
 from musigree.offline.database.entity_repository import EntityRepository
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from musigree.offline.database.offline_transaction import offline_transaction
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestLoaderEntityPassTwo(OfflineDatabaseTestCase):
-    def test_loader_entity_pass_two(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestLoaderEntityPassTwo(AbstractDatabaseTest):
+    @pytest.mark.asyncio
+    async def test_loader_entity_pass_two(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
 
         # WHEN
-        actual = EntityRepository().count()
+        async with offline_transaction():
+            actual = await EntityRepository().count()
 
         # THEN
         expected = 6216
-        self.assertEqual(expected, actual)
+        assert actual == expected

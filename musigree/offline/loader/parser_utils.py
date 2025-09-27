@@ -28,9 +28,10 @@ operations, `re` for regular expressions, `Optional` for type hinting,
 """
 
 import datetime
+import gzip
 import logging
 import re
-from typing import List
+from typing import Iterator, IO
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -78,7 +79,7 @@ class ParserUtils:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def clean_elements(elements: List[Element]):
+    def clean_elements(elements: Iterator[Element]) -> Iterator[Element]:
         """
         Cleans a list of XML elements by removing unwanted tags.
 
@@ -269,7 +270,7 @@ class ParserUtils:
         return None
 
     @staticmethod
-    def iterparse(source, tag: str):
+    def iterparse(source: IO | gzip.GzipFile, tag: str) -> Iterator[Element]:
         """
         Provides an iterator for parsing XML, yielding elements with a specific tag.
 

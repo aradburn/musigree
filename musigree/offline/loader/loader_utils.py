@@ -49,8 +49,8 @@ import glob
 import gzip
 import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
-from typing import List
 
 from musigree.offline.loader.parser_utils import ParserUtils
 
@@ -107,7 +107,7 @@ class LoaderUtils:
         return full_path_files
 
     @staticmethod
-    def get_role_paths(roles_directory: Path) -> List[str]:
+    def get_role_paths(roles_directory: Path) -> list[str]:
         """
         Gets a list of paths to role CSV files.
 
@@ -134,7 +134,7 @@ class LoaderUtils:
         return full_path_files
 
     @staticmethod
-    def get_iterator(discogs_data_directory: Path, tag: str, date: str):
+    def get_iterator(discogs_data_directory: Path, tag: str, date: str) -> Iterator:
         """
         Creates an iterator for parsing a Discogs XML dump file.
 

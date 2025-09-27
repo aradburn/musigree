@@ -6,7 +6,6 @@ log = logging.getLogger(__name__)
 
 
 class RoleDataUtils:
-
     # REGEXs
     SPLIT_CHARACTERS = re.compile(r" & |&|＆| and | And |/|; |\+| - |・| Und | Et ")
     A_N_R = re.compile(r"\b[aA] ?(&|and|And|\+) ?[rR]\b")
@@ -67,7 +66,6 @@ class RoleDataUtils:
 
     @staticmethod
     def normalise_role_names(input_name: str) -> list[str]:
-
         # Remove anything in brackets, quotes and parenthesis
         input_name = re.sub(RoleDataUtils.BRACKETS, "", input_name)
         input_name = re.sub(RoleDataUtils.QUOTES, "", input_name)
@@ -173,24 +171,24 @@ class RoleDataUtils:
     @staticmethod
     @functools.lru_cache(maxsize=100000)
     def normalise_role_name(input_name: str) -> str:
-        def upper(matches):
+        def upper(matches: re.Match[str]) -> str:
             return matches.group(1).upper()
 
-        def to_upper(matches):
+        def to_upper(matches: re.Match[str]) -> str:
             return matches.group(1) + matches.group(2).upper()
 
-        def to_lower(matches):
+        def to_lower(matches: re.Match[str]) -> str:
             return matches.group(1) + matches.group(2).lower()
 
-        def to_lower_upper(matches):
+        def to_lower_upper(matches: re.Match[str]) -> str:
             return matches.group(1).lower() + matches.group(2).upper()
 
         # noinspection PyUnusedLocal
-        def lower(matches):
+        def lower(matches: re.Match[str]) -> str:
             return matches.group(1).lower()
 
         # noinspection PyUnusedLocal
-        def capitalize(matches):
+        def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 
         if (

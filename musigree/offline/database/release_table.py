@@ -1,11 +1,11 @@
-from sqlalchemy import String, JSON, Integer, Date
+from sqlalchemy import String, Integer, Date, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 
 
-class ReleaseTable(Base):
+class ReleaseTable(OfflineBase):
     """
     Represents the 'release' table in the database.
 
@@ -50,7 +50,7 @@ class ReleaseTable(Base):
 
     # COLUMNS
 
-    release_id: Mapped[int] = mapped_column(primary_key=True)
+    release_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
     The primary key of the table, representing the unique identifier for the release.
     """
@@ -101,7 +101,7 @@ class ReleaseTable(Base):
     Information about the tracks included in the release. Stored as a JSON object.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the ReleaseTable object.
 
@@ -111,4 +111,4 @@ class ReleaseTable(Base):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

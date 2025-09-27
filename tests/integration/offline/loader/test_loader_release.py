@@ -1,4 +1,3 @@
-import unittest
 from xml.etree import ElementTree
 
 from musigree import utils
@@ -8,8 +7,8 @@ from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
 
 
-class TestLoaderRelease(unittest.TestCase):
-    def test_release_xml_parse(self):
+class TestLoaderRelease:
+    def test_release_xml_parse(self) -> None:
         # GIVEN
         source = utils.normalize(
             """
@@ -167,9 +166,9 @@ class TestLoaderRelease(unittest.TestCase):
             ],
         }
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_from_element_01(self):
+    def test_release_from_element_01(self) -> None:
         # GIVEN
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -242,9 +241,9 @@ class TestLoaderRelease(unittest.TestCase):
             ],
         }
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_release_from_element_02(self):
+    def test_release_from_element_02(self) -> None:
         # GIVEN
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -342,4 +341,4 @@ class TestLoaderRelease(unittest.TestCase):
             ],
         }
         expected = utils.normalize_dict(expected_release)
-        self.assertEqual(expected, actual)
+        assert actual == expected

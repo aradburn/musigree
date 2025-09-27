@@ -1,14 +1,15 @@
 import logging
-from typing import cast
+from typing import cast, Any
 
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class RuntimeEntityDataAccess:
     CACHE_KEY_SEPARATOR = "_"
 
     @staticmethod
-    def roles_to_relation_count(entity: RuntimeEntity, roles) -> int:
+    def roles_to_relation_count(entity: RuntimeEntity, roles: list[str]) -> int:
         count = 0
         relation_counts = entity.relation_counts or {}
         for role in roles:
@@ -45,7 +46,7 @@ class RuntimeEntityDataAccess:
 
     @staticmethod
     def structural_roles_to_relations(
-        entity: RuntimeEntity, roles
+        entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
         # log.debug(f"            structural_roles_to_relations entity: {self}")
         # log.debug(
@@ -61,7 +62,6 @@ class RuntimeEntityDataAccess:
                         continue
                     ids = sorted((entity_id, entity.entity_id))
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=ids[0],
                         entity_one_type=entity.entity_type,
                         entity_two_id=ids[1],
@@ -78,7 +78,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity_id,
@@ -93,7 +92,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity.entity_id,
@@ -110,7 +108,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity_id,
@@ -125,7 +122,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity.entity_id,
@@ -139,7 +135,7 @@ class RuntimeEntityDataAccess:
         return relations
 
     @staticmethod
-    def get_id_by_entity_type_and_entity_name(
+    async def get_id_by_entity_type_and_entity_name(
         entity_repository: RuntimeEntityRepository,
         entity_type: EntityType,
         entity_name: str,
@@ -150,7 +146,7 @@ class RuntimeEntityDataAccess:
             f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
         )
 
-        id_ = cache.get(entity_key_str)
+        id_: int | None = cache.get(entity_key_str)
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
 
@@ -159,13 +155,15 @@ class RuntimeEntityDataAccess:
         if id_ is None:
             # log.debug(f"not cached, try db")
             try:
-                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
+                internal_id = (
+                    await entity_repository.get_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
                 )
                 # Store the internal id, not entity_id
-                cache.set(entity_key_str, int_id)
+                cache.set(entity_key_str, internal_id)
                 # log.debug(f"cache set for {key_str} -> {int_id}")
-                id_ = int_id
+                id_ = internal_id
 
             except NotFoundError:
                 if LOGGING_TRACE:
@@ -176,3 +174,18 @@ class RuntimeEntityDataAccess:
                 cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
 
         return id_
+
+    @staticmethod
+    def get_runtime_entity_dicts_from_entities(entity_list: list[Entity]) -> list[dict[str, Any]]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        assert RuntimeDatabaseManager.runtime_database_helper.entity_details_index is not None
+
+        runtime_entity_dict_list: list[dict[str, Any]] = []
+
+        for entity in entity_list:
+            runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+            runtime_entity_dict_list.append(runtime_entity_dict)
+
+        return runtime_entity_dict_list

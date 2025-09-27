@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from typing import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -17,7 +17,7 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
     """
     Repository for managing Country objects in the runtime database.
 
-    This class provides methods for interacting with the CountryTable
+    This class provides async methods for interacting with the CountryTable
     in the runtime database, including creating, retrieving countries by ID or
     name, and getting all countries.
 
@@ -32,23 +32,22 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
     schema_class = CountryTable
     """The SQLAlchemy table class for runtime countries."""
 
-    def all(self) -> Iterator[Country]:
+    async def all(self) -> AsyncGenerator[Country, None]:
         """
         Retrieves all countries from the runtime database.
 
         Yields:
-            Iterator[Country]: An iterator yielding each country.
+            AsyncGenerator[Country]: An async iterator yielding each country.
         """
-        for instance in self._all():
-            # async for instance in self._all():
+        async for instance in self._all():
             yield Country.model_validate(instance)
 
-    def get(self, country_id: int) -> Country:
+    async def get_by_id(self, id_: int) -> Country:
         """
         Retrieves a country by its ID.
 
         Args:
-            country_id: The ID of the country to retrieve.
+            id_: The ID of the country to retrieve.
 
         Returns:
             Country: The retrieved country.
@@ -56,17 +55,16 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
         Raises:
             NotFoundError: If no country is found with the given ID.
         """
-        query = select(CountryTable).where(CountryTable.id == country_id)
+        query = select(CountryTable).where(CountryTable.id == id_)
 
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
         return Country.model_validate(instance)
 
-    def get_by_name(self, name: str) -> Country:
+    async def get_by_name(self, name: str) -> Country:
         """
         Retrieves a country by its name.
 
@@ -79,30 +77,23 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
         Raises:
             NotFoundError: If no country is found with the given name.
         """
-
         query = select(CountryTable).where(CountryTable.country_name == name)
-
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
 
-        country = Country.model_validate(instance)
-        """Validate the DB result into the Domain object"""
+        return Country.model_validate(instance)
 
-        return country
-
-    def create(self, country: Country) -> Country:
+    async def create(self, country: Country) -> Country:
         """
         Creates a new country in the runtime database.
 
         Args:
-            country: The Country object representing the country to create.
+            country: The Country object to create.
 
         Returns:
             Country: The created country.
         """
-        instance: CountryTable = self._save(country.model_dump())
-        # instance: CountryTable = await self._save(schema.model_dump())
+        instance: CountryTable = await self._save(country.model_dump())
         return Country.model_validate(instance)

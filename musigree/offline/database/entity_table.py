@@ -1,13 +1,13 @@
-from sqlalchemy import String, JSON, Index, Integer
+from sqlalchemy import String, Index, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.int_enum import IntEnum
 
 
-class EntityTable(Base):
+class EntityTable(OfflineBase):
     """
     Represents the 'entity' table in the database.
 
@@ -33,11 +33,11 @@ class EntityTable(Base):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
      The primary key of the table, an auto-incrementing integer.
     """
-    entity_id: Mapped[int] = mapped_column(Integer)
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
     """
     The external ID of the entity (e.g., from Discogs).
     """
@@ -87,7 +87,7 @@ class EntityTable(Base):
         - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type columns.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the EntityTable object.
 
@@ -97,4 +97,4 @@ class EntityTable(Base):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

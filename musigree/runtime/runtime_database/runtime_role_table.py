@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import String, Enum, inspect
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -66,7 +68,7 @@ class RuntimeRoleTable(RuntimeBase):
     role_subcategory_name: Mapped[str] = mapped_column(String)
     """The name of the subcategory to which the role belongs."""
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a RuntimeRoleTable instance.
 
@@ -86,7 +88,7 @@ class RuntimeRoleTable(RuntimeBase):
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RuntimeRoleTable instance.
 
@@ -96,4 +98,4 @@ class RuntimeRoleTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

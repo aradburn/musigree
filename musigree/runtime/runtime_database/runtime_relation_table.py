@@ -1,13 +1,13 @@
+from typing import Any
+
 from sqlalchemy import (
-    ForeignKey,
-    Index,
     Integer,
     inspect,
+    Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.runtime.runtime_database import RuntimeRoleTable
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
@@ -43,15 +43,19 @@ class RuntimeRelationTable(RuntimeBase):
     The primary key of the table, an auto-incrementing integer representing
     the unique identifier for the relation.
     """
-    subject: Mapped[int] = mapped_column(Integer)
+    subject: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the subject entity in the relation."""
-    predicate: Mapped[int] = mapped_column(ForeignKey(RuntimeRoleTable.id))
+    predicate: Mapped[int] = mapped_column(Integer, nullable=False)
     """
     The ID of the role (predicate) defining the relation. This is a foreign key
     referencing the RuntimeRoleTable.
     """
-    object: Mapped[int] = mapped_column(Integer)
+    object: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the object entity in the relation."""
+    release_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    """The ID of the release associated with this entry."""
+    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    """The year of the release."""
 
     __table_args__: tuple[Index, Index, dict] = (
         Index(
@@ -72,7 +76,7 @@ class RuntimeRelationTable(RuntimeBase):
         - idx_runtime_relation_object: A non-unique index on the object column.
     """
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a RuntimeRelationTable instance.
 
@@ -92,7 +96,7 @@ class RuntimeRelationTable(RuntimeBase):
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RuntimeRelationTable instance.
 
@@ -102,4 +106,4 @@ class RuntimeRelationTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

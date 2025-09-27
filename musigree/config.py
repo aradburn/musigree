@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -33,6 +34,7 @@ class Configuration(BaseSettings):
 
     # Common settings
     PRODUCTION: bool = False
+    IS_READ_ONLY: bool = False
     DEBUG: bool = True
     TESTING: bool = False
     DATA_DIR: Path = ROOT_DIR / "musigree" / "data"
@@ -90,7 +92,7 @@ class PostgresProductionConfiguration(Configuration):
         description="PostgreSQL offline database name from environment variable",
     )
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         """Set values from environment variables if not provided in constructor."""
         if self.POSTGRES_DATABASE_USERNAME is None:
             self.POSTGRES_DATABASE_USERNAME = os.getenv("MUSIGREE_DATABASE_USERNAME")
@@ -142,7 +144,7 @@ class PostgresTestConfiguration(Configuration):
     POSTGRES_RUNTIME_DATABASE_NAME: str = "test_runtime_musigree"
     POSTGRES_ROOT: str = "/usr/lib/postgresql/17"
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         # Generate random strings before init
         self._offline_random_string = utils.get_random_string(5)
         self._runtime_random_string = utils.get_random_string(5)
@@ -175,12 +177,8 @@ class SqliteProductionConfiguration(Configuration):
     CACHE_TYPE: CacheType = CacheType.FILESYSTEM
 
     # SQLite settings
-    SQLITE_OFFLINE_DATABASE_NAME: Path = (
-        ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
-    )
-    SQLITE_RUNTIME_DATABASE_NAME: Path = (
-        ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
-    )
+    SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
+    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
 
 
 class SqliteDevelopmentConfiguration(Configuration):
@@ -196,12 +194,8 @@ class SqliteDevelopmentConfiguration(Configuration):
     CACHE_TYPE: CacheType = CacheType.FILESYSTEM
 
     # SQLite settings
-    SQLITE_OFFLINE_DATABASE_NAME: Path = (
-        ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"
-    )
-    SQLITE_RUNTIME_DATABASE_NAME: Path = (
-        ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_dev.db"
-    )
+    SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"
+    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_dev.db"
 
 
 class SqliteTestConfiguration(Configuration):
@@ -224,7 +218,7 @@ class SqliteTestConfiguration(Configuration):
     SQLITE_OFFLINE_DATABASE_NAME: Path | None = None
     SQLITE_RUNTIME_DATABASE_NAME: Path | None = None
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         # Generate random strings before init
         self._offline_random_string = utils.get_random_string(5)
         self._runtime_random_string = utils.get_random_string(5)
@@ -242,3 +236,27 @@ class SqliteTestConfiguration(Configuration):
         )
 
         super().__init__(**data)
+
+
+class PostgresReadOnlyProductionConfiguration(PostgresProductionConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class PostgresReadOnlyDevelopmentConfiguration(PostgresDevelopmentConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class PostgresReadOnlyTestConfiguration(PostgresTestConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyProductionConfiguration(SqliteProductionConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyDevelopmentConfiguration(SqliteDevelopmentConfiguration):
+    IS_READ_ONLY: bool = True
+
+
+class SqliteReadOnlyTestConfiguration(SqliteTestConfiguration):
+    IS_READ_ONLY: bool = True

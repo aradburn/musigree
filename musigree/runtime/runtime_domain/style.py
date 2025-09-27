@@ -31,4 +31,4 @@ class Style(InternalDomainObject):
     id: int
     """The unique identifier for the style."""
     style_name: str
-    """The name of the style.""" 
+    """The name of the style."""

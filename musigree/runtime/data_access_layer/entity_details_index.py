@@ -1,5 +1,8 @@
 import logging
+import pickle
 import re
+from pathlib import Path
+from typing import Self
 
 from musigree.utils import calculate_size
 
@@ -44,8 +47,10 @@ class EntityDetailsIndex:
     @staticmethod
     def split_country(country: str) -> list[str]:
         # Match regex pattern for country names that should not be split
-        if match := re.search(r"(.*),(\s*)(Democratic Republic of the|Republic of the|Republic of|Isle of|The)$",
-                              country):
+        if match := re.search(
+            r"(.*),(\s*)(Democratic Republic of the|Republic of the|Republic of|Isle of|The)$",
+            country,
+        ):
             country = match.group(3).strip() + " " + match.group(1).strip()
         return re.split(r"[&,/]", country)
 
@@ -139,7 +144,8 @@ class EntityDetailsIndex:
         entity_countries_strs = [
             self.countries_list[country_index] for country_index in entity_countries
         ]
-        return ",".join(entity_countries_strs)
+        sorted_entity_countries_strs = sorted(entity_countries_strs)
+        return ",".join(sorted_entity_countries_strs)
 
     def get_genres_for_id(self, id_: int) -> str | None:
         """
@@ -158,7 +164,8 @@ class EntityDetailsIndex:
         entity_genres_strs = [
             self.genres_list[genre_index] for genre_index in entity_genres
         ]
-        return ",".join(entity_genres_strs)
+        sorted_entity_genres_strs = sorted(entity_genres_strs)
+        return ",".join(sorted_entity_genres_strs)
 
     def get_styles_for_id(self, id_: int) -> str | None:
         """
@@ -177,7 +184,8 @@ class EntityDetailsIndex:
         entity_styles_strs = [
             self.styles_list[style_index] for style_index in entity_styles
         ]
-        return ",".join(entity_styles_strs)
+        sorted_entity_styles_strs = sorted(entity_styles_strs)
+        return ",".join(sorted_entity_styles_strs)
 
     def print_sizes(self) -> None:
         """
@@ -224,3 +232,33 @@ class EntityDetailsIndex:
         log.debug("\n")
         # for entry in self.entity_styles.items():
         #     print(entry)
+
+    def save_entity_details_index_to_file(self, filename: Path) -> None:
+        log.debug(f"save entity details index to file: {filename}")
+
+        # open a file to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(self, file)
+
+    @classmethod
+    def load_entity_details_index_from_file(cls, filename: Path) -> Self:
+        """
+        Loads a EntityDetailsIndex from a pickled file.
+
+        Args:
+            filename: The path to the pickled file.
+
+        Returns:
+            Self: The loaded EntityDetailsIndex.
+        """
+        log.debug(f"load entity details index from file: {filename}")
+
+        # open a file, where you stored the pickled data
+        with open(filename, "rb") as file:
+            # read pickle dump information from that file
+            entity_details_index: EntityDetailsIndex = pickle.load(file)
+
+        # noinspection Mypy
+        return entity_details_index  # type: ignore

@@ -1,25 +1,46 @@
 import logging
+from typing import Any
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.domain.relation import RelationDB
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_domain.relation import RuntimeRelation, RuntimeRelationInternal
+from musigree.runtime.runtime_domain.relation import (
+    RuntimeRelation,
+    RuntimeRelationInternal,
+    to_runtime_relation_db_dict,
+)
 
 log = logging.getLogger(__name__)
 
 
 class RuntimeRelationDataAccess:
     @classmethod
-    def search_multi(
+    async def search_multi(
         cls,
         *,
         relation_repository: RuntimeRelationRepository,
         entity_keys: list[tuple[int, EntityType]],
         role_names: list[str],
     ) -> list[RuntimeRelation]:
+        """
+        Searches for relations involving multiple entities and specific roles.
+
+        This method takes a list of entity keys and role names, and returns
+        all relations that involve any of the specified entities in any of
+        the specified roles.
+
+        Args:
+            relation_repository: The repository to use for database operations.
+            entity_keys: List of (entity_id, entity_type) tuples to search for.
+            role_names: List of role names to filter by.
+
+        Returns:
+            list[RuntimeRelation]: List of relations matching the criteria.
+        """
         assert entity_keys
         assert role_names
 
@@ -35,18 +56,28 @@ class RuntimeRelationDataAccess:
             #     entity_id, entity_type
             # )
             # log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
-            entity_relations = relation_repository.find_by_entity_and_roles(
+            entity_relations = await relation_repository.find_by_entity_and_roles(
                 _id, role_ids
             )
             # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)
 
-        relations = []
+        # Group relation_internals by link_key
+        relations_map: dict[str, list[RuntimeRelationInternal]] = {}
         for relation_internal in relation_internals:
-            if relation_internal is not None:
-                relation = relation_internal.to_relation()
-                if relation is not None:
-                    relations.append(relation)
+            key = relation_internal.link_key
+            if key in relations_map:
+                relation_internal_list = relations_map[key]
+            else:
+                relation_internal_list = []
+            relation_internal_list.append(relation_internal)
+            relations_map.update({key: relation_internal_list})
+
+        relations: list[RuntimeRelation] = []
+        for relation_internals in relations_map.values():
+            relation = RuntimeRelation.from_relation_internals(relation_internals)
+            relations.append(relation)
+
         # log.debug(f"    -> relations: {relations}")
         return relations
 
@@ -114,3 +145,14 @@ class RuntimeRelationDataAccess:
     #     # relation_links = {relation.link_key: relation for relation in relations}
     #     # log.debug(f"relation_links: {relation_links}")
     #     # return relation_links
+
+    @staticmethod
+    def get_runtime_relation_dicts_from_relations(relation_dbs: list[RelationDB]) -> list[dict[str, Any]]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        runtime_relation_dict_list: list[dict[str, Any]] = []
+        for relation_db in relation_dbs:
+            runtime_relation_dict = to_runtime_relation_db_dict(relation_db)
+            runtime_relation_dict_list.append(runtime_relation_dict)
+        return runtime_relation_dict_list

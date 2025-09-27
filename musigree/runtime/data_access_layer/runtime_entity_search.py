@@ -20,22 +20,21 @@ log = logging.getLogger(__name__)
 
 class RuntimeEntitySearch:
     @staticmethod
-    def search_entities(search_string):
-
+    def search_entities(search_string: str) -> dict[str, tuple[dict[str, str], ...]]:
         cache = CacheManager.get_cache()
 
         normalised_search_string = normalise_search_content(search_string)
 
         search_query_url = URLIFY_REGEX.sub("+", normalised_search_string)
         cache_key = f"musigree:/api/search/{search_query_url}"
-        # log.debug(f"  get cache_key: {cache_key}")
-        data = cache.get(cache_key)
-        if data is not None:
+        result_data: dict[str, tuple[dict[str, str], ...]] = cache.get(cache_key)
+        if result_data is not None:
             log.debug(f"{cache_key}: CACHED")
-            # for datum in data["results"]:
-            #     log.debug(f"    {datum}")
-            return data
+            return result_data
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "RuntimeDatabaseManager.runtime_database_helper is not set."
+        )
         documents = RuntimeDatabaseManager.runtime_database_helper.search_text_index(
             normalised_search_string
         )
@@ -46,7 +45,7 @@ class RuntimeEntitySearch:
         )
 
         # log.debug(f"{cache_key}: NOT CACHED")
-        data = []
+        data: list[dict[str, str]] = []
         for document in sorted_documents:
             entity_id, entity_type = to_entity_external_id(document[0])
             json_entity_key = RuntimeEntity.to_json_entity_key(entity_id, entity_type)
@@ -56,10 +55,10 @@ class RuntimeEntitySearch:
             )
             data.append(datum)
             log.debug(f"    {datum}")
-        data = {"results": tuple(data)}
+        result_data = {"results": tuple(data)}
         # log.debug(f"  set cache_key: {cache_key} data: {data}")
-        cache.set(cache_key, data)
-        return data
+        cache.set(cache_key, result_data)
+        return result_data
 
     @staticmethod
     def sort_search_results(

@@ -1,11 +1,12 @@
 import logging
-from collections.abc import Iterator
-from typing import Any, Generic, Type
+from typing import Any, Generic, Type, AsyncGenerator
 
-from sqlalchemy import asc, delete, desc, func, select, update
+from sqlalchemy import delete, func, select, update, insert
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
+
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from musigree.offline.database.base_table import ConcreteTable
@@ -17,10 +18,10 @@ log = logging.getLogger(__name__)
 class BaseRepository(OfflineSession, Generic[ConcreteTable]):
     """
     This class implements the base interface for working with a database and provides
-    a set of common database operations. It's designed to be subclassed by more specific
+    a set of common async database operations. It's designed to be subclassed by more specific
     repository classes, allowing for type-safe interactions with the database.
 
-    The Session class implements the database interaction layer.
+    The Session class implements the async database interaction layer.
 
     Attributes:
         schema_class (Type[ConcreteTable]): The SQLAlchemy table class that this
@@ -43,7 +44,9 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 message="Can not initiate the class without schema_class attribute"
             )
 
-    def _update(self, key: str, value: Any, payload: dict[str, Any]) -> ConcreteTable:
+    async def _update(
+        self, key: str, value: Any, payload: dict[str, Any]
+    ) -> ConcreteTable:
         """
         Updates an existing instance of the model in the related table.
 
@@ -70,16 +73,16 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 .values(payload)
                 .returning(self.schema_class)
             )
-            result: Result = self.execute(query)
-        except self._ERRORS:
-            raise DatabaseError
+            result: Result = await self.execute(query)
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
         if not (schema := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        return schema  # type: ignore
 
-    def _get(self, key: str, value: Any) -> ConcreteTable:
+    async def _get(self, key: str, value: Any) -> ConcreteTable:
         """
         Retrieves a single record from the database that matches the given criteria.
 
@@ -98,14 +101,14 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         query = select(self.schema_class).where(
             getattr(self.schema_class, key) == value
         )
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """
         Counts the total number of records in the table.
 
@@ -116,7 +119,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             UnprocessableError: If the count function returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -129,51 +132,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         return value
 
-    def _first(self, by: str = "id") -> ConcreteTable:
-        """
-        Retrieves the first record from the table, ordered by the specified column.
-
-        Args:
-            by: The name of the column to order by (defaults to "id").
-
-        Returns:
-            ConcreteTable: The first database row as an object.
-
-        Raises:
-            NotFoundError: If no records are found.
-        """
-        result: Result = self.execute(
-            select(self.schema_class).order_by(asc(by)).limit(1)
-        )
-
-        if not (_result := result.scalar_one_or_none()):
-            raise NotFoundError
-
-        return _result
-
-    def _last(self, by: str = "id") -> ConcreteTable:
-        """
-        Retrieves the last record from the table, ordered by the specified column.
-
-        Args:
-            by: The name of the column to order by (defaults to "id").
-
-        Returns:
-            ConcreteTable: The last database row as an object.
-
-        Raises:
-            NotFoundError: If no records are found.
-        """
-        result: Result = self.execute(
-            select(self.schema_class).order_by(desc(by)).limit(1)
-        )
-
-        if not (_result := result.scalar_one_or_none()):
-            raise NotFoundError
-
-        return _result
-
-    def _save(self, payload: dict[str, Any]) -> ConcreteTable:
+    async def _save(self, payload: dict[str, Any]) -> ConcreteTable:
         """
         Saves a new record to the database.
 
@@ -189,13 +148,13 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         try:
             schema = self.schema_class(**payload)
             self._session.add(schema)
-            self._session.flush()
-            self._session.refresh(schema)
+            await self._session.flush()
+            await self._session.refresh(schema)
             return schema
-        except self._ERRORS:
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
-    def save_all(self, payloads: list[dict[str, Any]]) -> None:
+    async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
         Saves multiple new records to the database in a single transaction.
 
@@ -207,27 +166,29 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             DatabaseError: If there is an error during the database operation.
         """
         try:
-            instances = [self.schema_class(**payload) for payload in payloads]
-            self._session.add_all(instances)
-            self._session.flush()
-        except self._ERRORS:
-            raise DatabaseError
+            await self._session.execute(
+                insert(self.schema_class),
+                payloads,
+            )
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
-    def _all(self) -> Iterator[ConcreteTable]:
+    async def _all(self) -> AsyncGenerator[ConcreteTable, None]:
         """
         Retrieves all records from the table.
 
         Yields:
-            Iterator[ConcreteTable]: A iterator that yields each
+            AsyncGenerator[ConcreteTable]: An async iterator that yields each
                 database row as an object.
         """
-        result: Result = self.execute(select(self.schema_class))
+        query = select(self.schema_class)
+        result: Result = await self.execute(query)
         schemas = result.scalars().all()
 
         for schema in schemas:
             yield schema
 
-    def delete(self, id_: int) -> None:
+    async def delete(self, id_: int) -> None:
         """
         Deletes a record from the table by its ID.
 
@@ -235,17 +196,17 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             id_: The ID of the record to delete.
         """
         # noinspection PyTypeChecker,Mypy
-        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
-        self._session.flush()
+        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
+        await self._session.flush()
 
-    def commit(self) -> None:
+    async def commit(self) -> None:
         """
         Commits the current transaction.
         """
-        self._session.commit()
+        await self._session.commit()
 
-    def rollback(self) -> None:
+    async def rollback(self) -> None:
         """
         Rolls back the current transaction.
         """
-        self._session.rollback()
+        await self._session.rollback()

@@ -23,10 +23,10 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Type, List, Any
+from typing import Type, Any
 
-from sqlalchemy import Engine, Index, Table
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Table
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from musigree.config import Configuration
@@ -34,8 +34,11 @@ from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+from musigree.runtime.data_access_layer.relation_grapher import (
+    RelationGrapher,
+)
 from musigree.runtime.runtime_database.runtime_base_table import (
     RuntimeBase,
     RuntimeConcreteTable,
@@ -63,11 +66,9 @@ class RuntimeDatabaseHelper(ABC):
     functionality.
 
     Attributes:
-        runtime_engine (Engine | None): The SQLAlchemy engine for the runtime database.
-        runtime_session_factory (sessionmaker | None): The SQLAlchemy session factory
+        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime database.
+        runtime_async_session_factory (async_sessionmaker | None): The SQLAlchemy session factory
             for creating database sessions.
-        idx_entity_one_id (Index | None): An index for entity one ID.
-        idx_entity_two_id (Index | None): An index for entity two ID.
         text_search_index (TextSearchIndex | None): An index for text-based searches.
         entity_details_index (EntityDetailsIndex | None): An index for entity details.
         entity_count_cached (int): A cached count of entities.
@@ -78,15 +79,10 @@ class RuntimeDatabaseHelper(ABC):
         LINK_RATIO (int): A ratio for link calculations.
     """
 
-    runtime_engine: Engine
+    runtime_async_engine: AsyncEngine | None = None
     """The SQLAlchemy engine for the runtime database."""
-    runtime_session_factory: sessionmaker
+    runtime_async_session_factory: async_sessionmaker | None = None
     """The SQLAlchemy session factory for creating database sessions."""
-
-    idx_entity_one_id: Index
-    """An index for entity one ID."""
-    idx_entity_two_id: Index
-    """An index for entity two ID."""
 
     text_search_index: TextSearchIndex
     """An index for text-based searches."""
@@ -113,7 +109,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    def setup_database(config: Configuration) -> Engine:
+    async def setup_database(config: Configuration) -> AsyncEngine:
         """
         Sets up the database connection and returns the engine.
 
@@ -121,45 +117,31 @@ class RuntimeDatabaseHelper(ABC):
             config: The application configuration.
 
         Returns:
-            Engine: The SQLAlchemy engine.
+            AsyncEngine: The SQLAlchemy async engine.
         """
         pass
 
     @staticmethod
     @abstractmethod
-    def shutdown_database() -> None:
+    async def shutdown_database() -> None:
         """Shuts down the database connection."""
         pass
 
-    @classmethod
-    def initialize(cls) -> None:
-        """
-        Initializes the database connection.
-
-        Ensures that the parent process's database connections are not touched
-        in the new connection pool.
-        """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
-        RuntimeDatabaseManager.runtime_database_helper.runtime_engine.dispose(
-            close=False
-        )
-
     @staticmethod
     @abstractmethod
-    def check_connection(config: Configuration, engine: Engine) -> None:
+    async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Checks the database connection.
 
         Args:
             config: The application configuration.
-            engine: The SQLAlchemy engine.
+            engine: The SQLAlchemy async engine.
         """
         pass
 
     @classmethod
     @abstractmethod
-    def create_tables(cls, tables: List[str]) -> None:
+    async def create_tables(cls, tables: list[str]) -> None:
         """
         Creates database tables.
 
@@ -174,20 +156,31 @@ class RuntimeDatabaseHelper(ABC):
             log.debug(f"table definition for: {table_class.__tablename__}")
         for table_name in RuntimeBase.metadata.tables:
             log.debug(f"table in metadata: {table_name}")
-        table_definitions: List[Table] = [
+        table_definitions: list[Table] = [
             RuntimeBase.metadata.tables[table_name] for table_name in tables
         ]
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
-        RuntimeBase.metadata.create_all(
-            RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
-            checkfirst=True,
-            tables=table_definitions,
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling create_tables()"
         )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ), "runtime_async_engine must be initialized before calling create_tables()"
+        async with (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+        ):
+            await conn.run_sync(
+                RuntimeBase.metadata.create_all,
+                checkfirst=True,
+                tables=table_definitions,
+            )
 
     @classmethod
     @abstractmethod
-    def drop_tables(cls, tables: List[str]) -> None:
+    async def drop_tables(cls, tables: list[str]) -> None:
         """
         Drops database tables.
 
@@ -197,32 +190,48 @@ class RuntimeDatabaseHelper(ABC):
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling drop_tables()"
+        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
+            is not None
+        ), "runtime_async_engine must be initialized before calling drop_tables()"
+
         if tables is not None:
-            table_definitions: List[Table] = [
+            table_definitions: list[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                table.drop(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
+                async with (
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+                ):
+                    await conn.run_sync(
+                        table.drop,
+                        checkfirst=True,
+                    )
+        else:
+            async with (
+                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+            ):
+                await conn.run_sync(
+                    RuntimeBase.metadata.drop_all,
                     checkfirst=True,
                 )
-        else:
-            RuntimeBase.metadata.drop_all(
-                RuntimeDatabaseManager.runtime_database_helper.runtime_engine,
-                checkfirst=True,
-            )
 
     @staticmethod
     @abstractmethod
-    def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: Engine) -> None:
+    async def vacuum(
+        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
             table_name: The name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
-            engine: The SQLAlchemy engine connected to the database.
+            engine: The SQLAlchemy async engine connected to the database.
         """
         pass
 
@@ -247,7 +256,7 @@ class RuntimeDatabaseHelper(ABC):
     def generate_insert_query(
         schema_class: Type[RuntimeConcreteTable],
         values: dict,
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
         Generates an SQL insert query.
@@ -267,7 +276,7 @@ class RuntimeDatabaseHelper(ABC):
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
         values: list[dict],
-        on_conflict_do_nothing=False,
+        on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
         Generates an SQL insert bulk query.
@@ -283,16 +292,16 @@ class RuntimeDatabaseHelper(ABC):
         pass
 
     @staticmethod
-    def get_network(
+    async def get_network(
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
         entity_id: int,
         entity_type: EntityType,
-        on_mobile,
-        roles: List[str],
-    ):
+        on_mobile: bool,
+        roles: list[str],
+    ) -> dict[str, Any] | None:
         """
-        Retrieves network data for an entity.
+        Retrieves a network of entities and relations.
 
         Args:
             entity_repository: The entity repository.
@@ -300,15 +309,11 @@ class RuntimeDatabaseHelper(ABC):
             entity_id: The ID of the entity.
             entity_type: The type of the entity.
             on_mobile: Whether the request is from a mobile device.
-            roles: An optional list of roles to filter by.
+            roles: A list of role names to filter by.
 
         Returns:
-            Any: The network data.
+            dict: The network data.
         """
-        from musigree.runtime.data_access_layer.relation_grapher import (
-            RelationGrapher,
-        )
-
         cache = CacheManager.get_cache()
 
         assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
@@ -322,15 +327,14 @@ class RuntimeDatabaseHelper(ABC):
             entity_type,
             roles=roles,
         )
-        # cache_key = cache_key.format(entity_type, entity_id)
         if cache_key is not None and len(cache_key) < 200:
             log.debug(f"  get cache_key: {cache_key}")
-            data = cache.get(cache_key)
-            if data is not None:
-                return data
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return cached_data  # type: ignore
 
         try:
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
         except NotFoundError:
@@ -350,7 +354,7 @@ class RuntimeDatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = relation_grapher.get_relation_graph(
+        data = await relation_grapher.get_relation_graph(
             entity_repository, relation_repository
         )
         if cache_key is not None and len(cache_key) < 200:
@@ -358,7 +362,7 @@ class RuntimeDatabaseHelper(ABC):
         return data
 
     @staticmethod
-    def get_random_entity(
+    async def get_random_entity(
         entity_repository: RuntimeEntityRepository,
     ) -> tuple[int, EntityType]:
         """
@@ -370,6 +374,12 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             tuple[int, EntityType]: A tuple containing the entity ID and type.
         """
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+
         # structural_roles = [
         #     "Alias",
         #     "Member Of",
@@ -389,14 +399,16 @@ class RuntimeDatabaseHelper(ABC):
         counter = 0
 
         while True:
-            random_id = RuntimeDatabaseHelper.search_get_random_id()
+            random_id = (
+                RuntimeDatabaseManager.runtime_database_helper.search_get_random_id()
+            )
             entity_id, entity_type = to_entity_external_id(random_id)
             if entity_type == EntityType.LABEL:
                 log.debug("random skip label")
                 entity = None
                 continue
             try:
-                entity = entity_repository.get_by_id(random_id)
+                entity = await entity_repository.get_by_id(random_id)
             except NotFoundError:
                 log.debug("random not found")
                 counter += 1
@@ -453,7 +465,7 @@ class RuntimeDatabaseHelper(ABC):
         return entity_id, entity_type
 
     @classmethod
-    def get_relations_by_entity_id_and_entity_type(
+    async def get_relations_by_entity_id_and_entity_type(
         cls,
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
@@ -473,36 +485,49 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             dict[str, Any]: The relations data.
         """
-        # TODO Add info on releases back in one day
-        entity = entity_repository.get_by_entity_id_and_entity_type(
+        entity = await entity_repository.get_by_entity_id_and_entity_type(
             entity_id, entity_type
         )
-        relations = relation_repository.find_by_entity(entity.id)
+        relation_internals = await relation_repository.find_by_entity(entity.id)
+
+        role_dict: dict[str, dict[str, int | None]] = {}
+        for relation_internal in relation_internals:
+            releases_dict: dict[str, int | None] = role_dict.get(relation_internal.role) or {}
+            releases_dict.update({str(relation_internal.release_id): relation_internal.year})
+            role_dict.update({relation_internal.role: releases_dict})
 
         data = []
-        for relation in relations:
-            # relation_release_years = relation_release_year_repository.get(relation.id)
-            relation_releases: dict[int, int] = {}
-            # for relation_release_year in relation_release_years:
-            #     relation_releases[relation_release_year.release_id] = (
-            #         relation_release_year.year
-            #     )
-
-            # category = RoleType.role_definitions[relation.role]
-            # if category is None:
-            #     continue
+        for role in role_dict.keys():
             datum = {
-                "role": relation.role,
-                "releases": relation_releases,
+                "role": role,
+                "releases": role_dict[role],
             }
             data.append(datum)
         result = {"results": tuple(data)}
         return result
 
-    @classmethod
-    def search_text_index(cls, search_text):
-        return RuntimeDatabaseHelper.text_search_index.search(search_text)
+    @staticmethod
+    def search_text_index(search_text: str) -> list[tuple[int, str]]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    @classmethod
-    def search_get_random_id(cls):
-        return RuntimeDatabaseHelper.text_search_index.get_random_id()
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling search_text_index()"
+        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
+        ), "text_search_index must be initialized before calling search_text_index()"
+        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.search(
+            search_text
+        )
+
+    @staticmethod
+    def search_get_random_id() -> int:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling search_text_index()"
+        )
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
+        ), "text_search_index must be initialized before calling search_text_index()"
+        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.get_random_id()

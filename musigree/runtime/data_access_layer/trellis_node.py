@@ -229,7 +229,7 @@ class TrellisNode:
         return self._cluster
 
     @cluster.setter
-    def cluster(self, expr: int):
+    def cluster(self, expr: int) -> None:
         """
         Sets the cluster ID of the node.
 
@@ -289,7 +289,7 @@ class TrellisNode:
         return self._missing
 
     @missing.setter
-    def missing(self, expr: int):
+    def missing(self, expr: int) -> None:
         """
         Sets the number of missing links for this node.
 
@@ -350,7 +350,7 @@ class TrellisNode:
         return self._subgraph_size
 
     @subgraph_size.setter
-    def subgraph_size(self, expr: int):
+    def subgraph_size(self, expr: int) -> None:
         """
         Sets the size of the subgraph that the node is part of.
 

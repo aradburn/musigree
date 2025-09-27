@@ -1,8 +1,10 @@
+import asyncio
 import enum
 import itertools
 import json
 import logging
 import math
+import random
 import re
 import shutil
 import string
@@ -10,17 +12,29 @@ import sys
 import textwrap
 import time
 import unicodedata
-from collections.abc import Mapping, Sequence, Iterator
+from collections.abc import Mapping, Iterator, Sequence, Iterable, AsyncIterable
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, date
-from functools import wraps
-import random
-from typing import Any, TypeVar
+from functools import partial
+from io import BufferedWriter
+from typing import Protocol, Any, TypeVar, Generator, Callable
 
 import requests
 from dateutil.relativedelta import relativedelta
-# noinspection Mypy
+from sqlalchemy.orm import DeclarativeBase
 from toolz import count  # type: ignore
 from unidecode import unidecode
+
+
+class SupportsWrite(Protocol):
+    """Protocol for objects that support writing."""
+
+    def write(self, data: str | bytes) -> Any: ...
+
+    def flush(self) -> None: ...
+
+    def close(self) -> None: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -38,12 +52,17 @@ T = TypeVar("T")
 
 
 class SkipFilter:
-    def __init__(self, types=None, keys=None, allow_empty=False):
+    def __init__(
+        self,
+        types: tuple[type] | None = None,
+        keys: list[str] | None = None,
+        allow_empty: bool = False,
+    ) -> None:
         self.types = tuple(types or [])
         self.keys = set(keys or [])
         self.allow_empty = allow_empty  # if True include empty filtered structures
 
-    def filter(self, data):
+    def filter(self, data: Any) -> Any:
         if isinstance(data, Mapping):
             result = {}  # dict-like, use dict as a base
             for k, v in data.items():
@@ -71,85 +90,23 @@ class SkipFilter:
         raise ValueError
 
 
-def parse_request_args(args) -> tuple[list[str], tuple[int, int] | int | None]:
-    from musigree.library.cache.role_cache import RoleCache
-    from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
-
-    year: tuple[int, int] | int | None = None
-    roles = set()
-    for key in args:
-        if key == "year":
-            year_arg = args[key]
-            try:
-                if "-" in year_arg:
-                    start, _, stop = year_arg.partition("-")
-                    start_year = int(start)
-                    stop_year = int(stop)
-                    if start_year <= stop_year:
-                        year = (start_year, stop_year)
-                    else:
-                        year = (stop_year, start_year)
-                else:
-                    year = int(year_arg)
-            except ValueError:
-                log.debug("Invalid year input")
-            log.debug(f"Requested year: {year}")
-        elif key == "roles":
-            roles_arg = args[key]
-            for role_arg in roles_arg:
-                # List is comma-separated, roles that contain commas are escaped by a \
-                unescaped_value = role_arg.replace("\\,", "|")
-                for role_escaped in unescaped_value.split(","):
-                    role = role_escaped.replace("|", ",")
-                    # log.debug(f"Requested role: {role}")
-                    if role in RoleCache.role_category_to_role_name_lookup.keys():
-                        # log.debug(f"Requested role found: {role}")
-                        for role_entry in RoleCache.role_category_to_role_name_lookup[
-                            role
-                        ]:
-                            log.debug(f"Requested role_entry: {role_entry}")
-                            if (
-                                role_entry
-                                in RoleCache.role_name_to_role_id_lookup.keys()
-                            ):
-                                roles.add(role_entry)
-                    elif role in RoleCache.role_name_to_role_id_lookup.keys():
-                        roles.add(role)
-
-    if len(roles) == 0:
-        roles = set(UI_DEFAULT_ROLES)
-    roles_list = list(sorted(roles))
-    # log.debug(f"Requested roles: {roles}")
-    return roles_list, year
-
-
-def batched(iterable: Sequence[T], n) -> Iterator[list[T]]:
+def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], None, None]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
-    it = iter(iterable)
-    while batch := list(itertools.islice(it, n)):
-        yield batch
-
-
-# def iter_in_slices(iterator, size=None):
-#     while True:
-#         slice_iter = itertools.islice(iterator, size)
-#         # If no first object this is how StopIteration is triggered
-#         try:
-#             peek = next(slice_iter)
-#         except StopIteration:
-#             return
-#         # Put the first object back and return slice
-#         yield itertools.chain([peek], slice_iter)
-
+    if isinstance(iterable, Sequence):
+        it = iter(iterable)
+        while batch := list(itertools.islice(it, n)):
+            yield batch
+    else:
+        while batch := list(itertools.islice(iterable, n)):
+            yield batch
 
 def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
-    return batched(seq, math.ceil(num_items / num_chunks))
-
+    return batched(iter(seq), math.ceil(num_items / num_chunks))
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
     _string = argument.replace("\t", "    ")
@@ -173,7 +130,7 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
             if line:
                 lines[i] = f"{indent_string}{line}"
         _string = "\n".join(lines)
-    if not _string.endswith("\n"):
+    if _string != "" and not _string.endswith("\n"):
         _string += "\n"
     return _string
 
@@ -183,10 +140,12 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 #     return s
 
 
-def normalize_dict(obj: Any, skip_keys=None) -> str:
+def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
+    """Normalize a dictionary into a formatted string representation, skipping specified keys and types."""
+    skip_keys = skip_keys or []
     preprocessor = SkipFilter(keys=skip_keys)
 
-    def list_public_attributes(input_var):
+    def list_public_attributes(input_var: dict[str, Any]) -> dict[str, Any]:
         return {
             k: (
                 list_public_attributes(preprocessor.filter(v))
@@ -197,14 +156,20 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
             if not (k.startswith("_") or callable(v))
         }
 
-    def default(o):
-        def as_dict(self):
-            return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    def default(o: Any) -> dict[str, Any] | str:
+        def as_dict(self: DeclarativeBase) -> dict[str, Any]:
+            return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
 
-        from musigree.offline.database.base_table import Base
+        from musigree.offline.database.base_table import OfflineBase
+        from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
+        from musigree.library.domain.base import InternalDomainObject
 
-        if isinstance(o, Base):
+        if isinstance(o, OfflineBase):
             return list_public_attributes(preprocessor.filter(as_dict(o)))
+        elif isinstance(o, RuntimeBase):
+            return list_public_attributes(preprocessor.filter(as_dict(o)))
+        elif isinstance(o, InternalDomainObject):
+            return list_public_attributes(preprocessor.filter(o.model_dump()))
         elif isinstance(o, enum.Enum):
             return str(o)
         elif isinstance(o, date):
@@ -226,58 +191,74 @@ def normalize_dict(obj: Any, skip_keys=None) -> str:
 
 
 def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
-    def sorted_itemgetter(*items):
-        if len(items) == 1:
-            item = items[0]
+    """Normalize a list of dictionaries into a formatted string representation."""
 
-            def g(obj):
-                return obj[item]
-
-        else:
-
-            def g(obj):
-                return tuple(obj[item_] for item_ in items)
-
-        return g
+    def make_sortable_key(obj: dict[str, Any]) -> str:
+        """Create a sortable key from a dictionary by converting it to a normalized JSON string."""
+        try:
+            # Create a normalized version for sorting by converting to JSON with sorted keys
+            return json.dumps(obj, sort_keys=True, separators=(',', ':'), default=str)
+        except (TypeError, ValueError):
+            # Fallback: convert the entire dict to string if JSON serialization fails
+            return str(sorted(obj.items()))
 
     if list_obj is None or len(list_obj) == 0:
         return "[\n" + "\n]\n"
 
-    dict_keys = sorted(list_obj[0].keys())
-    sorted_list_obj = sorted(list_obj, key=sorted_itemgetter(*dict_keys))
+    # Sort the list using the normalized JSON representation as the key
+    sorted_list_obj = sorted(list_obj, key=make_sortable_key)
 
     return (
         "[\n"
         + ",\n".join(
-            textwrap.indent(
-                strip_trailing_newline(
-                    normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
-                ),
-                "    ",
-            )
-            for _ in sorted_list_obj
+        textwrap.indent(
+            strip_trailing_newline(
+                normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
+            ),
+            "    ",
         )
+        for _ in sorted_list_obj
+    )
         + "\n]\n"
     )
 
 
 def normalize_str_list(list_obj: list[str]) -> str:
+    """Normalize a list of strings into a formatted string representation."""
+    if list_obj is None or len(list_obj) == 0:
+        return "[\n" + "\n]\n"
     return "[\n" + ",\n".join(textwrap.indent(_, "    ") for _ in list_obj) + "\n]\n"
 
 
 def strip_input(input_str: str) -> str:
+    """Remove leading indentation and the first newline from the input string."""
     return textwrap.dedent(input_str).replace("\n", "", 1)
 
 
 def strip_trailing_newline(input_str: str) -> str:
+    """Remove a trailing newline from the input string, if present."""
     return input_str.removesuffix("\n")
 
 
-def row2dict(row):
-    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+def table2dict(table: DeclarativeBase) -> dict[str, Any]:
+    """Convert a SQLAlchemy table object to a dictionary.
+    Args:
+        table (DeclarativeBase): The SQLAlchemy table object.
+    Returns:
+        dict[str, Any]: A dictionary representation of the table object.
+    """
+    return {c.name: getattr(table, c.name) for c in table.__table__.columns}  # type: ignore
 
 
 def is_latin(_string: str) -> bool:
+    """Check if all characters in the string are Latin characters.
+    Args:
+        _string (str): The input string to check.
+    Returns:
+        bool: True if all characters are Latin, False otherwise.
+    """
+    if _string is None or _string == "":
+        return False
     try:
         return all(["LATIN" in unicodedata.name(c) for c in _string])
     except ValueError:
@@ -285,6 +266,12 @@ def is_latin(_string: str) -> bool:
 
 
 def to_ascii(_string: str) -> str:
+    """Convert a unicode string to a plain ASCII string.
+    Args:
+        _string (str): The input unicode string.
+    Returns:
+        str: The converted plain ASCII string.
+    """
     if _string is None:
         return ""
     # Transliterate the unicode string into a plain ASCII string
@@ -293,20 +280,15 @@ def to_ascii(_string: str) -> str:
     return _string
 
 
-def timeit(func):
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        log.debug(f"### TIMER ### Function {func.__name__}: {total_time:.1f} seconds")
-        return result
-
-    return timeit_wrapper
-
-
 def sleep_with_backoff(multiplier: int) -> None:
+    """Sleep for a random amount of time based on the given multiplier.
+    The sleep time is calculated as a random value between 1 and the multiplier,
+    capped at a maximum of 60 seconds.
+    Args:
+        multiplier (int): The maximum multiplier for the sleep time.
+    """
+    if multiplier < 1:
+        multiplier = 1
     time_in_secs = int(multiplier * (1.0 + random.random()))
     if time_in_secs > 60:
         time_in_secs = 60
@@ -316,15 +298,29 @@ def sleep_with_backoff(multiplier: int) -> None:
     time.sleep(time_in_secs)
 
 
-def download_file(input_url: str, output_file) -> None:
+def download_file(
+    input_url: str, output_file: SupportsWrite | BufferedWriter
+) -> None:
+    """Download a file from a URL and write it to the provided output file-like object.
+    Args:
+        input_url (str): The URL of the file to download.
+        output_file (SupportsWrite | BufferedWriter): A file-like object to write the downloaded content to.
+    """
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()
         shutil.copyfileobj(response.raw, output_file, length=10 * 1024)
-    output_file.flush()
-    output_file.close()
+    output_file.flush()  # type: ignore
+    output_file.close()  # type: ignore
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:
+    """Construct the URL for a Discogs data dump based on the date and type.
+    Args:
+        dump_date (date): The date of the dump.
+        dump_type (str): The type of dump (e.g., "artists", "releases").
+    Returns:
+        str: The constructed URL for the Discogs data dump.
+    """
     from musigree.constants import DISCOGS_FILE_TEMPLATE
     from musigree.constants import DISCOGS_BASE_URL
 
@@ -337,6 +333,13 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
 
 
 def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
+    """Generate a list of dates representing the first day of each month between start_date and end_date.
+    Args:
+        start_date (date): The start date of the range.
+        end_date (date): The end date of the range.
+    Returns:
+        list[date]: A list of dates representing the first day of each month in the range.
+    """
     date_list = []
     curr_date = start_date
     while curr_date <= end_date:
@@ -346,7 +349,13 @@ def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
     return date_list
 
 
-def calculate_size(obj):
+def calculate_size(obj: Any) -> int:
+    """Recursively calculates the memory size of an object and its contents.
+    Args:
+        obj (Any): The object to calculate the size of.
+    Returns:
+        int: The total memory size of the object in bytes.
+    """
     size = sys.getsizeof(obj)
     if isinstance(obj, dict):
         size += sum(calculate_size(v) for v in obj.values())
@@ -371,4 +380,131 @@ def calculate_size(obj):
 
 
 def get_random_string(length: int) -> str:
+    """Generate a random string of fixed length.
+    Args:
+        length (int): The length of the random string to generate.
+    Returns:
+        str: A random string of the specified length.
+    """
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+
+def worker_generator(
+    worker_function: Callable[[list[T], int, int], None],
+    records: Iterable[list[T]],
+    total_count: int,
+) -> Generator[partial, None, None]:
+    """A generator that yields worker functions for processing records.
+    Args:
+        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
+        records (Iterable[list[T]]): An iterable of lists of records to be processed.
+        total_count (int): The total number of records to be processed.
+    Yields:
+        Callable[..., None]: A partial that processes a batch of records.
+    """
+    processed_count: int = 0
+    for record in records:
+        yield partial(worker_function, record, processed_count, total_count)
+        processed_count += len(record)
+
+
+async def async_worker_generator(
+    worker_function: Callable[[list[T], int, int], None],
+    records: AsyncIterable[list[T]],
+    total_count: int,
+) -> list[partial]:
+    """A generator that yields worker functions for processing records.
+    Args:
+        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
+        records (Iterable[list[T]]): An iterable of lists of records to be processed.
+        total_count (int): The total number of records to be processed.
+    Yields:
+        Callable[..., None]: A partial that processes a batch of records.
+    """
+    partials: list[partial] = []
+    processed_count: int = 0
+    async for record in records:
+        partials.append(partial(worker_function, record, processed_count, total_count))
+        processed_count += len(record)
+    return partials
+
+
+async def queue_worker_functions(
+    max_concurrent: int,
+    worker_partials: Generator[partial, None, None] | list[partial],
+) -> Any:
+    """Run worker coroutines with a maximum number of concurrent workers.
+    Args:
+        max_concurrent (int): The maximum number of concurrent workers.
+        worker_partials (Generator[Callable[..., None], None, None]): A generator of worker coroutines.
+    """
+    if max_concurrent < 1:
+        max_concurrent = 1
+    if max_concurrent > 8:
+        max_concurrent = 8
+    started_at = time.monotonic()
+
+    tasks = []
+    loop = asyncio.get_running_loop()
+    if max_concurrent > 1:
+        # loop.set_debug(True)
+        with ProcessPoolExecutor(max_workers=max_concurrent) as executor:
+            for worker_partial in worker_partials:
+                # log.debug("Get next worker_partial")
+                # Create max_concurrent worker tasks to process the queue concurrently.
+                future = loop.run_in_executor(executor, worker_partial.func, *worker_partial.args)
+                # log.debug("Got next worker_partial future")
+                tasks.append(future)
+
+                if len(tasks) >= max_concurrent:
+                    task = tasks.pop(0)
+                    # log.debug("awaiting future")
+                    for completed_future in asyncio.as_completed([task]):
+                        await completed_future
+                    # await asyncio.wait([task])
+                    # log.debug("completed future")
+                    await asyncio.sleep(1)
+            # log.debug("Done all worker_partials")
+
+            for completed_future in asyncio.as_completed(tasks):
+                # log.debug(f"Get as_completed on future: {completed_future}")
+                await completed_future
+    else:
+        for worker_partial in worker_partials:
+            # Create a worker tasks to process the queue one by one.
+            future = loop.run_in_executor(None, worker_partial.func, *worker_partial.args)
+            await future
+
+    total_processing_time = time.monotonic() - started_at
+    log.debug(f"total processing time: {total_processing_time:.2f} seconds")
+
+
+def generator_with_id_accumulator(
+    records: Iterable[dict[str, Any]], id_accumulator: list[int], id_attr: str
+) -> Generator[dict[str, Any], None, None]:
+    """A generator that yields records and accumulates their IDs.
+    Args:
+        records (Iterable[dict[str, Any]]): An iterable of records (dictionaries).
+        id_accumulator (list[int]): A list to accumulate the IDs.
+        id_attr (str): The attribute name in the record that contains the ID.
+    Yields:
+        dict[str, Any]: The next record from the input iterable.
+    """
+    for record in records:
+        _id = int(record[id_attr])
+        id_accumulator.append(_id)
+        yield record
+
+
+def log_banner() -> None:
+    log.info("")
+    log.info("")
+    log.info("##     ## ##     ##  ######  ####  ######   ########  ######## ########")
+    log.info("###   ### ##     ## ##    ##  ##  ##    ##  ##     ## ##       ##      ")
+    log.info("#### #### ##     ## ##        ##  ##        ##     ## ##       ##      ")
+    log.info("## ### ## ##     ##  ######   ##  ##   #### ########  ######   ######  ")
+    log.info("##     ## ##     ##       ##  ##  ##    ##  ##   ##   ##       ##      ")
+    log.info("##     ## ##     ## ##    ##  ##  ##    ##  ##    ##  ##       ##      ")
+    log.info("##     ##  #######   ######  ####  ######   ##     ## ######## ########")
+    log.info("")
+    log.info("")

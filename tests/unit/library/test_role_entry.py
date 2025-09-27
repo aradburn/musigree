@@ -1,27 +1,23 @@
-import unittest
 from xml.etree import ElementTree
 
 from musigree.runtime.data_access_layer.role_entry import RoleEntry
 
 
-class TestRoleEntry(unittest.TestCase):
-    def test_role_entry_from_element_1(self):
+class TestRoleEntry:
+    def test_role_entry_from_element_1(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = (
             "Shekere [Xequere, Original Musician], Guiro [Original Musician], "
             "Claves [Original Musician]"
         )
         roles = RoleEntry.from_element(element)
-        self.assertListEqual(
-            roles,
-            [
-                RoleEntry(name="Shekere", detail="Xequere, Original Musician"),
-                RoleEntry(name="Guiro", detail="Original Musician"),
-                RoleEntry(name="Claves", detail="Original Musician"),
-            ],
-        )
+        assert roles == [
+            RoleEntry(name="Shekere", detail="Xequere, Original Musician"),
+            RoleEntry(name="Guiro", detail="Original Musician"),
+            RoleEntry(name="Claves", detail="Original Musician"),
+        ]
 
-    def test_role_entry_from_element_2(self):
+    def test_role_entry_from_element_2(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = (
             "Co-producer, Arranged By, Directed By, Other [Guided By], "
@@ -36,10 +32,10 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Other", detail="Created By"),
         ]
 
-    def test_role_entry_from_element_3(self):
+    def test_role_entry_from_element_3(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = (
-            "Organ [Original Musician], " "Electric Piano [Rhodes, Original Musician]"
+            "Organ [Original Musician], Electric Piano [Rhodes, Original Musician]"
         )
         roles = RoleEntry.from_element(element)
         assert roles == [
@@ -53,7 +49,7 @@ class TestRoleEntry(unittest.TestCase):
             ),
         ]
 
-    def test_role_entry_from_element_4(self):
+    def test_role_entry_from_element_4(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Photography By ['hats' And 'spray' Photos By]"
         roles = RoleEntry.from_element(element)
@@ -64,7 +60,7 @@ class TestRoleEntry(unittest.TestCase):
             ),
         ]
 
-    def test_role_entry_from_element_5(self):
+    def test_role_entry_from_element_5(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Strings "
         roles = RoleEntry.from_element(element)
@@ -72,7 +68,7 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Strings"),
         ]
 
-    def test_role_entry_from_element_6(self):
+    def test_role_entry_from_element_6(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Piano, Synthesizer [Moog], Programmed By"
         roles = RoleEntry.from_element(element)
@@ -82,7 +78,7 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Programmed By"),
         ]
 
-    def test_role_entry_from_element_7(self):
+    def test_role_entry_from_element_7(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Percussion [Misc.]"
         roles = RoleEntry.from_element(element)
@@ -90,7 +86,7 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Percussion", detail="Misc."),
         ]
 
-    def test_role_entry_from_element_8(self):
+    def test_role_entry_from_element_8(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = 'Painting [Uncredited; Detail Of <i>"The Transfiguration"</i>]'
         roles = RoleEntry.from_element(element)
@@ -101,7 +97,7 @@ class TestRoleEntry(unittest.TestCase):
             ),
         ]
 
-    def test_role_entry_from_element_9(self):
+    def test_role_entry_from_element_9(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Composed By, Words By [elemented By], Producer"
         roles = RoleEntry.from_element(element)
@@ -111,7 +107,7 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Producer"),
         ]
 
-    def test_role_entry_from_element_10(self):
+    def test_role_entry_from_element_10(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Engineer [Remix] [Assistant], Producer"
         roles = RoleEntry.from_element(element)
@@ -120,7 +116,7 @@ class TestRoleEntry(unittest.TestCase):
             RoleEntry(name="Producer"),
         ]
 
-    def test_role_entry_from_element_11(self):
+    def test_role_entry_from_element_11(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = "Performer [Enigmatic [K] Voice, Moog, Korg Vocoder], Lyrics By"
         roles = RoleEntry.from_element(element)

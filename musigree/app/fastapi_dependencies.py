@@ -28,26 +28,100 @@ from typing import Callable, Any
 import fakeredis
 from fastapi import Request, Response
 
-from musigree.exceptions import RateLimitError
+from musigree.exceptions import RateLimitError, BadRequestError
+from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 """
 The logger for the dependencies module.
 """
 
+UI_DEFAULT_ROLES = [
+    "Alias",
+    "Member Of",
+    # 'Sublabel Of',
+    # 'Released On',
+]
+"""
+Default roles to display if none are specified in the request.
+"""
+
 # Global Redis client - will be initialized based on environment
 _redis_client: Any = None
 
+def get_entity_type(entity_type_str: str) -> EntityType:
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
+        raise BadRequestError(message="Bad Entity Type") from None
+
+    return entity_type
+
+
+def get_entity_id(entity_id: str) -> int:
+    if not entity_id.isnumeric():
+        raise BadRequestError(message="Bad Entity Id")
+
+    entity_id_int = int(entity_id)
+    return entity_id_int
+
+
+def get_year(year: str | None = None) -> tuple[int, int] | int | None:
+    if year is None:
+        return None
+    year_result: tuple[int, int] | int | None
+
+    try:
+        if "-" in year:
+            start, _, stop = year.partition("-")
+            start_year = int(start)
+            stop_year = int(stop)
+            if start_year <= stop_year:
+                year_result = (start_year, stop_year)
+            else:
+                year_result = (stop_year, start_year)
+        else:
+            year_result = int(year)
+    except ValueError:
+        raise BadRequestError(message="Invalid year input") from None
+    log.debug(f"Requested year: {year_result}")
+    return year_result
+
+
+def get_roles(roles: str | None = None) -> list[str]:
+    from musigree.library.cache.role_cache import RoleCache
+
+    roles_result = set()
+    if roles is not None:
+        # List is comma-separated, roles that contain commas are escaped by a \
+        unescaped_value = roles.replace("\\,", "|")
+        for role_escaped in unescaped_value.split(","):
+            role = role_escaped.replace("|", ",")
+            # log.debug(f"Requested role: {role}")
+            if role in RoleCache.role_category_to_role_name_lookup.keys():
+                # log.debug(f"Requested role found: {role}")
+                for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
+                    log.debug(f"Requested role_entry: {role_entry}")
+                    if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
+                        roles_result.add(role_entry)
+            elif role in RoleCache.role_name_to_role_id_lookup.keys():
+                roles_result.add(role)
+
+    if len(roles_result) == 0:
+        roles_result = set(UI_DEFAULT_ROLES)
+    roles_list: list[str] = list(sorted(roles_result))
+    # log.debug(f"Requested roles: {roles}")
+    return roles_list
 
 def get_redis_client() -> Any:
     """
     Get the Redis client, initializing it if necessary.
-    
+
     Returns:
         Redis client instance (real or fake based on configuration)
     """
     global _redis_client
-    
+
     if _redis_client is None:
         # For now, we'll use FakeRedis for development and testing
         # In production, this should be replaced with real Redis configuration
@@ -58,10 +132,10 @@ def get_redis_client() -> Any:
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5,
-            retry_on_timeout=True
+            retry_on_timeout=True,
         )
         log.info("Initialized FakeRedis for rate limiting")
-    
+
     return _redis_client
 
 

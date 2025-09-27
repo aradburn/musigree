@@ -25,13 +25,13 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 
 import json
 import logging
-from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse
+from typing import Annotated
 
-import musigree.utils
-from musigree.exceptions import BadRequestError, NotFoundError
+from musigree.app.fastapi_dependencies import get_roles, get_year, get_entity_type, get_entity_id
+from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 
@@ -47,22 +47,11 @@ The FastAPI router for the UI routes.
 This router is used to organize the UI routes and their related functionality.
 """
 
-UI_DEFAULT_ROLES = [
-    "Alias",
-    "Member Of",
-    # 'Sublabel Of',
-    # 'Released On',
-]
-"""
-Default roles to display if none are specified in the request.
-"""
-
-
 @router.get("/", response_class=HTMLResponse)
 async def route__index(
     request: Request,
-    roles: list[str] | None = Query(None),
-    year: int | None = Query(None),
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -97,19 +86,6 @@ async def route__index(
     """Combine the network and roles JavaScript variables."""
     # log.debug(f"initial_js: {initial_js}")
 
-    # Convert query parameters to the format expected by the existing code
-    query_params: dict[str, Any] = {}
-    if roles:
-        query_params["roles"] = roles
-    if year is not None:
-        query_params["year"] = year
-
-    parsed_args = musigree.utils.parse_request_args(query_params)
-    """Parse the request arguments for roles and year."""
-    original_roles, original_year = parsed_args if parsed_args else (None, None)
-    if not original_roles:
-        original_roles = UI_DEFAULT_ROLES.copy()
-    """Use default roles if none are specified in the request."""
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     """Get the multiselect mapping for roles."""
 
@@ -118,12 +94,12 @@ async def route__index(
 
     # Build URL with query parameters
     url = "/"
-    if original_roles:
-        url += f"?roles={','.join(original_roles)}"
-        if original_year:
-            url += f"&year={original_year}"
-    elif original_year:
-        url += f"?year={original_year}"
+    if roles:
+        url += f"?roles={','.join(roles)}"
+        if year:
+            url += f"&year={year}"
+    elif year:
+        url += f"?year={year}"
 
     """Generate the URL for the current request with the selected roles."""
     return templates.TemplateResponse(
@@ -136,8 +112,8 @@ async def route__index(
             "multiselect_mapping": multiselect_mapping,
             "og_title": "Musigree",
             "og_url": url,
-            "original_roles": original_roles,
-            "original_year": original_year,
+            "original_roles": roles,
+            "original_year": year,
             "title": "Musigree",
         },
     )
@@ -146,10 +122,11 @@ async def route__index(
 @router.get("/{entity_type_str}/{entity_id}", response_class=HTMLResponse)
 async def route__entity_type__entity_id(
     request: Request,
-    entity_type_str: str,
-    entity_id: str,
-    roles: list[str] | None = Query(None),
-    year: int | None = Query(None),
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    on_mobile: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -160,10 +137,11 @@ async def route__entity_type__entity_id(
 
     Args:
         request: The FastAPI request object.
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
         roles: Optional list of roles to filter the network by.
         year: Optional year to filter the network by.
+        on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
         HTMLResponse: The rendered entity-specific page.
@@ -184,39 +162,20 @@ async def route__entity_type__entity_id(
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
     from musigree.app.fastapi_app import templates
 
-    # Convert query parameters to the format expected by the existing code
-    query_params: dict[str, Any] = {}
-    if roles:
-        query_params["roles"] = roles
-    if year is not None:
-        query_params["year"] = year
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
-    parsed_args = musigree.utils.parse_request_args(query_params)
-    """Parse the request arguments for roles and year."""
-    requested_roles, requested_year = parsed_args if parsed_args else (None, None)
-    if not requested_roles:
-        requested_roles = UI_DEFAULT_ROLES.copy()
-    """Use default roles if none are specified in the request."""
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
-    """Validate the entity type."""
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-    """Validate the entity ID."""
-    entity_id_int = int(entity_id)
-
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        network_data = RuntimeDatabaseManager.runtime_database_helper.get_network(
+        network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
-            entity_id_int,
+            entity_id,
             entity_type,
-            on_mobile=False,
-            roles=requested_roles,
+            on_mobile=on_mobile,
+            roles=roles,
         )
     """Retrieve the network data for the entity."""
     if network_data is None:
@@ -254,12 +213,12 @@ async def route__entity_type__entity_id(
 
     # Build URL with query parameters
     url = f"/{entity_type.name.lower()}/{entity_id}"
-    if requested_roles:
-        url += f"?roles={','.join(requested_roles)}"
-        if requested_year:
-            url += f"&year={requested_year}"
-    elif requested_year:
-        url += f"?year={requested_year}"
+    if roles:
+        url += f"?roles={','.join(roles)}"
+        if year:
+            url += f"&year={year}"
+    elif year:
+        url += f"?year={year}"
 
     """Generate the URL for the current entity."""
     title = f"Musigree: {entity_name}"
@@ -277,8 +236,8 @@ async def route__entity_type__entity_id(
             "multiselect_mapping": multiselect_mapping,
             "og_title": f'Musigree: The "{entity_name}" network',
             "og_url": url,
-            "original_roles": requested_roles,
-            "original_year": requested_year,
+            "original_roles": roles,
+            "original_year": year,
             "title": title,
         },
     )

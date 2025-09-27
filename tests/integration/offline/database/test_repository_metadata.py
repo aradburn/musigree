@@ -1,16 +1,28 @@
+"""Tests for MetadataRepository with async/await and pytest fixtures."""
+
 import datetime
+from typing import AsyncGenerator
+
+import pytest
 
 from musigree import utils
 from musigree.offline.database.metadata_repository import MetadataRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.metadata import Metadata, MetadataUncommitted
-from tests.integration.offline.database.offline_repository_test_case import (
-    OfflineRepositoryTestCase,
-)
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestRepositoryMetadata(OfflineRepositoryTestCase):
-    def test_create_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
+class TestRepositoryMetadata(AbstractDatabaseTest):
+    @pytest.mark.asyncio
+    async def test_create_metadata(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
+        """Test creating metadata in the repository.
+
+        Args:
+            offline_database_setup: Pytest fixture for database setup.
+        """
         # GIVEN
         timestamp = datetime.datetime(year=2024, month=6, day=1)
         metadata = MetadataUncommitted(
@@ -20,13 +32,12 @@ class TestRepositoryMetadata(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = MetadataRepository()
-            created_metadata = repository.create(metadata)
+            created_metadata = await repository.create(metadata)
             actual = utils.normalize_dict(
                 created_metadata.model_dump(exclude={"metadata_timestamp"})
             )
-            print(f"actual: {actual}")
 
         # THEN
         expected_relation = Metadata(
@@ -39,9 +50,17 @@ class TestRepositoryMetadata(OfflineRepositoryTestCase):
         expected = utils.normalize_dict(
             expected_relation.model_dump(exclude={"metadata_timestamp"})
         )
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_get_01(self):
+    @pytest.mark.asyncio
+    async def test_get_metadata_by_key(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
+        """Test retrieving metadata by key from the repository.
+
+        Args:
+            offline_database_setup: Pytest fixture for database setup.
+        """
         # GIVEN
         timestamp = datetime.datetime(year=2024, month=6, day=1)
         metadata = MetadataUncommitted(
@@ -51,11 +70,10 @@ class TestRepositoryMetadata(OfflineRepositoryTestCase):
         )
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             repository = MetadataRepository()
-            created_metadata = repository.create(metadata)
-
-            retrieved_metadata = repository.get_by_key(metadata_key="key2")
+            created_metadata = await repository.create(metadata)
+            retrieved_metadata = await repository.get_by_key(key="key2")
 
         # THEN
-        self.assertEqual(created_metadata, retrieved_metadata)
+        assert created_metadata == retrieved_metadata

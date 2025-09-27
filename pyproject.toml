@@ -7,30 +7,31 @@ authors = [
     { name = "Josiah Wolf Oberholtzer", email = "josiah.oberholtzer@gmail.com" },
 ]
 license = { text = "MIT" }
-requires-python = ">=3.10,<4.0"  # Changed to a more general requirement.
+requires-python = ">=3.13,<4.0"  # Changed to a more general requirement.
 readme = "README.md"
 
 dependencies = [
-    "fastapi~=0.115.12",
-    "SQLAlchemy~=2.0.41",
-#    "psycopg2~=2.9.10",
-    "psycopg[binary]~=3.2.9",
-    "pydantic~=2.11.5",
-    "pydantic-settings~=2.9.1",
-    "luigi~=3.6.0",
-    "sortedcontainers~=2.4.0",
-    "deepdiff~=8.5.0",
-    "RapidFuzz~=3.12.2",
-    "retrying~=1.3.4",
-    "requests~=2.32.4",
-    "python-dateutil~=2.9.0.post0",
-    "toolz~=1.0.0",
-    "Unidecode~=1.3.8",
-    "python-dotenv~=1.1.0",
-    "fakeredis~=2.29.0",
-    "uvicorn~=0.34.3",
-    "httpx~=0.28.1",
-    "jinja2~=3.1.6",
+    "fastapi==0.116.2",
+    "sqlalchemy[asyncio]==2.0.43",
+    "psycopg[binary]==3.2.10",
+    "aiosqlite==0.21.0",
+    "pydantic==2.11.9",
+    "pydantic-settings==2.10.1",
+    "luigi==3.6.0",
+    "sortedcontainers==2.4.0",
+    "deepdiff==8.6.1",
+    "RapidFuzz==3.14.1",
+    "retrying==1.4.2",
+    "requests==2.32.5",
+    "python-dateutil==2.9.0.post0",
+    "toolz==1.0.0",
+    "Unidecode==1.4.0",
+    "python-dotenv==1.1.1",
+    "uvicorn==0.35.0",
+    "httpx==0.28.1",
+    "jinja2==3.1.6",
+    "asyncio-atexit==1.0.1",
+    "asyncstdlib==3.13.1",
 ]
 
 [project.urls]
@@ -38,26 +39,53 @@ Repository = "https://github.com/aradburn/musigree"
 Homepage = "https://github.com/aradburn/musigree"
 Issues = "https://github.com/aradburn/musigree/issues"
 
-[tool.pdm.build]
-includes = []
-
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[dependency-groups]
-dev = [
-    "pg-temp>=0.9.1,<1.0.0",
-    "fakeredis>=2.26.1,<3.0.0",
-    "pytest~=8.4.0",
-    "pytest-mock~=3.14.1",
-    "pytest-asyncio~=1.0.0",
-    "pytest-cov~=6.2.1",
-    "mypy~=1.16.0",
-    "memray>=1.17.2,<2.0.0",
-    "pytest-memray>=1.7.0,<2.0.0",
-    "sortedcontainers-stubs~=2.4.3",
-    "types-requests~=2.32.4.20250611",
-    "types-python-dateutil~=2.9.0.20250516",
-    "locust~=2.37.10",
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+minversion = "6.0"
+addopts = "-ra -q -s"
+testpaths = [
+    "tests/unit",
+    "tests/integration",
 ]
+norecursedirs = "tests/performance"
+
+[tool.uv]
+dev-dependencies = [
+    "pg-temp==0.9.1",
+    "fakeredis==2.31.1",
+    "pytest==8.4.2",
+    "pytest-mock==3.15.1",
+    "pytest-asyncio==1.2.0",
+    "pytest-cov==7.0.0",
+    "mypy==1.18.2",
+    "memray==1.18.0",
+    "pytest-memray==1.8.0",
+    "sortedcontainers-stubs==2.4.3",
+    "types-requests==2.32.4.20250913",
+    "types-python-dateutil==2.9.0.20250822",
+    "locust==2.40.5",
+    "ruff==0.13.1",
+    "hatchling==1.27.0",
+    "yappi==1.6.10",
+]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+disallow_untyped_defs = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["B"]
+
+
