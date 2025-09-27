@@ -44,7 +44,6 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
-from musigree.runtime.runtime_database import RuntimeEntityTable, RuntimeRelationTable
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.transfer.transfer_manager import TransferManager
 
@@ -104,8 +103,6 @@ def get_load_runtime_table_stages(data_directory: Path, _date: str | None) -> li
         "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_load_runtime_table_stages()"
     )
 
-    is_full = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_full()
-    is_analyze = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_analyze()
     text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     entity_details_path = data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
     stages: list[partial[Coroutine[Any, Any, None]]] = [
@@ -123,18 +120,6 @@ def get_load_runtime_table_stages(data_directory: Path, _date: str | None) -> li
         partial(TransferManager.transfer_entity),
         # Load relations into the runtime database
         partial(TransferManager.transfer_relation),
-        partial(RuntimeDatabaseManager.runtime_database_helper.vacuum,
-                RuntimeEntityTable.__tablename__,
-                is_full,
-                is_analyze,
-                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
-                ),
-        partial(RuntimeDatabaseManager.runtime_database_helper.vacuum,
-                RuntimeRelationTable.__tablename__,
-                is_full,
-                is_analyze,
-                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
-                ),
     ]
     return stages
 
