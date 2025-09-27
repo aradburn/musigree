@@ -53,7 +53,7 @@ runtime operation.
 import logging
 from typing import Type
 
-from sqlalchemy import text, StaticPool, URL, QueuePool, Pool
+from sqlalchemy import text, StaticPool, URL, Pool, AsyncAdaptedQueuePool
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -124,8 +124,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
         log.info(f"Sqlite Database URL: {target_url}")
 
+        poolclass: type[Pool]
         if config.IS_READ_ONLY:
-            poolclass: type[Pool] = QueuePool
+            poolclass = AsyncAdaptedQueuePool
         else:
             # During loading we have a single thread, so we can use a static pool
             poolclass=StaticPool
