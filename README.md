@@ -83,7 +83,7 @@ The project uses `uv` and `venv` to manage the Python environment and dependenci
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.13+
 - Node.js 22+ (for frontend development)
 - PostgreSQL (for full database) and/or SQLite (for development and runtime)
 - Redis (optional, for caching)
