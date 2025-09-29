@@ -142,7 +142,7 @@ class PostgresTestConfiguration(Configuration):
     # PostgreSQL test settings
     POSTGRES_OFFLINE_DATABASE_NAME: str = "test_offline_musigree"
     POSTGRES_RUNTIME_DATABASE_NAME: str = "test_runtime_musigree"
-    POSTGRES_ROOT: str = "/usr/lib/postgresql/17"
+    POSTGRES_ROOT: str = "/usr/lib/postgresql/18"
 
     def __init__(self, **data: Any) -> None:
         # Generate random strings before init
