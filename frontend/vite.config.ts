@@ -52,9 +52,7 @@ export default defineConfig({
     css: {
         preprocessorOptions: {
             scss: {
-                api: "modern-compiler", // or "modern"
                 silenceDeprecations: [
-                    "mixed-decls",
                     "color-functions",
                     "global-builtin",
                     "import",
@@ -69,10 +67,8 @@ export default defineConfig({
         cors: true, // Allow all origins
         headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods":
-                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-            "Access-Control-Allow-Headers":
-                "X-Requested-With, content-type, Authorization",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
         },
         proxy: {
             "/api": {

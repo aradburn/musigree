@@ -6,6 +6,10 @@ import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
 import testingLibrary from "eslint-plugin-testing-library";
 import reactRefresh from "eslint-plugin-react-refresh";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default [
     // Base ESLint configuration
@@ -51,7 +55,7 @@ export default [
                 ecmaVersion: "latest",
                 sourceType: "module",
                 project: "./tsconfig.json",
-                tsconfigRootDir: ".",
+                tsconfigRootDir: __dirname,
             },
             globals: {
                 ...globals.browser,
@@ -92,6 +96,7 @@ export default [
     {
         files: [
             "**/__tests__/*.{test,spec}.{ts,tsx}",
+            "**/__tests__/setup/*.{ts,tsx}",
             "**/tests/**/*.{ts,tsx}",
         ],
         plugins: {
@@ -105,7 +110,7 @@ export default [
                 ecmaVersion: "latest",
                 sourceType: "module",
                 project: "./tsconfig.json",
-                tsconfigRootDir: ".",
+                tsconfigRootDir: __dirname,
             },
             globals: {
                 ...globals.browser,
@@ -125,6 +130,8 @@ export default [
             "@typescript-eslint/no-explicit-any": "off",
             "@typescript-eslint/no-unused-vars": "off",
             "@typescript-eslint/unbound-method": "off",
+            "@typescript-eslint/explicit-function-return-type": "off",
+            "@typescript-eslint/no-unsafe-return": "off",
             "testing-library/no-node-access": "off",
             "testing-library/no-container": "off",
         },
