@@ -43,10 +43,10 @@ const LINK_PALETTE = "LinkGreenPalette"; // Default color palette for links
  * @returns {string} HTML string for link text
  */
 const linkAnnotation = (d: SimLink): string => {
-    return d.role
-        .split(" ")
-        .map((x) => x[0])
-        .join("");
+    return d.role + ' ' + '\u{2192}';
+//         .split(" ")
+//         .map((x) => x[0])
+//         .join("");
 };
 
 /**

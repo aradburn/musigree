@@ -1,19 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-    MusigreeManager,
-    musigreeManager,
-    type MusigreeConfig,
-} from "../MusigreeManager";
+import { MusigreeManager, type MusigreeConfig } from "../MusigreeManager";
+import { musigreeManager } from "../singletons";
 import type { RelationsArcData } from "../../relations";
 import type * as d3 from "d3";
 
-// Mock d3.arc
-vi.mock("d3", () => {
-    return {
-        arc: vi.fn().mockReturnValue({
-            // Mock implementation details if needed
-        }),
-    };
+// Mock d3 with comprehensive mock
+vi.mock("d3", async () => {
+    const { d3Mock } = await import("../../__tests__/setup/d3-mock");
+    return d3Mock;
 });
 
 describe("MusigreeManager", () => {
@@ -120,7 +114,11 @@ describe("MusigreeManager", () => {
 
     describe("singleton instance", () => {
         it("should export a singleton instance", () => {
-            expect(musigreeManager).toBeInstanceOf(MusigreeManager);
+            // The singleton is a Proxy, so we check its properties instead of instanceof
+            expect(musigreeManager).toBeDefined();
+            expect(musigreeManager.version).toBe("2.1.0");
+            expect(typeof musigreeManager.debug).toBe("boolean");
+            expect(typeof musigreeManager.dpr).toBe("number");
         });
 
         it("should be the same instance when imported multiple times", () => {

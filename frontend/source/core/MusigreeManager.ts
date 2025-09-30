@@ -174,6 +174,3 @@ export class MusigreeManager {
         this._selectedNodeKey = null;
     }
 }
-
-// Create the singleton instance
-export const musigreeManager = new MusigreeManager();

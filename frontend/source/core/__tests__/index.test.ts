@@ -1,19 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock the manager modules
-vi.mock("../MusigreeManager", () => ({
+// Mock the singletons module directly
+vi.mock("../singletons", () => ({
     musigreeManager: {
         // Mock any needed methods or properties
     },
-}));
-
-vi.mock("../NetworkManager", () => ({
     networkManager: {
         selectedNodeKey: undefined, // Default to undefined, will be changed in tests
     },
-}));
-
-vi.mock("../RelationsManager", () => ({
     relationsManager: {
         // Mock any needed methods or properties
     },

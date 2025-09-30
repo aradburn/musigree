@@ -7,7 +7,7 @@ import {
     type SimData,
 } from "../data";
 import type { APINetworkDataResponse } from "../../api";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 import { NodeType } from "../data";
 
 // Mock data for testing

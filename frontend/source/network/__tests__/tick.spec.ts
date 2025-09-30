@@ -12,7 +12,7 @@ import {
 import { hideAllTooltips } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({
@@ -314,28 +314,15 @@ describe("Network Visualization Functions", () => {
                 selected: false,
             };
 
-            networkManager.data.center = {
-                key: "center",
-                name: "Center Node",
-                type: NodeType.Artist,
-                size: 10,
-                x: 0,
-                y: 0,
-                missing: 0,
-                hasMissing: false,
-                lastClickTime: 0,
-                lastTouchTime: 0,
-                distance: 0,
-                radius: 10,
-                links: [],
-                cluster: 0,
-                fixed: false,
-                isIntermediate: false,
-            };
+            // Set the same node object in both center and nodeMap
+            networkManager.data.center = centerNode;
             networkManager.data.nodeMap.set("center", centerNode);
 
             // Set tick to throttled value to ensure processing
             networkManager.tick = TICK_THROTTLE - 1;
+
+            // Ensure svgDimensions is set correctly for the centering logic
+            musigreeManager.svgDimensions = [800, 600];
 
             onTick(mockSimulation);
 

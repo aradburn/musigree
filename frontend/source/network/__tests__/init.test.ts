@@ -28,9 +28,7 @@ const mockZoomBehavior = vi.hoisted(() => ({
     extent: vi.fn().mockReturnThis(),
     scaleExtent: vi.fn().mockReturnThis(),
     on: vi.fn(),
-    transform: {
-        bind: vi.fn(),
-    },
+    transform: vi.fn().mockReturnThis(),
 }));
 
 // Use hoisted objects in all mocks
@@ -57,7 +55,19 @@ const mockD3SelectResult = vi.hoisted(() => {
         append: vi.fn().mockReturnThis(),
         attr: vi.fn().mockReturnThis(),
         node: vi.fn().mockReturnValue(document.createElement("div")),
-        call: vi.fn().mockReturnThis(),
+        call: vi.fn().mockImplementation((fn, ...args) => {
+            if (fn === mockZoomBehavior.transform) {
+                // For zoom.transform method calls
+                mockZoomBehavior.transform(...args);
+            } else if (fn === mockZoomBehavior) {
+                // For zoom behavior application
+                return mockD3SelectResult;
+            } else if (typeof fn === "function") {
+                // For other function calls
+                fn(mockD3SelectResult, ...args);
+            }
+            return mockD3SelectResult;
+        }),
         transition: vi.fn().mockReturnThis(),
         duration: vi.fn().mockReturnThis(),
     };
@@ -90,6 +100,13 @@ vi.mock("d3", () => {
             invert: vi.fn().mockReturnValue([0, 0]),
             toString: vi.fn().mockReturnValue("translate(0,0) scale(1)"),
         }),
+        arc: vi.fn().mockReturnValue({
+            innerRadius: vi.fn().mockReturnThis(),
+            outerRadius: vi.fn().mockReturnThis(),
+            startAngle: vi.fn().mockReturnThis(),
+            endAngle: vi.fn().mockReturnThis(),
+            centroid: vi.fn().mockReturnValue([0, 0]),
+        }),
     };
     return mockD3;
 });
@@ -108,7 +125,7 @@ import { initNetwork, resetNetworkTransform } from "../init";
 import { initForceLayout } from "../forceLayout";
 import { hideAllTooltips } from "../tooltips";
 import * as d3 from "d3";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Test suite
 describe("Network Initialization Module", () => {
@@ -177,6 +194,9 @@ describe("Network Initialization Module", () => {
     // Test the main functionality of initNetwork
     describe("initNetwork function", () => {
         it("should call the layout initialization functions", () => {
+            // Set up a spy to capture the custom event dispatch
+            const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+
             // Call the function we're testing
             initNetwork("#svg");
 
@@ -195,6 +215,16 @@ describe("Network Initialization Module", () => {
                 "zoom",
                 expect.any(Function),
             );
+
+            // Verify that the force layout initialization event was dispatched
+            expect(dispatchEventSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: "musigree:force-layout-initialized",
+                }),
+            );
+
+            // Clean up the spy
+            dispatchEventSpy.mockRestore();
         });
     });
 
@@ -207,11 +237,6 @@ describe("Network Initialization Module", () => {
                 musigreeManager.svgDimensions[1] / 2,
             ];
 
-            // Setup mockZoomBehavior.transform.bind
-            mockZoomBehavior.transform.bind.mockReturnValue(
-                (selection: unknown, transform: unknown) => selection,
-            );
-
             // Call the function being tested
             resetNetworkTransform();
 
@@ -222,6 +247,9 @@ describe("Network Initialization Module", () => {
             expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_ID);
             expect(mockD3SelectResult.transition).toHaveBeenCalled();
             expect(mockD3SelectResult.duration).toHaveBeenCalledWith(750);
+
+            // Verify zoom.transform was called
+            expect(mockZoomBehavior.transform).toHaveBeenCalled();
         });
 
         it("should handle missing SVG node gracefully", () => {
@@ -235,6 +263,29 @@ describe("Network Initialization Module", () => {
             expect(console.error).toHaveBeenCalledWith(
                 "SVG node is not an instance of Element",
             );
+        });
+
+        it("should handle missing zoom behavior gracefully", () => {
+            // Mock console.warn
+            vi.spyOn(console, "warn").mockImplementation(() => {});
+
+            // Temporarily set zoom to null to test the null check
+            const originalZoom = networkManager.zoom;
+            networkManager.zoom = null;
+
+            // Call the function being tested
+            resetNetworkTransform();
+
+            // Verify warning was logged
+            expect(console.warn).toHaveBeenCalledWith(
+                "Cannot reset network transform: zoom behavior not initialized",
+            );
+
+            // Verify that no further processing occurred (no d3.select call for DOM_IDS.SVG_ID)
+            expect(d3.select).not.toHaveBeenCalledWith(DOM_IDS.SVG_ID);
+
+            // Restore original zoom
+            networkManager.zoom = originalZoom;
         });
     });
 
@@ -262,8 +313,14 @@ describe("Network Initialization Module", () => {
             // Verify tooltips were hidden
             expect(hideAllTooltips).toHaveBeenCalled();
 
-            // Verify layer transform was updated
-            expect(mockLayers.root).not.toBeNull();
+            // Verify that initNetwork was called and the root layer was set up
+            expect(networkManager.layers.root).not.toBeNull();
+
+            // Verify that attr was called with transform on the root layer
+            expect(networkManager.layers.root?.attr).toHaveBeenCalledWith(
+                "transform",
+                "translate(10,20) scale(1.5)",
+            );
         });
     });
 });

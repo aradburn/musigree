@@ -9,7 +9,7 @@ import {
     onTextUpdate,
     LABEL_OFFSET_Y,
 } from "../text";
-import { musigreeManager } from "../../core";
+import { musigreeManager } from "../../core/singletons";
 import type { SimNode } from "../data";
 import { NodeType } from "../data";
 

@@ -257,6 +257,3 @@ export class NetworkManager {
         this._data.linkMap.clear();
     }
 }
-
-// Create the singleton instance
-export const networkManager = new NetworkManager();

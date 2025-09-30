@@ -21,7 +21,7 @@ import {
     setForceLayoutNodes,
     setNetworkForces,
 } from "../../network/forceLayout";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Create a type for private methods we need to spy on
 type MusigreeFSMPrivate = {
@@ -29,109 +29,90 @@ type MusigreeFSMPrivate = {
     transition: (newStateType: string) => void;
 };
 
-// Mock d3 with proper exports
-vi.mock("d3", () => {
-    return {
-        select: vi.fn().mockReturnValue({
-            classed: vi.fn().mockReturnThis(),
-            style: vi.fn().mockReturnThis(),
-            attr: vi.fn().mockReturnThis(),
-            selectAll: vi.fn().mockReturnValue({
-                classed: vi.fn().mockReturnThis(),
-                filter: vi.fn().mockReturnThis(),
-                raise: vi.fn().mockReturnThis(),
-                empty: vi.fn().mockReturnValue(false),
-                each: vi.fn(),
-                datum: vi.fn().mockReturnValue({
-                    links: [{ key: "link1" }],
-                }),
-            }),
-            text: vi.fn().mockReturnThis(),
-        }),
-        selectAll: vi.fn().mockReturnValue({
-            transition: vi.fn().mockReturnThis(),
-            duration: vi.fn().mockReturnThis(),
-            attr: vi.fn().mockReturnThis(),
-            classed: vi.fn().mockReturnThis(),
-            filter: vi.fn().mockReturnThis(),
-            raise: vi.fn().mockReturnThis(),
-            empty: vi.fn().mockReturnValue(false),
-            each: vi.fn(),
-            datum: vi.fn().mockReturnValue({
-                links: [{ key: "link1" }],
-            }),
-            text: vi.fn().mockReturnThis(),
-            style: vi.fn().mockReturnThis(),
-        }),
-    };
+// Mock d3 with comprehensive mock
+vi.mock("d3", async () => {
+    const { d3Mock } = await import("../../__tests__/setup/d3-mock");
+    return d3Mock;
 });
 
-vi.mock("../../core", () => ({
-    musigreeManager: {
+vi.mock("../../core/singletons", () => {
+    let selectedNodeKeyValue: string | null = null;
+
+    const mockMusigreeManager = {
         svgDimensions: [800, 600],
-        selectedNodeKey: null,
-    },
-    networkManager: {
-        data: {
-            center: {
-                key: "artist-123",
-                name: "Test Artist",
-                type: "artist",
-                size: 10,
-                x: 0,
-                y: 0,
-                missing: [],
-                hasMissing: false,
-                lastClickTime: 0,
-                lastTouchTime: 0,
-            },
-            nodeMap: new Map([
-                [
-                    "artist-123",
-                    {
-                        key: "artist-123",
-                        name: "Test Artist",
-                        type: "artist",
-                        links: [],
-                        fixed: false,
-                        size: 10,
-                        x: 0,
-                        y: 0,
-                        missing: [],
-                        hasMissing: false,
-                        lastClickTime: 0,
-                        lastTouchTime: 0,
-                    },
-                ],
-            ]),
+        get selectedNodeKey() {
+            return selectedNodeKeyValue;
         },
-        newNodeCoords: [400, 300],
-        layers: {
-            root: {
-                style: vi.fn().mockReturnThis(),
+        set selectedNodeKey(value: string | null) {
+            selectedNodeKeyValue = value;
+        },
+        setSelectedNodeKey: vi.fn(),
+    };
+
+    return {
+        musigreeManager: mockMusigreeManager,
+        networkManager: {
+            data: {
+                center: {
+                    key: "artist-123",
+                    name: "Test Artist",
+                    type: "artist",
+                    size: 10,
+                    x: 0,
+                    y: 0,
+                    missing: [],
+                    hasMissing: false,
+                    lastClickTime: 0,
+                    lastTouchTime: 0,
+                },
+                nodeMap: new Map([
+                    [
+                        "artist-123",
+                        {
+                            key: "artist-123",
+                            name: "Test Artist",
+                            type: "artist",
+                            links: [],
+                            fixed: false,
+                            size: 10,
+                            x: 0,
+                            y: 0,
+                            missing: [],
+                            hasMissing: false,
+                            lastClickTime: 0,
+                            lastTouchTime: 0,
+                        },
+                    ],
+                ]),
             },
-            node: {
-                selectAll: vi.fn().mockReturnValue({
-                    classed: vi.fn().mockReturnThis(),
-                    filter: vi.fn().mockReturnThis(),
-                    raise: vi.fn().mockReturnThis(),
-                    empty: vi.fn().mockReturnValue(false),
-                    each: vi.fn(),
-                    datum: vi.fn().mockReturnValue({
-                        links: [{ key: "link1" }],
+            layers: {
+                root: {
+                    style: vi.fn().mockReturnThis(),
+                },
+                node: {
+                    selectAll: vi.fn().mockReturnValue({
+                        classed: vi.fn().mockReturnThis(),
+                        filter: vi.fn().mockReturnThis(),
+                        raise: vi.fn().mockReturnThis(),
+                        empty: vi.fn().mockReturnValue(false),
+                        each: vi.fn(),
+                        datum: vi.fn().mockReturnValue({
+                            links: [{ key: "link1" }],
+                        }),
                     }),
-                }),
-            },
-            link: {
-                selectAll: vi.fn().mockReturnValue({
-                    classed: vi.fn().mockReturnThis(),
-                    filter: vi.fn().mockReturnThis(),
-                    empty: vi.fn().mockReturnValue(false),
-                }),
+                },
+                link: {
+                    selectAll: vi.fn().mockReturnValue({
+                        classed: vi.fn().mockReturnThis(),
+                        filter: vi.fn().mockReturnThis(),
+                        style: vi.fn().mockReturnThis(),
+                        each: vi.fn(),
+                    }),
+                },
             },
         },
-    },
-}));
+    };
+});
 
 vi.mock("../../network/forceLayout", () => ({
     restartForceLayout: vi.fn(),
@@ -637,14 +618,12 @@ describe("MusigreeFSM", () => {
             it("should select an entity in the network", () => {
                 fsm.selectEntity("artist-123", true);
                 // Test that musigreeManager.selectedNodeKey is updated
-                expect(vi.mocked(musigreeManager).selectedNodeKey).toBe(
-                    "artist-123",
-                );
+                expect(musigreeManager.selectedNodeKey).toBe("artist-123");
             });
 
             it("should deselect all entities when null is passed", () => {
                 fsm.selectEntity(null, false);
-                expect(vi.mocked(musigreeManager).selectedNodeKey).toBe(null);
+                expect(musigreeManager.selectedNodeKey).toBe(null);
             });
         });
     });

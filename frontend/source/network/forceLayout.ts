@@ -18,7 +18,7 @@ import {
     ResetForcesEvent,
     SetForcesEvent,
 } from "./events";
-import { musigreeManager, networkManager } from "../core";
+import { musigreeManager, networkManager } from "../core/singletons";
 import { FORCE } from "../constants";
 
 /**

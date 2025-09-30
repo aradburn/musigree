@@ -11,7 +11,7 @@ import {
 } from "../forceLayout";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 import { FORCE } from "../../constants";
 
 // Mock d3
@@ -61,7 +61,7 @@ vi.mock("d3", () => ({
 }));
 
 // Mock core module with networkManager
-vi.mock("../../core", () => {
+vi.mock("../../core/singletons", () => {
     // Create a mock selectAll function inside the mock callback
     const innerMockSelectAll = vi.fn().mockReturnValue({
         data: vi.fn().mockReturnValue({

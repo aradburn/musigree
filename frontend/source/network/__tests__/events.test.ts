@@ -11,7 +11,7 @@ import { NodeType } from "../data";
 import { nodeTooltip } from "../tooltips";
 import * as forceLayout from "../forceLayout";
 import * as tick from "../tick";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Now import the functions under test
 import {
@@ -257,26 +257,31 @@ describe("Network Graph Event Handlers", () => {
 
     describe("onNetworkStart", () => {
         it("should initialize network state", () => {
-            const isRunningLayoutSetter = vi.fn();
-            const tickSetter = vi.fn();
-
-            // Mock the setters specifically for this test
-            Object.defineProperty(networkManager, "isRunningLayout", {
-                get: vi.fn(() => false),
-                set: isRunningLayoutSetter,
-                configurable: true,
-            });
-
-            Object.defineProperty(networkManager, "tick", {
-                get: vi.fn(() => 0),
-                set: tickSetter,
-                configurable: true,
-            });
+            // Store original values
+            const originalIsRunningLayout = networkManager.isRunningLayout;
+            const originalTick = networkManager.tick;
 
             onNetworkStart();
 
-            expect(isRunningLayoutSetter).toHaveBeenCalledWith(true);
-            expect(tickSetter).toHaveBeenCalledWith(0);
+            // Verify the state changes were made
+            expect(networkManager.isRunningLayout).toBe(true);
+            expect(networkManager.tick).toBe(0);
+
+            // Also verify d3 selection calls were made
+            expect(mockLinkSelectAll).toHaveBeenCalledWith(".link");
+            expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
+            expect(mockLinkSelectAll().classed).toHaveBeenCalledWith(
+                "noninteractive",
+                false,
+            );
+            expect(mockNodeSelectAll().classed).toHaveBeenCalledWith(
+                "noninteractive",
+                false,
+            );
+
+            // Restore original values
+            networkManager.isRunningLayout = originalIsRunningLayout;
+            networkManager.tick = originalTick;
         });
 
         it("should make nodes and links interactive", () => {
@@ -298,18 +303,14 @@ describe("Network Graph Event Handlers", () => {
     describe("onNetworkEnd", () => {
         it("should update network state and maintain interactivity", () => {
             const mockSimulation = {} as d3.Simulation<SimNode, undefined>;
-            const isRunningLayoutSetter = vi.fn();
 
-            // Mock the setter specifically for this test
-            Object.defineProperty(networkManager, "isRunningLayout", {
-                get: vi.fn(() => true),
-                set: isRunningLayoutSetter,
-                configurable: true,
-            });
+            // Store original value
+            const originalIsRunningLayout = networkManager.isRunningLayout;
 
             onNetworkEnd(mockSimulation);
 
-            expect(isRunningLayoutSetter).toHaveBeenCalledWith(false);
+            // Verify the state changes were made
+            expect(networkManager.isRunningLayout).toBe(false);
             expect(mockLinkSelectAll).toHaveBeenCalledWith(".link");
             expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
             expect(mockLinkSelectAll().classed).toHaveBeenCalledWith(
@@ -321,6 +322,9 @@ describe("Network Graph Event Handlers", () => {
                 false,
             );
             expect(onTickSpy).toHaveBeenCalledWith(mockSimulation);
+
+            // Restore original value
+            networkManager.isRunningLayout = originalIsRunningLayout;
         });
     });
 });

@@ -4,7 +4,7 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager, networkManager } from "../core";
+import { musigreeManager, networkManager } from "../core/singletons";
 import {
     restartForceLayout,
     stopForceLayout,
