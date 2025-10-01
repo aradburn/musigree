@@ -43,6 +43,7 @@ from musigree.constants import (
     PUBLIC_DIR,
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
+    FRONTEND_DIR,
 )
 from musigree.exceptions import (
     BaseError,
@@ -113,6 +114,7 @@ def create_app(config: Configuration) -> FastAPI:
 
     # Create a new FastAPI app
     app = FastAPI(
+        debug=True,
         title="Musigree",
         description="Musigree API for exploring music relationships",
         version="1.0.0",
@@ -129,6 +131,7 @@ def create_app(config: Configuration) -> FastAPI:
         allowed_origins = [
             "https://musigree.azurewebsites.net",
             "https://www.musigree.com",  # Add your production domain
+            "http://localhost:8080",
         ]
         log.debug("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -165,11 +168,11 @@ def create_app(config: Configuration) -> FastAPI:
     assets_router, assets_templates = create_assets_router(config)
 
     # Include routers
+    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
+    app.mount("/prodassets", StaticFiles(directory=FRONTEND_DIR / "dist"), name="prodassets")
+    app.include_router(assets_router)
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
-    app.include_router(assets_router)
-
-    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -271,4 +274,4 @@ async def init_app(config: Configuration) -> None:
     await TransferManager.transfer_load_text_search_index(text_search_path)
 
     # Shutdown on app exit
-    asyncio_atexit.register(shutdown_application())
+    asyncio_atexit.register(shutdown_application)
