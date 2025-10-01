@@ -66,6 +66,16 @@ LOGGING_CONFIG: dict[str, Any] = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "uvicorn": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "fastapi": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
         "__main__": {  # if __name__ == '__main__'
             "handlers": ["console_handler"],
             "level": "DEBUG",
