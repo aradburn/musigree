@@ -18,8 +18,7 @@ export default defineConfig({
     },
     plugins: [react()],
     build: {
-        target: "es2020",
-        assetsDir: "assets",
+        cssCodeSplit: false,
         sourcemap: true,
         outDir: path.join(__dirname, "./dist/"),
         manifest: "manifest.json",
@@ -60,9 +59,9 @@ export default defineConfig({
             },
         },
     },
-    optimizeDeps: {
-        include: [],
-    },
+//     optimizeDeps: {
+//         include: [],
+//     },
     server: {
         cors: true, // Allow all origins
         headers: {
