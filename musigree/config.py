@@ -174,7 +174,7 @@ class SqliteProductionConfiguration(Configuration):
     DATABASE: DatabaseType = DatabaseType.SQLITE
     APPLICATION_ROOT: str = "http://localhost"
     THREADING_MODEL: ThreadingModel = ThreadingModel.THREAD
-    CACHE_TYPE: CacheType = CacheType.FILESYSTEM
+    CACHE_TYPE: CacheType = CacheType.REDIS
 
     # SQLite settings
     SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
@@ -191,7 +191,7 @@ class SqliteDevelopmentConfiguration(Configuration):
     DATABASE: DatabaseType = DatabaseType.SQLITE
     APPLICATION_ROOT: str = "http://localhost"
     THREADING_MODEL: ThreadingModel = ThreadingModel.THREAD
-    CACHE_TYPE: CacheType = CacheType.FILESYSTEM
+    CACHE_TYPE: CacheType = CacheType.REDIS
 
     # SQLite settings
     SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"

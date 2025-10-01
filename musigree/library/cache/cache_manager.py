@@ -181,7 +181,7 @@ class RedisCache(BaseCache):
             )
             self._client = fakeredis.FakeRedis()
 
-    def _get_redis_client(self) -> redis.Redis | fakeredis.FakeRedis:
+    def _get_redis_client(self) -> Any | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
