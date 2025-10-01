@@ -1,0 +1,12 @@
+frontend/coverage
+frontend/dist
+frontend/node_modules
+frontend/static
+frontend/tests
+Dockerfile
+musigree/data/discogs
+musigree/data/instruments
+musigree/data/roles
+.dockerignore
+.git
+.venv
