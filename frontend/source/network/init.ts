@@ -10,13 +10,13 @@ import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
 import { SVG, DOM_IDS } from "../constants";
 
-type TransformFunction = (
-    selection:
-        | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
-        | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
-    transform: d3.ZoomTransform,
-    point?: [number, number],
-) => void;
+// type TransformFunction = (
+//     selection:
+//         | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
+//         | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
+//     transform: d3.ZoomTransform,
+//     point?: [number, number],
+// ) => void;
 
 /**
  * Initializes the network visualization by setting up the SVG layers, zoom behavior, and force layout.
@@ -49,12 +49,12 @@ export const initNetwork = (svgSelector: string): void => {
         ])
         .scaleExtent([1, 8])
         .on("zoom", handleZoom);
-    console.log("init zoom", networkManager.zoom);
-    console.log("zoom.transform method:", networkManager.zoom.transform);
-    console.log(
-        "zoom methods:",
-        Object.getOwnPropertyNames(networkManager.zoom),
-    );
+    // console.log("init zoom", networkManager.zoom);
+    // console.log("zoom.transform method:", networkManager.zoom.transform);
+    // console.log(
+    //     "zoom methods:",
+    //     Object.getOwnPropertyNames(networkManager.zoom),
+    // );
 
     // Apply zoom behavior to the SVG element
     svgElement.call(networkManager.zoom);
@@ -109,20 +109,17 @@ export const resetNetworkTransform = (): void => {
         console.error("SVG node is not an instance of Element");
         return;
     }
-    const currentTransform = d3.zoomTransform(svgNode);
-    //     const x = musigreeManager.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
-    //     const y = musigreeManager.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
-    //     const invertedPoint = currentTransform.invert([x, y]);
-    const invertedPoint = currentTransform.invert([
-        -(
-            musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
-            musigreeManager.svgDimensions[0]
-        ) / 2.0,
-        -(
-            musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
-            musigreeManager.svgDimensions[1]
-        ) / 2.0,
-    ]);
+    // const currentTransform = d3.zoomTransform(svgNode);
+    // const invertedPoint = currentTransform.invert([
+    //     -(
+    //         musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+    //         musigreeManager.svgDimensions[0]
+    //     ) / 2.0,
+    //     -(
+    //         musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+    //         musigreeManager.svgDimensions[1]
+    //     ) / 2.0,
+    // ]);
 
     //     networkManager.zoom = d3
     //         .zoom<SVGSVGElement, unknown>()
@@ -148,6 +145,7 @@ export const resetNetworkTransform = (): void => {
     // Update the zoom behavior's internal transform state
     if (svgNode) {
         // This updates D3's internal zoom transform state
+        // @ts-expect-error __zoom
         svgNode.__zoom = initialTransform;
     }
 
