@@ -1,13 +1,11 @@
 import functools
 import logging
 import re
-from typing import List
 
 log = logging.getLogger(__name__)
 
 
 class RoleDataUtils:
-
     # REGEXs
     SPLIT_CHARACTERS = re.compile(r" & |&|＆| and | And |/|; |\+| - |・| Und | Et ")
     A_N_R = re.compile(r"\b[aA] ?(&|and|And|\+) ?[rR]\b")
@@ -67,8 +65,7 @@ class RoleDataUtils:
     }
 
     @staticmethod
-    def normalise_role_names(input_name: str) -> List[str]:
-
+    def normalise_role_names(input_name: str) -> list[str]:
         # Remove anything in brackets, quotes and parenthesis
         input_name = re.sub(RoleDataUtils.BRACKETS, "", input_name)
         input_name = re.sub(RoleDataUtils.QUOTES, "", input_name)
@@ -139,10 +136,10 @@ class RoleDataUtils:
 
         # Strings
         if match := re.search(r"^(\d+)( *)[sS]tring$", name):
-            # print("  Add hyphen")
+            # Add hyphen
             name = match.group(1) + "-String Guitar"
         if match := re.search(r"^(\d+)( *)[sS]tring Guitar$", name):
-            # print("  Add hyphen")
+            # Add hyphen
             name = match.group(1) + "-String Guitar"
 
         # Convert number of strings
@@ -166,34 +163,32 @@ class RoleDataUtils:
 
         # Ordering
         if match := re.search(r"^(.*) \(Six-String\)$", name):
-            # print("  Ordering")
             name = "Six-String " + match.group(1)
         if match := re.search(r"^(.*) \(Twelve-String\)$", name):
-            # print("  Ordering")
             name = "Twelve-String " + match.group(1)
         return name
 
     @staticmethod
     @functools.lru_cache(maxsize=100000)
     def normalise_role_name(input_name: str) -> str:
-        def upper(matches):
+        def upper(matches: re.Match[str]) -> str:
             return matches.group(1).upper()
 
-        def to_upper(matches):
+        def to_upper(matches: re.Match[str]) -> str:
             return matches.group(1) + matches.group(2).upper()
 
-        def to_lower(matches):
+        def to_lower(matches: re.Match[str]) -> str:
             return matches.group(1) + matches.group(2).lower()
 
-        def to_lower_upper(matches):
+        def to_lower_upper(matches: re.Match[str]) -> str:
             return matches.group(1).lower() + matches.group(2).upper()
 
         # noinspection PyUnusedLocal
-        def lower(matches):
+        def lower(matches: re.Match[str]) -> str:
             return matches.group(1).lower()
 
         # noinspection PyUnusedLocal
-        def capitalize(matches):
+        def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 
         if (
@@ -237,7 +232,6 @@ class RoleDataUtils:
         # name = re.sub(r"(&[a-z])", upper, name)
         # Capitalise after round bracket
         # name = re.sub(r"\(([a-z]{2,})\)", capitalize, name)
-        # print(f"bracket: {bracket}, apos2: {apos2}")
 
         # Single quote
         # name = re.sub(r" '", " ", name)
@@ -261,10 +255,9 @@ class RoleDataUtils:
 
         # Ignore with only digits or special characters
         if re.match(RoleDataUtils.DIGITS_AND_SPECIAL_CHARACTERS, name):
-            # print("  Ignore with only digits or special characters")
             return ""
         if match := re.search(r"^\d+[^\d-]{1} +(.*)$", name):
-            # print("  Remove digit + char")
+            # Remove digit + char
             name = match.group(1)
 
         # Convert guitar strings and numbers
@@ -279,7 +272,6 @@ class RoleDataUtils:
 
         # Remove leading numbers
         if match := re.search(r"^\d+[ :]+(.*)$", name):
-            # print("  Remove leading numbers")
             matched = match.group(1)
             if matched == "Tone Row":
                 name = re.sub(r"12[- ]", "Twelve-", name)
@@ -346,15 +338,12 @@ class RoleDataUtils:
 
         # Initialisms eg. A.B.C.
         if match := re.search(r"^(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = match.group(1).upper() + match.group(2).upper()
         if match := re.search(r"^(\S)\.(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = (
                 match.group(1).upper() + match.group(2).upper() + match.group(3).upper()
             )
         if match := re.search(r"^(\S)\.(\S)\.(\S)\.(\S)\. *$", name):
-            # print("  Initialism")
             name = (
                 match.group(1).upper()
                 + match.group(2).upper()
@@ -383,5 +372,4 @@ class RoleDataUtils:
         # Remove leading and trailing spaces
         name = name.strip()
 
-        # print(f"    {name}")
         return name

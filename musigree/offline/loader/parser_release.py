@@ -52,6 +52,8 @@ It uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from typing import Any
+from xml.etree.ElementTree import Element
 
 from musigree.offline.domain.release import Release
 from musigree.offline.loader.parser_base import ParserBase
@@ -74,17 +76,17 @@ class ParserRelease(ParserBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping = {}
+    _artists_mapping: dict[str, Any] = {}
     """
     Mapping for artist credit XML elements to their corresponding fields.
     """
 
-    _companies_mapping = {}
+    _companies_mapping: dict[str, Any] = {}
     """
     Mapping for company credit XML elements to their corresponding fields.
     """
 
-    _tracks_mapping = {}
+    _tracks_mapping: dict[str, Any] = {}
     """
     Mapping for track XML elements to their corresponding fields.
     """
@@ -92,7 +94,7 @@ class ParserRelease(ParserBase):
     # CLASS METHODS
 
     @classmethod
-    def element_to_artist_credits(cls, element):
+    def element_to_artist_credits(cls, element: Element) -> list[dict[str, Any]]:
         """
         Extracts artist credit information from an XML element.
 
@@ -106,7 +108,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing an artist credit.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for subelement in element:
@@ -119,7 +121,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def element_to_company_credits(cls, element):
+    def element_to_company_credits(cls, element: Element) -> list[dict[str, Any]]:
         """
         Extracts company credit information from an XML element.
 
@@ -133,7 +135,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing a company credit.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for subelement in element:
@@ -146,7 +148,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def element_to_formats(cls, element):
+    def element_to_formats(cls, element: Element) -> list[dict[str, Any]]:
         """
         Extracts format information from an XML element.
 
@@ -160,7 +162,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing a format.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for sub_element in element:
@@ -173,12 +175,12 @@ class ParserRelease(ParserBase):
             if len(sub_element):
                 sub_element = sub_element[0]
                 descriptions = ParserUtils.element_to_strings(sub_element)
-                document["descriptions"] = descriptions
+                document["descriptions"] = descriptions  # type: ignore
             result.append(document)
         return result
 
     @classmethod
-    def element_to_identifiers(cls, element):
+    def element_to_identifiers(cls, element: Element) -> list[dict[str, str]]:
         """
         Extracts identifier information from an XML element.
 
@@ -192,7 +194,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing an identifier.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for sub_element in element:
@@ -205,7 +207,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def element_to_label_credits(cls, element):
+    def element_to_label_credits(cls, element: Element) -> list[dict[str, str]]:
         """
         Extracts label credit information from an XML element.
 
@@ -219,7 +221,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing a label credit.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for sub_element in element:
@@ -232,7 +234,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def element_to_roles(cls, element):
+    def element_to_roles(cls, element: Element) -> list[dict[str, str]] | None:
         """
         Extracts role information from an XML element.
 
@@ -247,7 +249,7 @@ class ParserRelease(ParserBase):
             list: A list of dictionaries, each representing a role.
         """
 
-        def from_text(text):
+        def from_text(text: str) -> dict[str, str]:
             """
             Helper function to parse role text.
 
@@ -313,7 +315,7 @@ class ParserRelease(ParserBase):
         return credit_roles or None
 
     @classmethod
-    def element_to_tracks(cls, element):
+    def element_to_tracks(cls, element: Element) -> list[dict[str, Any]]:
         """
         Extracts track information from an XML element.
 
@@ -327,7 +329,7 @@ class ParserRelease(ParserBase):
         Returns:
             list: A list of dictionaries, each representing a track.
         """
-        result = []
+        result: list[dict[str, Any]] = []
         if element is None or not len(element):
             return result
         for sub_element in element:
@@ -340,7 +342,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element) -> Release:
+    def from_element(cls, element: Element) -> Release:  # type: ignore
         """
         Creates a `Release` domain object from an XML element.
 
@@ -358,7 +360,7 @@ class ParserRelease(ParserBase):
         return Release(**data)
 
     @classmethod
-    def preprocess_data(cls, data, element):
+    def preprocess_data(cls, data: dict[str, Any], element: Element) -> dict[str, Any]:
         """
         Preprocesses the extracted release data.
 
@@ -375,9 +377,7 @@ class ParserRelease(ParserBase):
             dict: The preprocessed data.
         """
         if element.tag == "release":
-            # print(f"el: {element}")
-            # print(f"el_id: {element.get('id')}")
-            data["release_id"] = int(element.get("id"))
+            data["release_id"] = int(element.get("id"))  # type: ignore
             if "identifiers" not in data:
                 data["identifiers"] = None
             if "master_id" not in data:

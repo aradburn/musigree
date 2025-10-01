@@ -31,10 +31,9 @@ __all__ = [
 ]
 
 import logging
-from typing import Dict, Any, Self, List
+from typing import Any
 
 from musigree import utils
-from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_id import to_entity_external_id
@@ -60,6 +59,8 @@ class RelationUncommitted(_RelationBase):
         subject (int): The subject entity ID.
         role_name (str): The name of the role.
         object (int): The object entity ID.
+        release_id (int): The release ID.
+        year (int): The release year.
     """
 
     subject: int
@@ -68,15 +69,21 @@ class RelationUncommitted(_RelationBase):
     """The name of the role."""
     object: int
     """The object entity ID."""
+    release_id: int
+    """The ID of the release."""
+    year: int | None = None
+    """The release year, if available."""
 
     @staticmethod
-    def from_dicts(relation_dicts: list[dict[str, Any]]) -> List["RelationUncommitted"]:
+    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list["RelationUncommitted"]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RelationUncommitted(
                 subject=relation_dict["subject"],
                 role_name=relation_dict["role"],
                 object=relation_dict["object"],
+                release_id=relation_dict["release_id"],
+                year=relation_dict["year"],
             )
             relation_uncommitteds.append(relation_uncommitted)
         return relation_uncommitteds
@@ -94,6 +101,8 @@ class RelationDB(_RelationBase):
         subject (int): The subject entity ID.
         predicate (int): The predicate (role) ID.
         object (int): The object entity ID.
+        release_id (int): The release ID.
+        year (int): The release year.
     """
 
     id: int
@@ -104,6 +113,10 @@ class RelationDB(_RelationBase):
     """The predicate (role) ID."""
     object: int
     """The object entity ID."""
+    release_id: int
+    """The ID of the release."""
+    year: int | None = None
+    """The release year, if available."""
 
     def to_domain(self) -> "RelationInternal":
         """
@@ -112,8 +125,11 @@ class RelationDB(_RelationBase):
         Returns:
             RelationInternal: The internal representation of the relation.
         """
-        relation_db_dict: dict = self.model_dump()
-        role_id: int = relation_db_dict.get("predicate")
+        relation_db_dict: dict[str, Any] = self.model_dump()
+        _role_id = relation_db_dict.get("predicate")
+        role_id: int = (
+            _role_id if _role_id is not None and isinstance(_role_id, int) else 0
+        )
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RelationInternal.model_validate(relation_db_dict)
@@ -128,18 +144,15 @@ class Relation(_RelationBase):
     the role and associated releases.
 
     Attributes:
-        id (int): The unique identifier for the relation.
         entity_one_id (int): The ID of the first entity.
         entity_one_type (EntityType): The type of the first entity.
         entity_two_id (int): The ID of the second entity.
         entity_two_type (EntityType): The type of the second entity.
         role (str): The role of the relation.
-        releases (Dict[str, int | None] | None): The releases associated with
+        releases (dict[str, int | None] | None): The releases associated with
             the relation.
     """
 
-    id: int
-    """The unique identifier for the relation."""
     entity_one_id: int
     """The ID of the first entity."""
     entity_one_type: EntityType
@@ -150,7 +163,7 @@ class Relation(_RelationBase):
     """The type of the second entity."""
     role: str
     """The role of the relation."""
-    releases: Dict[str, int | None] | None = None
+    releases: dict[str, int | None] | None
     """The releases associated with the relation."""
 
     @property
@@ -188,6 +201,7 @@ class Relation(_RelationBase):
             return f"artist-{self.entity_one_id}"
         elif self.entity_one_type == EntityType.LABEL:
             return f"label-{self.entity_one_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_one_key)
 
     @property
@@ -205,6 +219,7 @@ class Relation(_RelationBase):
             return f"artist-{self.entity_two_id}"
         elif self.entity_two_type == EntityType.LABEL:
             return f"label-{self.entity_two_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(self.entity_two_key)
 
     @property
@@ -228,6 +243,34 @@ class Relation(_RelationBase):
         ]
         return "-".join(str(_) for _ in pieces)
 
+    @staticmethod
+    def from_relation_internals(relation_internals: list["RelationInternal"]) -> "Relation":
+        releases: dict[str, int | None] = {}
+        subjects: set[int] = set()
+        roles: set[str] = set()
+        objects: set[int] = set()
+        for relation_internal in relation_internals:
+            releases.update({str(relation_internal.release_id): relation_internal.year})
+            subjects.add(relation_internal.subject)
+            roles.add(relation_internal.role)
+            objects.add(relation_internal.object)
+        assert len(subjects) == 1, "relations_internals must all have the same subject"
+        assert len(roles) == 1, "relations_internals must all have the same roles"
+        assert len(objects) == 1, "relations_internals must all have the same object"
+        [_subject] = subjects
+        [_role] = roles
+        [_object] = objects
+        entity_one_id, entity_one_type = to_entity_external_id(_subject)
+        entity_two_id, entity_two_type = to_entity_external_id(_object)
+        return Relation(
+            entity_one_id=entity_one_id,
+            entity_one_type=entity_one_type,
+            entity_two_id=entity_two_id,
+            entity_two_type=entity_two_type,
+            role=_role,
+            releases=releases,
+        )
+
 
 class RelationInternal(_RelationBase):
     """
@@ -242,6 +285,8 @@ class RelationInternal(_RelationBase):
         subject (int): The subject entity ID.
         role (str): The role of the relation.
         object (int): The object entity ID.
+        release_id (int): The release ID.
+        year (int): The year.
     """
 
     id: int
@@ -252,51 +297,10 @@ class RelationInternal(_RelationBase):
     """The role of the relation."""
     object: int
     """The object entity ID."""
-
-    def to_relation(self) -> Relation | None:
-        """
-        Converts the RelationInternal instance to a Relation instance.
-
-        Returns:
-            Relation | None: The public facing representation of the relation,
-                or None if not found.
-        """
-        try:
-            entity_one_id, entity_one_type = to_entity_external_id(self.subject)
-            entity_two_id, entity_two_type = to_entity_external_id(self.object)
-            return Relation(
-                id=self.id,
-                entity_one_id=entity_one_id,
-                entity_one_type=entity_one_type,
-                entity_two_id=entity_two_id,
-                entity_two_type=entity_two_type,
-                role=self.role,
-            )
-        except NotFoundError:
-            return None
-
-    @classmethod
-    def to_relations(
-        cls,
-        relation_internals: list[Self],
-    ) -> list[Relation]:
-        """
-        Converts a list of RelationInternal instances to a list of Relation
-        instances.
-
-        Args:
-            relation_internals (list[Self]): A list of RelationInternal
-                instances.
-
-        Returns:
-            list[Relation]: A list of public facing Relation instances.
-        """
-        relations = []
-        for relation_internal in relation_internals:
-            relation = relation_internal.to_relation()
-            if relation:
-                relations.append(relation)
-        return relations
+    release_id: int
+    """The ID of the release."""
+    year: int | None
+    """The release year, if available."""
 
 
 class RelationResult(Relation):
@@ -319,14 +323,14 @@ class RelationResult(Relation):
     distance: int | None = None
     """The distance of the relation, if applicable."""
 
-    def as_json(self) -> Dict[str, Any]:
+    def as_json(self) -> dict[str, Any]:
         """
         Returns the JSON representation of the relation result.
 
         Returns:
-            Dict[str, Any]: The JSON representation of the relation result.
+            dict[str, Any]: The JSON representation of the relation result.
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "key": self.link_key,
             "role": self.role,
             "source": self.json_entity_one_key,

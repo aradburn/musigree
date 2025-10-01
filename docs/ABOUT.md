@@ -99,3 +99,30 @@ Searching around Morris Day...
     Built trellis: 754 nodes / 1060 links
 Network query time: 0.6372168064117432
 ```
+
+# Development
+
+## Run Frontend:
+
+npm install
+npm run dev
+This runs a dev server on localhost:5173/assets/ that serves up raw typescript files.
+
+## Run backend
+
+run musigree/app/fastapi_dev_app.py in IDE
+This starts a dev server on localhost:5000
+
+# Production
+
+## Run Frontend:
+
+npm install
+npm run build
+This compiles the frontend files into frontend/dist.
+
+## Run backend
+
+run wsgi.py in IDE
+This starts a production server on localhost:8080
+

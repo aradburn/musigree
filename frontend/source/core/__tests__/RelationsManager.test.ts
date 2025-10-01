@@ -1,24 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { RelationsManager, relationsManager } from "../RelationsManager";
+import { RelationsManager } from "../RelationsManager";
+import { relationsManager } from "../singletons";
 import type { RelationsData, RelationsArcData } from "../../relations";
 import * as d3 from "d3";
 
-// Mock d3 first, before any variable declarations
-vi.mock("d3", () => {
-    const mockD3 = {
-        group: vi.fn().mockReturnValue(new Map()),
-        sort: vi.fn().mockReturnValue([]),
-        rollup: vi.fn().mockReturnValue(new Map()),
-        select: vi.fn().mockReturnValue({
-            append: vi.fn().mockReturnThis(),
-            classed: vi.fn().mockReturnThis(),
-            empty: vi.fn().mockReturnValue(false),
-            remove: vi.fn().mockReturnThis(),
-        }),
-        InternMap: class InternMap extends Map {},
-        arc: vi.fn(),
-    };
-    return mockD3;
+// Mock d3 with comprehensive mock
+vi.mock("d3", async () => {
+    const { d3Mock } = await import("../../__tests__/setup/d3-mock");
+    return d3Mock;
 });
 
 // Sample relations data
@@ -322,7 +311,11 @@ describe("RelationsManager", () => {
 
     describe("singleton instance", () => {
         it("should export a singleton instance", () => {
-            expect(relationsManager).toBeInstanceOf(RelationsManager);
+            // The singleton is a Proxy, so we check its properties instead of instanceof
+            expect(relationsManager).toBeDefined();
+            expect(relationsManager.data).toBeDefined();
+            expect(relationsManager.byYear).toBeDefined();
+            expect(relationsManager.byRole).toBeDefined();
         });
 
         it("should be the same instance when imported multiple times", () => {

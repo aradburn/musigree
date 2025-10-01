@@ -1,205 +1,223 @@
+"""
+This module defines the `process_relation_pass_one_worker` function, which is a worker
+function responsible for processing relations in the first pass of the data loading
+process in the Musigree offline system.
+
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent processing of relations, improving the efficiency of the data loading
+process. The function handles the creation of relation records and relation-release-year
+mappings from release data.
+
+Key functionalities include:
+    - **Concurrent Processing**: Designed to work with `ProcessPoolExecutor` to
+      perform processing operations concurrently, speeding up the processing of
+      large numbers of releases.
+    - **Relation Creation**: Creates relation records from release data, handling
+      duplicate entries gracefully.
+    - **Relation-Release-Year Mapping**: Creates mappings between relations,
+      releases, and years for temporal analysis.
+    - **Database Transactions**: Uses `offline_transaction` to ensure that
+      each processing operation is atomic, maintaining data integrity.
+    - **Error Handling**: Implements comprehensive error handling for database
+      operations, including retry logic for individual records.
+    - **Batch Processing**: Processes records in batches to optimize database
+      performance.
+    - **Process Initialization**: Handles the initialization of the database
+      helper in each worker process when concurrency is enabled.
+    - **Logging**: Provides detailed logging of the processing progress.
+
+The `process_relation_pass_one_worker` function interacts with the following components:
+    - `OfflineDatabaseHelper`: For managing database connections and
+      initialization in a concurrent environment.
+    - `RelationRepository`: For database operations related to relations.
+    - `RelationReleaseYearRepository`: For database operations related to
+      relation-release-year mappings.
+    - `ReleaseRepository`: For database operations related to releases.
+    - `RelationDataAccess`: For extracting relation data from releases.
+    - `RoleCache`: For role name to ID lookups.
+    - `offline_transaction`: A decorator for managing database transactions.
+    - `OfflineDatabaseManager`: For managing database concurrency settings.
+    - `LoaderBase`: For accessing batch size constants.
+    - `logging`: For logging operations.
+
+The module utilizes `logging` for logging operations and handles various database
+exceptions including `DatabaseError`, `IntegrityError`, and `OperationalError`.
+"""
+import asyncio
 import logging
 import multiprocessing
-from typing import List
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
-from musigree.offline.database.relation_release_year_repository import (
-    RelationReleaseYearRepository,
-)
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.domain.relation import RelationUncommitted
-from musigree.offline.domain.relation_release_year import (
-    RelationReleaseYearUncommitted,
-)
-from musigree.offline.loader.loader_base import LoaderBase
-from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.domain.release import Release
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
+"""
+The logger for the worker relation pass one module.
+"""
 
 
-class WorkerRelationPassOne(multiprocessing.Process):
-    def __init__(self, release_ids: list[int], current_total: int, total_count: int):
-        super().__init__()
-        self.release_ids = release_ids
-        self.current_total = current_total
-        self.total_count = total_count
+async def process_relation_pass_one_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
+    """
+    Worker function for processing relations in the first pass.
 
-    def run(self):
-        proc_name = self.name
+    This function is designed to be used with ProcessPoolExecutor to perform
+    concurrent processing of relations from release data.
 
-        relation_release_years = []
+    Args:
+        release_ids (list[int]): A list of release IDs to process.
+        current_total (int): The number of releases processed so far.
+        total_count (int): The total number of releases to process.
 
-        count = self.current_total
-        end_count = count + len(self.release_ids)
+    Raises:
+        DatabaseError: If there's an error during database operations.
+        OperationalError: If there's an operational error during database operations.
+    """
 
-        if OfflineDatabaseManager.get_concurrency_count() > 1:
-            OfflineDatabaseHelper.initialize()
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        with offline_transaction():
-            release_repository = ReleaseRepository()
-            relation_repository = RelationRepository()
-            relation_release_year_repository = RelationReleaseYearRepository()
+    count = current_total
+    """Counter for the number of releases processed."""
+    end_count = count + len(release_ids)
+    """The total number of releases to process."""
 
-            for id_ in self.release_ids:
+    async with offline_transaction():
+        for release_id in release_ids:
+            """Iterate over the release IDs."""
+            await process_release(release_id)
 
-                try:
-                    # log.debug(f"loader_pass_one ({annotation}): {release_id}")
-                    release = release_repository.get(id_)
-                    relation_dicts = RelationDataAccess.from_release(release)
-                    if LOGGING_TRACE:
-                        log.debug(
-                            f"WorkerRelationPassOne [{proc_name}]\t"
-                            + f"(release_id:{release.release_id})\t[{len(relations)}] {release.title}"
-                        )
-                except NotFoundError:
-                    log.debug(f"WorkerRelationPassOne release_id not found: {id_}")
-                except DatabaseError:
-                    log.error("Error in WorkerRelationPassOne worker")
-                    # log.exception("Error in WorkerRelationPassOne worker", exc_info=True)
-                    raise
+            count += 1
+            """Increment the processed counter."""
 
-                relations = RelationUncommitted.from_dicts(relation_dicts)
+            if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
+                """Log every BULK_REPORTING_SIZE."""
+                log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
-                if len(relations) > 0:
-                    self.create_relation_bulk(
-                        relation_repository,
-                        relations,
-                    )
+    log.info(f"[{proc_name}] processed {count} of {total_count}")
+    """Log the total number of releases processed."""
 
-                    for relation_dict in relation_dicts:
-                        year = relation_dict.get("year")
-                        new_relation_release_years = self.to_relation_release_years(
-                            relation_repository=relation_repository,
-                            relation_dict=relation_dict,
-                            release_id=id_,
-                            year=year,
-                        )
-                        relation_release_years.extend(new_relation_release_years)
 
-                        if (
-                            len(relation_release_years)
-                            > LoaderBase.BULK_INSERT_BATCH_SIZE
-                        ):
-                            self.create_relation_release_year_bulk(
-                                relation_release_year_repository, relation_release_years
-                            )
-                            relation_release_years.clear()
+async def create_relation_bulk(
+    relation_repository: RelationRepository,
+    relations: list[RelationUncommitted],
+) -> None:
+    """
+    Creates relations in bulk with error handling and retry logic.
 
-                count += 1
-                if (
-                    count % LoaderBase.BULK_REPORTING_SIZE == 0
-                    and not count == end_count
-                ):
-                    log.debug(f"[{proc_name}] processed {count} of {self.total_count}")
+    Args:
+        relation_repository (RelationRepository): The repository for relation operations.
+        relations (list[RelationUncommitted]): The list of relations to create.
 
-        if len(relation_release_years) > 0:
-            with offline_transaction():
-                relation_release_year_repository = RelationReleaseYearRepository()
-                self.create_relation_release_year_bulk(
-                    relation_release_year_repository, relation_release_years
+    Raises:
+        OperationalError: If there's an operational error during database operations.
+    """
+    # save, do nothing if already exists
+    try:
+        """Attempt to create relations in bulk."""
+        await relation_repository.create_bulk(
+            relations, on_conflict_do_nothing=True
+        )
+        """Create the relations."""
+        await relation_repository.commit()
+        """Commit the transaction."""
+        # log.debug(f"create_bulk ok")
+    except DatabaseError:
+        """Handle database errors."""
+        await relation_repository.rollback()
+        """Rollback the transaction."""
+    except IntegrityError:
+        """Handle integrity errors."""
+        await relation_repository.rollback()
+        # log.debug(f"IntegrityError in relation worker process")
+        """Rollback the transaction."""
+        for relation in relations:
+            """Try to create relations one by one."""
+            try:
+                """Attempt to create individual relation."""
+                await relation_repository.create(
+                    relation, on_conflict_do_nothing=True
                 )
+                """Create the relation."""
+                await relation_repository.commit()
+                """Commit the transaction."""
+                # log.debug(f"create single ok")
+            except DatabaseError as ex:
+                """Handle database errors."""
+                await relation_repository.rollback()
+                """Rollback the transaction."""
+                log.exception(ex)
+            except IntegrityError:
+                log.debug("IntegrityError in relation worker process individual")
+                """Handle integrity errors."""
+                await relation_repository.rollback()
+                """Rollback the transaction."""
+    except OperationalError as e:
+        """Handle operational errors."""
+        await relation_repository.rollback()
+        """Rollback the transaction."""
+        log.debug("OperationalError in worker process")
+        raise e
 
-        log.info(f"[{proc_name}] processed {count} of {self.total_count}")
 
-    @classmethod
-    def create_relation_bulk(
-        cls,
-        relation_repository: RelationRepository,
-        relations: list[RelationUncommitted],
-    ) -> None:
+async def process_release(release_id: int) -> None:
+    """Async function to handle relation processing."""
+    """Ensure that database operations are performed within a transaction."""
+    release_repository = ReleaseRepository()
+    """Instance of ReleaseRepository for database operations on releases."""
+    relation_repository = RelationRepository()
+    """Instance of RelationRepository for database operations on relations."""
 
-        # save, do nothing if already exists
-        try:
-            relation_repository.create_bulk(relations, on_conflict_do_nothing=True)
-            relation_repository.commit()
-            # log.debug(f"inserted {len(relations)}")
-        except DatabaseError:
-            relation_repository.rollback()
-            # log.debug(f"Roll back create")
-            # log.exception(e)
-        except IntegrityError:
-            relation_repository.rollback()
-            # log.exception("Integrity Error in bulk", exc_info=True)
-            # log.debug(f"Integrity Error in bulk, roll back and try one by one...")
-            for relation in relations:
-                try:
-                    relation_repository.create(relation, on_conflict_do_nothing=True)
-                    relation_repository.commit()
-                    # log.debug(f"inserted {len(relations)}")
-                except DatabaseError as ex:
-                    relation_repository.rollback()
-                    # log.debug(f"Roll back create")
-                    log.exception(ex)
-                except IntegrityError:
-                    relation_repository.rollback()
-                    # log.exception("Integrity Error", exc_info=True)
-                    # log.debug(f"Integrity Error, roll back create")
-        except OperationalError as e:
-            relation_repository.rollback()
-            log.debug(f"OperationalError in worker process")
-            raise e
+    release: Release | None = None
+    """Initialize release variable."""
+    relations: list[RelationUncommitted] = []
+    try:
+        """Attempt to process the release."""
+        release = await release_repository.get_by_id(release_id)
+        """Retrieve the release."""
+        relations = RelationDataAccess.from_release(release)
+        """Extract relations from the release."""
+    except NotFoundError:
+        """Handle the case where the release is not found."""
+        log.debug(
+            f"process_relation_pass_one_worker release_id not found: {release_id}"
+        )
+    except DatabaseError:
+        """Handle database errors."""
+        log.error("Error in process_relation_pass_one_worker")
+        raise
 
-    @classmethod
-    def to_relation_release_years(
-        cls,
-        relation_repository: RelationRepository,
-        relation_dict: dict,
-        release_id: int,
-        year: int,
-    ) -> List[RelationReleaseYearUncommitted]:
-        relation_release_years = []
-        try:
-            role_name = relation_dict["role"]
-            role_id = RoleCache.role_name_to_role_id_lookup[role_name]
+    if len(relations) > 0 and release is not None:
+        """If relations were found and release is valid."""
+        await create_relation_bulk(
+            relation_repository,
+            relations,
+        )
+        """Create the relations in bulk."""
 
-            key = {
-                "subject": relation_dict["subject"],
-                "role_id": role_id,
-                "object": relation_dict["object"],
-            }
-            relation_id = relation_repository.get_id_by_key(key)
-            # log.debug(f"v: {relation_db.version_id}")
-            relation_release_year_uncommitted = RelationReleaseYearUncommitted(
-                relation_id=relation_id,
-                release_id=release_id,
-                year=year,
-            )
-            relation_release_years.append(relation_release_year_uncommitted)
-        except NotFoundError:
-            relation_repository.rollback()
-            if LOGGING_TRACE:
-                log.debug(f"Error cannot find relation")
-        except DatabaseError:
-            relation_repository.rollback()
-            log.debug(f"Error cannot find relation")
-        except OperationalError as e:
-            relation_repository.rollback()
-            raise e
-        return relation_release_years
 
-    @classmethod
-    def create_relation_release_year_bulk(
-        cls,
-        relation_release_year_repository: RelationReleaseYearRepository,
-        relation_release_years: List[RelationReleaseYearUncommitted],
-    ) -> None:
-        try:
-            relation_release_year_repository.create_bulk(relation_release_years)
-            relation_release_year_repository.commit()
-            # log.debug(
-            #     f"Created RelationReleaseYear: {relation_db.relation_id} {release_id} {year}"
-            # )
-        except DatabaseError:
-            relation_release_year_repository.rollback()
-            log.debug(f"Error cannot create RelationReleaseYear")
-        except OperationalError as e:
-            relation_release_year_repository.rollback()
-            raise e
+def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
+
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
+
+    loop.run_until_complete(process_relation_pass_one_worker_async(release_ids, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

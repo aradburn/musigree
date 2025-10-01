@@ -6,20 +6,6 @@
  */
 
 import "~bootstrap/dist/css/bootstrap.min.css";
-// Remove jQuery imports since we're now using React
-// import "jquery";
-// import jQuery from "jquery";
-
-// Remove jQuery global declarations since we're phasing out jQuery
-// declare global {
-//     interface Window {
-//         $: typeof jQuery;
-//         jQuery: typeof jQuery;
-//     }
-// }
-
-// jQuery is no longer needed in global scope as we're using React components
-// Object.assign(window, { $: jQuery, jQuery });
 
 // Import our custom CSS
 import "./css/musigree.scss";

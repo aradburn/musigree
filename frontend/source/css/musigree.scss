@@ -1,0 +1,882 @@
+$dg-primary-color: #c0d111;
+$dg-secondary-color: #4d8c6f;
+$dg-background-color: #1c5a51;
+$dg-text-inner-color: #000;
+$dg-text-outer-color: #fff;
+
+$dg-svg-background-color: #eee;
+
+$dg-tooltip-color: #111;
+$dg-tooltip-background-color: #ffffcc;
+
+$dg-node-tooltip-color: #111;
+$dg-node-tooltip-background-color: #ffffcc;
+$dg-node-tooltip-border-color: #800026;
+
+$dg-link-tooltip-color: #111;
+$dg-link-tooltip-background-color: #ffeda0;
+$dg-link-tooltip-border-color: #800026;
+
+$bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
+$bootstrap-icons-font-src:
+    url("/public/fonts/bootstrap-icons.woff2") format("woff2"),
+    url("/public/fonts/bootstrap-icons.woff") format("woff");
+@import "bootstrap-icons/font/bootstrap-icons";
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    position: fixed;
+    z-index: -1;
+}
+
+.custom-tooltip {
+    --bs-tooltip-bg: $dg-tooltip-background-color;
+    --bs-tooltip-color: $dg-tooltip-color;
+}
+
+.navbar {
+    background-image: linear-gradient(
+        #{$dg-secondary-color}55 0%,
+        #46735ebb 100%
+    );
+    /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
+    /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
+}
+
+.sidebar {
+    background-color: $dg-background-color !important;
+    /* background-color: #1C575A !important;*/
+}
+
+// Side menu content container
+.side-menu-content {
+    background-color: rgba($dg-background-color, 0.95);
+    color: $dg-text-outer-color;
+    overflow-y: auto;
+    transition:
+        transform 0.3s ease-in-out,
+        opacity 0.2s ease-in-out;
+    position: fixed;
+    left: 16.666667%; // Position at right edge of sidebar (sm-2 = 2/12 = 16.666667%)
+    height: 100%; // Full height minus navbar
+    width: min(300px, 25vw); // Responsive width, maximum 300px
+    z-index: 1000;
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
+    border-right: 1px solid lighten($dg-background-color, 10%);
+    padding: 1rem;
+    transform: translateX(-100%); // Start off-screen to the left
+    opacity: 0;
+    backdrop-filter: blur(3px);
+
+    // Adjust position for different screen sizes
+    @media (min-width: 1200px) {
+        // xl breakpoint
+        left: 8.333333%; // xl-1 = 1/12 = 8.333333%
+    }
+
+    @media (max-width: 575.98px) {
+        // xs breakpoint (below sm)
+        left: 0; // When sidebar takes full width
+        width: 80vw; // Reduce width on small screens
+        // The top and height are already set correctly with CSS variables
+    }
+
+    #roles-panel {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    #entity-details-panel {
+        a {
+            color: $dg-primary-color;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+/***** Thumb Styles *****/
+/***** Chrome, Safari, Opera, and Edge Chromium *****/
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    margin-top: -12px; /* Centers thumb on the track */
+    background-color: $dg-secondary-color;
+    height: 1.6rem;
+    width: 0.8rem;
+}
+/***** Firefox *****/
+input[type="range"]::-moz-range-thumb {
+    border: none; /*Removes extra border that FF applies*/
+    border-radius: 0; /*Removes default border-radius that FF applies*/
+    background-color: $dg-secondary-color;
+    height: 1.6rem;
+    width: 0.8rem;
+}
+.form-range::-moz-range-thumb,
+input[type="range"]::-moz-range-thumb,
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::slider-thumb {
+    background-color: $dg-background-color !important;
+}
+
+// #nav-bottom {
+//     background-image: linear-gradient(#ddd, #ccc 60%);
+// }
+
+.navbar-title {
+    transition: color ease-in-out 0.2s;
+    display: block;
+    text-align: center;
+    float: none;
+    height: 50px;
+    padding: 15px 15px;
+    font-size: 18px;
+    line-height: 20px;
+}
+
+.tt-menu {
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background-color: white;
+}
+
+#svg {
+    pointer-events: visible;
+    background-color: $dg-svg-background-color;
+
+    text {
+        font-variant-ligatures: none;
+        font-feature-settings: none;
+        text-rendering: optimizeSpeed;
+        font-family: "Open Sans", sans-serif;
+    }
+}
+
+a {
+    &:hover {
+        color: #cc8548;
+    }
+
+    .input-group-addon {
+        color: #337ab7;
+
+        &:active {
+            background-color: #ccc;
+        }
+    }
+}
+
+/* NETWORK */
+
+#networkLayer {
+    .link {
+        opacity: 0.7;
+
+        path {
+            &.inner {
+                fill: none;
+                /*     marker-end: url(#arrowhead);
+                     stroke-dasharray: 0.5, 4;
+                     stroke-linecap: round;
+                     stroke-linejoin: round;*/
+                stroke-width: 1;
+                /*     stroke: #000;*/
+            }
+
+            &.distance-0 {
+                stroke-width: 6;
+            }
+            &.distance-1 {
+                stroke-width: 5;
+            }
+            &.distance-2 {
+                stroke-width: 4;
+            }
+            &.distance-3 {
+                stroke-width: 3;
+            }
+            &.distance-4 {
+                stroke-width: 2;
+            }
+            &.distance-5 {
+                stroke-width: 2;
+            }
+            &.distance-6 {
+                stroke-width: 2;
+            }
+            &.distance-7 {
+                stroke-width: 2;
+            }
+            &.distance-8 {
+                stroke-width: 2;
+            }
+        }
+
+        text {
+            cursor: help;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            font:
+                0.6rem "Open Sans",
+                sans-serif;
+
+            &.inner {
+                fill: $dg-text-inner-color;
+                stroke: none;
+            }
+
+            &.outer {
+                stroke: $dg-text-outer-color;
+                stroke-width: 3px;
+                fill: none;
+            }
+        }
+
+        &.alias {
+            path.inner {
+                /*    marker-end: none;*/
+                stroke-dasharray: 1, 8;
+                stroke-linecap: round;
+            }
+        }
+
+        &.member-of,
+        &.sublabel-of {
+            path.inner {
+                opacity: 0.7;
+                /*     marker-end: url(#aggregate);*/
+                /*     stroke: #00BD20;*/
+                /*     stroke-dasharray: 0, 0;*/
+            }
+        }
+
+        &.released-on {
+            path.inner {
+                opacity: 0.5;
+                /*     marker-end: url(#aggregate);*/
+                stroke: #00bd20;
+                stroke-dasharray: 2, 4;
+            }
+        }
+
+        &.selected {
+            opacity: 1;
+
+            path {
+                opacity: 0.6;
+                stroke: #700;
+                stroke-width: 4;
+            }
+
+            text {
+                opacity: 0.7;
+                font-size: 0.6rem;
+            }
+        }
+
+        &.noninteractive {
+            text {
+                pointer-events: none;
+                cursor: wait;
+            }
+        }
+    }
+
+    .hull {
+        fill: #343d46;
+        opacity: 0.1;
+        stroke: #000;
+        stroke-width: 32;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .node {
+        cursor: move;
+        fill-opacity: 1;
+        stroke-opacity: 1;
+        stroke: #fff;
+        stroke-width: 1.5px;
+
+        circle.shadow {
+            fill: url(#radial-gradient);
+            stroke: none;
+        }
+
+        text {
+            &.inner {
+                pointer-events: none;
+                font:
+                    1.2rem "Open Sans",
+                    sans-serif;
+                fill: $dg-text-inner-color;
+                stroke: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+            }
+
+            &.outer {
+                pointer-events: none;
+                font:
+                    1.2rem "Open Sans",
+                    sans-serif;
+                stroke: #ffffff77;
+                stroke-width: 3px;
+                fill: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+            }
+
+            &.icon {
+                cursor: pointer;
+                fill: white;
+                font-family: "Glyphicons Halflings";
+                font-style: normal;
+                font-weight: 200;
+                font-size: 20px;
+                opacity: 0.5;
+                stroke: black;
+            }
+        }
+
+        circle.halo {
+            pointer-events: none;
+            fill: black;
+            opacity: 0;
+            stroke: none;
+        }
+
+        path.more {
+            stroke: black;
+            stroke-width: 1;
+            stroke-opacity: 0.3;
+            fill-opacity: 1;
+            fill: white;
+        }
+
+        &.selected {
+            stroke: red;
+
+            .halo {
+                opacity: 0.1;
+                fill: #700;
+            }
+
+            .more {
+                fill: black;
+            }
+
+            &.label {
+                stroke: #f00;
+                .more {
+                    fill: white;
+                }
+            }
+        }
+    }
+
+    .cluster {
+        text {
+            &.outer {
+                stroke: white;
+            }
+        }
+    }
+}
+
+/* RADIAL */
+
+#relationsLayer {
+    g.segment {
+        &.selected {
+            path.arc {
+                fill: blue;
+            }
+            text.inner {
+                fill: blue;
+            }
+        }
+
+        &:hover {
+            path.arc {
+                fill: red;
+            }
+            text.inner {
+                fill: red;
+            }
+        }
+    }
+
+    path {
+        &.arc {
+            stroke: white;
+            stroke-width: 1px;
+        }
+    }
+
+    text {
+        text-rendering: optimizeLegibility;
+        dominant-baseline: middle;
+        font-family: "Open Sans", sans-serif;
+        font-size: 12px;
+        font-weight: bold;
+
+        &.inner {
+            fill: $dg-text-inner-color;
+            stroke: none;
+        }
+
+        &.outer {
+            stroke: $dg-text-outer-color;
+            stroke-width: 3px;
+            fill: none;
+        }
+    }
+}
+
+/* LOADING */
+
+#loadingLayer {
+    path {
+        &.arc {
+            opacity: 0.75;
+            stroke: white;
+            stroke-width: 1px;
+            &:hover {
+                fill: red;
+            }
+        }
+    }
+}
+
+/* MIXINS */
+
+@mixin invisible {
+    visibility: hidden;
+}
+
+@mixin truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@mixin box-shadow {
+    box-shadow: 0px 0px 10px #ddd;
+}
+
+@mixin noninteractive {
+    pointer-events: none;
+    cursor: none;
+}
+
+.invisible {
+    @include invisible;
+}
+
+.truncate {
+    @include truncate;
+}
+
+.box-shadow {
+    @include box-shadow;
+}
+
+.noninteractive {
+    @include noninteractive;
+}
+
+/* TOOLTIPS */
+
+.d3-node-tooltip {
+    transform: scale(0.8);
+    line-height: 0.8rem;
+    font-size: 1rem;
+    padding: 2px 4px;
+    background-color: $dg-node-tooltip-background-color;
+    color: $dg-node-tooltip-color;
+    border-radius: 6px;
+    border: 2px solid $dg-node-tooltip-border-color;
+    pointer-events: none !important;
+    text-align: center;
+    box-shadow:
+        0 4px 20px 4px rgba(0, 20, 60, 0.1),
+        0 4px 80px -8px rgba(0, 20, 60, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0rem;
+    z-index: 1001;
+
+    span {
+        opacity: 1;
+        font-size: 1.4rem;
+        line-height: 1.4rem;
+    }
+}
+
+.d3-link-tooltip {
+    transform: scale(0.8);
+    line-height: 0.8rem;
+    font-size: 1rem;
+    padding: 0px;
+    background-color: $dg-link-tooltip-background-color !important;
+    color: $dg-link-tooltip-color !important;
+    opacity: 1;
+    border-radius: 6px;
+    border: 2px solid $dg-link-tooltip-border-color;
+    pointer-events: none !important;
+    text-align: center;
+    box-shadow:
+        0 4px 20px 4px rgba(0, 20, 60, 0.1),
+        0 4px 80px -8px rgba(0, 20, 60, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0rem;
+    z-index: 1001;
+
+    div {
+        padding: 0px 4px;
+        margin: 2px;
+        display: inline-block;
+        background-color: $dg-link-tooltip-background-color;
+
+        &:first-child {
+            font-size: 1.4rem;
+            line-height: 1.4rem;
+            margin-bottom: 0;
+        }
+
+        &:nth-child(2) {
+            font-size: 0.8rem;
+            line-height: 1.1rem;
+            border-width: 0px;
+            margin: 0;
+        }
+
+        &:last-child {
+            font-size: 1.4rem;
+            line-height: 1.4rem;
+            margin-top: 0;
+        }
+    }
+}
+
+// Color Palettes
+.YlOrRd {
+    .color-0 {
+        fill: rgb(255, 255, 204);
+    }
+    .color-1 {
+        fill: rgb(255, 237, 160);
+    }
+    .color-2 {
+        fill: rgb(254, 217, 118);
+    }
+    .color-3 {
+        fill: rgb(254, 178, 76);
+    }
+    .color-4 {
+        fill: rgb(253, 141, 60);
+    }
+    .color-5 {
+        fill: rgb(252, 78, 42);
+    }
+    .color-6 {
+        fill: rgb(227, 26, 28);
+    }
+    .color-7 {
+        fill: rgb(189, 0, 38);
+    }
+    .color-8 {
+        fill: rgb(128, 0, 38);
+    }
+}
+
+.YlGnBu {
+    .color-0 {
+        fill: rgb(255, 255, 217);
+    }
+    .color-1 {
+        fill: rgb(237, 248, 177);
+    }
+    .color-2 {
+        fill: rgb(199, 233, 180);
+    }
+    .color-3 {
+        fill: rgb(127, 205, 187);
+    }
+    .color-4 {
+        fill: rgb(65, 182, 196);
+    }
+    .color-5 {
+        fill: rgb(29, 145, 192);
+    }
+    .color-6 {
+        fill: rgb(34, 94, 168);
+    }
+    .color-7 {
+        fill: rgb(37, 52, 148);
+    }
+    .color-8 {
+        fill: rgb(8, 29, 88);
+    }
+}
+
+.RdGnBl {
+    .color-8 {
+        fill: #ff0000;
+    }
+    .color-7 {
+        fill: #ff004c;
+    }
+    .color-6 {
+        fill: #f25f2d;
+    }
+    .color-5 {
+        fill: #dc8926;
+    }
+    .color-4 {
+        fill: #c5a841;
+    }
+    .color-3 {
+        fill: #b1c16c;
+    }
+    .color-2 {
+        fill: #a8d39c;
+    }
+    .color-1 {
+        fill: #b0e1c7;
+    }
+    .color-0 {
+        fill: #ccece6;
+    }
+}
+
+.RdGnLb {
+    .color-8 {
+        fill: #ff0000;
+    }
+    .color-7 {
+        fill: #df6e00;
+    }
+    .color-6 {
+        fill: #b99800;
+    }
+    .color-5 {
+        fill: #93b628;
+    }
+    .color-4 {
+        fill: #70cc72;
+    }
+    .color-3 {
+        fill: #5cdcb1;
+    }
+    .color-2 {
+        fill: #73e8e2;
+    }
+    .color-1 {
+        fill: #a8f0ff;
+    }
+    .color-0 {
+        fill: #b0e1c7;
+    }
+}
+
+.Palette1 {
+    .color-0 {
+        fill: #ff0000;
+    }
+    .color-1 {
+        fill: #f55700;
+    }
+    .color-2 {
+        fill: #e87d00;
+    }
+    .color-3 {
+        fill: #da9a00;
+    }
+    .color-4 {
+        fill: #ccb211;
+    }
+    .color-5 {
+        fill: #bfc744;
+    }
+    .color-6 {
+        fill: #b5da6d;
+    }
+    .color-7 {
+        fill: #afeb96;
+    }
+    .color-8 {
+        fill: #afeb96;
+    }
+}
+
+.Palette2 {
+    .color-0 {
+        fill: #d53e4f;
+    }
+    .color-1 {
+        fill: #f46d43;
+    }
+    .color-2 {
+        fill: #fdae61;
+    }
+    .color-3 {
+        fill: #fee08b;
+    }
+    .color-4 {
+        fill: #ffffbf;
+    }
+    .color-5 {
+        fill: #e6f598;
+    }
+    .color-6 {
+        fill: #abdda4;
+    }
+    .color-7 {
+        fill: #66c2a5;
+    }
+    .color-8 {
+        fill: #3288bd;
+    }
+}
+
+.Palette3 {
+    .color-0 {
+        fill: #800026;
+    }
+    .color-1 {
+        fill: #bd0026;
+    }
+    .color-2 {
+        fill: #e31a1c;
+    }
+    .color-3 {
+        fill: #fc4e2a;
+    }
+    .color-4 {
+        fill: #fd8d3c;
+    }
+    .color-5 {
+        fill: #feb24c;
+    }
+    .color-6 {
+        fill: #fed976;
+    }
+    .color-7 {
+        fill: #ffeda0;
+    }
+    .color-8 {
+        fill: #ffffcc;
+    }
+}
+
+.Palette4 {
+    .color-0 {
+        fill: #23682e;
+    }
+    .color-1 {
+        fill: #347a3d;
+    }
+    .color-2 {
+        fill: #448b4c;
+    }
+    .color-3 {
+        fill: #549e5b;
+    }
+    .color-4 {
+        fill: #64b16b;
+    }
+    .color-5 {
+        fill: #74c47c;
+    }
+    .color-6 {
+        fill: #85d78d;
+    }
+    .color-7 {
+        fill: #96eb9e;
+    }
+    .color-8 {
+        fill: #a7ffaf;
+    }
+}
+
+.LinkRedPalette {
+    .color-0 {
+        stroke: #800026;
+    }
+    .color-1 {
+        stroke: #bd0026;
+    }
+    .color-2 {
+        stroke: #e31a1c;
+    }
+    .color-3 {
+        stroke: #fc4e2a;
+    }
+    .color-4 {
+        stroke: #fd8d3c;
+    }
+    .color-5 {
+        stroke: #feb24c;
+    }
+    .color-6 {
+        stroke: #fed976;
+    }
+    .color-7 {
+        stroke: #ffeda0;
+    }
+    .color-8 {
+        stroke: #ffffcc;
+    }
+}
+
+.LinkGreenPalette {
+    .color-0 {
+        stroke: #23682e;
+    }
+    .color-1 {
+        stroke: #347a3d;
+    }
+    .color-2 {
+        stroke: #448b4c;
+    }
+    .color-3 {
+        stroke: #549e5b;
+    }
+    .color-4 {
+        stroke: #64b16b;
+    }
+    .color-5 {
+        stroke: #74c47c;
+    }
+    .color-6 {
+        stroke: #85d78d;
+    }
+    .color-7 {
+        stroke: #96eb9e;
+    }
+    .color-8 {
+        stroke: #a7ffaf;
+    }
+}

@@ -1,8 +1,9 @@
 import logging.config
+from typing import Any
 
-LOGGING_TRACE = False
+LOGGING_TRACE: bool = False
 
-LOGGING_CONFIG = {
+LOGGING_CONFIG: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -65,6 +66,16 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "uvicorn": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "fastapi": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
         "__main__": {  # if __name__ == '__main__'
             "handlers": ["console_handler"],
             "level": "DEBUG",
@@ -73,7 +84,7 @@ LOGGING_CONFIG = {
     },
 }
 
-TEST_LOGGING_CONFIG = {
+TEST_LOGGING_CONFIG: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -132,7 +143,7 @@ TEST_LOGGING_CONFIG = {
 }
 
 
-def setup_logging(is_testing=False):
+def setup_logging(is_testing: bool = False) -> None:
     # Run once at startup:
     config = LOGGING_CONFIG if is_testing is False else TEST_LOGGING_CONFIG
     logging.config.dictConfig(config)
@@ -143,7 +154,7 @@ def setup_logging(is_testing=False):
     log.info("Logging configured OK.")
 
 
-def shutdown_logging():
+def shutdown_logging() -> None:
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     if len(loggers) > 0:
         log = logging.getLogger(__name__)

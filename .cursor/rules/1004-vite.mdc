@@ -1,5 +1,5 @@
 ---
-description: Enfore rules for using Vite, use best practices, coding standards, and guidelines for developing applications using Vite, covering aspects from code organization and performance to security and testing.
+description: Enforce rules for using Vite, use best practices, coding standards, and guidelines for developing applications using Vite, covering aspects from code organization and performance to security and testing.
 globs: *.js,*.ts,*.jsx,*.tsx
 alwaysApply: false
 ---

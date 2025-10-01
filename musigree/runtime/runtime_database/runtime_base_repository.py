@@ -1,11 +1,12 @@
 import logging
-from collections.abc import Iterator
-from typing import Any, Generic, Type
+from typing import Any, Generic, Type, AsyncGenerator
 
-from sqlalchemy import asc, delete, desc, func, select, update, text
+from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
 
 __all__ = ("RuntimeBaseRepository",)
+
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import UnprocessableError, DatabaseError, NotFoundError
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
@@ -18,11 +19,11 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     """
     Base class for creating repositories that interact with the runtime database.
 
-    This class provides a generic interface for common database operations, such as
+    This class provides a generic interface for common async database operations, such as
     creating, retrieving, updating, and deleting data. It simplifies database
     interactions and enforces type safety through the use of generics.
 
-    It inherits from `RuntimeSession` to manage database sessions and transactions.
+    It inherits from `RuntimeSession` to manage async database sessions and transactions.
 
     Attributes:
         schema_class (Type[RuntimeConcreteTable]): The SQLAlchemy schema class
@@ -45,7 +46,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         """
         Initializes the RuntimeBaseRepository instance.
 
-        This method initializes the database session through the parent class
+        This method initializes the async database session through the parent class
         `RuntimeSession` and ensures that the `schema_class` attribute is set.
 
         Raises:
@@ -58,7 +59,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 message="Can not initiate the class without schema_class attribute"
             )
 
-    def _update(
+    async def _update(
         self, key: str, value: Any, payload: dict[str, Any]
     ) -> RuntimeConcreteTable:
         """
@@ -88,16 +89,16 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 .values(payload)
                 .returning(self.schema_class)
             )
-            result: Result = self.execute(query)
-        except self._ERRORS:
-            raise DatabaseError
+            result: Result = await self.execute(query)
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
         if not (schema := result.scalar_one_or_none()):
             raise DatabaseError
 
-        return schema
+        return schema  # type: ignore
 
-    def _get(self, key: str, value: Any) -> RuntimeConcreteTable:
+    async def _get(self, key: str, value: Any) -> RuntimeConcreteTable:
         """
         Retrieves a single record from the database based on the provided filter.
 
@@ -115,14 +116,14 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         query = select(self.schema_class).where(
             getattr(self.schema_class, key) == value
         )
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
-    def count(self) -> int:
+    async def count(self) -> int:
         """
         Counts the total number of records in the associated database table.
 
@@ -133,7 +134,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             UnprocessableError: If the database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = self.execute(query)
+        result: Result = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -146,7 +147,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
         return value
 
-    def _first(self, by: str = "id") -> RuntimeConcreteTable:
+    async def _first(self, by: str = "id") -> RuntimeConcreteTable:
         """
         Retrieves the first record from the database table based on a sorting criteria.
 
@@ -160,16 +161,16 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = self.execute(
+        result: Result = await self.execute(
             select(self.schema_class).order_by(asc(by)).limit(1)
         )
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
-    def _last(self, by: str = "id") -> RuntimeConcreteTable:
+    async def _last(self, by: str = "id") -> RuntimeConcreteTable:
         """
         Retrieves the last record from the database table based on a sorting criteria.
 
@@ -183,16 +184,16 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = self.execute(
+        result: Result = await self.execute(
             select(self.schema_class).order_by(desc(by)).limit(1)
         )
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
 
-        return _result
+        return _result  # type: ignore
 
-    def _save(self, payload: dict[str, Any]) -> RuntimeConcreteTable:
+    async def _save(self, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
         Saves a new record to the database.
 
@@ -208,13 +209,13 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         try:
             schema = self.schema_class(**payload)
             self._session.add(schema)
-            self._session.flush()
-            self._session.refresh(schema)
+            await self._session.flush()
+            await self._session.refresh(schema)
             return schema
-        except self._ERRORS:
-            raise DatabaseError
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
-    def save_all(self, payloads: list[dict[str, Any]]) -> None:
+    async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
         Saves multiple new records to the database in a single operation.
 
@@ -228,76 +229,43 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         try:
             instances = [self.schema_class(**payload) for payload in payloads]
             self._session.add_all(instances)
-            self._session.flush()
-        except self._ERRORS:
-            raise DatabaseError
+            await self._session.flush()
+        except (IntegrityError, InvalidRequestError) as err:
+            raise DatabaseError from err
 
-    def _all(self) -> Iterator[RuntimeConcreteTable]:
+    async def _all(self) -> AsyncGenerator[RuntimeConcreteTable, None]:
         """
         Retrieves all records from the database table.
 
         Yields:
-            Iterator[RuntimeConcreteTable]: An iterator yielding
-                each record as a schema instance.
+            AsyncGenerator[RuntimeConcreteTable]: An async iterator that yields each
+                database row as an object.
         """
-        result: Result = self.execute(select(self.schema_class))
+        result: Result = await self.execute(select(self.schema_class))
         schemas = result.scalars().all()
 
         for schema in schemas:
             yield schema
 
-    def delete(self, id_: int) -> None:
+    async def delete(self, id_: int) -> None:
         """
-        Deletes a record from the database based on its ID.
+        Deletes a record from the database table by its ID.
 
         Args:
             id_ (int): The ID of the record to delete.
         """
-        # noinspection PyTypeChecker
-        self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
-        self._session.flush()
+        # noinspection PyTypeChecker,Mypy
+        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
+        await self._session.flush()
 
-    def commit(self) -> None:
+    async def commit(self) -> None:
         """
-        Commits the current database transaction.
-
-        This method should be called to persist any changes made to the
-        database.
+        Commits the current transaction.
         """
-        self._session.commit()
+        await self._session.commit()
 
-    def rollback(self) -> None:
+    async def rollback(self) -> None:
         """
-        Rolls back the current database transaction.
-
-        This method should be called to undo any changes made to the
-        database within the current transaction.
+        Rolls back the current transaction.
         """
-        self._session.rollback()
-
-    def vacuum(self, has_tablename=False, is_full=False, is_analyze=False) -> None:
-        """
-        Performs a VACUUM operation on the database.
-
-        This method optimizes the database by reclaiming storage space and
-        optionally analyzing tables.
-
-        Args:
-            has_tablename (bool): If True, the table name will be included in
-                the VACUUM query.
-            is_full (bool): If True, a "FULL" vacuum operation will be performed,
-                which reclaims more storage space but can take longer.
-            is_analyze (bool): If True, the database will be analyzed after the
-                vacuum operation to update the query planner's statistics.
-        """
-        query = "VACUUM"
-        if is_full:
-            query += " FULL"
-        if is_analyze:
-            query += " ANALYZE"
-        if has_tablename:
-            query += " " + self.schema_class.__tablename__
-        query += ";"
-        if has_tablename:
-            self._session.execute(text("COMMIT"))
-        self._session.execute(text(query))
+        await self._session.rollback()

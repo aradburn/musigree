@@ -65,8 +65,10 @@ and time handling, `logging` for logging operations, `os` for file system
 operations, `urllib.parse` for URL parsing and `musigree` library.
 """
 
+import asyncio
 import datetime
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -101,14 +103,14 @@ class LoaderSetupTask(luigi.Task):
     Musigree logging system, ensuring consistent log output.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    start_date: datetime.date = luigi.DateParameter()
+    start_date = luigi.DateParameter()
     """The start date for the data loading process."""
-    end_date: datetime.date = luigi.DateParameter()
+    end_date = luigi.DateParameter()
     """The end date for the data loading process."""
 
-    def output(self):
+    def output(self) -> RunAnywayTarget:
         """
         Returns a RunAnywayTarget.
 
@@ -120,7 +122,7 @@ class LoaderSetupTask(luigi.Task):
         # Always run this task
         return RunAnywayTarget(self)
 
-    def run(self):
+    def run(self) -> Iterator[luigi.Task]:
         """
         Configures logging and yields the next task.
 
@@ -153,14 +155,14 @@ class LoaderTask(luigi.WrapperTask):
     including downloading and loading data.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    start_date: datetime.date = luigi.DateParameter()
+    start_date = luigi.DateParameter()
     """The start date for the data loading process."""
-    end_date: datetime.date = luigi.DateParameter()
+    end_date = luigi.DateParameter()
     """The end date for the data loading process."""
 
-    def requires(self):
+    def requires(self) -> Iterator[luigi.Task]:
         """
         Defines the dependencies for this task.
 
@@ -176,7 +178,10 @@ class LoaderTask(luigi.WrapperTask):
             start_date=self.start_date,
             end_date=self.end_date,
         )
-        dates = get_discogs_dump_dates(self.start_date, self.end_date)
+        dates = get_discogs_dump_dates(
+            datetime.date.fromisoformat(str(self.start_date)),
+            datetime.date.fromisoformat(str(self.end_date)),
+        )
         for date in dates:
             yield DiscogsDownloaderTaskForDate(
                 data_directory=self.data_directory, dump_date=date
@@ -192,13 +197,13 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
     masters) are downloaded for a given date.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    dump_date: datetime.date = luigi.DateParameter()
+    dump_date = luigi.DateParameter()
     """The date for which to download the Discogs dumps."""
 
     @property
-    def priority(self):
+    def priority(self):  # type: ignore
         """
         Calculates the priority of this task.
 
@@ -211,17 +216,13 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
         diff = int(
             (
                 datetime.datetime.now()
-                - datetime.datetime(
-                    year=self.dump_date.year,
-                    month=self.dump_date.month,
-                    day=self.dump_date.day,
-                )
+                - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         )
         log.debug(f"DiscogsDownloaderTaskForDate priority: {diff}")
         return diff
 
-    def requires(self):
+    def requires(self) -> Iterator[luigi.Task]:
         """
         Defines the dependencies for this task.
 
@@ -262,13 +263,13 @@ class LoaderTaskForDate(luigi.WrapperTask):
     process is executed through multiple stages.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    dump_date: datetime.date = luigi.DateParameter()
+    dump_date = luigi.DateParameter()
     """The date for which to load the data."""
 
     @property
-    def priority(self):
+    def priority(self):  # type: ignore
         """
         Calculates the priority of this task.
 
@@ -281,17 +282,13 @@ class LoaderTaskForDate(luigi.WrapperTask):
         diff = int(
             (
                 datetime.datetime.now()
-                - datetime.datetime(
-                    year=self.dump_date.year,
-                    month=self.dump_date.month,
-                    day=self.dump_date.day,
-                )
+                - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         )
         log.debug(f"LoaderTaskForDate priority: {diff}")
         return diff
 
-    def requires(self):
+    def requires(self) -> Iterator[luigi.Task]:
         """
         Defines the dependencies for this task.
 
@@ -305,11 +302,11 @@ class LoaderTaskForDate(luigi.WrapperTask):
         yield DiscogsDownloaderTaskForDate(
             data_directory=self.data_directory, dump_date=self.dump_date
         )
-        from musigree.loader.loader import get_load_offline_table_stages
+        from musigree.loader.offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
-            Path(self.data_directory),
-            self.dump_date.strftime("%Y%m%d"),
+            Path(str(self.data_directory)),
+            datetime.date.fromisoformat(str(self.dump_date)).strftime("%Y%m%d"),
             is_bulk_inserts=False,
         )
         for stage in range(0, len(stages)):
@@ -328,15 +325,15 @@ class LoaderTaskForDateAndStage(luigi.Task):
     process for a given date, as defined by the `OfflineDatabaseManager`.
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    dump_date: datetime.date = luigi.DateParameter()
+    dump_date = luigi.DateParameter()
     """The date for which to load the data."""
-    stage: int = luigi.IntParameter()
+    stage = luigi.IntParameter()
     """The stage of the data loading process to execute."""
 
     @property
-    def priority(self):
+    def priority(self):  # type: ignore
         """
         Calculates the priority of this task.
 
@@ -349,19 +346,15 @@ class LoaderTaskForDateAndStage(luigi.Task):
         diff = int(
             (
                 datetime.datetime.now()
-                - datetime.datetime(
-                    year=self.dump_date.year,
-                    month=self.dump_date.month,
-                    day=self.dump_date.day,
-                )
+                - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
-        ) + (100 - self.stage)
+        ) + (100 - int(str(self.stage)))
         log.debug(
             f"LoaderTaskForDateAndStage date: {self.dump_date} stage: {self.stage} priority: {diff}"
         )
         return diff
 
-    def requires(self):
+    def requires(self) -> Iterator[luigi.Task]:
         """
         Defines the dependencies for this task.
 
@@ -371,17 +364,17 @@ class LoaderTaskForDateAndStage(luigi.Task):
         Yields:
             luigi.Task: The dependency tasks.
         """
-        if self.stage > 0:
+        if int(str(self.stage)) > 0:
             # Require the previous stage (monthly subtasks defined in database_helper) to have been completed
             yield LoaderTaskForDateAndStage(
                 data_directory=self.data_directory,
                 dump_date=self.dump_date,
-                stage=self.stage - 1,
+                stage=int(str(self.stage)) - 1,
             )
         else:
             pass
 
-    def output(self):
+    def output(self) -> LoaderTarget:
         """
         Defines the output target for this task.
 
@@ -392,9 +385,9 @@ class LoaderTaskForDateAndStage(luigi.Task):
             LoaderTarget: The target for this task.
         """
         # Store the outcome of the task as a record in the database
-        return LoaderTarget(self, self.dump_date)
+        return LoaderTarget(self, datetime.date.fromisoformat(str(self.dump_date)))
 
-    def run(self):
+    def run(self) -> None:
         """
         Executes the data loading stage.
 
@@ -406,18 +399,49 @@ class LoaderTaskForDateAndStage(luigi.Task):
             f"Run LoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
 
-        from musigree.loader.loader import get_load_offline_table_stages
+        from musigree.loader.offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
-            Path(self.data_directory),
-            self.dump_date.strftime("%Y%m%d"),
+            Path(str(self.data_directory)),
+            datetime.date.fromisoformat(str(self.dump_date)).strftime("%Y%m%d"),
             is_bulk_inserts=False,
         )
-        log.debug(f"Run stage: {self.stage}")
+        log.debug(f"Queueing stage: {self.stage}")
+
+        background_tasks = set()
+
+        async def worker_function() -> None:
+            """
+            Worker function to execute the loading stage.
+
+            This function runs the specified stage of the data loading process.
+            It is designed to be run in an asyncio event loop.
+            """
+            log.debug(f"Running stage: {self.stage} for date: {self.dump_date}")
+            if int(str(self.stage)) < len(stages):
+                await stages[int(str(self.stage))]()
+                await self.output().done()
+            else:
+                log.error(f"Invalid stage: {self.stage} for date: {self.dump_date}")
+
         try:
-            stages[self.stage]()
-            # Mark task done in the database
-            self.output().done()
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                """Check if the event loop is already running."""
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                """Set a new event loop if none exists."""
+            task = loop.create_task(worker_function())
+            # Add task to the set. This creates a strong reference.
+            background_tasks.add(task)
+
+            # To prevent keeping references to finished tasks forever,
+            # make each task remove its own reference from the set after
+            # completion:
+            task.add_done_callback(background_tasks.discard)
+            loop.run_until_complete(task)
+
         except RuntimeError as e:
             log.exception(e, exc_info=True)
 
@@ -430,11 +454,11 @@ class DiscogsDownloaderTask(luigi.Task):
     a given date and dump type (e.g., artists, releases).
     """
 
-    data_directory: str = luigi.Parameter(significant=False)
+    data_directory = luigi.Parameter(significant=False)
 
-    dump_date: datetime.date = luigi.DateParameter()
+    dump_date = luigi.DateParameter()
     """The date for which to download the Discogs dump."""
-    dump_type: str = luigi.Parameter()
+    dump_type = luigi.Parameter()
     """The type of the Discogs dump (e.g., artists, releases)."""
 
     @property
@@ -445,9 +469,10 @@ class DiscogsDownloaderTask(luigi.Task):
         Returns:
             str: The URL of the Discogs dump file.
         """
-        return get_discogs_url(self.dump_date, self.dump_type)
+        dump_date_date = datetime.date.fromisoformat(str(self.dump_date))
+        return get_discogs_url(dump_date_date, str(self.dump_type))
 
-    def requires(self):
+    def requires(self) -> Iterator[luigi.Task] | None:
         """
         Defines the dependencies for this task.
 
@@ -470,12 +495,12 @@ class DiscogsDownloaderTask(luigi.Task):
         """
         output_url = urlparse(self.url)
         filename = output_url.path.rsplit("/", 1)[-1]
-        filepath = Path(self.data_directory) / DISCOGS_DATA / filename
+        filepath = Path(str(self.data_directory)) / DISCOGS_DATA / filename
         # filepath = os.path.join(ROOT_DIR, "musigree", "data", filename)
         log.debug(f"DiscogsDownloaderTask output: {filepath}")
         return luigi.LocalTarget(filepath)
 
-    def run(self):
+    def run(self) -> None:
         """
         Downloads the Discogs dump file.
 

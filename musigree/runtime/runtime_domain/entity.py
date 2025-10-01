@@ -21,13 +21,18 @@ Key functionalities include:
 __all__ = [
     "RuntimeEntity",
     "RuntimeEntityDB",
+    "to_runtime_entity_dict",
 ]
 
 import logging
 from typing import Any
 
+from pydantic import Field, field_serializer
+
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.domain.entity import Entity
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 
@@ -68,14 +73,19 @@ class RuntimeEntity(InternalDomainObject):
     """The relation counts of the entity."""
     entity_metadata: dict[str, Any]
     """The metadata of the entity."""
-    entities: dict[str, Any]
+    entities: dict[str, Any] = Field(default_factory=dict)
     """The entities related to this entity."""
-    countries: str | None = None
+    countries: str | None
     """The countries associated with the entity."""
-    genres: str | None = None
+    genres: str | None
     """The genres associated with the entity."""
-    styles: str | None = None
+    styles: str | None
     """The styles associated with the entity."""
+
+    @field_serializer("entity_type", when_used="json")
+    def serialize_entity_type(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     @property
     def entity_key(self) -> tuple[int, EntityType]:
@@ -140,6 +150,7 @@ class RuntimeEntity(InternalDomainObject):
             return f"artist-{entity_id}"
         elif entity_type == EntityType.LABEL:
             return f"label-{entity_id}"
+        # noinspection PyUnreachableCode
         raise ValueError(entity_id, entity_type)
 
     def to_db(self) -> "RuntimeEntityDB":
@@ -154,17 +165,34 @@ class RuntimeEntity(InternalDomainObject):
             RuntimeEntityDB: The database representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
-        entities: dict = entity_dict.pop("entities")
-        aliases: dict | None = entities.get("aliases")
-        groups: dict | None = entities.get("groups")
-        members: dict | None = entities.get("members")
+        entities: dict = entity_dict.get("entities", {})
+        # noinspection PyUnreachableCode
+        aliases: dict | None = (
+            entities.get("aliases", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        groups: dict | None = (
+            entities.get("groups", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        members: dict | None = (
+            entities.get("members", None) if isinstance(entities, dict) else None
+        )
+        # noinspection PyUnreachableCode
+        parent_label: dict | None = (
+            entities.get("parent_label", None) if isinstance(entities, dict) else None
+        )
         if aliases is not None and len(aliases) == 0:
             aliases = None
         if groups is not None and len(groups) == 0:
             groups = None
         if members is not None and len(members) == 0:
             members = None
-        entity_dict.update(aliases=aliases, groups=groups, members=members)
+        if parent_label is not None and len(parent_label) == 0:
+            parent_label = None
+        entity_dict.update(
+            aliases=aliases, groups=groups, members=members, parent_label=parent_label
+        )
         return RuntimeEntityDB.model_validate(entity_dict)
 
 
@@ -208,12 +236,19 @@ class RuntimeEntityDB(InternalDomainObject):
     """The groups associated with the entity."""
     members: dict | list | None
     """The members associated with the entity."""
-    countries: str | None = None
+    parent_label: dict | list | None
+    """The parent label associated with the entity if it is a label."""
+    countries: str | None
     """The countries associated with the entity."""
-    genres: str | None = None
+    genres: str | None
     """The genres associated with the entity."""
-    styles: str | None = None
+    styles: str | None
     """The styles associated with the entity."""
+
+    @field_serializer("entity_type", when_used="json")
+    def serialize_entity_type(self, entity_type: EntityType) -> str:
+        """Serialize EntityType to its name for JSON compatibility."""
+        return entity_type.name
 
     def to_domain(self) -> RuntimeEntity:
         """
@@ -227,15 +262,38 @@ class RuntimeEntityDB(InternalDomainObject):
             RuntimeEntity: The domain representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
-        aliases: dict = entity_dict.pop("aliases")
-        groups: dict = entity_dict.pop("groups")
-        members: dict = entity_dict.pop("members")
-        entities = {}
-        if aliases is not None:
+        aliases: dict = entity_dict.pop("aliases", {})
+        groups: dict = entity_dict.pop("groups", {})
+        members: dict = entity_dict.pop("members", {})
+        parent_label: dict = entity_dict.pop("parent_label", {})
+        entities: dict[str, Any] = {}
+        if aliases is not None and len(aliases) > 0:
             entities.update(aliases=aliases)
-        if groups is not None:
+        if groups is not None and len(groups) > 0:
             entities.update(groups=groups)
-        if members is not None:
+        if members is not None and len(members) > 0:
             entities.update(members=members)
+        if parent_label is not None and len(parent_label) > 0:
+            entities.update(parent_label=parent_label)
         entity_dict.update(entities=entities)
         return RuntimeEntity.model_validate(entity_dict)
+
+
+def to_runtime_entity_dict(
+    entity_details_index: EntityDetailsIndex, entity: Entity
+) -> dict[str, Any]:
+    # TODO get from runtime countries table
+    countries = entity_details_index.get_countries_for_id(entity.id)
+    # TODO get from runtime genres table
+    genres = entity_details_index.get_genres_for_id(entity.id)
+    # TODO get from runtime styles table
+    styles = entity_details_index.get_styles_for_id(entity.id)
+
+    runtime_entity = RuntimeEntity(
+        countries=countries,
+        genres=genres,
+        styles=styles,
+        **entity.model_dump(),
+    )
+    runtime_entity_db = runtime_entity.to_db()
+    return runtime_entity_db.model_dump()

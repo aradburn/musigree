@@ -1,15 +1,13 @@
 """
-This module defines the `WorkerReleaseInserter` class, which is a worker
-process responsible for inserting release records into the Musigree offline
-database.
+This module defines the `insert_releases_worker` function, which is a worker function
+responsible for inserting release records into the Musigree offline database.
 
-It utilizes `multiprocessing` to enable concurrent insertion of releases,
-improving the efficiency of the data loading process. The
-`WorkerReleaseInserter` handles the insertion of a batch of release records
-(`bulk_inserts`).
+It is designed to be used with `concurrent.futures.ProcessPoolExecutor` to enable
+concurrent insertion of releases, improving the efficiency of the data loading process.
+The function handles the insertion of a batch of release records (`bulk_inserts`).
 
 Key functionalities include:
-    - **Concurrent Insertion**: Employs `multiprocessing.Process` to perform
+    - **Concurrent Insertion**: Designed to work with `ProcessPoolExecutor` to perform
       insertion operations concurrently, speeding up the insertion of large
       numbers of releases.
     - **Batch Insertion**: Processes a list of release data (`bulk_inserts`) in
@@ -24,8 +22,7 @@ Key functionalities include:
     - **Logging**: Provides detailed logging of the insertion process, including
       the number of inserted releases.
 
-The `WorkerReleaseInserter` class interacts with the following components:
-    - `multiprocessing.Process`: The base class for creating worker processes.
+The `insert_releases_worker` function interacts with the following components:
     - `OfflineDatabaseHelper`: For managing database connections and
       initialization in a concurrent environment.
     - `ReleaseRepository`: For database operations related to releases.
@@ -34,91 +31,82 @@ The `WorkerReleaseInserter` class interacts with the following components:
     - `logging`: For logging operations.
     - `DatabaseError`: Used for handling the database exception.
 
-The module utilizes `logging` for logging operations, `multiprocessing` for
-process management, and `sqlalchemy.exc.DatabaseError` for database
-related exception.
+The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
+for database related exceptions.
 """
-
+import asyncio
 import logging
 import multiprocessing
 from typing import Any
 
-from sqlalchemy.exc import DatabaseError
-
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
+from musigree.exceptions import DatabaseError
 from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
 """
-The logger for the WorkerReleaseInserter module.
+The logger for the worker release inserter module.
 """
 
 
-class WorkerReleaseInserter(multiprocessing.Process):
+async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]],
+                                       inserted_count: int,
+                                       _total_count: int) -> None:
     """
-    A worker process for inserting release records into the database.
+    Worker function for inserting release records into the database.
 
-    This class extends `multiprocessing.Process` to perform concurrent
-    insertion of release records.
+    This function is designed to be used with ProcessPoolExecutor to perform
+    concurrent insertion of release records.
+
+    Args:
+        bulk_inserts (list[dict[str, Any]]): A list of release records to insert.
+        inserted_count (int): The number of releases already inserted.
+        _total_count (int): The total number of releases to be inserted.
+    Raises:
+        DatabaseError: If there's an error during database operations.
     """
 
-    def __init__(
-        self,
-        bulk_inserts: list[dict[str, Any]],
-        inserted_count: int,
-    ):
-        """
-        Initializes the WorkerReleaseInserter.
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        Args:
-            bulk_inserts (list[dict[str, Any]]): A list of release records to insert.
-            inserted_count (int): The number of releases already inserted.
-        """
-        super().__init__()
-        """Call the constructor of the parent class."""
-        self.bulk_inserts = bulk_inserts
-        """The list of release records to insert."""
-        self.inserted_count = inserted_count
-        """The number of releases already inserted."""
+    count = 0
 
-    def run(self):
-        """
-        Executes the release insertion process.
+    async with offline_transaction():
+        """Ensure that database operations are performed within a transaction."""
+        release_repository = ReleaseRepository()
+        """Instance of ReleaseRepository for database operations on releases."""
+        try:
+            """Attempt to insert the releases."""
+            await release_repository.save_all(bulk_inserts)
+            """Insert the releases."""
+            await release_repository.commit()
+            """Commit the transaction."""
+            count += len(bulk_inserts)
+        except DatabaseError:
+            """Handle potential database errors."""
+            log.error("Error in insert_releases_worker")
+            # log.exception("Error in insert_releases_worker", exc_info=True)
+            # raise
 
-        This method performs the following steps:
-            1. Initializes the database helper if concurrency is enabled.
-            2. Starts a database transaction.
-            3. Inserts all releases in `bulk_inserts` using `ReleaseRepository`.
-            4. Commits the transaction.
-            5. Handles `DatabaseError` exceptions during the process.
-            6. Logs the progress and number of releases inserted.
-        """
-        proc_name = self.name
-        """Get the name of the current process."""
+    log.info(f"[{proc_name}] inserted_count: {inserted_count + count}")
+    """Log the number of releases inserted."""
 
-        if OfflineDatabaseManager.get_concurrency_count() > 1:
-            """Check if concurrency is enabled."""
-            OfflineDatabaseHelper.initialize()
-            """Initialize the database helper."""
 
-        with offline_transaction():
-            """Ensure that database operations are performed within a transaction."""
-            release_repository = ReleaseRepository()
-            """Instance of ReleaseRepository for database operations on releases."""
-            try:
-                """Attempt to insert the releases."""
-                release_repository.save_all(self.bulk_inserts)
-                """Insert the releases."""
-                release_repository.commit()
-                """Commit the transaction."""
-            except DatabaseError as e:
-                """Handle potential database errors."""
-                log.exception(
-                    "Database Error in WorkerReleaseInserter worker", exc_info=True
-                )
-                raise e
+def insert_releases_worker(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
 
-        log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
-        """Log the number of releases inserted."""
+    OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
+    """Initialize the database engine."""
+
+    loop.run_until_complete(insert_releases_worker_async(bulk_inserts, current_total, total_count))
+
+    OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
+    """Close the database engine."""

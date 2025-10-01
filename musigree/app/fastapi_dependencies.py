@@ -15,7 +15,7 @@ The `rate_limiter` dependency interacts with the following components:
       such as the endpoint and remote address.
     - `fastapi.Response`: For adding headers to the response.
     - `fakeredis.FakeStrictRedis`: A fake Redis client used for testing,
-      providing a in-memory implementation of the Redis API.
+      providing an in-memory implementation of the Redis API.
     - `exceptions.RateLimitError`: A custom exception raised when the rate
       limit is exceeded.
     - `logging`: For logging operations.
@@ -23,23 +23,120 @@ The `rate_limiter` dependency interacts with the following components:
 
 import logging
 import time
-from typing import Callable
+from typing import Callable, Any
 
 import fakeredis
 from fastapi import Request, Response
 
-from musigree.exceptions import RateLimitError
+from musigree.exceptions import RateLimitError, BadRequestError
+from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 """
 The logger for the dependencies module.
 """
 
-redis_client = fakeredis.FakeStrictRedis()
-# redis_client = redis.StrictRedis()
+UI_DEFAULT_ROLES = [
+    "Alias",
+    "Member Of",
+    # 'Sublabel Of',
+    # 'Released On',
+]
 """
-The redis client, `fakeredis.FakeStrictRedis` is used for testing.
+Default roles to display if none are specified in the request.
 """
+
+# Global Redis client - will be initialized based on environment
+_redis_client: Any = None
+
+def get_entity_type(entity_type_str: str) -> EntityType:
+    try:
+        entity_type = EntityType.from_str(entity_type_str.upper())
+    except NotImplementedError:
+        raise BadRequestError(message="Bad Entity Type") from None
+
+    return entity_type
+
+
+def get_entity_id(entity_id: str) -> int:
+    if not entity_id.isnumeric():
+        raise BadRequestError(message="Bad Entity Id")
+
+    entity_id_int = int(entity_id)
+    return entity_id_int
+
+
+def get_year(year: str | None = None) -> tuple[int, int] | int | None:
+    if year is None:
+        return None
+    year_result: tuple[int, int] | int | None
+
+    try:
+        if "-" in year:
+            start, _, stop = year.partition("-")
+            start_year = int(start)
+            stop_year = int(stop)
+            if start_year <= stop_year:
+                year_result = (start_year, stop_year)
+            else:
+                year_result = (stop_year, start_year)
+        else:
+            year_result = int(year)
+    except ValueError:
+        raise BadRequestError(message="Invalid year input") from None
+    log.debug(f"Requested year: {year_result}")
+    return year_result
+
+
+def get_roles(roles: str | None = None) -> list[str]:
+    from musigree.library.cache.role_cache import RoleCache
+
+    roles_result = set()
+    if roles is not None:
+        # List is comma-separated, roles that contain commas are escaped by a \
+        unescaped_value = roles.replace("\\,", "|")
+        for role_escaped in unescaped_value.split(","):
+            role = role_escaped.replace("|", ",")
+            # log.debug(f"Requested role: {role}")
+            if role in RoleCache.role_category_to_role_name_lookup.keys():
+                # log.debug(f"Requested role found: {role}")
+                for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
+                    log.debug(f"Requested role_entry: {role_entry}")
+                    if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
+                        roles_result.add(role_entry)
+            elif role in RoleCache.role_name_to_role_id_lookup.keys():
+                roles_result.add(role)
+
+    if len(roles_result) == 0:
+        roles_result = set(UI_DEFAULT_ROLES)
+    roles_list: list[str] = list(sorted(roles_result))
+    # log.debug(f"Requested roles: {roles}")
+    return roles_list
+
+def get_redis_client() -> Any:
+    """
+    Get the Redis client, initializing it if necessary.
+
+    Returns:
+        Redis client instance (real or fake based on configuration)
+    """
+    global _redis_client
+
+    if _redis_client is None:
+        # For now, we'll use FakeRedis for development and testing
+        # In production, this should be replaced with real Redis configuration
+        # TODO: ASYNC IMPROVEMENT - Use aioredis for async operations:
+        # import aioredis
+        # _redis_client = aioredis.from_url("redis://localhost", decode_responses=True)
+        _redis_client = fakeredis.FakeStrictRedis(
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+        )
+        log.info("Initialized FakeRedis for rate limiting")
+
+    return _redis_client
 
 
 def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
@@ -88,7 +185,9 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         try:
             # Get current requests (handle Redis byte response)
             current_requests = 0
-            redis_value = redis_client.get(key)
+            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+            # redis_value = await get_redis_client().get(key)
+            redis_value = get_redis_client().get(key)
             if redis_value:
                 # Convert bytes to string and then to int
                 try:
@@ -102,18 +201,25 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
                 current_requests = 0
 
             remaining = max_requests - current_requests
-        except (ValueError, TypeError) as e:
-            log.debug(f"Redis error handling value: {e}")
+        except Exception as e:
+            log.warning(f"Redis error in rate limiter: {e}")
+            # Fallback: allow request but log the error
             remaining = max_requests
-            await redis_client.setex(key, period, 0)
+            current_requests = 0
 
         # Get TTL and handle Redis response
-        ttl_raw = redis_client.ttl(key)
-        ttl_value = period
+        try:
+            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+            # ttl_raw = await get_redis_client().ttl(key)
+            ttl_raw = get_redis_client().ttl(key)
+            ttl_value = period
 
-        # If TTL is a valid positive number, use it
-        if isinstance(ttl_raw, int) and ttl_raw > 0:
-            ttl_value = ttl_raw
+            # If TTL is a valid positive number, use it
+            if isinstance(ttl_raw, int) and ttl_raw > 0:
+                ttl_value = ttl_raw
+        except Exception as e:
+            log.warning(f"Redis TTL error in rate limiter: {e}")
+            ttl_value = period
 
         # Add rate limit headers to the response
         response.headers["X-RateLimit-Limit"] = str(max_requests)
@@ -122,8 +228,18 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
 
         if remaining > 0:
             # Increment the request count
-            # noinspection PyAsyncCall
-            redis_client.incr(key, 1)
+            try:
+                # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
+                # await get_redis_client().incr(key, 1)
+                # if current_requests == 0:
+                #     await get_redis_client().expire(key, period)
+                get_redis_client().incr(key, 1)
+                # Set expiration if this is a new key
+                if current_requests == 0:
+                    get_redis_client().expire(key, period)
+            except Exception as e:
+                log.warning(f"Redis incr/expire error in rate limiter: {e}")
+                # Continue without incrementing - graceful degradation
             log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl_value}")
         else:
             log.debug(f"key: {key}, remaining: {remaining}, ttl: {ttl_value}")

@@ -10,7 +10,7 @@ import { symbol, symbolCross, now } from "d3";
 
 import { debounce } from "../utils";
 import { getNodeColorClass } from "../color";
-import { networkManager } from "../core";
+import { networkManager } from "../core/singletons";
 import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
 import { hideAllTooltips } from "./tooltips";
 import { SelectEntityEvent } from "./events";

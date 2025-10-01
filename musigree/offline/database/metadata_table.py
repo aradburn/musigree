@@ -4,10 +4,10 @@ from sqlalchemy import String, TIMESTAMP, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
+from musigree.offline.database.base_table import OfflineBase
 
 
-class MetadataTable(Base):
+class MetadataTable(OfflineBase):
     """
     Represents the 'metadata' table in the database.
 
@@ -46,7 +46,7 @@ class MetadataTable(Base):
         Specifies that `version_id` column should be used for versioning.
     """
 
-    __table_args__ = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_metadata",
             metadata_key,
@@ -59,11 +59,11 @@ class MetadataTable(Base):
         - idx_metadata: A unique index on the metadata_key column.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the MetadataTable object.
 
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self))
+        return utils.normalize_dict(utils.table2dict(self))

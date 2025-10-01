@@ -41,7 +41,7 @@ The module utilizes
   and `frozenset`, `set`, `dict`, `hash`, `int` for data structure.
 """
 
-from typing import Set, Dict, Any
+from typing import Any
 
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
@@ -83,13 +83,13 @@ class TrellisNode:
             distance (int, optional): The distance of this node from the
                 central entity in the graph. Defaults to 0.
         """
-        self._children: Set["TrellisNode"] = set()
+        self._children: set["TrellisNode"] = set()
         """Set of child nodes."""
         self._cluster: int = 0
         """Cluster ID for the node."""
         self._distance: int = distance
         """Distance of the node from the center entity."""
-        self._links: Set[str] = set()
+        self._links: set[str] = set()
         """Set of links (relationships) associated with the node."""
         self._missing: int = 0
         """Number of missing links for the node."""
@@ -99,9 +99,9 @@ class TrellisNode:
         """The entity associated with this node."""
         self._parentage: frozenset["TrellisNode"] | None = None
         """Frozen set of ancestor nodes."""
-        self._parents: Set["TrellisNode"] = set()
+        self._parents: set["TrellisNode"] = set()
         """Set of parent nodes."""
-        self._siblings: Set["TrellisNode"] = set()
+        self._siblings: set["TrellisNode"] = set()
         """Set of sibling nodes."""
         self._subgraph_size: int | None = None
         """The size of the subgraph that the node is part of."""
@@ -133,14 +133,14 @@ class TrellisNode:
 
     # PUBLIC METHODS
 
-    def as_json(self) -> Dict[str, Any]:
+    def as_json(self) -> dict[str, Any]:
         """
         Converts the TrellisNode to a JSON-compatible dictionary.
 
         Returns:
             dict: A JSON-compatible dictionary representing the node.
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "distance": self.distance,
             "id": self.entity.entity_id,
             "key": self.entity.json_entity_key,
@@ -156,7 +156,7 @@ class TrellisNode:
             data["missingByPage"] = self.missing_by_page
         return data
 
-    def get_neighbors(self) -> Set["TrellisNode"]:
+    def get_neighbors(self) -> set["TrellisNode"]:
         """
         Gets the set of all neighboring nodes.
 
@@ -185,15 +185,15 @@ class TrellisNode:
             """If the parentage is already computed, return it."""
             return self._parentage
         # noinspection PySetFunctionToLiteral
-        parentage: Set["TrellisNode"] = set([self])
+        parentage: set["TrellisNode"] = set([self])
         """Set to store the parentage."""
-        parents: Set["TrellisNode"] = self.parents
+        parents: set["TrellisNode"] = self.parents
         """Set with the parent of the current node."""
         while parents:
             """While there are parents to process."""
             parentage.update(parents)
             """Add all the parents to the parentage."""
-            new_parents: Set["TrellisNode"] = set()
+            new_parents: set["TrellisNode"] = set()
             """Set to store the parents of the current parents."""
             for parent in parents:
                 """Iterate over the current parents."""
@@ -209,7 +209,7 @@ class TrellisNode:
     # PUBLIC PROPERTIES
 
     @property
-    def children(self) -> Set["TrellisNode"]:
+    def children(self) -> set["TrellisNode"]:
         """
         Gets the set of child nodes.
 
@@ -229,7 +229,7 @@ class TrellisNode:
         return self._cluster
 
     @cluster.setter
-    def cluster(self, expr: int):
+    def cluster(self, expr: int) -> None:
         """
         Sets the cluster ID of the node.
 
@@ -269,7 +269,7 @@ class TrellisNode:
         return self._entity.entity_key
 
     @property
-    def links(self) -> Set[str]:
+    def links(self) -> set[str]:
         """
         Gets the set of link keys associated with this node.
 
@@ -289,7 +289,7 @@ class TrellisNode:
         return self._missing
 
     @missing.setter
-    def missing(self, expr: int):
+    def missing(self, expr: int) -> None:
         """
         Sets the number of missing links for this node.
 
@@ -309,7 +309,7 @@ class TrellisNode:
         return self._missing_by_page
 
     @property
-    def parents(self) -> Set["TrellisNode"]:
+    def parents(self) -> set["TrellisNode"]:
         """
         Gets the set of parent nodes.
 
@@ -319,7 +319,7 @@ class TrellisNode:
         return self._parents
 
     @property
-    def siblings(self) -> Set["TrellisNode"]:
+    def siblings(self) -> set["TrellisNode"]:
         """
         Gets the set of sibling nodes.
 
@@ -350,7 +350,7 @@ class TrellisNode:
         return self._subgraph_size
 
     @subgraph_size.setter
-    def subgraph_size(self, expr: int):
+    def subgraph_size(self, expr: int) -> None:
         """
         Sets the size of the subgraph that the node is part of.
 

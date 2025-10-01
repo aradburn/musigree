@@ -25,17 +25,17 @@ role information.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, cast
+from typing import Any, cast
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
+from typing import Annotated
 
-import musigree.utils
-from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 
 
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.app.fastapi_dependencies import rate_limiter
+from musigree.app.fastapi_dependencies import rate_limiter, get_entity_type, get_entity_id, get_roles, get_year
 
 log = logging.getLogger(__name__)
 """
@@ -49,15 +49,13 @@ The FastAPI router for the API endpoints.
 This router is used to organize the API routes and their related functionality.
 """
 
-
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/relations/{entity_id}")
 async def route__api__entity_type__relations__entity_id(
-    entity_type_str: str,
-    entity_id: str,
-    request: Request,
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves relations for a specific entity.
 
@@ -65,13 +63,12 @@ async def route__api__entity_type__relations__entity_id(
     identified by its type and ID.
 
     Args:
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        request: The FastAPI request object.
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the relations data.
+        dict[str, Any]: A dictionary containing the relations data.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
@@ -85,42 +82,36 @@ async def route__api__entity_type__relations__entity_id(
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-
-    entity_id_int = int(entity_id)
-
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
+        data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
             entity_repository,
             relation_repository,
-            entity_id_int,
+            entity_id,
             entity_type,
         )
 
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(Dict[str, Any], data)
+    return cast(dict[str, Any], data)
 
 
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/network/{entity_id}")
 async def route__api__entity_type__network__entity_id(
-    entity_type_str: str,
-    entity_id: str,
-    request: Request,
-    roles: Optional[List[str]] = Query(None),
-    year: Optional[int] = Query(None),
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    on_mobile: Annotated[bool, Query()] = False,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieves the network graph for a specific entity.
 
@@ -128,15 +119,15 @@ async def route__api__entity_type__network__entity_id(
     identified by its type and ID. It supports filtering by roles.
 
     Args:
-        entity_type_str: The type of the entity (e.g., "artist", "label").
+        entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        request: The FastAPI request object.
         roles: Optional list of roles to filter the network by.
         year: Optional year to filter the network by.
+        on_mobile: Optional flag indicating if the request is from a mobile device.
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the network graph data.
+        dict[str, Any]: A dictionary containing the network graph data.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
@@ -150,53 +141,33 @@ async def route__api__entity_type__network__entity_id(
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    try:
-        entity_type = EntityType.from_str(entity_type_str.upper())
-    except NotImplementedError:
-        raise BadRequestError(message="Bad Entity Type")
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
-    if not entity_id.isnumeric():
-        raise BadRequestError(message="Bad Entity Id")
-
-    entity_id_int = int(entity_id)
-
-    # Convert query parameters to the format expected by the existing code
-    query_params = {}
-    if roles:
-        query_params["roles"] = roles
-    if year is not None:
-        query_params["year"] = year
-
-    parsed_args = musigree.utils.parse_request_args(query_params)
-    original_roles, original_year = parsed_args if parsed_args else (None, None)
-
-    if not original_roles:
-        original_roles = []
-
-    on_mobile = False
-
-    with runtime_transaction():
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = RuntimeDatabaseManager.runtime_database_helper.get_network(
+        data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
-            entity_id_int,
+            entity_id,
             entity_type,
             on_mobile=on_mobile,
-            roles=original_roles,
+            roles=roles,
         )
 
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(Dict[str, Any], data)
+    return data
 
 
 @router.get("/search/{search_string}")
 async def route__api__search(
-    search_string: str, _: None = Depends(rate_limiter(max_requests=120, period=60))
-) -> Dict[str, Any]:
+    search_string: str,
+    _: None = Depends(rate_limiter(max_requests=120, period=60)),
+) -> dict[str, Any]:
     """
     Searches for entities based on a search string.
 
@@ -207,7 +178,7 @@ async def route__api__search(
         _: Dependency injection for rate limiting.
 
     Returns:
-        List[Dict[str, Any]]: A list of entities matching the search string.
+        List[dict[str, Any]]: A list of entities matching the search string.
     """
     from musigree.runtime.data_access_layer.runtime_entity_search import (
         RuntimeEntitySearch,
@@ -215,13 +186,62 @@ async def route__api__search(
 
     log.debug(f"search_string: {search_string}")
     data = RuntimeEntitySearch.search_entities(search_string)
-    return cast(Dict[str, List[Dict[str, Any]]], data)
+    return data
+
+
+# noinspection PyUnusedLocal
+@router.get("/{entity_type_str}/details/{entity_id}")
+async def route__api__entity_type__details__entity_id(
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
+) -> dict[str, Any]:
+    """
+    Retrieves detailed information for a specific entity.
+
+    This endpoint returns comprehensive details about an entity, including
+    its metadata, aliases, groups, members, countries, genres, and styles.
+
+    Args:
+        entity_type: The type of the entity (e.g., "artist", "label").
+        entity_id: The ID of the entity.
+        _: Dependency injection for rate limiting.
+
+    Returns:
+        dict[str, Any]: A dictionary containing the entity details.
+
+    Raises:
+        BadRequestError: If the entity type or entity ID is invalid.
+        NotFoundError: If no entity is found with the given ID and type.
+    """
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+
+    async with runtime_transaction():
+        entity_repository = RuntimeEntityRepository()
+        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
+
+    # Convert the entity to a dictionary format suitable for API response
+    entity_data = {
+        "id": entity.entity_id,
+        "type": entity.entity_type.name.lower(),
+        "name": entity.entity_name,
+        "metadata": entity.entity_metadata,
+        "entities": entity.entities,
+        "relation_counts": entity.relation_counts,
+        "countries": entity.countries,
+        "genres": entity.genres,
+        "styles": entity.styles,
+    }
+
+    return entity_data
 
 
 @router.get("/random")
 async def route__api__random(
-    _: None = Depends(rate_limiter(max_requests=60, period=60))
-) -> Dict[str, str]:
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
+) -> dict[str, str]:
     """
     Retrieves a random entity.
 
@@ -231,7 +251,7 @@ async def route__api__random(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, str]: A dictionary containing the random entity's type and ID.
+        dict[str, str]: A dictionary containing the random entity's type and ID.
 
     Raises:
         DatabaseError: If there is an error retrieving the random entity.
@@ -241,18 +261,21 @@ async def route__api__random(
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    with runtime_transaction():
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
+
+    async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         try:
-            entity_id, entity_type = (
-                RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
-                    entity_repository
-                )
-            )
+            (
+                entity_id,
+                entity_type,
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(entity_repository)
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random", exc_info=True)
-            raise DatabaseError(message="API error")
+            raise DatabaseError(message="API error") from None
 
     data = {"center": f"{entity_type.name.lower()}-{entity_id}"}
     return data
@@ -260,8 +283,8 @@ async def route__api__random(
 
 @router.get("/roles")
 async def route__api__role(
-    _: None = Depends(rate_limiter(max_requests=60, period=60))
-) -> Dict[str, Any]:
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
+) -> dict[str, Any]:
     """
     Retrieves all available roles.
 
@@ -271,10 +294,9 @@ async def route__api__role(
         _: Dependency injection for rate limiting.
 
     Returns:
-        Dict[str, Any]: A dict containing an entry with a list of all the roles.
+        dict[str, Any]: A dict containing an entry with a list of all the roles.
     """
     from musigree.library.cache.role_cache import RoleCache
 
     role_data = RoleCache.get_all_roles()
-    # print(f"role_data: {role_data}")
     return role_data

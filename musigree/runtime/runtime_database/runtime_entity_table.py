@@ -1,5 +1,5 @@
 from typing import Any
-from sqlalchemy import String, JSON, Index, Integer, inspect
+from sqlalchemy import String, Index, Integer, inspect, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
@@ -64,6 +64,8 @@ class RuntimeEntityTable(RuntimeBase):
     """Groups the entity is part of. Stored as JSON."""
     members: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
     """Members associated with the entity (e.g., members of a band). Stored as JSON."""
+    parent_label: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    """Parent label associated with the entity. Stored as JSON."""
     countries: Mapped[str] = mapped_column(String, nullable=True)
     """Countries associated with the entity."""
     genres: Mapped[str] = mapped_column(String, nullable=True)
@@ -71,7 +73,7 @@ class RuntimeEntityTable(RuntimeBase):
     styles: Mapped[str] = mapped_column(String, nullable=True)
     """Styles associated with the entity."""
 
-    __table_args__ = (
+    __table_args__: tuple[Index, dict] = (
         Index(
             "idx_runtime_entity_id_and_entity_type",
             entity_id,
@@ -86,7 +88,7 @@ class RuntimeEntityTable(RuntimeBase):
           entity_type columns.
     """
 
-    def __init__(self, **entries):
+    def __init__(self, **entries: Any) -> None:
         """
         Initializes a RuntimeEntityTable instance.
 
@@ -106,7 +108,7 @@ class RuntimeEntityTable(RuntimeBase):
         }
         super().__init__(**superentries)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RuntimeEntityTable instance.
 
@@ -116,4 +118,4 @@ class RuntimeEntityTable(RuntimeBase):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

@@ -18,8 +18,7 @@ export default defineConfig({
     },
     plugins: [react()],
     build: {
-        target: "es2020",
-        assetsDir: "assets",
+        cssCodeSplit: false,
         sourcemap: true,
         outDir: path.join(__dirname, "./dist/"),
         manifest: "manifest.json",
@@ -52,9 +51,7 @@ export default defineConfig({
     css: {
         preprocessorOptions: {
             scss: {
-                api: "modern-compiler", // or "modern"
                 silenceDeprecations: [
-                    "mixed-decls",
                     "color-functions",
                     "global-builtin",
                     "import",
@@ -62,17 +59,22 @@ export default defineConfig({
             },
         },
     },
-    optimizeDeps: {
-        include: [],
-    },
+//     optimizeDeps: {
+//         include: [],
+//     },
     server: {
         cors: true, // Allow all origins
         headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods":
-                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-            "Access-Control-Allow-Headers":
-                "X-Requested-With, content-type, Authorization",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+        },
+        proxy: {
+            "/api": {
+                target: "http://localhost:5000",
+                changeOrigin: true,
+                secure: false,
+            },
         },
     },
 });

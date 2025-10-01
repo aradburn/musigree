@@ -27,7 +27,7 @@ components and returns a ready-to-use FastAPI application.
 from fastapi import FastAPI
 
 from musigree.app.fastapi_app import create_app
-from musigree.config import SqliteProductionConfiguration
+from musigree.config import SqliteReadOnlyProductionConfiguration
 
 
 def create_production_app() -> FastAPI:
@@ -42,7 +42,7 @@ def create_production_app() -> FastAPI:
     Returns:
         FastAPI: A configured FastAPI application instance ready for production.
     """
-    runtime_config = SqliteProductionConfiguration()
+    runtime_config = SqliteReadOnlyProductionConfiguration()
     """
     Configuration object for the runtime environment.
 
@@ -55,15 +55,6 @@ def create_production_app() -> FastAPI:
 
     Creates a new FastAPI application instance using the specified runtime
     configuration, including settings for the database, cache, and logging.
-    """
-
-    # Load data from tables
-    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
-    """
-    Loads initial data into the runtime database.
-
-    Populates the tables in the runtime database with initial data,
-    such as roles, from the pre-configured data sources.
     """
 
     return _app

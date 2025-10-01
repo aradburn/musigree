@@ -27,10 +27,11 @@ for generic XML parsing.
 
 import gzip
 import logging
-from collections.abc import Iterator
 from pathlib import Path
-from typing import Self, Any
+from typing import Self, Any, Generator
 
+from musigree.offline.domain.entity import Entity
+from musigree.offline.domain.release import Release
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_utils import ParserUtils
 
@@ -55,7 +56,7 @@ class ParserBase:
             extracted from XML elements and processed.
     """
 
-    _tags_to_fields_mapping: dict = None
+    _tags_to_fields_mapping: dict[str, tuple] | None = None
     """
     A mapping from XML tags to database fields and procedures.
 
@@ -70,13 +71,13 @@ class ParserBase:
     @classmethod
     def load_from_xml(
         cls,
-        domain_class,
+        domain_class: type[Entity | Release],
         discogs_data_directory: Path,
         date: str,
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-    ) -> Iterator[Self]:
+    ) -> Generator[Entity | Release, None, None]:
         """
         Loads data from an XML file.
 
@@ -110,7 +111,7 @@ class ParserBase:
             """Open the XML file using gzip to read compressed files."""
             iterator = ParserUtils.iterparse(file_pointer, xml_tag)
             """Get an iterator over the XML elements with the specified tag."""
-            for i, element in enumerate(iterator):
+            for _, element in enumerate(iterator):
                 """Iterate over each XML element."""
                 data = cls.tags_to_fields(element)
                 """Extract the data from the element using the tag-to-field mapping."""
@@ -128,7 +129,7 @@ class ParserBase:
                 yield new_instance
 
     @classmethod
-    def from_element(cls, element) -> Self:
+    def from_element(cls, element) -> Self:  # type: ignore
         """
         Creates an instance from an XML element.
 
@@ -142,7 +143,7 @@ class ParserBase:
         pass
 
     @classmethod
-    def preprocess_data(cls, data: dict, element) -> dict[str, Any]:
+    def preprocess_data(cls, data: dict, element: Any) -> dict[str, Any]:
         """
         Preprocesses data before creating a domain object.
 
@@ -160,7 +161,12 @@ class ParserBase:
         return data
 
     @classmethod
-    def tags_to_fields(cls, element, ignore_none=None, mapping=None) -> dict[str, Any]:
+    def tags_to_fields(
+        cls,
+        element: Any,
+        ignore_none: bool | None = None,
+        mapping: dict[str, tuple] | None = None,
+    ) -> dict[str, Any]:
         """
         Converts XML tags to database fields.
 
@@ -182,7 +188,7 @@ class ParserBase:
         """
         data = {}
         """Initialize an empty dictionary to store the extracted data."""
-        mapping = mapping or cls._tags_to_fields_mapping
+        mapping = mapping or cls._tags_to_fields_mapping or {}
         """Use the custom mapping or the class's default mapping."""
         for child_element in element:
             """Iterate over the child elements of the current element."""

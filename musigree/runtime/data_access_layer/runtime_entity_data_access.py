@@ -1,17 +1,15 @@
 import logging
-import pickle
-from pathlib import Path
-from typing import Dict, cast
+from typing import cast, Any
 
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
-from musigree.library.full_text_search.entity_details_index import EntityDetailsIndex
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
@@ -22,23 +20,23 @@ class RuntimeEntityDataAccess:
     CACHE_KEY_SEPARATOR = "_"
 
     @staticmethod
-    def roles_to_relation_count(entity: RuntimeEntity, roles) -> int:
+    def roles_to_relation_count(entity: RuntimeEntity, roles: list[str]) -> int:
         count = 0
         relation_counts = entity.relation_counts or {}
         for role in roles:
             if role == "Alias":
                 if "aliases" in entity.entities:
-                    count += len(cast(Dict, entity.entities["aliases"]))
+                    count += len(cast(dict, entity.entities["aliases"]))
             elif role == "Member Of":
                 if "groups" in entity.entities:
-                    count += len(cast(Dict, entity.entities["groups"]))
+                    count += len(cast(dict, entity.entities["groups"]))
                 if "members" in entity.entities:
-                    count += len(cast(Dict, entity.entities["members"]))
+                    count += len(cast(dict, entity.entities["members"]))
             elif role == "Sublabel Of":
                 if "parent_label" in entity.entities:
-                    count += len(cast(Dict, entity.entities["parent_label"]))
+                    count += len(cast(dict, entity.entities["parent_label"]))
                 if "sublabels" in entity.entities:
-                    count += len(cast(Dict, entity.entities["sublabels"]))
+                    count += len(cast(dict, entity.entities["sublabels"]))
             else:
                 count += relation_counts.get(role, 0)
         # log.debug(
@@ -48,14 +46,14 @@ class RuntimeEntityDataAccess:
 
     @staticmethod
     def structural_roles_to_relations(
-        entity: RuntimeEntity, roles
-    ) -> Dict[str, RuntimeRelationResult]:
+        entity: RuntimeEntity, roles: list[str]
+    ) -> dict[str, RuntimeRelationResult]:
         # log.debug(f"            structural_roles_to_relations entity: {self}")
         # log.debug(
         #     f"            structural_roles_to_relations entities: {self.entities}"
         # )
         # log.debug(f"            structural_roles_to_relations roles: {roles}")
-        relations: Dict[str, RuntimeRelationResult] = {}
+        relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
             role = "Alias"
             if role in roles and "aliases" in entity.entities:
@@ -64,7 +62,6 @@ class RuntimeEntityDataAccess:
                         continue
                     ids = sorted((entity_id, entity.entity_id))
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=ids[0],
                         entity_one_type=entity.entity_type,
                         entity_two_id=ids[1],
@@ -81,7 +78,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity_id,
@@ -96,7 +92,6 @@ class RuntimeEntityDataAccess:
                         if not entity_id:
                             continue
                         relation = RuntimeRelationResult(
-                            id=0,
                             entity_one_id=entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity.entity_id,
@@ -113,7 +108,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity_id,
@@ -128,7 +122,6 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     relation = RuntimeRelationResult(
-                        id=0,
                         entity_one_id=entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity.entity_id,
@@ -142,7 +135,7 @@ class RuntimeEntityDataAccess:
         return relations
 
     @staticmethod
-    def get_id_by_entity_type_and_entity_name(
+    async def get_id_by_entity_type_and_entity_name(
         entity_repository: RuntimeEntityRepository,
         entity_type: EntityType,
         entity_name: str,
@@ -153,7 +146,7 @@ class RuntimeEntityDataAccess:
             f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
         )
 
-        id_ = cache.get(entity_key_str)
+        id_: int | None = cache.get(entity_key_str)
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
 
@@ -162,13 +155,15 @@ class RuntimeEntityDataAccess:
         if id_ is None:
             # log.debug(f"not cached, try db")
             try:
-                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
+                internal_id = (
+                    await entity_repository.get_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
                 )
                 # Store the internal id, not entity_id
-                cache.set(entity_key_str, int_id)
+                cache.set(entity_key_str, internal_id)
                 # log.debug(f"cache set for {key_str} -> {int_id}")
-                id_ = int_id
+                id_ = internal_id
 
             except NotFoundError:
                 if LOGGING_TRACE:
@@ -181,19 +176,16 @@ class RuntimeEntityDataAccess:
         return id_
 
     @staticmethod
-    def load_entity_details_index_from_file(filename: Path) -> EntityDetailsIndex:
-        log.debug(f"load entity details index from file: {filename}")
+    def get_runtime_entity_dicts_from_entities(entity_list: list[Entity]) -> list[dict[str, Any]]:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-        # open a file, where you stored the pickled data
-        with open(filename, "rb") as file:
-            # read pickle dump information from that file
-            entity_details_index: EntityDetailsIndex = pickle.load(file)
-            # log.debug(f"Countries:")
-            # for country in sorted(entity_details_index.countries_list):
-            #     print(f"{country}")
-        log.debug(
-            f"loaded {len(entity_details_index.entity_countries)} entity countries"
-        )
-        log.debug(f"loaded {len(entity_details_index.entity_genres)} entity genres")
-        log.debug(f"loaded {len(entity_details_index.entity_styles)} entity styles")
-        return entity_details_index
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        assert RuntimeDatabaseManager.runtime_database_helper.entity_details_index is not None
+
+        runtime_entity_dict_list: list[dict[str, Any]] = []
+
+        for entity in entity_list:
+            runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+            runtime_entity_dict_list.append(runtime_entity_dict)
+
+        return runtime_entity_dict_list

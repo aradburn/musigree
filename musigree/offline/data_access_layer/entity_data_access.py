@@ -26,6 +26,7 @@ represent the different types of entities.
 
 import logging
 
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_label_internal_id
@@ -35,7 +36,6 @@ from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.domain.entity import Entity
 from musigree.offline.domain.release import Release
-from musigree.offline.loader.loader_base import LoaderBase
 
 # TODO tidy up
 log = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class EntityDataAccess:
     """
 
     @staticmethod
-    def resolve_entity_references(
+    async def resolve_entity_references(
         entity_repository: EntityRepository, entity: Entity
     ) -> bool:
         """
@@ -98,10 +98,12 @@ class EntityDataAccess:
         if entity.entity_type == EntityType.ARTIST:
             is_resolved = False
             for section in ("aliases", "groups", "members"):
+                if not isinstance(entity.entities, dict):
+                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:
@@ -111,10 +113,12 @@ class EntityDataAccess:
         elif entity.entity_type == EntityType.LABEL:
             is_resolved = False
             for section in ("parent_label", "sublabels"):
+                if not isinstance(entity.entities, dict):
+                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:
@@ -122,12 +126,12 @@ class EntityDataAccess:
                         is_resolved = True
             return is_resolved
         else:
-            raise ValueError("Bad entity_type")
+            raise ValueError
 
     @staticmethod
-    def resolve_release_references(
+    async def resolve_release_references(
         entity_repository: EntityRepository, release: Release
-    ):
+    ) -> bool:
         """
         Resolves release references within a release's data structure.
 
@@ -195,41 +199,44 @@ class EntityDataAccess:
         #                 extra_artist_entry["id"] = -entity_id
         #             changed = True
 
-        for entry in release.labels:
-            if "id" in entry:
-                old_id = entry["id"]
-                entry["id"] = to_entity_label_internal_id(old_id)
-                if old_id != entry["id"]:
+        # Resolve labels and companies
+        if release.labels is not None:
+            for entry in release.labels:
+                if "id" in entry:
+                    old_id = entry["id"]
+                    entry["id"] = to_entity_label_internal_id(old_id)
+                    if old_id != entry["id"]:
+                        changed = True
+                else:
+                    # Look up label name to get the id
+                    entity_type = EntityType.LABEL
+                    entity_name = entry["name"]
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
+                    entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
-            else:
-                # Look up label name to get the id
-                entity_type = EntityType.LABEL
-                entity_name = entry["name"]
-                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
-                entry["id"] = to_entity_label_internal_id(id_)
-                changed = True
 
-        for entry in release.companies:
-            if "id" in entry:
-                old_id = entry["id"]
-                entry["id"] = to_entity_label_internal_id(old_id)
-                if old_id != entry["id"]:
+        if release.companies is not None:
+            for entry in release.companies:
+                if "id" in entry:
+                    old_id = entry["id"]
+                    entry["id"] = to_entity_label_internal_id(old_id)
+                    if old_id != entry["id"]:
+                        changed = True
+                else:
+                    entity_type = EntityType.LABEL
+                    entity_name = entry["name"]
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                        entity_type, entity_name
+                    )
+                    entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
-            else:
-                entity_type = EntityType.LABEL
-                entity_name = entry["name"]
-                id_ = entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
-                entry["id"] = to_entity_label_internal_id(id_)
-                changed = True
 
         return changed
 
     @staticmethod
-    def get_id_by_entity_type_and_entity_name(
+    async def get_id_by_entity_type_and_entity_name(
         entity_repository: EntityRepository,
         entity_type: EntityType,
         entity_name: str,
@@ -264,7 +271,7 @@ class EntityDataAccess:
 
         if id_ is None:
             try:
-                int_id = entity_repository.get_id_by_entity_type_and_entity_name(
+                int_id = await entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
                 """Get the internal id from the db."""
@@ -282,12 +289,12 @@ class EntityDataAccess:
                 cache.set(entity_key_str, EntityDataAccess.CACHE_ENTRY_IS_NULL)
                 """Mark the cache entry as null."""
 
-        return id_
+        if id_ is None:
+            return None
+        return int(id_)
 
     @staticmethod
-    def init_text_search_index(
-        entity_repository: EntityRepository, index: TextSearchIndex
-    ) -> None:
+    async def create_text_search_index(entity_repository: EntityRepository) -> TextSearchIndex:
         """
         Initializes the text search index with entity names and IDs.
 
@@ -296,13 +303,17 @@ class EntityDataAccess:
 
         Args:
             entity_repository (EntityRepository): The repository for entity database operations.
-            index (TextSearchIndex): The text search index to initialize.
+        Returns:
+            TextSearchIndex: The initialized text search index.
         """
+        index = TextSearchIndex()
         count = 0
-        for id_, entity_name in entity_repository.all_ids_and_names():
-            index.index_entry(id_, entity_name)
-            count += 1
-            if count % (LoaderBase.BULK_REPORTING_SIZE * 100) == 0:
-                log.debug(f"Indexed {count} entities")
+        async for tuple_list in entity_repository.all_ids_and_names():
+            for id_, entity_name in tuple_list:
+                index.index_entry(id_, entity_name)
+                count += 1
+                if count % (BULK_REPORTING_SIZE * 100) == 0:
+                    log.debug(f"Indexed {count} entities")
         index.reduce_list_to_set()
         index.print_sizes()
+        return index

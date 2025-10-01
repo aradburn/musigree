@@ -217,6 +217,3 @@ export class RelationsManager {
         this._byRole = new d3.InternMap();
     }
 }
-
-// Create the singleton instance
-export const relationsManager = new RelationsManager();

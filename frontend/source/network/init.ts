@@ -5,18 +5,18 @@
  */
 
 import { initForceLayout } from "./forceLayout";
-import { musigreeManager, networkManager } from "../core";
+import { musigreeManager, networkManager } from "../core/singletons";
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
 import { SVG, DOM_IDS } from "../constants";
 
-type TransformFunction = (
-    selection:
-        | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
-        | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
-    transform: d3.ZoomTransform,
-    point?: [number, number],
-) => void;
+// type TransformFunction = (
+//     selection:
+//         | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
+//         | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
+//     transform: d3.ZoomTransform,
+//     point?: [number, number],
+// ) => void;
 
 /**
  * Initializes the network visualization by setting up the SVG layers, zoom behavior, and force layout.
@@ -39,6 +39,8 @@ export const initNetwork = (svgSelector: string): void => {
     const w = musigreeManager.svgDimensions[0];
     const h = musigreeManager.svgDimensions[1];
 
+    // Initialize zoom behavior before calling resetNetworkTransform
+
     networkManager.zoom = d3
         .zoom<SVGSVGElement, unknown>()
         .extent([
@@ -47,12 +49,26 @@ export const initNetwork = (svgSelector: string): void => {
         ])
         .scaleExtent([1, 8])
         .on("zoom", handleZoom);
+    // console.log("init zoom", networkManager.zoom);
+    // console.log("zoom.transform method:", networkManager.zoom.transform);
+    // console.log(
+    //     "zoom methods:",
+    //     Object.getOwnPropertyNames(networkManager.zoom),
+    // );
 
+    // Apply zoom behavior to the SVG element
     svgElement.call(networkManager.zoom);
 
+    // Now that zoom is initialized, we can safely reset the transform
     resetNetworkTransform();
 
     initForceLayout();
+
+    // Dispatch a custom event to notify that the force layout is now initialized
+    const forceLayoutInitEvent = new CustomEvent(
+        "musigree:force-layout-initialized",
+    );
+    window.dispatchEvent(forceLayoutInitEvent);
 };
 
 /**
@@ -61,6 +77,14 @@ export const initNetwork = (svgSelector: string): void => {
  * Uses the current zoom state to calculate the proper inversion for smooth animation.
  */
 export const resetNetworkTransform = (): void => {
+    // Check if zoom behavior is initialized
+    if (!networkManager.zoom) {
+        console.warn(
+            "Cannot reset network transform: zoom behavior not initialized",
+        );
+        return;
+    }
+
     const scale =
         Math.min(
             musigreeManager.svgDimensions[0] / musigreeManager.dimensions[0],
@@ -68,7 +92,7 @@ export const resetNetworkTransform = (): void => {
         ) * SVG.SCALING_MULTIPLIER;
     //     console.log("scale: ", scale);
 
-    const svgElement = d3.select(DOM_IDS.SVG_ID);
+    const svgElement = d3.select<SVGSVGElement, unknown>(DOM_IDS.SVG_ID);
     const initialTransform = d3.zoomIdentity
         .scale(scale)
         .translate(
@@ -85,28 +109,45 @@ export const resetNetworkTransform = (): void => {
         console.error("SVG node is not an instance of Element");
         return;
     }
-    const currentTransform = d3.zoomTransform(svgNode);
-    //     const x = musigreeManager.svg_dimensions[0] / VIEWPORT_SIZE_MULTIPLIER;
-    //     const y = musigreeManager.svg_dimensions[1] / VIEWPORT_SIZE_MULTIPLIER;
-    //     const invertedPoint = currentTransform.invert([x, y]);
-    const invertedPoint = currentTransform.invert([
-        -(
-            musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
-            musigreeManager.svgDimensions[0]
-        ) / 2.0,
-        -(
-            musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
-            musigreeManager.svgDimensions[1]
-        ) / 2.0,
-    ]);
+    // const currentTransform = d3.zoomTransform(svgNode);
+    // const invertedPoint = currentTransform.invert([
+    //     -(
+    //         musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+    //         musigreeManager.svgDimensions[0]
+    //     ) / 2.0,
+    //     -(
+    //         musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+    //         musigreeManager.svgDimensions[1]
+    //     ) / 2.0,
+    // ]);
 
-    const transform = networkManager.zoom.transform.bind(
-        networkManager.zoom,
-    ) as TransformFunction;
-    svgElement
-        .transition()
-        .duration(750)
-        .call(transform, initialTransform, invertedPoint);
+    //     networkManager.zoom = d3
+    //         .zoom<SVGSVGElement, unknown>()
+    //         .extent([
+    //             [0, 0],
+    //             [w, h],
+    //         ])
+    //         .scaleExtent([1, 8])
+    //         .on("zoom", handleZoom);
+    //     console.log("networkManager.zoom: ", networkManager.zoom);
+    //     console.log("networkManager.zoom.transform: ", networkManager.zoom.transform);
+    //     const transform = networkManager.zoom.transform.bind(
+    //         networkManager.zoom,
+    //     ) as TransformFunction;
+    // Apply the transform to the root network layer
+    if (networkManager.layers.root) {
+        networkManager.layers.root
+            .transition()
+            .duration(750)
+            .attr("transform", initialTransform.toString());
+    }
+
+    // Update the zoom behavior's internal transform state
+    if (svgNode) {
+        // This updates D3's internal zoom transform state
+        // @ts-expect-error __zoom
+        svgNode.__zoom = initialTransform;
+    }
 
     // Initialize where new nodes will be placed
     const svgCenter: [number, number] = [

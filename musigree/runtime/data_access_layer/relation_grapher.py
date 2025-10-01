@@ -1,7 +1,6 @@
 import logging
-from abc import ABC
 from collections import OrderedDict
-from typing import List, Dict, Tuple
+from typing import Any
 
 from musigree import utils
 from musigree.library.cache.role_cache import RoleCache
@@ -25,20 +24,20 @@ from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
 log = logging.getLogger(__name__)
 
 
-class RelationGrapher(ABC):
+class RelationGrapher:
     # CLASS VARIABLES
 
     __slots__ = (
-        "should_break_loop",
-        "center_entity",
-        "degree",
-        "entity_keys_to_visit",
-        "link_ratio",
-        "links",
-        "max_nodes",
-        "nodes",
-        "relational_role_names",
-        "structural_role_names",
+        "_should_break_loop",
+        "_center_entity",
+        "_degree",
+        "_entity_keys_to_visit",
+        "_link_ratio",
+        "_links",
+        "_max_nodes",
+        "_nodes",
+        "_relational_role_names",
+        "_structural_role_names",
     )
 
     roles_to_prune = [
@@ -65,7 +64,7 @@ class RelationGrapher(ABC):
         degree: int,
         link_ratio: int,
         max_nodes: int,
-        role_names: List[str],
+        role_names: list[str],
     ):
         from musigree.runtime.runtime_database.runtime_database_helper import (
             RuntimeDatabaseHelper,
@@ -74,24 +73,24 @@ class RelationGrapher(ABC):
         log.debug(
             f"RelationGrapher for {center_entity.entity_type}-{center_entity.entity_name}"
         )
-        self.center_entity = center_entity
+        self._center_entity = center_entity
         degree = int(degree)
         assert degree > 0
-        self.degree = degree
+        self._degree = degree
         if max_nodes is not None:
             max_nodes = int(max_nodes)
             assert max_nodes > 0
         else:
             max_nodes = RuntimeDatabaseHelper.MAX_NODES
-        self.max_nodes = max_nodes
+        self._max_nodes = max_nodes
         if link_ratio is not None:
             link_ratio = int(link_ratio)
             assert link_ratio > 0
         else:
             link_ratio = RuntimeDatabaseHelper.LINK_RATIO
-        self.link_ratio = link_ratio
-        self.structural_role_names: List[str] = []
-        self.relational_role_names: List[str] = []
+        self._link_ratio = link_ratio
+        self._structural_role_names: list[str] = []
+        self._relational_role_names: list[str] = []
         if role_names:
             # if isinstance(role_names, str):
             #     role_names = (role_names,)
@@ -103,25 +102,44 @@ class RelationGrapher(ABC):
             )
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
-                    self.structural_role_names.append(role_name)
+                    self._structural_role_names.append(role_name)
                 else:
-                    self.relational_role_names.append(role_name)
+                    self._relational_role_names.append(role_name)
         # self.structural_role_names = tuple(structural_role_names)
         # self.relational_role_names = tuple(relational_role_names)
-        self.nodes: OrderedDict[Tuple[int, EntityType], TrellisNode] = OrderedDict()
-        self.links: Dict[str, RuntimeRelationResult] = {}
-        self.should_break_loop = False
-        self.entity_keys_to_visit = set[tuple[int, EntityType]]()
+        self._nodes: OrderedDict[tuple[int, EntityType], TrellisNode] = OrderedDict()
+        self._links: dict[str, RuntimeRelationResult] = {}
+        self._should_break_loop = False
+        self._entity_keys_to_visit = set[tuple[int, EntityType]]()
 
-    def get_relation_graph(
+    async def get_relation_graph(
         self,
         entity_repository: RuntimeEntityRepository,
         relation_repository: RuntimeRelationRepository,
-    ):
+    ) -> dict[str, Any]:
+        """
+        Generates a relation graph for the center entity.
+
+        This method performs a breadth-first search starting from the center entity,
+        exploring relationships up to the specified degree. It builds a network of
+        nodes (entities) and links (relationships) that can be used for visualization
+        or analysis.
+
+        Args:
+            entity_repository: Repository for entity database operations.
+            relation_repository: Repository for relation database operations.
+
+        Returns:
+            dict: A dictionary containing the network structure with:
+                - center: Information about the center entity
+                - nodes: List of entity nodes in the network
+                - links: List of relationship links between entities
+        """
+
         log.debug(f"Searching around {self.center_entity.entity_name}...")
-        log.debug(f"  {len(self.structural_role_names)} structural_role_names")
-        log.debug(f"  {len(self.relational_role_names)}relational_role_names")
-        provisional_role_names = self.relational_role_names
+        log.debug(f"  {len(self._structural_role_names)} structural_role_names")
+        log.debug(f"  {len(self._relational_role_names)}relational_role_names")
+        provisional_role_names = self._relational_role_names
         # provisional_roles = list(self.relational_role_names)
         self.report_search_start()
         self.clear()
@@ -131,11 +149,11 @@ class RelationGrapher(ABC):
             if len(self.entity_keys_to_visit) > self.max_nodes:
                 break
             log.debug(f"        Search for {len(self.entity_keys_to_visit)} entities")
-            entities = self.search_entities(
+            entities = await self.search_entities(
                 entity_repository, self.entity_keys_to_visit
             )
             log.debug(f"        Search found {len(entities)} entities")
-            relations: Dict[str, RuntimeRelationResult] = {}
+            relations: dict[str, RuntimeRelationResult] = {}
             self.process_entities(distance, entities)
             if (
                 not self.entity_keys_to_visit
@@ -149,7 +167,7 @@ class RelationGrapher(ABC):
                 self.search_via_structural_roles(
                     distance, provisional_role_names, relations
                 )
-                self.search_via_relational_roles(
+                await self.search_via_relational_roles(
                     relation_repository=relation_repository,
                     distance=distance,
                     provisional_roles=provisional_role_names,
@@ -189,30 +207,30 @@ class RelationGrapher(ABC):
         return network
 
     @staticmethod
-    def search_entities(
+    async def search_entities(
         entity_repository: RuntimeEntityRepository,
         entity_keys_to_visit: set[tuple[int, EntityType]],
-    ) -> List[RuntimeEntity]:
+    ) -> list[RuntimeEntity]:
         # log.debug(f"        Retrieving entities keys: {entity_keys_to_visit}")
-        entities: List[RuntimeEntity] = []
+        entities: list[RuntimeEntity] = []
         entity_keys_to_visit_list = list(entity_keys_to_visit)
         stop = len(entity_keys_to_visit_list)
         step = 1000
         for start in range(0, stop, step):
             entity_key_slice = entity_keys_to_visit_list[start : start + step]
-            found = entity_repository.search_multi(entity_key_slice)
+            found = await entity_repository.search_multi(entity_key_slice)
             entities.extend(found)
             log.debug(f"            {start + 1}-{min(start + step, stop)} of {stop}")
         return entities
 
-    def search_via_relational_roles(
+    async def search_via_relational_roles(
         self,
         *,
         relation_repository: RuntimeRelationRepository,
         distance: int,
         provisional_roles: list[str],
-        relation_links: Dict[str, RuntimeRelationResult],
-    ):
+        relation_links: dict[str, RuntimeRelationResult],
+    ) -> None:
         for entity_key in sorted(self.entity_keys_to_visit):
             node = self.nodes.get(entity_key)
             if not node:
@@ -236,7 +254,7 @@ class RelationGrapher(ABC):
                 # log.debug(
                 #     f"            {start + 1}-{min(start + step, stop)} of {stop}"
                 # )
-                relation_results = RuntimeRelationDataAccess.search_multi(
+                relation_results = await RuntimeRelationDataAccess.search_multi(
                     relation_repository=relation_repository,
                     entity_keys=key_slice,
                     role_names=provisional_roles,
@@ -244,7 +262,6 @@ class RelationGrapher(ABC):
                 # log.debug(f"                relation_results: {relation_results}")
                 for relation in relation_results:
                     relation_links[relation.link_key] = RuntimeRelationResult(
-                        id=relation.id,
                         entity_one_id=relation.entity_one_id,
                         entity_one_type=relation.entity_one_type,
                         entity_two_id=relation.entity_two_id,
@@ -256,7 +273,7 @@ class RelationGrapher(ABC):
 
     # PRIVATE METHODS
 
-    def find_clusters(self):
+    def find_clusters(self) -> None:
         cluster_count = 0
         cluster_map = {}
         for node in sorted(
@@ -266,27 +283,35 @@ class RelationGrapher(ABC):
         ):
             entity = node.entity
             aliases = entity.entities.get("aliases", {})
+            print(f"find_clusters aliases1: {aliases}")
+
             if not aliases:
+                print("find_clusters no aliases, skipping")
                 continue
             if entity.entity_id not in cluster_map:
                 cluster_count += 1
                 cluster_map[entity.entity_id] = cluster_count
+                print(f"find_clusters aliases2: {aliases}")
+                print(f"find_clusters aliases.items(): {aliases.items()}")
+
                 for _, alias_id in aliases.items():
                     cluster_map[alias_id] = cluster_count
             cluster = cluster_map[entity.entity_id]
+            print(f"find_clusters cluster: {cluster}")
+            print(f"find_clusters cluster_map: {cluster_map}")
             if cluster is not None:
                 node.cluster = cluster
 
     @staticmethod
-    def group_trellis(trellis):
-        trellis_nodes_by_distance = OrderedDict()
+    def group_trellis(trellis: dict[str, Any]) -> OrderedDict[int, set[TrellisNode]]:
+        trellis_nodes_by_distance: OrderedDict[int, set[TrellisNode]] = OrderedDict()
         for trellis_node in trellis.values():
             if trellis_node.distance not in trellis_nodes_by_distance:
                 trellis_nodes_by_distance[trellis_node.distance] = set()
             trellis_nodes_by_distance[trellis_node.distance].add(trellis_node)
         return trellis_nodes_by_distance
 
-    def build_trellis(self):
+    def build_trellis(self) -> None:
         for link_key, relation in tuple(self.links.items()):
             if (
                 relation.entity_one_key not in self.nodes
@@ -323,7 +348,9 @@ class RelationGrapher(ABC):
         )
 
     @staticmethod
-    def find_trellis_distance(trellis_nodes_by_distance, threshold):
+    def find_trellis_distance(
+        trellis_nodes_by_distance: dict[int, list], threshold: float
+    ) -> int:
         log.debug(f"        Maximum depth: {max(trellis_nodes_by_distance)}")
         log.debug(f"        Subgraph threshold: {threshold}")
         distancewise_average_subgraph_size = {}
@@ -338,8 +365,8 @@ class RelationGrapher(ABC):
             log.debug(f"            At distance {distance}: {geometric} geometric mean")
         winning_distance = 0
         pairs = ((a, d) for d, a in distancewise_average_subgraph_size.items())
-        pairs = sorted(pairs, reverse=True)
-        for average, distance in pairs:
+        sorted_pairs = sorted(pairs, reverse=True)
+        for average, distance in sorted_pairs:
             log.debug(f"                Testing {average} @ distance {distance}")
             if average < threshold:
                 winning_distance = distance
@@ -350,13 +377,13 @@ class RelationGrapher(ABC):
             log.debug(f"            Promoting winning distance: {winning_distance}")
         return winning_distance
 
-    def clear(self):
+    def clear(self) -> None:
         self.nodes.clear()
         self.links.clear()
         self.entity_keys_to_visit.clear()
         self.should_break_loop = False
 
-    def prune_roles(self, distance: int, provisional_role_names: List[str]) -> None:
+    def prune_roles(self, distance: int, provisional_role_names: list[str]) -> None:
         if distance > 0 and len(self.nodes) > self.max_nodes / 4:
             for role_name in self.roles_to_prune:
                 if role_name in provisional_role_names:
@@ -364,10 +391,10 @@ class RelationGrapher(ABC):
                     provisional_role_names.remove(role_name)
             if self.center_entity.entity_type == EntityType.ARTIST:
                 if "Sublabel Of" in provisional_role_names:
-                    log.debug(f'            Pruned "Sublabel Of" role')
+                    log.debug('            Pruned "Sublabel Of" role')
                     provisional_role_names.remove("Sublabel Of")
 
-    def process_entities(self, distance: int, entities: List[RuntimeEntity]):
+    def process_entities(self, distance: int, entities: list[RuntimeEntity]) -> None:
         for entity in sorted(entities, key=lambda x: x.entity_key):
             if not all([entity.entity_id, entity.entity_name]):
                 self.entity_keys_to_visit.remove(entity.entity_key)
@@ -384,7 +411,7 @@ class RelationGrapher(ABC):
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def process_relations(
-        self, relation_links: Dict[str, RuntimeRelationResult]
+        self, relation_links: dict[str, RuntimeRelationResult]
     ) -> None:
         log.debug(f"    process {len(relation_links)} relation_links")
         for link_key, relation in sorted(relation_links.items()):
@@ -405,7 +432,7 @@ class RelationGrapher(ABC):
             self.links[link_key] = relation
         # log.debug(f"        entity_keys_to_visit: {self.entity_keys_to_visit}")
 
-    def recurse_trellis(self, node):
+    def recurse_trellis(self, node: TrellisNode) -> set[tuple[int, EntityType]]:
         # noinspection PySetFunctionToLiteral
         traversed_keys = set([node.entity_key])
         for child in node.children:
@@ -414,7 +441,7 @@ class RelationGrapher(ABC):
         # log.debug(f"{'    ' * node.distance}{node.entity.entity_name}: {node.subgraph_size}")
         return traversed_keys
 
-    def report_search_loop_start(self, distance) -> None:
+    def report_search_loop_start(self, distance: int) -> None:
         to_visit_count = len(self.entity_keys_to_visit)
         log.debug(f"    At distance {distance}:")
         log.debug(f"        {len(self.nodes)} old nodes")
@@ -429,11 +456,11 @@ class RelationGrapher(ABC):
     # noinspection PyUnusedLocal
     def search_via_structural_roles(
         self,
-        distance,
-        provisional_roles,
-        relation_links: Dict[str, RuntimeRelationResult],
+        distance: int,
+        provisional_roles: list[str],
+        relation_links: dict[str, RuntimeRelationResult],
     ) -> None:
-        if not self.structural_role_names:
+        if not self._structural_role_names:
             return
         log.debug("        Retrieving structural relations")
         for entity_key in sorted(self.entity_keys_to_visit):
@@ -448,17 +475,17 @@ class RelationGrapher(ABC):
             # log.debug(f"            relations: {relations}")
             relation_links.update(
                 RuntimeEntityDataAccess.structural_roles_to_relations(
-                    entity, self.structural_role_names
+                    entity, self._structural_role_names
                 )
             )
 
-    def test_loop_one(self, distance) -> None:
+    def test_loop_one(self, distance: int) -> None:
         if distance > 0:
             if len(self.nodes) >= self.max_nodes:
                 log.debug("        Max nodes: exiting next search loop.")
                 self.should_break_loop = True
 
-    def test_loop_two(self, distance, relations: dict) -> None:
+    def test_loop_two(self, distance: int, relations: dict) -> None:
         if not relations:
             self.should_break_loop = True
         if len(relations) >= self.max_links * 3:
@@ -473,24 +500,29 @@ class RelationGrapher(ABC):
 
     @classmethod
     def make_cache_key(
-        cls, template, entity_id: int, entity_type: EntityType, roles=None, year=None
+        cls,
+        template: str,
+        entity_id: int,
+        entity_type: EntityType,
+        roles: list[str] | None = None,
+        year: list[int] | int | None = None,
     ) -> str:
         entity_type_str = entity_type.name.lower()
         key = template.format(entity_id=entity_id, entity_type=entity_type_str)
         if roles or year:
             parts = []
             if roles:
-                roles = (utils.WORD_PATTERN.sub("+", _) for _ in roles)
-                roles = ("roles[]={}".format(_) for _ in roles)
-                roles = "&".join(sorted(roles))
-                parts.append(roles)
+                roles_sub = (utils.WORD_PATTERN.sub("+", _) for _ in roles)
+                roles_params = ("roles[]={}".format(_) for _ in roles_sub)
+                roles_all = "&".join(sorted(roles_params))
+                parts.append(roles_all)
             if year:
                 if isinstance(year, int):
-                    year = f"year={year}"
+                    year_param = f"year={year}"
                 else:
-                    year = "-".join(str(_) for _ in year)
-                    year = f"year={year}"
-                parts.append(year)
+                    year_param_list = "-".join(str(_) for _ in year)
+                    year_param = f"year={year_param_list}"
+                parts.append(year_param)
             query_string = "&".join(parts)
             key = f"{key}?{query_string}"
         # key = f"musigree:{key}"
@@ -500,53 +532,53 @@ class RelationGrapher(ABC):
     # PUBLIC PROPERTIES
 
     @property
-    def all_roles(self) -> List[str]:
-        return self.structural_role_names + self.relational_role_names
+    def all_roles(self) -> list[str]:
+        return self._structural_role_names + self._relational_role_names
 
-    # @property
-    # def should_break_loop(self):
-    #     return self.should_break_loop
-    #
-    # @should_break_loop.setter
-    # def should_break_loop(self, expr):
-    #     self.should_break_loop = bool(expr)
-    #
-    # @property
-    # def center_entity(self):
-    #     return self.center_entity
-    #
-    # @property
-    # def degree(self):
-    #     return self.degree
-    #
-    # @property
-    # def entity_keys_to_visit(self):
-    #     return self.entity_keys_to_visit
-    #
-    # @property
-    # def link_ratio(self):
-    #     return self.link_ratio
-    #
-    # @property
-    # def links(self):
-    #     return self.links
+    @property
+    def should_break_loop(self) -> bool:
+        return self._should_break_loop
+
+    @should_break_loop.setter
+    def should_break_loop(self, expr: Any) -> None:
+        self._should_break_loop = bool(expr)
+
+    @property
+    def center_entity(self) -> RuntimeEntity:
+        return self._center_entity
+
+    @property
+    def degree(self) -> int:
+        return self._degree
+
+    @property
+    def entity_keys_to_visit(self) -> set[tuple[int, EntityType]]:
+        return self._entity_keys_to_visit
+
+    @property
+    def link_ratio(self) -> int:
+        return self._link_ratio
+
+    @property
+    def links(self) -> dict[str, RuntimeRelationResult]:
+        return self._links
 
     @property
     def max_links(self) -> int:
-        return self.max_nodes * self.link_ratio
+        return self._max_nodes * self._link_ratio
 
-    # @property
-    # def max_nodes(self):
-    #     return self.max_nodes
-    #
-    # @property
-    # def nodes(self):
-    #     return self.nodes
-    #
-    # @property
-    # def relational_roles(self):
-    #     return self.relational_roles
-    #
-    # @property
-    # def structural_roles(self):
-    #     return self.structural_roles
+    @property
+    def max_nodes(self) -> int:
+        return self._max_nodes
+
+    @property
+    def nodes(self) -> OrderedDict[tuple[int, EntityType], TrellisNode]:
+        return self._nodes
+
+    @property
+    def relational_role_names(self) -> list[str]:
+        return self._relational_role_names
+
+    @property
+    def structural_role_names(self) -> list[str]:
+        return self._structural_role_names

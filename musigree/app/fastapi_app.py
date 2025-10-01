@@ -23,12 +23,12 @@ The module uses the following components:
     - musigree.runtime.runtime_database_manager: For database management
 """
 
-import atexit
 import logging
 import sys
 from typing import Any
 from contextlib import asynccontextmanager
 
+import asyncio_atexit  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.templating import Jinja2Templates
@@ -38,38 +38,32 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from musigree.config import Configuration
-from musigree.constants import TEMPLATES_DIR, PUBLIC_DIR
+from musigree.constants import (
+    TEMPLATES_DIR,
+    PUBLIC_DIR,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
+    FRONTEND_DIR,
+)
 from musigree.exceptions import (
     BaseError,
     NotFoundError,
 )
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.loader.loader import load_runtime_tables
 from musigree.logging_config import setup_logging, shutdown_logging
+from musigree.runtime.data_access_layer.runtime_role_data_access import (
+    RuntimeRoleDataAccess,
+)
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+from musigree.app.fastapi_security import setup_security_middleware
+from musigree.transfer.transfer_manager import TransferManager
+from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 """The logger for the application module."""
 
 # Create a global templates variable
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    """
-    Lifespan context manager for the FastAPI application.
-
-    This function manages the application lifecycle. Code before yield is executed
-    on startup, and code after yield is executed on shutdown.
-
-    Args:
-        _app: The FastAPI application instance.
-    """
-    # Code to run on application startup
-    yield
-    # Code to run on application shutdown
-    shutdown_application()
 
 
 def create_app(config: Configuration) -> FastAPI:
@@ -90,37 +84,95 @@ def create_app(config: Configuration) -> FastAPI:
     from musigree.app.fastapi_ui import router as ui_router
     from musigree.app.fastapi_assets import create_assets_router
 
+    # Setup logging
+    setup_logging()
+
+    log_banner()
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> Any:
+        """
+        Lifespan context manager for the FastAPI application.
+
+        This function manages the application lifecycle. Code before yield is executed
+        on startup, and code after yield is executed on shutdown.
+
+        Args:
+            _app: The FastAPI application instance.
+        """
+        # Code to run on application startup
+
+        # Initialize the app
+        log.info("######## APPLICATION STARTUP ########")
+        await init_app(config)
+
+        yield
+
+        # Code to run on application shutdown
+        log.info("######## APPLICATION SHUTDOWN ########")
+        await shutdown_application()
+
     # Create a new FastAPI app
     app = FastAPI(
+        debug=True,
         title="Musigree",
         description="Musigree API for exploring music relationships",
         version="1.0.0",
         lifespan=lifespan,
     )
 
-    # Initialize the app
-    init_app(config)
-
     # Add middleware
     # noinspection PyTypeChecker
     app.add_middleware(GZipMiddleware, minimum_size=1000)
-    # noinspection PyTypeChecker
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+
+    # Configure CORS based on environment
+    if config.PRODUCTION:
+        # Production: specific origins only
+        allowed_origins = [
+            "https://musigree.azurewebsites.net",
+            "https://www.musigree.com",  # Add your production domain
+            "http://localhost:8080",
+        ]
+        log.debug("Configuring CORS for production")
+        log.debug(f"Allowed origins: {allowed_origins}")
+        # noinspection PyTypeChecker
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["Content-Type", "Authorization"],
+            allow_credentials=True,
+        )
+    else:
+        # Development: more permissive for local development
+        # noinspection PyTypeChecker
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8080",
+            "http://127.0.0.1:5000",
+        ]
+        log.debug("Configuring CORS for development")
+        log.debug(f"Allowed origins: {allowed_origins}")
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    # Setup security middleware (should be added after CORS)
+    setup_security_middleware(app, config)
 
     # Create assets router
     assets_router, assets_templates = create_assets_router(config)
 
     # Include routers
+    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
+    app.mount("/prodassets", StaticFiles(directory=FRONTEND_DIR / "dist"), name="prodassets")
+    app.include_router(assets_router)
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
-    app.include_router(assets_router)
-
-    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -169,7 +221,7 @@ def create_app(config: Configuration) -> FastAPI:
     return app
 
 
-def shutdown_application():
+async def shutdown_application() -> None:
     """
     Shuts down the application.
 
@@ -181,13 +233,14 @@ def shutdown_application():
 
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
-    log.info("######## APPLICATION SHUTDOWN ########")
-    RuntimeDatabaseManager.shutdown_database()
+    log.info("######## APPLICATION SHUTDOWN START ########")
+    await RuntimeDatabaseManager.shutdown_database()
     CacheManager.shutdown_cache()
     shutdown_logging()
+    log.info("######## APPLICATION SHUTDOWN DONE ########")
 
 
-def init_app(config: Configuration):
+async def init_app(config: Configuration) -> None:
     """
     Initializes the application.
 
@@ -197,19 +250,6 @@ def init_app(config: Configuration):
     Args:
         config: The application configuration object.
     """
-    # Setup logging
-    setup_logging()
-
-    log.info("")
-    log.info("")
-    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
-    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
-    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
-    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
-    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
-    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
-    log.info("")
-    log.info("")
 
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
@@ -224,11 +264,14 @@ def init_app(config: Configuration):
         CacheManager.clear()
 
     # Setup Database
-    RuntimeDatabaseManager.setup_database(config)
+    await RuntimeDatabaseManager.setup_database(config)
 
-    # Load runtime tables
-    if not config.TESTING:
-        load_runtime_tables(config.DATA_DIR)
+    # Load role cache in memory
+    await RuntimeRoleDataAccess.load_all_roles_into_cache()
+
+    # Load text search index for entities
+    text_search_path = config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+    await TransferManager.transfer_load_text_search_index(text_search_path)
 
     # Shutdown on app exit
-    atexit.register(shutdown_application)
+    asyncio_atexit.register(shutdown_application)

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Set, Any
+from typing import Any
 
 from musigree.library.fields.role_type import RoleType
 from musigree.runtime.runtime_domain.role import (
@@ -19,27 +19,27 @@ class RoleCache:
     JSON tree representation for the UI.
 
     Attributes:
-        role_name_to_role_id_lookup (Dict[str, int]): A dictionary mapping role names to role IDs.
+        role_name_to_role_id_lookup (dict[str, int]): A dictionary mapping role names to role IDs.
         role_name_set (Set[str]): A set containing all role names.
-        role_id_to_role_category_lookup (Dict[int, RoleType.Category]): A dictionary mapping role IDs
+        role_id_to_role_category_lookup (dict[int, RoleType.Category]): A dictionary mapping role IDs
                                                                         to role categories.
-        role_id_to_role_name_lookup (Dict[int, str]): A dictionary mapping role IDs to role names.
+        role_id_to_role_name_lookup (dict[int, str]): A dictionary mapping role IDs to role names.
         role_jstree (RuntimeRoleJSTree): A tree structure representing roles for the UI.
-        role_category_to_role_name_lookup (Dict[str, list[str]]): A dictionary mapping role categories to
+        role_category_to_role_name_lookup (dict[str, list[str]]): A dictionary mapping role categories to
                                                                   lists of role names.
     """
 
     # CLASS VARIABLES
-    role_name_to_role_id_lookup: Dict[str, int] = {}
-    role_name_set: Set[str] = set()
-    role_id_to_role_category_lookup: Dict[int, RoleType.Category] = {}
-    role_id_to_role_name_lookup: Dict[int, str] = {}
+    role_name_to_role_id_lookup: dict[str, int] = {}
+    role_name_set: set[str] = set()
+    role_id_to_role_category_lookup: dict[int, RoleType.Category] = {}
+    role_id_to_role_name_lookup: dict[int, str] = {}
     role_jstree: RuntimeRoleJSTree = RuntimeRoleJSTree()
-    role_category_to_role_name_lookup: Dict[str, list[str]] = {}
+    role_category_to_role_name_lookup: dict[str, list[str]] = {}
     # role_categories: Set[str] = set()
 
     @staticmethod
-    def get_all_roles() -> Dict[str, Any]:
+    def get_all_roles() -> dict[str, Any]:
         """
         Retrieves all roles with their IDs, names, and categories.
 

@@ -1,22 +1,32 @@
+from typing import AsyncGenerator
+
+import pytest
+
+from musigree.config import Configuration
 from musigree.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from tests.integration.runtime.database.runtime_database_test_case import (
-    RuntimeDatabaseTestCase,
-)
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
-
-    def test_text_search_lookup_1(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+@pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
+class TestRuntimeEntitySearch(AbstractDatabaseTest):
+    def test_text_search_lookup_1(
+        self,
+        runtime_config: Configuration,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
+        """Test text search functionality for 'Wax' query."""
         text_search_path = (
-            RuntimeDatabaseTestCase.runtime_config.DATA_DIR
-            / TEXT_SEARCH_DATA
-            / TEXT_SEARCH_FILENAME
+            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         )
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
@@ -39,15 +49,21 @@ class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
             {"key": "label-111", "name": "Mo Wax"},
             {"key": "label-290481", "name": "Mo Wax Recordings"},
         ]
-        self.assertEqual(14, len(results["results"]))
-        self.assertEqual(expected, list(results["results"]))
+        assert 14 == len(results["results"])
+        assert expected == list(results["results"])
 
-    def test_text_search_lookup_2(self):
+    def test_text_search_lookup_2(
+        self,
+        runtime_config: Configuration,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+    ) -> None:
+        """Test text search functionality for 'Joker' query."""
         text_search_path = (
-            RuntimeDatabaseTestCase.runtime_config.DATA_DIR
-            / TEXT_SEARCH_DATA
-            / TEXT_SEARCH_FILENAME
+            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         )
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
@@ -59,5 +75,5 @@ class TestRuntimeEntitySearch(RuntimeDatabaseTestCase):
             {"key": "artist-8526", "name": "Joker, The (3)"},
             {"key": "artist-129882", "name": "Joker, The (4)"},
         ]
-        self.assertEqual(3, len(results["results"]))
-        self.assertEqual(expected, list(results["results"]))
+        assert 3 == len(results["results"])
+        assert expected == list(results["results"])

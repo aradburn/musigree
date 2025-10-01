@@ -20,42 +20,53 @@ database with initial data.
 """
 
 import uvicorn
+from fastapi import FastAPI
 
 from musigree.app.fastapi_app import create_app
-from musigree.config import SqliteDevelopmentConfiguration
+from musigree.config import SqliteReadOnlyDevelopmentConfiguration
 
-if __name__ == "__main__":
-    # Create SQLite development configuration
-    runtime_config = SqliteDevelopmentConfiguration()
+
+def create_development_app() -> FastAPI:
+    """
+    Creates and configures a FastAPI application for development.
+
+    This function sets up a FastAPI application instance using the
+    `SqliteProductionConfiguration` to ensure it is configured for a
+    production environment. It also loads initial data into the database
+    tables.
+
+    Returns:
+        FastAPI: A configured FastAPI application instance ready for development.
+    """
+    runtime_config = SqliteReadOnlyDevelopmentConfiguration()
     """
     Configuration object for the runtime environment.
 
-    Sets up the configuration for the runtime environment using SQLite.
+    Sets up the configuration for the runtime environment using SQLite,
+    suitable for development use.
     """
-
-    # Create FastAPI app
-    app = create_app(runtime_config)
+    _app = create_app(runtime_config)
     """
     FastAPI application instance.
 
     Creates a new FastAPI application instance using the specified runtime
-    configuration.
+    configuration, including settings for the database, cache, and logging.
     """
 
-    # Load data from tables
-    # RuntimeDatabaseManager.runtime_database_helper.load_tables()
-    """
-    Loads initial data into the runtime database.
+    return _app
 
-    Populates the tables in the runtime database with initial data,
-    such as roles, from the pre-configured data sources.
-    """
 
-    # Run the Uvicorn development server
+"""
+The main FastAPI application instance for development.
+
+This is the FastAPI application instance that should be used by ASGI servers
+like Uvicorn when running the application in development.
+"""
+
+if __name__ == "__main__":
+    # FastAPI instance for ASGI servers like Uvicorn
+    app = create_development_app()
+
+    # Run the Uvicorn development server, which listens for incoming HTTP
+    # requests and serves the Musigree application.
     uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
-    """
-    Starts the Uvicorn development server.
-
-    Runs the Uvicorn development server, which listens for incoming HTTP
-    requests and serves the Musigree application.
-    """

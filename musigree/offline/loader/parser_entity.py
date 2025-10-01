@@ -44,6 +44,7 @@ also uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from typing import Any
 from xml.etree.ElementTree import Element
 
 from musigree.library.fields.entity_id import to_entity_internal_id
@@ -73,7 +74,7 @@ class ParserEntity(ParserBase):
     # CLASS METHODS
 
     @classmethod
-    def element_to_names(cls, names):
+    def element_to_names(cls, names: list[Element] | None) -> dict[str, None]:
         """
         Extracts a dictionary of names from an XML element.
 
@@ -86,18 +87,18 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where keys are the names and values are None.
         """
-        result = {}
+        result: dict[str, None] = {}
         if names is None or not len(names):
             return result
         for name in names:
-            name = name.text
-            if not name:
+            name_txt = name.text
+            if not name_txt:
                 continue
-            result[name] = None
+            result[name_txt] = None
         return result
 
     @classmethod
-    def element_to_names_and_ids(cls, names_and_ids: Element):
+    def element_to_names_and_ids(cls, names_and_ids: Element) -> dict[str, Any]:
         """
         Extracts a dictionary of names and their corresponding Discogs IDs.
 
@@ -110,21 +111,25 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where keys are names and values are their Discogs IDs.
         """
-        # print(f"names_and_ids1: {[(item.tag, item.text) for item in names_and_ids]}")
-        result = {}
+        result: dict[str, Any] = {}
         if names_and_ids is None or not len(names_and_ids):
             return result
         current_discogs_id = 0
         for item in names_and_ids:
             if item.tag == "id":
+                if item.text is None or not item.text.strip():
+                    continue
                 current_discogs_id = int(item.text)
             elif item.tag == "name":
+                if item.text is None or not item.text.strip():
+                    continue
+                # noinspection Mypy
                 result[item.text] = current_discogs_id
                 current_discogs_id = 0
         return result
 
     @classmethod
-    def element_to_parent_label(cls, parent_label):
+    def element_to_parent_label(cls, parent_label: Element) -> dict[str, None]:
         """
         Extracts a dictionary containing a parent label name.
 
@@ -137,7 +142,7 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where the key is the parent label name and the value is None.
         """
-        result = {}
+        result: dict[str, None] = {}
         if parent_label is None or parent_label.text is None:
             return result
         name = parent_label.text.strip()
@@ -147,7 +152,7 @@ class ParserEntity(ParserBase):
         return result
 
     @classmethod
-    def element_to_sublabels(cls, sublabels):
+    def element_to_sublabels(cls, sublabels: list[Element] | None) -> dict[str, None]:
         """
         Extracts a dictionary of sublabel names from an XML element.
 
@@ -160,7 +165,7 @@ class ParserEntity(ParserBase):
         Returns:
             dict: A dictionary where keys are sublabel names and values are None.
         """
-        result = {}
+        result: dict[str, None] = {}
         if sublabels is None or not len(sublabels):
             return result
         for sublabel in sublabels:
@@ -174,7 +179,7 @@ class ParserEntity(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element) -> Entity:
+    def from_element(cls, element) -> Entity:  # type: ignore
         """
         Creates an `Entity` domain object from an XML element.
 
@@ -191,7 +196,7 @@ class ParserEntity(ParserBase):
         return Entity(**data)
 
     @classmethod
-    def preprocess_data(cls, data, element):
+    def preprocess_data(cls, data: dict[str, Any], element: Element) -> dict[str, Any]:
         """
         Preprocesses the extracted entity data.
 
@@ -232,6 +237,8 @@ class ParserEntity(ParserBase):
                     data["entity_metadata"][key] = data.pop(key)
             if "entity_name" in data and data.get("entity_name"):
                 name = data.get("entity_name")
+                if name is None:
+                    name = ""
                 data["search_content"] = normalise_search_content(name)
             if element.tag == "artist":
                 data["entity_type"] = EntityType.ARTIST

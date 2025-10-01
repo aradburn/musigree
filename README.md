@@ -12,7 +12,7 @@ All of Musigree's data is derived from the [Discogs](http://www.discogs.com) mus
 
 - 9 million artists
 - 2 million labels
-- 17 million releases
+- 18 million releases
 - Over 100 million different relationships
 
 ## Live Demo
@@ -83,7 +83,7 @@ The project uses `uv` and `venv` to manage the Python environment and dependenci
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.13+
 - Node.js 22+ (for frontend development)
 - PostgreSQL (for full database) and/or SQLite (for development and runtime)
 - Redis (optional, for caching)

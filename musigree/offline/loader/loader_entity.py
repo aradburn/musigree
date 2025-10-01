@@ -1,24 +1,30 @@
 import logging
-import pickle
 from pathlib import Path
-from typing import Any
+from typing import Callable, Any
 
-from sortedcontainers import SortedSet
-
+from musigree import utils
+from musigree.constants import BULK_INSERT_BATCH_SIZE
+from musigree.library.fields.entity_type import EntityType
+from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
+from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
 from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.library.full_text_search.text_search_index import TextSearchIndex
+from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_entity import ParserEntity
-from musigree.offline.loader.worker_entity_deleter import WorkerEntityDeleter
-from musigree.offline.loader.worker_entity_inserter import WorkerEntityInserter
-from musigree.offline.loader.worker_entity_pass_three import WorkerEntityPassThree
-from musigree.offline.loader.worker_entity_pass_two import WorkerEntityPassTwo
-from musigree.offline.loader.worker_entity_updater import WorkerEntityUpdater
+from musigree.offline.loader.worker_entity_deleter import delete_entities_worker
+from musigree.offline.loader.worker_entity_inserter import insert_entities_worker
+from musigree.offline.loader.worker_entity_pass_three import (
+    process_entity_pass_three_worker,
+)
+from musigree.offline.loader.worker_entity_pass_two import (
+    process_entity_pass_two_worker,
+)
+from musigree.offline.loader.worker_entity_updater import update_entities_worker
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.utils import timeit
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 
@@ -27,153 +33,135 @@ class LoaderEntity(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    @timeit
-    def loader_entity_pass_one(
-        cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts=False
-    ) -> int:
-        log.debug(f"loader entity pass one - artist - date: {data_date}")
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            entity_parser = ParserEntity()
-            artists_loaded = cls.loader_pass_one_manager(
-                repository=entity_repository,
-                parser=entity_parser,
-                discogs_data_directory=discogs_data_directory,
-                date=data_date,
-                xml_tag="artist",
-                id_attr=EntityTable.id.name,
-                skip_without=["entity_name"],
-                is_bulk_inserts=is_bulk_inserts,
-            )
-        log.debug(f"loader entity pass one - label - date: {data_date}")
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            entity_parser = ParserEntity()
-            labels_loaded = cls.loader_pass_one_manager(
-                repository=entity_repository,
-                parser=entity_parser,
-                discogs_data_directory=discogs_data_directory,
-                date=data_date,
-                xml_tag="label",
-                id_attr=EntityTable.id.name,
-                skip_without=["entity_name"],
-                is_bulk_inserts=is_bulk_inserts,
-            )
-        return artists_loaded + labels_loaded
-
-    @classmethod
-    def insert_bulk(cls, bulk_inserts: list[dict[str, Any]], inserted_count: int):
-        worker = WorkerEntityInserter(
-            bulk_inserts=bulk_inserts,
-            inserted_count=inserted_count,
-        )
-        return worker
-
-    @classmethod
-    def update_bulk(cls, bulk_updates: list[dict[str, Any]], processed_count: int):
-        worker = WorkerEntityUpdater(
-            bulk_updates=bulk_updates,
-            processed_count=processed_count,
-        )
-        return worker
-
-    @classmethod
-    def delete_bulk(cls, bulk_deletes: list[int], processed_count: int):
-        worker = WorkerEntityDeleter(
-            bulk_deletes=bulk_deletes,
-            processed_count=processed_count,
-        )
-        return worker
-
-    @classmethod
-    def get_set_of_ids(cls, entity_type):
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            ids = entity_repository.get_ids_by_type(entity_type)
-        set_of_entity_ids = SortedSet(ids)
-        return set_of_entity_ids
-
-    @classmethod
-    @timeit
-    def loader_entity_pass_two(cls) -> None:
-        log.debug("loader entity pass two")
-        cls.loader_start_workers(WorkerEntityPassTwo)
-
-    @classmethod
-    @timeit
-    def loader_entity_pass_three(cls):
-        log.debug("loader entity pass three")
-        cls.loader_start_workers(WorkerEntityPassThree)
-
-    @classmethod
-    def loader_start_workers(cls, worker_class) -> None:
-        number_in_batch = int(LoaderBase.BULK_INSERT_BATCH_SIZE)
-
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            total_count = entity_repository.count()
-            batched_ids = entity_repository.get_batched_ids(number_in_batch)
-
-        current_total = 0
-
-        workers = []
-        for ids in batched_ids:
-            # log.debug(f"batched ids: {ids}")
-            worker = worker_class(ids, current_total, total_count)
-            worker.start()
-            workers.append(worker)
-            current_total += number_in_batch
-
-            if len(workers) > OfflineDatabaseManager.get_concurrency_count():
-                worker = workers.pop(0)
-                cls.loader_wait_for_worker(worker)
-
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            cls.loader_wait_for_worker(worker)
-
-    @classmethod
-    @timeit
-    def loader_entity_vacuum(
-        cls, has_tablename: bool, is_full: bool, is_analyze: bool
+    # @timeit
+    async def loader_entity_pass_one(
+        cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts: bool = False
     ) -> None:
-        log.debug(f"loader entity vacuum")
-        with offline_transaction():
-            entity_repository = EntityRepository()
-            entity_repository.vacuum(has_tablename, is_full, is_analyze)
+        log.debug(f"loader entity pass one - artist - date: {data_date}")
+        entity_repository = EntityRepository()
+        entity_parser = ParserEntity()
+        artists_loaded = await cls.loader_pass_one_manager(
+            repository=entity_repository,
+            parser=entity_parser,
+            discogs_data_directory=discogs_data_directory,
+            date=data_date,
+            xml_tag="artist",
+            id_attr=EntityTable.id.name,
+            skip_without=["entity_name"],
+            is_bulk_inserts=is_bulk_inserts,
+        )
+        log.info(f"Artists loaded: {artists_loaded}")
+
+        log.debug(f"loader entity pass one - label - date: {data_date}")
+        entity_repository = EntityRepository()
+        entity_parser = ParserEntity()
+        labels_loaded = await cls.loader_pass_one_manager(
+            repository=entity_repository,
+            parser=entity_parser,
+            discogs_data_directory=discogs_data_directory,
+            date=data_date,
+            xml_tag="label",
+            id_attr=EntityTable.id.name,
+            skip_without=["entity_name"],
+            is_bulk_inserts=is_bulk_inserts,
+        )
+        log.info(f"Labels loaded : {labels_loaded}")
+
+    @staticmethod
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
+        return insert_entities_worker
+
+    @staticmethod
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:
+        return update_entities_worker
+
+    @staticmethod
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:
+        return delete_entities_worker
 
     @classmethod
-    @timeit
-    def loader_create_text_search_index(cls, text_search_path: Path) -> None:
-        log.debug(f"loader entity create text search index")
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
+        """
+        Retrieves a set of entity IDs from the database.
+
+        This method is called to get a set of all entity IDs for a specific type.
+
+        Args:
+            entity_type: The type of entity to retrieve IDs for.
+        Returns:
+            set[int]: The set of entity IDs.
+        """
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            """Instance of EntityRepository for database operations on entities."""
+            assert entity_type is not None, "Entity type must be specified"
+            ids = await entity_repository.get_ids_by_type(entity_type)
+        set_of_ids = set(ids)
+        return set_of_ids
+
+    @classmethod
+    # @timeit
+    async def loader_entity_pass_two(cls) -> None:
+        log.debug("loader entity pass two")
+        await cls.loader_start_workers(process_entity_pass_two_worker)
+
+    @classmethod
+    # @timeit
+    async def loader_entity_pass_three(cls) -> None:
+        log.debug("loader entity pass three")
+        await cls.loader_start_workers(process_entity_pass_three_worker)
+
+    @classmethod
+    async def loader_start_workers(cls, worker_function: Callable) -> None:
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            total_count = await entity_repository.count()
+            ids = await entity_repository.get_ids()
+
+        batched_ids = utils.batched(ids, BULK_INSERT_BATCH_SIZE)
+
+        worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
+
+        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
+
+    @classmethod
+    # @timeit
+    async def loader_create_text_search_index(cls, text_search_path: Path) -> None:
+        log.debug("loader entity create text search index")
         if not text_search_path.exists():
-            text_search_index = cls.loader_init_text_search_index_from_database()
-            cls.save_text_search_index_to_file(text_search_path, text_search_index)
+            text_search_index = await cls.loader_init_text_search_index_from_database()
+            text_search_index.save_text_search_index_to_file(text_search_path)
         else:
             log.debug("create text search index - skipping...")
 
     @classmethod
-    @timeit
-    def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
-        log.debug(f"loader entity init text search index from database")
-        text_search_index = TextSearchIndex()
+    # @timeit
+    async def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
+        log.debug("loader entity init text search index from database")
 
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess.init_text_search_index(
-                entity_repository, text_search_index
-            )
+            text_search_index = await EntityDataAccess.create_text_search_index(entity_repository)
         return text_search_index
 
     @classmethod
-    @timeit
-    def save_text_search_index_to_file(
-        cls, filename: Path, text_search_index: TextSearchIndex
-    ) -> None:
-        log.debug(f"save text search index to file: {filename}")
+    # @timeit
+    async def loader_create_entity_details_index(cls, entity_details_path: Path) -> None:
+        log.debug("loader entity create entity details index")
+        if not entity_details_path.exists():
+            entity_details_index = await cls.loader_init_entity_details_index_from_database()
+            entity_details_index.save_entity_details_index_to_file(entity_details_path)
+        else:
+            log.debug("create entity details index - skipping...")
 
-        # open a file, where you ant to store the data
-        with open(filename, "wb") as file:
-            # dump information to that file
-            # noinspection PyTypeChecker
-            pickle.dump(text_search_index, file)
+    @classmethod
+    async def loader_init_entity_details_index_from_database(cls) -> EntityDetailsIndex:
+        log.debug("Running loader create entity details index")
+        async with offline_transaction():
+            offline_release_repository = ReleaseRepository()
+            entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+
+        return entity_details_index
+
+

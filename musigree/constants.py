@@ -1,6 +1,7 @@
 import enum
 from pathlib import Path
 
+# DIRECTORY PATHS
 APP_DIR = Path(__file__).parent.resolve()
 ROOT_DIR = Path(APP_DIR / "..").resolve()
 FRONTEND_DIR = ROOT_DIR / "frontend"
@@ -24,48 +25,50 @@ TEXT_SEARCH_FILENAME = "text_search.data"
 ENTITY_DETAILS_DATA = "entity_details"
 ENTITY_DETAILS_FILENAME = "entity_details.data"
 
-# DATABASE
-OFFLINE_DATABASE = "offline_database"
-RUNTIME_DATABASE = "runtime_database"
+# TESTS
 TEST_DIR = ROOT_DIR / "tests"
 
-# TEST_TEXT_SEARCH_DIR = os.path.join(ROOT_DIR, "tests", "data_text_search")
-# TEST_TEXT_SEARCH_PATH = Path(TEST_TEXT_SEARCH_DIR, "text_search.data")
+# LOGS
 LOGGING_DIR = ROOT_DIR / "logs"
 LOGGING_FILE = LOGGING_DIR / "musigree.log"
 LOGGING_ERROR_FILE = LOGGING_DIR / "error.log"
 LOGGING_DEBUG_FILE = LOGGING_DIR / "debug.log"
+
+# DISCOGS
 DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
 DISCOGS_FILE_TEMPLATE = "discogs_{date}_{type}.xml.gz"
 DISCOGS_ARTISTS_TYPE = "artists"
 DISCOGS_RELEASES_TYPE = "releases"
 DISCOGS_LABELS_TYPE = "labels"
 DISCOGS_MASTERS_TYPE = "masters"
+
+# DATABASE
+OFFLINE_DATABASE = "offline_database"
+RUNTIME_DATABASE = "runtime_database"
 ALL_OFFLINE_DATABASE_TABLE_NAMES = [
     "entity",
     "relation",
     "release",
     "role",
-    "relation_release_year",
     "metadata",
 ]
 ALL_RUNTIME_DATABASE_TABLE_NAMES = [
     "runtime_entity",
     "runtime_relation",
     "runtime_role",
+    "country",
+    "style",
+    "genre",
 ]
-OFFLINE_DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
-    "relation_release_year",
-    "relation",
-    "entity",
-    "release",
-    "metadata",
-]
-RUNTIME_DATABASE_TABLE_NAMES_WITHOUT_ROLE = [
-    "runtime_relation",
-    "runtime_entity",
-]
+POSTGRESQL_DRIVER_NAME = "postgresql+psycopg"  # uses psycopg3
+SQLITE_DRIVER_NAME = "sqlite+aiosqlite"
 
+BULK_INSERT_BATCH_SIZE = 10000
+"""The batch size for bulk insert operations."""
+BULK_REPORTING_SIZE = 10000
+"""The number of records to process before reporting progress."""
+BULK_YIELD_SIZE = 20000
+"""The number of records to stream in a chunk from the database."""
 
 class DatabaseType(enum.Enum):
     POSTGRES = 1

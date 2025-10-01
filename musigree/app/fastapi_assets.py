@@ -18,21 +18,20 @@ The module uses the following components:
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from musigree.app.fastapi_app import templates
 from musigree.config import Configuration
+from musigree.constants import FRONTEND_DIR
 
 log = logging.getLogger(__name__)
 """The logger for the assets module."""
 
 
-def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templates]:
+def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templates]:
     """
     Creates a FastAPI router for serving static assets.
 
@@ -54,17 +53,17 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
     assets_router = APIRouter()
 
     # Mount static files
-    if is_production:
-        # In production, serve the bundled assets directly
-        assets_router.mount(
-            "/assets", StaticFiles(directory="frontend/dist"), name="assets"
-        )
+    # if is_production:
+    #     # In production, serve the bundled assets directly
+    #     assets_path = FRONTEND_DIR / "dist"
+    #     assets_router.mount(
+    #         "/prodassets", StaticFiles(directory=assets_path), name="assets"
+    #     )
 
     # Load manifest file in the production environment
     manifest = {}
     if is_production:
-        project_path = Path(os.path.dirname(os.path.abspath(__file__)))
-        manifest_path = project_path / "../frontend/dist/manifest.json"
+        manifest_path = FRONTEND_DIR / "dist" / "manifest.json"
         try:
             with open(manifest_path, "r") as content:
                 manifest = json.load(content)
@@ -77,7 +76,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
     # templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
     @assets_router.get("/context")
-    async def get_template_context(request: Request) -> Dict[str, Any]:
+    async def get_template_context(request: Request) -> dict[str, Any]:
         """
         Provides template context for assets.
 
@@ -88,7 +87,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
             request: The FastAPI request object.
 
         Returns:
-            Dict[str, Any]: The template context.
+            dict[str, Any]: The template context.
         """
         return {"request": request}
 
@@ -103,8 +102,9 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
         Returns:
             str: The URL to the asset.
         """
-        log.debug(f"dev asset: {file_path}")
-        return f"{vite_origin}/assets/{file_path}"
+        asset_path = f"{vite_origin}/assets/{file_path}"
+        log.debug(f"dev asset: {file_path} -> {asset_path}")
+        return asset_path
 
     def prod_asset(file_path: str) -> str:
         """
@@ -117,7 +117,7 @@ def create_assets_router(config: Configuration) -> Tuple[APIRouter, Jinja2Templa
             str: The URL to the asset.
         """
         log.debug(f"prod asset: {file_path}")
-        return f"/assets/{manifest[file_path]['file']}"
+        return f"/prodassets/{manifest[file_path]['file']}"
 
     asset_func = prod_asset if is_production else dev_asset
 

@@ -1,13 +1,9 @@
+import asyncio
 import logging
 import multiprocessing
 from typing import Any
 
-from retrying import retry
-from sqlalchemy.exc import DatabaseError
-
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
-)
+from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
@@ -17,75 +13,54 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-class TransferWorkerRelationInserter(multiprocessing.Process):
+async def transfer_worker_relation_inserter_async(bulk_inserts: list[dict[str, Any]], inserted_count: int,
+                                                  total_count: int) -> None:
     """
-    A multiprocessing.Process subclass that handles the insertion of bulk data into the database.
-
-    Attributes:
-        bulk_inserts (list[dict[str, Any]]): A list of dictionaries containing the data to be inserted.
-        inserted_count (int): The count of inserted records.
+    A worker process for inserting relation records into the runtime database.
+    This function is designed to be run in a separate process to handle the
+    insertion of a batch of relation records (`bulk_inserts`) into the
+    runtime database, improving the efficiency of the data transfer process
     """
 
-    def __init__(self, bulk_inserts: list[dict[str, Any]], inserted_count: int):
-        """
-        Initializes the TransferWorkerRelationInserter with the given bulk inserts and inserted count.
+    proc_name = multiprocessing.current_process().name
+    """Get the name of the current process."""
 
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The data to be inserted.
-            inserted_count (int): The count of inserted records.
-        """
-        super().__init__()
-        self.bulk_inserts = bulk_inserts
-        self.inserted_count = inserted_count
+    count = 0
 
-    def run(self):
-        """
-        The main process method that initializes the database if needed and saves all bulk inserts.
-        """
-        proc_name = self.name
+    """Async function to handle entity insertion."""
+    async with runtime_transaction():
+        """Ensure that database operations are performed within a transaction."""
+        runtime_relation_repository = RuntimeRelationRepository()
+        """Instance of RuntimeRelationRepository for database operations on entities."""
+        try:
+            """Attempt to insert the entities."""
+            await runtime_relation_repository.save_all(bulk_inserts)
+            """Insert the entities."""
+            await runtime_relation_repository.commit()
+            """Commit the transaction."""
+            count += len(bulk_inserts)
+        except DatabaseError:
+            """Handle potential database errors."""
+            log.error("Error in transfer_worker_relation_inserter")
 
-        if RuntimeDatabaseManager.get_concurrency_count() > 1:
-            RuntimeDatabaseHelper.initialize()
+    log.info(f"[{proc_name}] inserted {inserted_count + count} relations of {total_count}")
+    """Log the number of entities inserted."""
 
-        self.save_all(self.bulk_inserts)
 
-        log.info(f"[{proc_name}] inserted_count: {self.inserted_count}")
+def transfer_worker_relation_inserter(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+    # Run the async function
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        """Check if the event loop is already running."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        """Set a new event loop if none exists."""
 
-    @staticmethod
-    def retry_if_db_error(exception):
-        """
-        Determines if the operation should be retried based on the exception type.
+    RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
+    """Initialize the database engine."""
 
-        Args:
-            exception (Exception): The exception that was raised.
+    loop.run_until_complete(transfer_worker_relation_inserter_async(bulk_inserts, current_total, total_count))
 
-        Returns:
-            bool: True if the exception is a DatabaseError, False otherwise.
-        """
-        return isinstance(exception, DatabaseError)
-
-    @staticmethod
-    @retry(
-        stop_max_attempt_number=3,
-        wait_fixed=60000,
-        retry_on_exception=retry_if_db_error,
-    )
-    def save_all(bulk_inserts: list[dict[str, Any]]) -> None:
-        """
-        Saves all bulk inserts to the database with retry logic in case of DatabaseError.
-
-        Args:
-            bulk_inserts (list[dict[str, Any]]): The data to be inserted.
-
-        Raises:
-            DatabaseError: If there is an error during the database operation.
-        """
-        with runtime_transaction():
-            runtime_relation_repository = RuntimeRelationRepository()
-            try:
-                runtime_relation_repository.save_all(bulk_inserts)
-                runtime_relation_repository.commit()
-            except DatabaseError:
-                log.error("Error in TransferWorkerRelationInserter worker")
-                # log.exception("Error in TransferWorkerRelationInserter worker", exc_info=True)
-                raise
+    RuntimeDatabaseManager.dispose_runtime_database_async_engine(loop)
+    """Close the database engine."""

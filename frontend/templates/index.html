@@ -19,12 +19,12 @@
     </script>
     {%- endif %}
 
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"
-    />
+    <!--    <link rel="preconnect" href="https://fonts.googleapis.com"/>-->
+    <!--    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>-->
+    <!--    <link-->
+    <!--        rel="stylesheet"-->
+    <!--        href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"-->
+    <!--    />-->
 
     <!-- Musigree -->
     <meta
@@ -60,7 +60,12 @@
         sizes="16x16"
         href="/public/img/favicon-16x16.png"
     />
+
     <link rel="manifest" href="/public/site.webmanifest"/>
+    
+    {%- if is_production %}
+    <link rel="stylesheet" href="{{ asset('style.css') }}"/>
+    {%- endif %}
 </head>
 
 <body id="{{ key }}">

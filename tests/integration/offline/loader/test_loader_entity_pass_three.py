@@ -1,33 +1,43 @@
+from typing import AsyncGenerator
+
+import pytest
+
 from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.library.fields.entity_type import EntityType
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
-    def test_loader_entity_pass_three(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestLoaderEntityPassThree(AbstractDatabaseTest):
+    @pytest.mark.asyncio
+    async def test_loader_entity_pass_three(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
 
         # WHEN
-        actual = EntityRepository().count()
+        async with offline_transaction():
+            actual = await EntityRepository().count()
 
         # THEN
         expected = 6216
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_record_20702(self):
+    @pytest.mark.asyncio
+    async def test_artist_record_20702(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 20702
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -67,17 +77,20 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "linton kwesi johnson",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_record_2239(self):
+    @pytest.mark.asyncio
+    async def test_artist_record_2239(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 2239
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -127,35 +140,41 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_artist_9999999(self):
+    @pytest.mark.asyncio
+    async def test_artist_9999999(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 9999999
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity = await entity_repository.get_by_entity_id_and_entity_type(
                     entity_id, entity_type
                 )
             except NotFoundError:
                 entity = None
 
         # THEN
-        self.assertIsNone(entity)
+        assert entity is None
 
-    def test_artist_record_12589(self):
+    @pytest.mark.asyncio
+    async def test_artist_record_12589(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 12589
         entity_type = EntityType.ARTIST
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -220,17 +239,20 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "throbbing gristle",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_1(self):
+    @pytest.mark.asyncio
+    async def test_label_record_1(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 1
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -256,17 +278,20 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_264170(self):
+    @pytest.mark.asyncio
+    async def test_label_record_264170(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 264170
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             print(f"entity: {entity}")
@@ -289,35 +314,41 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "west west side music",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_label_record_99999999(self):
+    @pytest.mark.asyncio
+    async def test_label_record_99999999(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 99999999
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
             try:
-                entity = entity_repository.get_by_entity_id_and_entity_type(
+                entity = await entity_repository.get_by_entity_id_and_entity_type(
                     entity_id, entity_type
                 )
             except NotFoundError:
                 entity = None
 
         # THEN
-        self.assertIsNone(entity)
+        assert entity is None
 
-    def test_label_record_2529(self):
+    @pytest.mark.asyncio
+    async def test_label_record_2529(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         # GIVEN
         entity_id = 2529
         entity_type = EntityType.LABEL
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            entity = entity_repository.get_by_entity_id_and_entity_type(
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
                 entity_id, entity_type
             )
             actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -339,4 +370,4 @@ class TestLoaderEntityPassThree(OfflineDatabaseTestCase):
             "search_content": "hubba hubba",
         }
         expected = utils.normalize_dict(expected_entity)
-        self.assertEqual(expected, actual)
+        assert actual == expected

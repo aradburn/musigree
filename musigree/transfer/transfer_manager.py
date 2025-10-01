@@ -1,19 +1,18 @@
 import logging
 from pathlib import Path
 
-from musigree.constants import (
-    ENTITY_DETAILS_DATA,
-    ENTITY_DETAILS_FILENAME,
-    ALL_RUNTIME_DATABASE_TABLE_NAMES,
-)
+
 from musigree.exceptions import DatabaseError
-from musigree.logging_config import LOGGING_TRACE
+from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.database.entity_repository import EntityRepository
+from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.role_repository import RoleRepository
-from musigree.runtime.data_access_layer.runtime_entity_data_access import (
-    RuntimeEntityDataAccess,
-)
+from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
+from musigree.runtime.data_access_layer.runtime_relation_data_access import RuntimeRelationDataAccess
+from musigree.runtime.runtime_database.country_repository import CountryRepository
+from musigree.runtime.runtime_database.genre_repository import GenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -24,240 +23,171 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
+from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from musigree.runtime.runtime_domain.relation import (
-    RuntimeRelationDB,
-)
+from musigree.runtime.runtime_domain.country import Country
+from musigree.runtime.runtime_domain.genre import Genre
 from musigree.runtime.runtime_domain.role import RuntimeRole
+from musigree.runtime.runtime_domain.style import Style
 from musigree.transfer.transfer_worker_entity_inserter import (
-    TransferWorkerEntityInserter,
+    transfer_worker_entity_inserter_async,
 )
-from musigree.transfer.transfer_worker_relation_inserter import (
-    TransferWorkerRelationInserter,
-)
+from musigree.transfer.transfer_worker_relation_inserter import transfer_worker_relation_inserter_async
 
 log = logging.getLogger(__name__)
 
 
 class TransferManager:
-    BULK_INSERT_BATCH_SIZE = 100000
 
     @staticmethod
-    def transfer_entity(data_directory: Path) -> None:
-        log.debug(f"Running transfer_entity()")
+    async def transfer_entity() -> None:
+        log.debug("Running transfer_entity()")
 
-        entity_details_path = (
-            data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
-        )
-        entity_details_index = (
-            RuntimeEntityDataAccess.load_entity_details_index_from_file(
-                entity_details_path
-            )
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
         )
 
-        offline_entity_repository = EntityRepository()
-        runtime_entity_repository = RuntimeEntityRepository()
-
-        total_count = offline_entity_repository.count()
-        with runtime_transaction():
-            initial_count = runtime_entity_repository.count()
+        async with runtime_transaction():
+            runtime_entity_repository = RuntimeEntityRepository()
+            initial_count = await runtime_entity_repository.count()
         if initial_count > 0:
             error_msg = "Error in transfer_entity, runtime_entity table not empty"
             log.exception(error_msg, exc_info=True)
             raise DatabaseError
 
-        processed_count = 0
-        bulk_records = []
-        workers = []
+        async with offline_transaction():
+            offline_entity_repository = EntityRepository()
+            total_count = await offline_entity_repository.count()
+            log.debug(f"transfering {total_count} entities...")
+            entities = offline_entity_repository.all()
 
-        entities = offline_entity_repository.all()
+            inserted_count = 0
+            async for entity_list in entities:
+                runtime_entity_dicts_list = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entity_list)
+                await transfer_worker_entity_inserter_async(runtime_entity_dicts_list, inserted_count, total_count)
+                inserted_count += len(entity_list)
 
-        for entity in entities:
-            countries = entity_details_index.get_countries_for_id(entity.id)
-            genres = entity_details_index.get_genres_for_id(entity.id)
-            styles = entity_details_index.get_styles_for_id(entity.id)
-
-            runtime_entity = RuntimeEntity(
-                countries=countries,
-                genres=genres,
-                styles=styles,
-                **entity.model_dump(),
-            )
-            runtime_entity_db = runtime_entity.to_db()
-
-            bulk_records.append(runtime_entity_db.model_dump())
-            processed_count += 1
-            if len(bulk_records) >= TransferManager.BULK_INSERT_BATCH_SIZE:
-                if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                    # Can do multi threading
-                    worker = TransferWorkerEntityInserter(
-                        bulk_records,
-                        processed_count,
-                    )
-
-                    worker.start()
-                    workers.append(worker)
-                    bulk_records.clear()
-                    if len(workers) > RuntimeDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        TransferManager.transfer_wait_for_worker(worker)
-                else:
-                    with runtime_transaction():
-                        try:
-                            runtime_entity_repository.save_all(bulk_records)
-                            runtime_entity_repository.commit()
-                            log.info(f"processed: {processed_count} of {total_count}")
-                            bulk_records.clear()
-                        except DatabaseError:
-                            log.error("Error in transfer_entity")
-                            # log.exception("Error in transfer_entity", exc_info=True)
-                            raise
-
-        if len(bulk_records) > 0:
-            if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                # Can do multi threading
-                worker = TransferWorkerEntityInserter(
-                    bulk_records,
-                    processed_count,
-                )
-
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
-            else:
-                with runtime_transaction():
-                    try:
-                        runtime_entity_repository.save_all(bulk_records)
-                        runtime_entity_repository.commit()
-                        log.info(f"processed: {processed_count} of {total_count}")
-                        bulk_records.clear()
-                    except DatabaseError:
-                        log.error("Error in transfer_entity")
-                        # log.exception("Error in transfer_entity", exc_info=True)
-                        raise
-
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            TransferManager.transfer_wait_for_worker(worker)
-
-        repository_count = runtime_entity_repository.count()
-        log.debug(f"repository_count: {repository_count}")
+        async with runtime_transaction():
+            repository_count = await runtime_entity_repository.count()
+        log.debug(f"runtime entity repository count: {repository_count}")
 
     @staticmethod
-    def transfer_relation() -> None:
-        log.debug(f"Running transfer_relation()")
-        offline_relation_repository = RelationRepository()
-        runtime_relation_repository = RuntimeRelationRepository()
+    async def transfer_relation() -> None:
+        log.debug("Running transfer_relation()")
 
-        total_count = offline_relation_repository.count()
-        with runtime_transaction():
-            initial_count = runtime_relation_repository.count()
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper is not None
+        ), "runtime_database_helper must be initialized before calling initialize()"
+
+        async with runtime_transaction():
+            runtime_relation_repository = RuntimeRelationRepository()
+            initial_count = await runtime_relation_repository.count()
+
         if initial_count > 0:
             error_msg = "Error in transfer_relation, runtime_relation table not empty"
             log.exception(error_msg, exc_info=True)
             raise DatabaseError
 
-        processed_count = 0
-        bulk_records = []
-        workers = []
+        async with offline_transaction():
+            offline_relation_repository = RelationRepository()
+            total_count = await offline_relation_repository.count()
+            log.debug(f"transfering {total_count} relations...")
 
-        relations = offline_relation_repository.all()
+            relations = offline_relation_repository.all()
 
-        for relation in relations:
-            runtime_relation = RuntimeRelationDB(**relation.model_dump())
-            bulk_records.append(runtime_relation.model_dump())
-            processed_count += 1
-            if len(bulk_records) >= TransferManager.BULK_INSERT_BATCH_SIZE:
-                if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                    # Can do multi threading
-                    worker = TransferWorkerRelationInserter(
-                        bulk_records,
-                        processed_count,
-                    )
-
-                    worker.start()
-                    workers.append(worker)
-                    bulk_records.clear()
-                    if len(workers) > RuntimeDatabaseManager.get_concurrency_count():
-                        worker = workers.pop(0)
-                        TransferManager.transfer_wait_for_worker(worker)
-                else:
-                    with runtime_transaction():
-                        try:
-                            runtime_relation_repository.save_all(bulk_records)
-                            runtime_relation_repository.commit()
-                            log.info(f"processed: {processed_count} of {total_count}")
-                            bulk_records.clear()
-                        except DatabaseError:
-                            log.error("Error in transfer_relation")
-                            # log.exception("Error in transfer_relation", exc_info=True)
-                            raise
-
-        if len(bulk_records) > 0:
-            if RuntimeDatabaseManager.get_concurrency_count() > 1:
-                # Can do multi threading
-                worker = TransferWorkerRelationInserter(
-                    bulk_records,
-                    processed_count,
+            inserted_count = 0
+            async for relation_dbs in relations:
+                runtime_relation_dicts_list = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(
+                    relation_dbs
                 )
+                await transfer_worker_relation_inserter_async(runtime_relation_dicts_list, inserted_count, total_count)
+                inserted_count += len(relation_dbs)
 
-                worker.start()
-                workers.append(worker)
-                bulk_records.clear()
-            else:
-                with runtime_transaction():
-                    try:
-                        runtime_relation_repository.save_all(bulk_records)
-                        runtime_relation_repository.commit()
-                        log.info(f"processed: {processed_count} of {total_count}")
-                        bulk_records.clear()
-                    except DatabaseError:
-                        log.error("Error in transfer_relation")
-                        # log.exception("Error in transfer_relation", exc_info=True)
-                        raise
+            # chunked_runtime_relation_dicts = async_chunks(runtime_relation_dicts, BULK_INSERT_BATCH_SIZE)
+            #
+            # async_worker_coroutines = await utils.async_worker_generator(
+            #     transfer_worker_relation_inserter, chunked_runtime_relation_dicts, total_count
+            # )
+            # await utils.queue_worker_functions(RuntimeDatabaseManager.get_concurrency_count(), async_worker_coroutines)
 
-        while len(workers) > 0:
-            worker = workers.pop(0)
-            TransferManager.transfer_wait_for_worker(worker)
-
-        repository_count = runtime_relation_repository.count()
-        log.debug(f"repository_count: {repository_count}")
+        async with runtime_transaction():
+            repository_count = await runtime_relation_repository.count()
+        log.debug(f"runtime relation repository count: {repository_count}")
 
     @staticmethod
-    def transfer_role() -> None:
-        log.debug(f"Running transfer_role()")
-        roles = RoleRepository().all()
-        runtime_role_repository = RuntimeRoleRepository()
+    async def transfer_role() -> None:
+        log.debug("Running transfer_role()")
+        async with offline_transaction():
+            roles = RoleRepository().all()
 
-        with runtime_transaction():
-            for role in roles:
-                runtime_role = RuntimeRole(**role.model_dump())
-                runtime_role_repository.create(runtime_role)
+            async with runtime_transaction():
+                runtime_role_repository = RuntimeRoleRepository()
+                async for role in roles:
+                    runtime_role = RuntimeRole(**role.model_dump())
+                    await runtime_role_repository.create(runtime_role)
 
     @staticmethod
-    def transfer_all(data_directory: Path) -> None:
-        log.debug(f"Running transfer_all()")
+    async def transfer_entity_details() -> None:
+        log.debug("Running transfer_entity_details()")
 
-        RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-            ALL_RUNTIME_DATABASE_TABLE_NAMES
-        )
-        RuntimeDatabaseManager.runtime_database_helper.create_tables(
-            ALL_RUNTIME_DATABASE_TABLE_NAMES
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
         )
 
-        TransferManager.transfer_role()
-        TransferManager.transfer_entity(data_directory)
-        TransferManager.transfer_relation()
+        # Countries
+        log.debug("Running transfer_entity_details: countries")
+        sorted_countries = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.countries_list
+        )
 
-        log.debug(f"Transfer all done")
+        async with runtime_transaction():
+            runtime_country_repository = CountryRepository()
+            for _id, country_name in enumerate(sorted_countries):
+                country = Country(id=_id, country_name=country_name)
+                await runtime_country_repository.create(country)
+                await runtime_country_repository.commit()
+
+        # Genres
+        log.debug("Running transfer_entity_details: genres")
+        sorted_genres = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list
+        )
+
+        async with runtime_transaction():
+            runtime_genre_repository = GenreRepository()
+            for _id, genre_name in enumerate(sorted_genres):
+                genre = Genre(id=_id, genre_name=genre_name)
+                await runtime_genre_repository.create(genre)
+                await runtime_genre_repository.commit()
+
+        # Styles
+        log.debug("Running transfer_entity_details: styles")
+        sorted_styles = sorted(
+            RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list
+        )
+
+        async with runtime_transaction():
+            runtime_style_repository = StyleRepository()
+            for _id, style_name in enumerate(sorted_styles):
+                style = Style(id=_id, style_name=style_name)
+                await runtime_style_repository.create(style)
+                await runtime_style_repository.commit()
 
     @staticmethod
-    def transfer_wait_for_worker(worker) -> None:
-        if LOGGING_TRACE:
-            log.debug(f"wait for worker {worker.name}")
-        worker.join()
-        worker.terminate()
-        if worker.exitcode > 0:
-            log.error(f"worker {worker.name} exitcode: {worker.exitcode}")
-            raise RuntimeError("Error in worker process")
+    async def transfer_load_text_search_index(text_search_path: Path) -> None:
+        log.debug("Running transfer load text search index")
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
+
+    @staticmethod
+    async def transfer_load_entity_details_index(entity_details_path: Path) -> None:
+        log.debug("Running transfer load entity details index")
+        assert (
+            RuntimeDatabaseManager.runtime_database_helper is not None
+        ), "runtime_database_helper must be initialized before calling initialize()"
+        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(entity_details_path)
+        RuntimeDatabaseManager.runtime_database_helper.entity_details_index = entity_details_index
+            

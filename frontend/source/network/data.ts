@@ -1,4 +1,4 @@
-import { networkManager } from "../core";
+import { networkManager } from "../core/singletons";
 import { getOuterRadius } from "./node";
 import type { APINetworkDataResponse } from "../api";
 

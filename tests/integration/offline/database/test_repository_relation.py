@@ -1,4 +1,11 @@
+"""Tests for RelationRepository with async/await and pytest fixtures."""
+
+from typing import AsyncGenerator
+
+import pytest
+
 from musigree import utils
+from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, ROLES_DATA, INSTRUMENTS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
@@ -13,24 +20,33 @@ from musigree.offline.domain.relation import (
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
-from tests.integration.offline.database.offline_repository_test_case import (
-    OfflineRepositoryTestCase,
-)
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestRepositoryRelation(OfflineRepositoryTestCase):
-    def test_01_create(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
+class TestRepositoryRelation(AbstractDatabaseTest):
+    @pytest.mark.asyncio
+    async def test_create_relation(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
+        """Test creating a relation in the repository.
+
+        Args:
+            offline_database_setup: Pytest fixture for database setup.
+            offline_config: Pytest fixture for configuration.
+        """
         # GIVEN
-        LoaderRole.load_roles_into_database(
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / ROLES_DATA,
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / INSTRUMENTS_DATA,
+        await LoaderRole.load_roles_into_database(
+            offline_config.DATA_DIR / ROLES_DATA,
+            offline_config.DATA_DIR / INSTRUMENTS_DATA,
         )
-        RoleDataAccess.load_all_roles()
-        disocogs_data_directory = (
-            OfflineRepositoryTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        await RoleDataAccess.load_all_roles_into_cache()
+        discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
+
         iterator = LoaderUtils.get_iterator(
-            disocogs_data_directory,
+            discogs_data_directory,
             "artist",
             "testinsert",
         )
@@ -39,13 +55,11 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
         entity_element_2 = next(iterator)
         entity_2 = ParserEntity().from_element(entity_element_2)
 
-        # WHEN
-        with offline_transaction():
+        # WHEN - Create entities first
+        async with offline_transaction():
             repository = EntityRepository()
-            created_entity_1 = repository.create(entity_1)
-            print(f"created_entity_1: {created_entity_1}")
-            created_entity_2 = repository.create(entity_2)
-            print(f"created_entity_2: {created_entity_2}")
+            created_entity_1 = await repository.create(entity_1)
+            created_entity_2 = await repository.create(entity_2)
 
         id_1 = to_entity_internal_id(
             created_entity_1.entity_id, created_entity_1.entity_type
@@ -58,34 +72,39 @@ class TestRepositoryRelation(OfflineRepositoryTestCase):
             subject=id_1,
             object=id_2,
             role="Composed By",
-            # releases={},
+            release_id=0,
+            year=0,
         )
         relation_dict = relation.model_dump()
-        # relation_dict["role"] = relation.role_name
         relation_dicts = [relation_dict]
 
-        # WHEN
-        with offline_transaction():
+        # WHEN - Create relation
+        async with offline_transaction():
             relation_repository = RelationRepository()
             relations = RelationUncommitted.from_dicts(relation_dicts)
+            created_relation_internals: list[RelationInternal] = []
 
-            created_relation_internal = relation_repository.create(relations[0])
-            print(f"created_relation_internal: {created_relation_internal}")
-
-            created_relation = created_relation_internal.to_relation()
-            print(f"created_relation: {created_relation}")
+            await relation_repository.create(relations[0])
+            async for created_relation_db_list in relation_repository.all():
+                for created_relation_db in created_relation_db_list:
+                    """Retrieve all created relations."""
+                    assert created_relation_db is not None, (
+                        "Created relation db should not be None"
+                    )
+                    created_relation_internal = created_relation_db.to_domain()
+                    assert created_relation_internal is not None, "Created relation should not be None"
+                    created_relation_internals.append(created_relation_internal)
+            created_relation = Relation.from_relation_internals(created_relation_internals)
             actual = utils.normalize_dict(created_relation.model_dump())
-            print(f"actual: {actual}")
 
         # THEN
         expected_relation = Relation(
-            id=1,
             entity_one_id=created_entity_1.entity_id,
             entity_one_type=created_entity_1.entity_type,
             entity_two_id=created_entity_2.entity_id,
             entity_two_type=created_entity_2.entity_type,
             role="Composed By",
-            # releases={},
+            releases={"0": 0},
         )
         expected = utils.normalize_dict(expected_relation.model_dump())
-        self.assertEqual(expected, actual)
+        assert actual == expected

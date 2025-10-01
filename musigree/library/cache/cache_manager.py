@@ -2,7 +2,7 @@ import logging
 import os
 import pickle
 import tempfile
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Add Redis import with error handling
 try:
@@ -23,6 +23,11 @@ log = logging.getLogger(__name__)
 
 __all__ = [
     "CacheManager",
+    "BaseCache",
+    "SimpleCache",
+    "FileSystemCache",
+    "RedisCache",
+    "CacheType",
 ]
 
 
@@ -33,7 +38,7 @@ class BaseCache:
         """Get value from cache for the given key."""
         raise NotImplementedError
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         raise NotImplementedError
 
@@ -50,7 +55,7 @@ class SimpleCache(BaseCache):
     """Simple in-memory cache implementation."""
 
     def __init__(self, threshold: int = 1000000, default_timeout: int = 0):
-        self.cache: Dict[str, Any] = {}
+        self.cache: dict[str, Any] = {}
         self.threshold = threshold
         self.default_timeout = default_timeout
 
@@ -58,7 +63,7 @@ class SimpleCache(BaseCache):
         """Get value from cache for the given key."""
         return self.cache.get(key)
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         # In this simple implementation, we ignore timeout
         self.cache[key] = value
@@ -104,7 +109,7 @@ class FileSystemCache(BaseCache):
                 return None
         return None
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         filename = self._get_filename(key)
         try:
@@ -135,10 +140,10 @@ class RedisCache(BaseCache):
         self,
         host: str = "localhost",
         port: int = 6379,
-        password: Optional[str] = None,
+        password: str | None = None,
         db: int = 0,
         default_timeout: int = 300,
-        key_prefix: Optional[str] = None,
+        key_prefix: str | None = None,
     ):
         """Initialize Redis cache.
 
@@ -152,7 +157,7 @@ class RedisCache(BaseCache):
         """
         self.default_timeout = default_timeout
         self.key_prefix = key_prefix or ""
-        self._client = None
+        self._client: redis.Redis | fakeredis.FakeRedis | None = None
 
         if not REDIS_AVAILABLE:
             log.warning("Redis package not installed. Using FakeRedis instead.")
@@ -176,7 +181,7 @@ class RedisCache(BaseCache):
             )
             self._client = fakeredis.FakeRedis()
 
-    def _get_redis_client(self):
+    def _get_redis_client(self) -> Any | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
@@ -211,7 +216,7 @@ class RedisCache(BaseCache):
             log.exception(f"Error getting key {key} from Redis cache: {e}")
             return None
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         redis_client = self._get_redis_client()
         key = self._make_key(key)
@@ -262,7 +267,7 @@ class CacheManager:
         cache (BaseCache | None): The active cache instance. It can be None if the cache is not yet initialized.
     """
 
-    cache: Optional[BaseCache] = None
+    cache: BaseCache | None = None
 
     @classmethod
     def setup_cache(cls, config: Configuration) -> None:
@@ -282,10 +287,10 @@ class CacheManager:
         Raises:
             ValueError: If an invalid 'CACHE_TYPE' is provided in the configuration.
         """
-        cls.cache = None
 
         # Based on configuration, use a different cache setup.
         cache_type = config.CACHE_TYPE
+        # noinspection PyUnreachableCode
         if cache_type == CacheType.MEMORY:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
             log.info("Using memory cache")
@@ -332,17 +337,18 @@ class CacheManager:
         """
         if cls.cache is not None:
             cls.cache.clear()
-        cls.cache = None
         log.info("Shutdown cache")
 
     @classmethod
-    def get_cache(cls) -> Optional[BaseCache]:
+    def get_cache(cls) -> BaseCache:
         """
         Returns the current cache instance.
 
         Returns:
-            Optional[BaseCache]: The current cache instance, or None if not initialized.
+            BaseCache | None: The current cache instance, or None if not initialized.
         """
+        if cls.cache is None:
+            raise ValueError("Invalid cache")
         return cls.cache
 
     @classmethod

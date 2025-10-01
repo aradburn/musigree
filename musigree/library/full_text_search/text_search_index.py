@@ -4,7 +4,7 @@ import pickle
 import random
 from collections import Counter
 from pathlib import Path
-from typing import Self, Dict, List
+from typing import Self
 
 from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
@@ -46,15 +46,15 @@ class TextSearchIndex:
         A set of common words (stop words) to be ignored during indexing and search.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes an empty TextSearchIndex.
         """
-        self.index: Dict[str, List[int]] = {}
+        self.index: dict[str, list[int]] = {}
         """The inverted index mapping tokens to sets of document IDs."""
-        self.documents: Dict[int, str] = {}
+        self.documents: dict[int, str] = {}
         """A mapping of document IDs to their original text content."""
-        self.keys: List[int] = []
+        self.keys: list[int] = []
         """A list of all document IDs in the index."""
 
     def index_entry(self, id_: int, text: str) -> None:
@@ -84,8 +84,10 @@ class TextSearchIndex:
 
         # Handle cases like hyphens in surnames
         if "-" in normalised_text:
-            normalised_text = normalised_text.replace("-", " ")
-            for token in normalised_text.split():
+            normalised_text_no_hyphens = normalised_text.replace("-", " ")
+            for token in normalised_text_no_hyphens.split():
+                if token in TextSearchIndex.STOP_WORDS:
+                    continue
                 if token not in self.index:
                     self.index[token] = list[int]()
                 self.index[token].append(id_)
@@ -103,7 +105,8 @@ class TextSearchIndex:
         Returns:
             int: The document frequency of the token.
         """
-        return len(self.index.get(token, list[int]()))
+        token_occurrences = self.index.get(token, list[int]())
+        return len(set(token_occurrences))
 
     def inverse_document_frequency(self, token: str) -> float:
         """
@@ -124,7 +127,7 @@ class TextSearchIndex:
         # https://nlp.stanford.edu/IR-book/html/htmledition/inverse-document-frequency-1.html
         return math.log10(len(self.documents) / self.document_frequency(token))
 
-    def _results(self, analyzed_query: List[str]) -> List[List[int]]:
+    def _results(self, analyzed_query: list[str]) -> list[list[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
 
@@ -137,7 +140,7 @@ class TextSearchIndex:
         """
         return [self.index.get(token, list[int]()) for token in analyzed_query]
 
-    def search(self, query: str) -> List[tuple[int, str]]:
+    def search(self, query: str) -> list[tuple[int, str]]:
         """
         Searches the index for documents matching the query.
 
@@ -151,16 +154,28 @@ class TextSearchIndex:
             list[tuple[int, str]]: A list of tuples, where each tuple contains a
                 document ID and the corresponding document text, ordered by relevance.
         """
-        analyzed_query = query.split()
+        # Normalize the query and filter out stop words
+        normalized_query = normalise_search_content(query)
+        analyzed_query = [
+            token
+            for token in normalized_query.split()
+            if token not in TextSearchIndex.STOP_WORDS
+        ]
+
+        # Handle empty query after filtering stop words
+        if not analyzed_query:
+            return []
+
         # log.debug(f"search analyzed_query: {analyzed_query}")
 
         results = self._results(analyzed_query)
         result_sets = [set[int](result) for result in results]
         # all tokens must be in the document
-        documents = [
-            (doc_id, self.documents[doc_id])
-            for doc_id in set[int].intersection(*result_sets)
-        ]
+        documents: list[tuple[int, str]] = []
+        document_results: set[int] = set.intersection(*result_sets)
+        for doc_id in document_results:
+            document_entry = (doc_id, self.documents[doc_id])
+            documents.append(document_entry)
         return self.rank(analyzed_query, documents)
 
     def rank(
@@ -184,7 +199,6 @@ class TextSearchIndex:
         if not documents:
             return list[tuple[int, str]]()
         for document in documents:
-
             normalised_name = normalise_search_content(document[1])
             term_frequencies = Counter(normalised_name.split())
 
@@ -200,16 +214,12 @@ class TextSearchIndex:
         ranked = sorted(results, key=lambda doc: doc[1], reverse=True)
         return [ranked_item[0] for ranked_item in ranked]
 
-    def reduce_list_to_set(self):
+    def reduce_list_to_set(self) -> None:
         for key, words in self.index.items():
             reduced_set = set(words)
             self.index[key] = list(reduced_set)
-            # old_size = len(words)
-            # new_size = len(reduced_set)
-            # if old_size != new_size:
-            #     print(f"{key}: {old_size} -> {new_size}")
 
-    def list_stop_words(self) -> list[str]:
+    def generate_list_of_stop_words(self) -> list[str]:
         """
         Identifies and lists potential stop words based on their frequency.
 
@@ -249,8 +259,17 @@ class TextSearchIndex:
             int: A random document ID.
         """
         count = len(self.keys)
-        random_index = random.randint(0, count)
+        random_index = random.randint(0, count - 1)
         return self.keys[random_index]
+
+    def save_text_search_index_to_file(self, filename: Path) -> None:
+        log.debug(f"save text search index to file: {filename}")
+
+        # open a file to store the data
+        with open(filename, "wb") as file:
+            # dump information to that file
+            # noinspection PyTypeChecker
+            pickle.dump(self, file)
 
     @classmethod
     def load_text_search_index_from_file(cls, filename: Path) -> Self:
@@ -270,4 +289,5 @@ class TextSearchIndex:
             # read pickle dump information from that file
             text_search_index: TextSearchIndex = pickle.load(file)
 
-        return text_search_index
+        # noinspection Mypy
+        return text_search_index  # type: ignore

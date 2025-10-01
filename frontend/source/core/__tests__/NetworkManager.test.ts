@@ -8,42 +8,13 @@ import type {
 } from "../../network/data";
 import { NodeType } from "../../network/data";
 import { RequestNetworkEvent } from "../../network/events";
-import { NetworkManager, networkManager } from "../NetworkManager";
+import { NetworkManager } from "../NetworkManager";
+import { networkManager } from "../singletons";
 
-// Mock d3 first
-vi.mock("d3", () => {
-    const mockSimulation = {
-        stop: vi.fn().mockReturnThis(),
-        nodes: vi.fn().mockReturnThis(),
-        force: vi.fn().mockReturnThis(),
-    };
-
-    const mockZoom = vi.fn();
-    const mockArc = vi.fn().mockReturnValue({
-        innerRadius: vi.fn().mockReturnThis(),
-        outerRadius: vi.fn().mockReturnThis(),
-        startAngle: vi.fn().mockReturnThis(),
-        endAngle: vi.fn().mockReturnThis(),
-    });
-
-    // Create InternMap as a subclass of Map
-    class InternMap extends Map {}
-
-    return {
-        forceSimulation: vi.fn().mockReturnValue(mockSimulation),
-        zoom: vi.fn().mockReturnValue(mockZoom),
-        arc: mockArc,
-        InternMap,
-        group: vi.fn().mockReturnValue(new Map()),
-        sort: vi.fn().mockReturnValue([]),
-        rollup: vi.fn().mockReturnValue(new Map()),
-        select: vi.fn().mockReturnValue({
-            append: vi.fn().mockReturnThis(),
-            classed: vi.fn().mockReturnThis(),
-            empty: vi.fn().mockReturnValue(false),
-            remove: vi.fn().mockReturnThis(),
-        }),
-    };
+// Mock d3 with comprehensive mock
+vi.mock("d3", async () => {
+    const { d3Mock } = await import("../../__tests__/setup/d3-mock");
+    return d3Mock;
 });
 
 // Mock RequestNetworkEvent
@@ -302,7 +273,11 @@ describe("NetworkManager", () => {
 
     describe("singleton instance", () => {
         it("should export a singleton instance", () => {
-            expect(networkManager).toBeInstanceOf(NetworkManager);
+            // The singleton is a Proxy, so we check its properties instead of instanceof
+            expect(networkManager).toBeDefined();
+            expect(networkManager.forceLayout).toBeNull();
+            expect(typeof networkManager.isRunningLayout).toBe("boolean");
+            expect(typeof networkManager.tick).toBe("number");
         });
     });
 });

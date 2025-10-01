@@ -1,7 +1,7 @@
 import logging
-from typing import Any
+from typing import Any, AsyncGenerator
 
-from sqlalchemy import Result, select, update, Select
+from sqlalchemy import Result, select, update
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.offline.database.base_repository import BaseRepository
@@ -15,11 +15,11 @@ class MetadataRepository(BaseRepository[MetadataTable]):
     """
     Repository for managing Metadata objects in the database.
 
-    This class provides methods for interacting with the MetadataTable in the
-    database, including creating, retrieving, and updating metadata entries.
+    This class provides async methods for interacting with the MetadataTable in the
+    database, including creating, retrieving, and managing metadata.
 
     Inherits from:
-        BaseRepository[MetadataTable]: Provides the basic database interaction
+        BaseRepository[MetadataTable]: Provides the basic async database interaction
             functionality.
 
     Attributes:
@@ -31,61 +31,55 @@ class MetadataRepository(BaseRepository[MetadataTable]):
     The SQLAlchemy table class for metadata.
     """
 
-    def _get_one_by_query(self, query: Select[tuple[MetadataTable]]) -> Metadata:
+    async def all(self) -> AsyncGenerator[Metadata, None]:
         """
-        Executes a query that should return a single Metadata object.
+        Retrieves all metadata from the database.
 
-        Args:
-            query: The SQLAlchemy query to execute.
-
-        Returns:
-            Metadata: The retrieved metadata object.
-
-        Raises:
-            NotFoundError: If no metadata is found matching the query.
+        Yields:
+            AsyncGenerator[Metadata]: An async iterator yielding each metadata.
         """
-        result: Result = self.execute(query)
-        # result: Result = await self.execute(query)
+        async for instance in self._all():
+            yield Metadata.model_validate(instance)
 
-        if not (instance := result.scalars().one_or_none()):
-            raise NotFoundError
-
-        metadata_db = Metadata.model_validate(instance)
-        return metadata_db.to_domain()
-
-    def get(self, metadata_id: int) -> Metadata:
+    async def get_by_id(self, metadata_id: int) -> Metadata:
         """
-        Retrieves a Metadata object by its ID.
+        Retrieves metadata by its ID.
 
         Args:
             metadata_id: The ID of the metadata to retrieve.
 
         Returns:
-            Metadata: The retrieved metadata object.
+            Metadata: The retrieved metadata.
 
         Raises:
-             NotFoundError: If no metadata is found matching the ID.
+            NotFoundError: If no metadata is found with the given ID.
         """
-        query = select(MetadataTable).where(MetadataTable.metadata_id == metadata_id)
-        return self._get_one_by_query(query)
+        instance = await self._get("metadata_id", metadata_id)
+        if not instance:
+            raise NotFoundError
+        return Metadata.model_validate(instance)
 
-    def get_by_key(self, metadata_key: str) -> Metadata:
+    async def get_by_key(self, key: str) -> Metadata:
         """
-        Retrieves a Metadata object by its key.
+        Retrieves metadata by its key.
 
         Args:
-            metadata_key: The key of the metadata to retrieve.
+            key: The key of the metadata to retrieve.
 
         Returns:
-            Metadata: The retrieved metadata object.
+            Metadata: The retrieved metadata.
 
         Raises:
-             NotFoundError: If no metadata is found matching the key.
+            NotFoundError: If no metadata is found with the given key.
         """
-        query = select(MetadataTable).where(MetadataTable.metadata_key == metadata_key)
-        return self._get_one_by_query(query)
+        query = select(MetadataTable).where(MetadataTable.metadata_key == key)
+        result: Result = await self._session.execute(query)
 
-    def create(self, metadata: MetadataUncommitted) -> Metadata:
+        if not (instance := result.scalars().one_or_none()):
+            raise NotFoundError
+        return Metadata.model_validate(instance)
+
+    async def create(self, metadata: MetadataUncommitted) -> Metadata:
         """
         Creates a new Metadata object in the database.
 
@@ -95,11 +89,27 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         Returns:
             Metadata: The created metadata object.
         """
-        instance: MetadataTable = self._save(metadata.model_dump())
-        # instance: MetadataTable = await self._save(metadata.model_dump())
+        instance: MetadataTable = await self._save(metadata.model_dump())
         return Metadata.model_validate(instance)
 
-    def update(
+    async def update_by_key(self, key: str, value: str) -> Metadata:
+        """
+        Updates metadata by its key.
+
+        Args:
+            key: The key of the metadata to update.
+            value: The new value for the metadata.
+
+        Returns:
+            Metadata: The updated metadata.
+
+        Raises:
+            NotFoundError: If no metadata is found with the given key.
+        """
+        instance = await self._update("metadata_key", key, {"metadata_value": value})
+        return Metadata.model_validate(instance)
+
+    async def update(
         self,
         payload: dict[str, Any],
     ) -> Metadata:
@@ -116,10 +126,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
             DatabaseError: If there is an error updating the metadata.
         """
         query = update(self.schema_class).values(payload).returning(self.schema_class)
-        result: Result = self._session.execute(query)
-        # result: Result = await self.execute(query)
-        self._session.flush()
-        # await self._session.flush()
+        result: Result = await self._session.execute(query)
 
         if not (instance := result.scalar_one_or_none()):
             raise DatabaseError

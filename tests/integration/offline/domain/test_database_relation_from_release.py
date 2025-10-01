@@ -1,25 +1,33 @@
+from typing import AsyncGenerator
 from xml.etree import ElementTree
 
+import pytest
+
 from musigree import utils
+from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.domain.relation import RelationUncommitted
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
-from tests.integration.offline.database.offline_database_test_case import (
-    OfflineDatabaseTestCase,
-)
+from tests.conftest import AbstractDatabaseTest
 
 
-class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
-    def test_relation_from_release_01(self):
+@pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
+class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
+    @pytest.mark.asyncio
+    async def test_relation_from_release_01(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        offline_config: Configuration,
+    ) -> None:
         # GIVEN
-        disocogs_data_directory = (
-            OfflineDatabaseTestCase.offline_config.DATA_DIR / DISCOGS_DATA
-        )
+        disocogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
             disocogs_data_directory,
             "release",
@@ -29,62 +37,50 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_document = ParserRelease().from_element(release_element)
 
         # WHEN
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
-            relation_internal_dicts = RelationDataAccess.from_release(release_document)
-            relations_external_dicts = (
-                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
-                    relation_internal_dicts
-                )
-            )
-            actual = utils.normalize_dict_list(relations_external_dicts)
+            actual = RelationDataAccess.from_release(release_document)
 
         # THEN
-        expected_relations = [
-            {
-                "entity_one_id": 41,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 23528,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 157,
-                "role": "Released On",
-                "year": 1994,
-            },
-            {
-                "entity_one_id": 42,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 41,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 157,
-                "role": "Producer",
-                "year": 1994,
-            },
-            {
-                "entity_one_id": 300407,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 41,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 157,
-                "role": "Producer",
-                "year": 1994,
-            },
-            {
-                "entity_one_id": 445854,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 41,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 157,
-                "role": "Design",
-                "year": 1994,
-            },
+        expected = [
+            RelationUncommitted(
+                subject=to_entity_internal_id(41, EntityType.ARTIST),
+                object=to_entity_internal_id(23528, EntityType.LABEL),
+                role_name="Released On",
+                release_id=157,
+                year=1994,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(42, EntityType.ARTIST),
+                object=to_entity_internal_id(41, EntityType.ARTIST),
+                role_name="Producer",
+                release_id=157,
+                year=1994,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(300407, EntityType.ARTIST),
+                object=to_entity_internal_id(41, EntityType.ARTIST),
+                role_name="Producer",
+                release_id=157,
+                year=1994,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(445854, EntityType.ARTIST),
+                object=to_entity_internal_id(41, EntityType.ARTIST),
+                role_name="Design",
+                release_id=157,
+                year=1994,
+            ),
         ]
-        expected = utils.normalize_dict_list(expected_relations)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_relation_from_release_02(self):
+    @pytest.mark.asyncio
+    async def test_relation_from_release_02(
+        self, offline_database_setup: AsyncGenerator[None, None]
+    ) -> None:
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -195,52 +191,40 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
-            relation_internal_dicts = RelationDataAccess.from_release(release_document)
-            relations_external_dicts = (
-                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
-                    relation_internal_dicts
-                )
-            )
-            actual = utils.normalize_dict_list(relations_external_dicts)
+            actual = RelationDataAccess.from_release(release_document)
 
-        expected_relations = [
-            {
-                "entity_one_id": 195,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 103,
-                "role": "Compiled On",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 196,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 103,
-                "role": "Compiled On",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 197,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 103,
-                "role": "Compiled On",
-                "year": 1999,
-            },
+        expected = [
+            RelationUncommitted(
+                subject=to_entity_internal_id(195, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Compiled On",
+                release_id=103,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(196, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Compiled On",
+                release_id=103,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(197, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Compiled On",
+                release_id=103,
+                year=1999,
+            ),
         ]
-        expected = utils.normalize_dict_list(expected_relations)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_03(self):
+    @pytest.mark.asyncio
+    async def test_03(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -379,115 +363,89 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
-            relation_internal_dicts = RelationDataAccess.from_release(release_document)
-            relations_external_dicts = (
-                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
-                    relation_internal_dicts
-                )
-            )
-            actual = utils.normalize_dict_list(relations_external_dicts)
+            actual = RelationDataAccess.from_release(release_document)
 
-        expected_relations = [
-            {
-                "entity_one_id": 22,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 291931,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 5,
-                "role": "Manufactured By",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 22,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 403521,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 5,
-                "role": "Marketed By",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 22,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 265233,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 5,
-                "role": "Produced At",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 22,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Producer",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 22,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 5,
-                "role": "Released On",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 25,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Performer",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 415403,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Voice",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 519207,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Performer",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 539207,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Cover",
-                "year": 1995,
-            },
-            {
-                "entity_one_id": 539207,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 22,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 5,
-                "role": "Design",
-                "year": 1995,
-            },
+        expected = [
+            RelationUncommitted(
+                subject=to_entity_internal_id(22, EntityType.ARTIST),
+                object=to_entity_internal_id(291931, EntityType.LABEL),
+                role_name="Manufactured By",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(22, EntityType.ARTIST),
+                object=to_entity_internal_id(403521, EntityType.LABEL),
+                role_name="Marketed By",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(22, EntityType.ARTIST),
+                object=to_entity_internal_id(265233, EntityType.LABEL),
+                role_name="Produced At",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(22, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Producer",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(22, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Released On",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(25, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Performer",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(415403, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Voice",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(519207, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Performer",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(539207, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Cover",
+                release_id=5,
+                year=1995,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(539207, EntityType.ARTIST),
+                object=to_entity_internal_id(22, EntityType.ARTIST),
+                role_name="Design",
+                release_id=5,
+                year=1995,
+            ),
         ]
-        expected = utils.normalize_dict_list(expected_relations)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_04(self):
+    @pytest.mark.asyncio
+    async def test_04(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -738,151 +696,117 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
-            relation_internal_dicts = RelationDataAccess.from_release(release_document)
-            relations_external_dicts = (
-                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
-                    relation_internal_dicts
-                )
-            )
-            actual = utils.normalize_dict_list(relations_external_dicts)
+            actual = RelationDataAccess.from_release(release_document)
 
-        expected_relations = [
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 64,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 65,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 66,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 67,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 69,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 70,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 71,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 1014,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 4210,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 36400,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 222489,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "DJ Mix",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 64,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 36,
-                "role": "Released On",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 36400,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 36400,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "Featuring",
-                "year": 2000,
-            },
-            {
-                "entity_one_id": 36400,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 222489,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 36,
-                "role": "Featuring",
-                "year": 2000,
-            },
+        expected = [
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(64, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(65, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(66, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(67, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(69, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(70, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(71, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(1014, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(4210, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(36400, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(222489, EntityType.ARTIST),
+                role_name="DJ Mix",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(64, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Released On",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(36400, EntityType.ARTIST),
+                object=to_entity_internal_id(36400, EntityType.ARTIST),
+                role_name="Featuring",
+                release_id=36,
+                year=2000,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(36400, EntityType.ARTIST),
+                object=to_entity_internal_id(222489, EntityType.ARTIST),
+                role_name="Featuring",
+                release_id=36,
+                year=2000,
+            ),
         ]
-        expected = utils.normalize_dict_list(expected_relations)
-        self.assertEqual(expected, actual)
+        assert actual == expected
 
-    def test_05(self):
+    @pytest.mark.asyncio
+    async def test_05(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -1449,374 +1373,288 @@ class TestDatabaseRelationFromRelease(OfflineDatabaseTestCase):
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
         print(f"release_document: {release_document}")
-        with offline_transaction():
+        async with offline_transaction():
             entity_repository = EntityRepository()
-            EntityDataAccess().resolve_release_references(
+            await EntityDataAccess().resolve_release_references(
                 entity_repository, release_document
             )
             print(f"release_document: {release_document}")
-            relation_internal_dicts = RelationDataAccess.from_release(release_document)
-            relations_external_dicts = (
-                RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(
-                    relation_internal_dicts
-                )
-            )
-            actual = utils.normalize_dict_list(relations_external_dicts)
-            print(f"actual: {actual}")
+            actual = RelationDataAccess.from_release(release_document)
 
-        expected_relations = [
-            {
-                "entity_one_id": 21,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": -1,
-                "entity_two_type": EntityType.LABEL,
-                "release_id": 3286,
-                "role": "Released On",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 9559,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Vocals",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 9559,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Written By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 12601,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Guitar",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 13481,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Engineer",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 31885,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Keyboards",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 56668,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Percussion",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 56668,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Vocals",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 56668,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Written By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 86765,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Photography",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 133484,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Effects",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 133484,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Written By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 156648,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Viola",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 156648,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Violin",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 246316,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Edited By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 246316,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Engineer",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 246316,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Percussion",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 246316,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Programmed By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 246316,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Written By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Bass",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Cello",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Effects",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Guitar",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Keyboards",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Percussion",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Programmed By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 308472,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Written By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 328648,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Flute",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 328648,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Saxophone",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 330312,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Double Bass",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 364438,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Mastered By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 383869,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Percussion",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 388361,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Mastered By",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 392454,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Guitar",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 402322,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Trombone",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 402323,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Guitar",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 402324,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Trumpet",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 402325,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Guitar",
-                "year": 1999,
-            },
-            {
-                "entity_one_id": 1832523,
-                "entity_one_type": EntityType.ARTIST,
-                "entity_two_id": 21,
-                "entity_two_type": EntityType.ARTIST,
-                "release_id": 3286,
-                "role": "Artwork By",
-                "year": 1999,
-            },
+        expected = [
+            RelationUncommitted(
+                subject=to_entity_internal_id(21, EntityType.ARTIST),
+                object=to_entity_internal_id(-2000000000, EntityType.LABEL),
+                role_name="Released On",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(9559, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Vocals",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(9559, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Written By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(12601, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Guitar",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(13481, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Engineer",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(31885, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Keyboards",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(56668, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Percussion",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(56668, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Vocals",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(56668, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Written By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(86765, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Photography",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(133484, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Effects",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(133484, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Written By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(156648, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Viola",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(156648, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Violin",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(246316, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Edited By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(246316, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Engineer",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(246316, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Percussion",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(246316, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Programmed By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(246316, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Written By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Bass",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Cello",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Effects",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Guitar",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Keyboards",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Percussion",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Programmed By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(308472, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Written By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(328648, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Flute",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(328648, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Saxophone",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(330312, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Double Bass",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(364438, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Mastered By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(383869, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Percussion",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(388361, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Mastered By",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(392454, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Guitar",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(402322, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Trombone",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(402323, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Guitar",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(402324, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Trumpet",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(402325, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Guitar",
+                release_id=3286,
+                year=1999,
+            ),
+            RelationUncommitted(
+                subject=to_entity_internal_id(1832523, EntityType.ARTIST),
+                object=to_entity_internal_id(21, EntityType.ARTIST),
+                role_name="Artwork By",
+                release_id=3286,
+                year=1999,
+            ),
         ]
-        expected = utils.normalize_dict_list(expected_relations)
         self.maxDiff = None
-        self.assertEqual(expected, actual)
+        assert actual == expected

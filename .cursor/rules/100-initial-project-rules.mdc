@@ -1,6 +1,6 @@
 ---
 description: General Rules for Project
-globs: *
+globs:
 alwaysApply: true
 ---
 

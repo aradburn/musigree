@@ -1,16 +1,16 @@
+from typing import Any
+
 from sqlalchemy import (
-    ForeignKey,
     Index,
     Integer,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import Base
-from musigree.offline.database.role_table import RoleTable
+from musigree.offline.database.base_table import OfflineBase
 
 
-class RelationTable(Base):
+class RelationTable(OfflineBase):
     """
     Represents the 'relation' table in the database.
 
@@ -34,26 +34,29 @@ class RelationTable(Base):
 
     # COLUMNS
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """The primary key of the table, an auto-incrementing integer."""
-    subject: Mapped[int] = mapped_column(Integer)
+    subject: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the subject entity in the relation."""
-    predicate: Mapped[int] = mapped_column(ForeignKey(RoleTable.id))
-    """
-    The ID of the role (predicate) defining the relation.
-    This is a foreign key referencing the RoleTable.
-    """
-    object: Mapped[int] = mapped_column(Integer)
+    predicate: Mapped[int] = mapped_column(Integer, nullable=False)
+    # predicate: Mapped[int] = mapped_column(ForeignKey(RoleTable.id))
+    """The ID of the role (predicate) defining the relation.
+       This is a foreign key referencing the RoleTable."""
+    object: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the object entity in the relation."""
+    release_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    """The ID of the release associated with this entry."""
+    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    """The year of the release."""
 
-    __table_args__ = (
-        Index(
-            "idx_relation",
-            subject,
-            predicate,
-            object,
-            unique=True,
-        ),
+    __table_args__: tuple[Index, Index, dict[Any, Any]] = (
+        # Index(
+        #     "idx_relation",
+        #     subject,
+        #     predicate,
+        #     object,
+        #     unique=False,
+        # ),
         Index(
             "idx_relation_subject",
             subject,
@@ -73,7 +76,7 @@ class RelationTable(Base):
         - idx_relation_object: A non-unique index on the object column.
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Returns a string representation of the RelationTable object.
 
@@ -83,4 +86,4 @@ class RelationTable(Base):
         Returns:
             str: A normalized dictionary string representation of the object.
         """
-        return utils.normalize_dict(utils.row2dict(self), skip_keys={})
+        return utils.normalize_dict(utils.table2dict(self), skip_keys=[])

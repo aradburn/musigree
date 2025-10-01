@@ -7,7 +7,7 @@ import React, {
     useRef,
 } from "react";
 import type { ReactNode } from "react";
-import { networkManager, musigreeManager } from "../core";
+import { networkManager, musigreeManager } from "../core/singletons";
 import type { SimNode, SimLink } from "../network/data";
 import { FORCE } from "../constants";
 import * as d3 from "d3";
@@ -186,8 +186,34 @@ export const NetworkProvider = ({
             setupLinkForce(currentState.linkStrength);
             setupGravityForce(currentState.gravityStrength);
         } else {
-            console.error("Force layout not initialized yet in useEffect() #1");
+            console.log(
+                "Force layout not initialized yet, will set up forces when ready",
+            );
         }
+    }, [setupChargeForce, setupLinkForce, setupGravityForce]);
+
+    // Setup event listener for force layout initialization
+    useEffect(() => {
+        const handleForceLayoutInitialized = (): void => {
+            console.log("Force layout initialized, setting up forces");
+            // Set up initial force values from current state
+            const currentState = stateRef.current;
+            setupChargeForce(currentState.nodeStrength);
+            setupLinkForce(currentState.linkStrength);
+            setupGravityForce(currentState.gravityStrength);
+        };
+
+        window.addEventListener(
+            "musigree:force-layout-initialized",
+            handleForceLayoutInitialized,
+        );
+
+        return (): void => {
+            window.removeEventListener(
+                "musigree:force-layout-initialized",
+                handleForceLayoutInitialized,
+            );
+        };
     }, [setupChargeForce, setupLinkForce, setupGravityForce]);
 
     // Setup event listener for reset forces event

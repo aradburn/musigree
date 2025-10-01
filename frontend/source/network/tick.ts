@@ -6,7 +6,7 @@
 
 import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
-import { musigreeManager, networkManager } from "../core";
+import { musigreeManager, networkManager } from "../core/singletons";
 import type { SimNode, SimLink } from "./data";
 
 // Array of roles that should not be labeled in the visualization

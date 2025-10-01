@@ -43,17 +43,19 @@ hinting and interacts with `musigree` library for specific cache and type.
 
 import logging
 
+from musigree.app.fastapi_dependencies import UI_DEFAULT_ROLES
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
 from musigree.logging_config import LOGGING_TRACE
-
+from musigree.runtime.runtime_database.runtime_role_repository import (
+    RuntimeRoleRepository,
+)
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.role import (
     RuntimeRole,
     RuntimeRoleJSTreeState,
     RuntimeRoleJSTreeEntry,
 )
-from musigree.app.fastapi_ui import UI_DEFAULT_ROLES
 
 log = logging.getLogger(__name__)
 """
@@ -70,7 +72,7 @@ class RuntimeRoleDataAccess:
     """
 
     @classmethod
-    def build_role_tree(cls, roles: list[RuntimeRole]) -> None:
+    async def build_role_tree(cls, roles: list[RuntimeRole]) -> None:
         """
         Builds a hierarchical tree structure of roles for UI components.
 
@@ -168,7 +170,7 @@ class RuntimeRoleDataAccess:
             """Add the role name to the category lookup."""
 
     @classmethod
-    def load_all_roles(cls) -> None:
+    async def load_all_roles_into_cache(cls) -> None:
         """
         Loads all roles from the runtime database and populates the RoleCache.
 
@@ -179,36 +181,45 @@ class RuntimeRoleDataAccess:
             - role name to role ID
             - set of role names
 
-        It then calls `build_role_tree` to create the role tree structure
-        and logs the number of roles loaded.
+        The method populates the following cache structures:
+        - role_id_to_role_name_lookup: Maps role IDs to role names
+        - role_id_to_role_category_lookup: Maps role IDs to role categories
+        - role_name_to_role_id_lookup: Maps role names to role IDs
+        - role_name_set: Set of all role names
+
+        After loading the roles, it builds the role tree structure and logs
+        the number of roles loaded.
         """
-        from musigree.runtime.runtime_database.runtime_role_repository import (
-            RuntimeRoleRepository,
-        )
 
-        log.info(f"Loading all roles from runtime database")
-
+        log.debug("Loading roles from RoleRepository")
         RoleCache.role_id_to_role_name_lookup.clear()
         RoleCache.role_id_to_role_category_lookup.clear()
         RoleCache.role_name_to_role_id_lookup.clear()
         RoleCache.role_name_set.clear()
         """Clear the cache."""
 
-        with runtime_transaction():
+        async with runtime_transaction():
             """Ensure that database operations are performed within a transaction."""
             role_repository = RuntimeRoleRepository()
             """Get the instance of the `RuntimeRoleRepository`."""
-            roles = list(role_repository.all())
-            """Get all the roles."""
-            for role in roles:
+            roles = role_repository.all()
+
+            role_list = []
+            async for role in roles:
                 """Iterate over the roles."""
                 RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
                 """Add the mapping from id to name."""
                 RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category
                 """Add the mapping from id to category."""
+                role_list.append(role)
+                """Also collect roles for the tree building."""
+                if LOGGING_TRACE:
+                    """If trace logging is enabled."""
+                    log.debug(role.role_name)
+                    """Log each role name."""
 
-        cls.build_role_tree(roles)
-        """Build the role tree."""
+            await cls.build_role_tree(role_list)
+            """Build the role tree."""
 
         RoleCache.role_name_to_role_id_lookup = {
             v: k for k, v in RoleCache.role_id_to_role_name_lookup.items()
