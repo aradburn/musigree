@@ -21,7 +21,6 @@ import os
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from musigree.app.fastapi_app import templates
@@ -54,12 +53,12 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
     assets_router = APIRouter()
 
     # Mount static files
-    if is_production:
-        # In production, serve the bundled assets directly
-        assets_path = FRONTEND_DIR / "dist"
-        assets_router.mount(
-            "/assets", StaticFiles(directory=assets_path), name="assets"
-        )
+    # if is_production:
+    #     # In production, serve the bundled assets directly
+    #     assets_path = FRONTEND_DIR / "dist"
+    #     assets_router.mount(
+    #         "/prodassets", StaticFiles(directory=assets_path), name="assets"
+    #     )
 
     # Load manifest file in the production environment
     manifest = {}
@@ -118,7 +117,7 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
             str: The URL to the asset.
         """
         log.debug(f"prod asset: {file_path}")
-        return f"/assets/{manifest[file_path]['file']}"
+        return f"/prodassets/{manifest[file_path]['file']}"
 
     asset_func = prod_asset if is_production else dev_asset
 
