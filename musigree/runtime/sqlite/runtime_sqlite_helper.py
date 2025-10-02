@@ -102,7 +102,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
         # The path to the SQLite database file.
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
-        log.info(f"Sqlite Database path: {target_path}")
+        log.info(f"Sqlite database path: {target_path}")
 
         # target_parent = target_path.parent
         """Get the parent folder of the database file."""
