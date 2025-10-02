@@ -1,6 +1,6 @@
 [project]
 name = "musigree"
-version = "1.0.2"
+version = "1.0.3"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
@@ -76,6 +76,7 @@ dev-dependencies = [
     "hatchling==1.27.0",
     "yappi==1.6.10",
 ]
+reinstall-package = ["musigree"]
 
 [tool.mypy]
 python_version = "3.13"
