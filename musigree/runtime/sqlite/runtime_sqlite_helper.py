@@ -100,13 +100,14 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             "Configuration Error: SQLITE_RUNTIME_DATABASE_NAME is not set"
         )
 
+        # The path to the SQLite database file.
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
-        """Get the path to the database file."""
+        log.info(f"Sqlite Database path: {target_path}")
+
         # target_parent = target_path.parent
         """Get the parent folder of the database file."""
         # target_parent.mkdir(parents=True, exist_ok=True)
         """Create the parent folder if it does not exist."""
-        log.info(f"Sqlite Database path: {target_path}")
 
         if config.IS_READ_ONLY:
             query = {
