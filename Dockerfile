@@ -53,7 +53,7 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 #RUN --mount=type=cache,target=/root/.cache/uv \
 #    uv sync --locked --no-dev
-
+RUN uv cache clean
 RUN uv sync --locked
 
 # Place executables in the environment at the front of the path
