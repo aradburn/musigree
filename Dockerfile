@@ -38,11 +38,12 @@ WORKDIR /app
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY musigree ./musigree
+
 COPY pyproject.toml .
-COPY README.md .
 COPY uv.lock .
 COPY wsgi.py .
+COPY README.md .
+COPY musigree ./musigree
 
 # Copy the built frontend static files into the "static" directory
 COPY frontend/public ./frontend/public
