@@ -11,8 +11,8 @@ RUN npm run build
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 # Setup a non-root user
-RUN groupadd --system --gid 999 nonroot \
- && useradd --system --gid 999 --uid 999 --create-home nonroot
+RUN groupadd --system --gid 1000 nonroot \
+ && useradd --system --gid 1000 --uid 1000 --create-home nonroot
 
 # Install the project into `/app`
 WORKDIR /app
