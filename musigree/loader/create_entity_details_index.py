@@ -12,6 +12,7 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging
 from musigree.offline.loader.loader_entity import LoaderEntity
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 
@@ -19,16 +20,9 @@ log = logging.getLogger(__name__)
 async def create_entity_details_index(_config: Configuration) -> None:
     """Create entity_details index asynchronously."""
     setup_logging()
-    log.info("")
-    log.info("")
-    log.info("######  #   # #   ####   ####   ####   ####    ##   #####  #    # ")
-    log.info("#     # # #      #    # #    # #    # #    #  #  #  #    # #    # ")
-    log.info("#     # #  ####  #      #    # #      #    # #    # #    # ###### ")
-    log.info("#     # #      # #      #    # #  ### #####  ###### #####  #    # ")
-    log.info("#     # # #    # #    # #    # #    # #   #  #    # #      #    # ")
-    log.info("######  #  ####   ####   ####   ####  #    # #    # #      #    # ")
-    log.info("")
-    log.info("")
+
+    log_banner()
+
     log.info("Using PostgresDevelopmentConfiguration")
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
