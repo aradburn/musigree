@@ -59,6 +59,7 @@ ALL_RUNTIME_DATABASE_TABLE_NAMES = [
     "country",
     "style",
     "genre",
+    "token",
 ]
 POSTGRESQL_DRIVER_NAME = "postgresql+psycopg"  # uses psycopg3
 SQLITE_DRIVER_NAME = "sqlite+aiosqlite"

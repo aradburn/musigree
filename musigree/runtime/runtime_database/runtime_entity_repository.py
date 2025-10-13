@@ -304,19 +304,20 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         )
         return result.scalar_one_or_none()
 
-    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-    #     """
-    #     Retrieves all internal entity IDs in batches.
-    #
-    #     Args:
-    #         num_in_batch: The number of IDs per batch.
-    #
-    #     Returns:
-    #         Generator[list[int], None, None]: A generator yielding lists of
-    #             internal entity IDs.
-    #     """
-    #     ids = await self.get_ids()
-    #     return utils.batched(iter(ids), num_in_batch)
+    async def get_entity_name_by_id(self, id_: int) -> str | None:
+        """
+        Retrieves an entity name by its id.
+
+        Args:
+            id_: The id of the entity.
+
+        Returns:
+            str | None: The entity name, or None if not found.
+        """
+        result = await self._session.execute(
+            select(RuntimeEntityTable.entity_name).where(RuntimeEntityTable.id == id_)
+        )
+        return result.scalar_one_or_none()
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
         """

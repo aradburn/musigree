@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-
+from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.database.entity_repository import EntityRepository
@@ -24,11 +24,13 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database.style_repository import StyleRepository
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.runtime_domain.country import Country
 from musigree.runtime.runtime_domain.genre import Genre
 from musigree.runtime.runtime_domain.role import RuntimeRole
 from musigree.runtime.runtime_domain.style import Style
+from musigree.runtime.runtime_domain.token import Token
 from musigree.transfer.transfer_worker_entity_inserter import (
     transfer_worker_entity_inserter_async,
 )
@@ -181,6 +183,23 @@ class TransferManager:
         )
         text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = text_search_index
+
+        inserted_count = 0
+        total_count = 0
+
+        for _token, entity_ids in text_search_index.token_index.items():
+            total_count += len(entity_ids)
+
+        async with runtime_transaction():
+            runtime_token_repository = TokenRepository()
+            for token, entity_ids in text_search_index.token_index.items():
+                for entity_id in entity_ids:
+                    token_entry = Token(token=token, entity_id=entity_id)
+                    await runtime_token_repository.create(token_entry)
+                    inserted_count += 1
+                    if inserted_count % BULK_REPORTING_SIZE == 0:
+                        """Log every BULK_REPORTING_SIZE."""
+                        log.debug(f"text search processed {inserted_count} of {total_count}")
 
     @staticmethod
     async def transfer_load_entity_details_index(entity_details_path: Path) -> None:

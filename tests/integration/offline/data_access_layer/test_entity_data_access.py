@@ -24,7 +24,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
             index = await EntityDataAccess.create_text_search_index(entity_repository)
 
         # THEN
-        assert len(index.index.items()) == 7221
+        assert len(index.token_index.items()) == 7221
         assert len(index.documents.items()) == 6216
 
     @pytest.mark.asyncio

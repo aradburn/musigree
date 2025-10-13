@@ -150,10 +150,7 @@ class RuntimeEntityDataAccess:
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
 
-        # if entity_id is not None:
-        #     log.debug(f"cache hit for {key_str}")
         if id_ is None:
-            # log.debug(f"not cached, try db")
             try:
                 internal_id = (
                     await entity_repository.get_id_by_entity_type_and_entity_name(
@@ -162,7 +159,6 @@ class RuntimeEntityDataAccess:
                 )
                 # Store the internal id, not entity_id
                 cache.set(entity_key_str, internal_id)
-                # log.debug(f"cache set for {key_str} -> {int_id}")
                 id_ = internal_id
 
             except NotFoundError:
@@ -174,6 +170,29 @@ class RuntimeEntityDataAccess:
                 cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
 
         return id_
+
+    @staticmethod
+    async def get_entity_name_by_id(entity_repository: RuntimeEntityRepository, id_: int) -> str | None:
+        cache = CacheManager.get_cache()
+
+        entity_key_str = f"{id_}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}NAME"
+
+        name: str | None = cache.get(entity_key_str)
+        if name == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
+            return None
+
+        if name is None:
+            try:
+                name = await entity_repository.get_entity_name_by_id(id_)
+                cache.set(entity_key_str, name)
+
+            except NotFoundError:
+                if LOGGING_TRACE:
+                    log.debug(f"get_entity_name_by_id id not found: {id_}")
+                name = None
+                cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
+
+        return name
 
     @staticmethod
     def get_runtime_entity_dicts_from_entities(entity_list: list[Entity]) -> list[dict[str, Any]]:

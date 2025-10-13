@@ -354,7 +354,7 @@ class TestTransferManager:
     async def test_transfer_load_text_search_index(self) -> None:
         """Test transfer_load_text_search_index method."""
         from pathlib import Path
-        from unittest.mock import Mock, patch
+        from unittest.mock import Mock, patch, AsyncMock
 
         # Mock the RuntimeDatabaseManager
         with patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager") as mock_db_manager:
@@ -364,18 +364,39 @@ class TestTransferManager:
 
             # Mock the TextSearchIndex.load_text_search_index_from_file method
             with patch("musigree.transfer.transfer_manager.TextSearchIndex") as mock_text_search_index_class:
+                # Create a mock text search index with proper token_index structure
                 mock_text_search_index = Mock()
+                mock_text_search_index.token_index = {
+                    "test_token": [1, 2, 3],
+                    "another_token": [4, 5]
+                }
                 mock_text_search_index_class.load_text_search_index_from_file.return_value = mock_text_search_index
 
-                # Create a test path
-                test_path = Path("/test/path/text_search.data")
+                # Mock runtime_transaction and TokenRepository
+                with patch("musigree.transfer.transfer_manager.runtime_transaction") as mock_runtime_transaction:
+                    with patch("musigree.transfer.transfer_manager.TokenRepository") as mock_token_repo_class:
+                        # Mock the transaction context manager
+                        mock_context_manager = AsyncMock()
+                        mock_context_manager.__aenter__.return_value = AsyncMock()
+                        mock_context_manager.__aexit__.return_value = None
+                        mock_runtime_transaction.return_value = mock_context_manager
 
-                # Call the method
-                await TransferManager.transfer_load_text_search_index(test_path)
+                        # Mock the token repository
+                        mock_token_repo = AsyncMock()
+                        mock_token_repo_class.return_value = mock_token_repo
 
-                # Verify the text search index was loaded and assigned
-                mock_text_search_index_class.load_text_search_index_from_file.assert_called_once_with(test_path)
-                assert mock_runtime_db_helper.text_search_index == mock_text_search_index
+                        # Create a test path
+                        test_path = Path("/test/path/text_search.data")
+
+                        # Call the method
+                        await TransferManager.transfer_load_text_search_index(test_path)
+
+                        # Verify the text search index was loaded and assigned
+                        mock_text_search_index_class.load_text_search_index_from_file.assert_called_once_with(test_path)
+                        assert mock_runtime_db_helper.text_search_index == mock_text_search_index
+                        
+                        # Verify the token repository was used
+                        assert mock_token_repo.create.call_count == 5  # 3 + 2 tokens
 
     @pytest.mark.asyncio
     async def test_transfer_load_entity_details_index(self) -> None:
