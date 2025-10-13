@@ -300,7 +300,7 @@ class TestInitApp:
         await init_app(test_config)
 
         # Assert
-        mock_setup_logging.assert_called_once()
+        # Note: setup_logging is called in create_app, not init_app
         mock_cache_manager.setup_cache.assert_called_once_with(test_config)
         mock_cache_manager.get_cache.assert_called_once()
         mock_cache_manager.clear.assert_called_once()

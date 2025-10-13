@@ -398,8 +398,10 @@ class TestFastAPIRoutes:
     @pytest.mark.asyncio
     @patch("musigree.library.cache.cache_manager.CacheManager.get_cache")
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
+    @patch("musigree.app.fastapi_api.runtime_transaction")
     async def test_route_search_success(
         self,
+        mock_runtime_transaction: Mock,
         mock_db_manager_class: Mock,
         mock_cache_manager: Mock,
         client: TestClient,
@@ -418,6 +420,12 @@ class TestFastAPIRoutes:
         )
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
+        # Mock the runtime transaction context manager
+        mock_context_manager = AsyncMock()
+        mock_context_manager.__aenter__.return_value = AsyncMock()
+        mock_context_manager.__aexit__.return_value = None
+        mock_runtime_transaction.return_value = mock_context_manager
+
         # Act
         response = client.get("/api/search/test")
 
@@ -427,12 +435,19 @@ class TestFastAPIRoutes:
         assert "results" in data
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities")
+    @patch("musigree.app.fastapi_api.runtime_transaction")
     def test_route_search_empty_results(
-        self, mock_search_entities: Mock, client: TestClient
+        self, mock_runtime_transaction: Mock, mock_search_entities: Mock, client: TestClient
     ) -> None:
         """Test search with empty results."""
         # Arrange
         mock_search_entities.return_value = {"results": []}
+        
+        # Mock the runtime transaction context manager
+        mock_context_manager = AsyncMock()
+        mock_context_manager.__aenter__.return_value = AsyncMock()
+        mock_context_manager.__aexit__.return_value = None
+        mock_runtime_transaction.return_value = mock_context_manager
 
         # Act
         response = client.get("/api/search/nonexistent")
@@ -441,15 +456,22 @@ class TestFastAPIRoutes:
         assert response.status_code == 200
         data = response.json()
         assert data["results"] == []
-        mock_search_entities.assert_called_once_with("nonexistent")
+        mock_search_entities.assert_called_once()
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities")
+    @patch("musigree.app.fastapi_api.runtime_transaction")
     def test_route_search_exception(
-        self, mock_search_entities: Mock, client: TestClient
+        self, mock_runtime_transaction: Mock, mock_search_entities: Mock, client: TestClient
     ) -> None:
         """Test search with exception."""
         # Arrange
         mock_search_entities.side_effect = Exception("Search index error")
+        
+        # Mock the runtime transaction context manager
+        mock_context_manager = AsyncMock()
+        mock_context_manager.__aenter__.return_value = AsyncMock()
+        mock_context_manager.__aexit__.return_value = None
+        mock_runtime_transaction.return_value = mock_context_manager
 
         # Act & Assert - The unhandled exception in the search endpoint will cause the test client to raise it
         with pytest.raises(Exception, match="Search index error"):

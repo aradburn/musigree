@@ -47,6 +47,7 @@ class TestLoaderBase:
     def test_is_abstract_class(self) -> None:
         """Test that LoaderBase is an abstract class."""
         with pytest.raises(TypeError):
+            # noinspection PyAbstractClass
             LoaderBase()  # type: ignore
 
     def test_concrete_implementation_can_be_instantiated(self) -> None:

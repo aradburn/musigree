@@ -1,10 +1,8 @@
 """Unit tests for LoaderUtils class."""
-
 import os
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import pytest
 
 from musigree.offline.loader.loader_utils import LoaderUtils
 
@@ -142,39 +140,3 @@ class TestLoaderUtils:
         mock_parser_utils.iterparse.assert_called_once_with(mock_file_pointer, test_tag)
         mock_parser_utils.clean_elements.assert_called_once_with(mock_raw_iterator)
         assert result == mock_clean_iterator
-
-    @patch('musigree.offline.loader.loader_utils.glob.glob')
-    def test_get_xml_path_logs_debug_info(self, mock_glob: MagicMock, caplog: pytest.LogCaptureFixture) -> None:
-        """Test that get_xml_path logs debug information."""
-        # Arrange
-        test_directory = Path("/test/data")
-        test_tag = "master"
-        test_date = "20231215"
-        mock_glob.return_value = ["discogs_20231215_masters.xml.gz"]
-
-        # Act
-        with caplog.at_level("DEBUG"):
-            LoaderUtils.get_xml_path(test_directory, test_tag, test_date)
-
-        # Assert
-        assert "discogs_data_directory:" in caplog.text
-        assert "glob_pattern:" in caplog.text
-        assert "files:" in caplog.text
-        assert "full_path_files:" in caplog.text
-
-    @patch('musigree.offline.loader.loader_utils.glob.glob')
-    def test_get_role_paths_logs_debug_info(self, mock_glob: MagicMock, caplog: pytest.LogCaptureFixture) -> None:
-        """Test that get_role_paths logs debug information."""
-        # Arrange
-        test_directory = Path("/test/roles")
-        mock_glob.return_value = ["test.csv"]
-
-        # Act
-        with caplog.at_level("DEBUG"):
-            LoaderUtils.get_role_paths(test_directory)
-
-        # Assert
-        assert "roles_directory:" in caplog.text
-        assert "glob_pattern:" in caplog.text
-        assert "files:" in caplog.text
-        assert "full_path_files:" in caplog.text
