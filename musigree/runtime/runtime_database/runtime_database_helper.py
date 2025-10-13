@@ -507,20 +507,6 @@ class RuntimeDatabaseHelper(ABC):
         return result
 
     @staticmethod
-    def search_text_index(search_text: str) -> list[tuple[int, str]]:
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling search_text_index()"
-        )
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
-        ), "text_search_index must be initialized before calling search_text_index()"
-        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.search(
-            search_text
-        )
-
-    @staticmethod
     def search_get_random_id() -> int:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
