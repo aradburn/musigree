@@ -32,10 +32,11 @@ from typing import Annotated
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
-
+from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.app.fastapi_dependencies import rate_limiter, get_entity_type, get_entity_id, get_roles, get_year
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
 """
@@ -185,7 +186,12 @@ async def route__api__search(
     )
 
     log.debug(f"search_string: {search_string}")
-    data = RuntimeEntitySearch.search_entities(search_string)
+
+    async with runtime_transaction():
+        entity_repository = RuntimeEntityRepository()
+        token_repository = TokenRepository()
+
+        data = await RuntimeEntitySearch.search_entities(entity_repository, token_repository, search_string)
     return data
 
 
