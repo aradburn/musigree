@@ -47,6 +47,17 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
+    async def test_random(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
+        """Test random endpoint with valid label ID."""
+        response = await client.get("/api/random")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
     async def test_search_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
