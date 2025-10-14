@@ -283,22 +283,22 @@ class RelationGrapher:
         ):
             entity = node.entity
             aliases = entity.entities.get("aliases", {})
-            print(f"find_clusters aliases1: {aliases}")
+            # print(f"find_clusters aliases1: {aliases}")
 
             if not aliases:
-                print("find_clusters no aliases, skipping")
+                # print("find_clusters no aliases, skipping")
                 continue
             if entity.entity_id not in cluster_map:
                 cluster_count += 1
                 cluster_map[entity.entity_id] = cluster_count
-                print(f"find_clusters aliases2: {aliases}")
-                print(f"find_clusters aliases.items(): {aliases.items()}")
+                # print(f"find_clusters aliases2: {aliases}")
+                # print(f"find_clusters aliases.items(): {aliases.items()}")
 
                 for _, alias_id in aliases.items():
                     cluster_map[alias_id] = cluster_count
             cluster = cluster_map[entity.entity_id]
-            print(f"find_clusters cluster: {cluster}")
-            print(f"find_clusters cluster_map: {cluster_map}")
+            # print(f"find_clusters cluster: {cluster}")
+            # print(f"find_clusters cluster_map: {cluster_map}")
             if cluster is not None:
                 node.cluster = cluster
 
