@@ -414,10 +414,11 @@ class TestLoadAllRolesIntoCache:
         mock_role.role_name = "Vocals"
         mock_role.role_category = "Performance"
 
-        mock_repository = AsyncMock()
-        mock_repository.all.return_value.__aiter__ = AsyncMock(
-            return_value=iter([mock_role])
-        )
+        async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+            yield mock_role
+
+        mock_repository = Mock()
+        mock_repository.all.return_value = async_roles_iterator()
         mock_role_repository_class.return_value = mock_repository
 
         # Setup cache mocks
@@ -435,9 +436,8 @@ class TestLoadAllRolesIntoCache:
 
         # Assertions
         mock_log.debug.assert_any_call("Loading roles from offline RoleRepository")
-        # Note: Due to complex async mocking, the iterator returns 0 roles
-        # In a real scenario, this would work correctly
-        mock_log.debug.assert_any_call("Loaded 0 roles from RoleRepository")
+        # The async generator now works correctly and returns 1 role
+        mock_log.debug.assert_any_call("Loaded 1 roles from RoleRepository")
 
         # Verify method completed without error
         # In a real scenario, the cache would be populated
@@ -455,8 +455,12 @@ class TestLoadAllRolesIntoCache:
     ) -> None:
         """Test load_all_roles_into_cache with empty database."""
         # Setup
-        mock_repository = AsyncMock()
-        mock_repository.all.return_value.__aiter__ = AsyncMock(return_value=iter([]))
+        async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+            return
+            yield  # This line will never be reached, but makes it a proper async generator
+
+        mock_repository = Mock()
+        mock_repository.all.return_value = async_roles_iterator()
         mock_role_repository_class.return_value = mock_repository
 
         # Setup cache mocks
@@ -505,7 +509,7 @@ class TestLoadAllRolesIntoCache:
             for role in [role1, role2]:
                 yield role
 
-        mock_repository = AsyncMock()
+        mock_repository = Mock()
         mock_repository.all.return_value = async_roles_iterator()
         mock_role_repository_class.return_value = mock_repository
 
@@ -522,15 +526,19 @@ class TestLoadAllRolesIntoCache:
         # Test
         await RoleDataAccess.load_all_roles_into_cache()
 
-        # Assertions - Due to async mocking issues, no roles are processed
-        # In a real scenario, the cache would be populated with both roles
-        # The method should complete without error
-        assert len(mock_role_cache.role_id_to_role_name_lookup) == 0
+        # Assertions - The async generator now works correctly and processes both roles
+        # The cache should be populated with both roles
+        assert len(mock_role_cache.role_id_to_role_name_lookup) == 2
+        assert mock_role_cache.role_id_to_role_name_lookup[1] == "Vocals"
+        assert mock_role_cache.role_id_to_role_name_lookup[2] == "Guitar"
 
-        # Due to async mocking issues, the reverse lookup and name set
-        # would also be empty in this test scenario
-        assert len(mock_role_cache.role_name_to_role_id_lookup) == 0
-        assert len(mock_role_cache.role_name_set) == 0
+        # The reverse lookup and name set should also be populated
+        assert len(mock_role_cache.role_name_to_role_id_lookup) == 2
+        assert mock_role_cache.role_name_to_role_id_lookup["Vocals"] == 1
+        assert mock_role_cache.role_name_to_role_id_lookup["Guitar"] == 2
+        assert len(mock_role_cache.role_name_set) == 2
+        assert "Vocals" in mock_role_cache.role_name_set
+        assert "Guitar" in mock_role_cache.role_name_set
 
 
 class TestLogging:

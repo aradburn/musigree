@@ -6,8 +6,10 @@ which are Luigi tasks responsible for orchestrating data loading from offline
 to runtime database.
 """
 
+import asyncio
 import datetime
 import logging
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import luigi
@@ -342,7 +344,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         """Test that run() executes the stage successfully."""
         # Mock the async stage function
         mock_stage_func = AsyncMock()
-        mock_get_stages.return_value = [mock_stage_func, AsyncMock(), AsyncMock()]
+        mock_get_stages.return_value = [mock_stage_func, Mock(), Mock()]
         
         # Mock the event loop
         mock_loop = Mock()
@@ -352,7 +354,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         
         # Mock the output target
         mock_output = Mock()
-        mock_output.done = AsyncMock()
+        mock_output.done = Mock()
         
         task = RuntimeLoaderTaskForDateAndStage(
             data_directory="/test/data",
@@ -382,7 +384,8 @@ class TestRuntimeLoaderTaskForDateAndStage:
     @patch("musigree.transfer.transfer_task.log")
     def test_run_handles_invalid_stage(self, mock_log: Mock, mock_get_stages: Mock) -> None:
         """Test that run() handles invalid stage numbers."""
-        mock_get_stages.return_value = [AsyncMock()]  # Only 1 stage
+        mock_stage = AsyncMock()
+        mock_get_stages.return_value = [mock_stage]  # Only 1 stage
         
         task = RuntimeLoaderTaskForDateAndStage(
             data_directory="/test/data",
@@ -396,9 +399,18 @@ class TestRuntimeLoaderTaskForDateAndStage:
                 with patch("asyncio.set_event_loop") as _mock_set_loop:
                     mock_loop = Mock()
                     mock_new_loop.return_value = mock_loop
+                    # Create a proper async task mock
+                    async def mock_worker_function() -> None:
+                        return None
+                    # Create a mock task that behaves like an asyncio Task
                     mock_task = Mock()
+                    mock_task.add_done_callback = Mock()
                     mock_loop.create_task.return_value = mock_task
-                    mock_loop.run_until_complete.return_value = None
+                    # Make sure the task is properly awaited
+                    def mock_run_until_complete(task: Any) -> None:
+                        # Just return None since we're mocking the execution
+                        return None
+                    mock_loop.run_until_complete.side_effect = mock_run_until_complete
                     
                     # Need to patch the second call to get_load_runtime_table_stages in the run method
                     with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
@@ -417,7 +429,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         
         # Mock the output target
         mock_output = Mock()
-        mock_output.done = AsyncMock()
+        mock_output.done = Mock()
         
         task = RuntimeLoaderTaskForDateAndStage(
             data_directory="/test/data",
@@ -430,8 +442,18 @@ class TestRuntimeLoaderTaskForDateAndStage:
             with patch("asyncio.get_running_loop") as mock_get_loop:
                 mock_loop = Mock()
                 mock_get_loop.return_value = mock_loop
+                # Create a proper async task mock
+                async def mock_worker_function() -> None:
+                    return None
+                # Create a mock task that behaves like an asyncio Task
                 mock_task = Mock()
+                mock_task.add_done_callback = Mock()
                 mock_loop.create_task.return_value = mock_task
+                # Make sure the task is properly awaited
+                def mock_run_until_complete(task: Any) -> None:
+                    # Just return None since we're mocking the execution
+                    return None
+                mock_loop.run_until_complete.side_effect = mock_run_until_complete
                 
                 # Need to patch the second call to get_load_runtime_table_stages in the run method
                 with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages):
@@ -446,7 +468,8 @@ class TestRuntimeLoaderTaskForDateAndStage:
     @patch("musigree.transfer.transfer_task.log")
     def test_run_handles_runtime_error_during_execution(self, mock_log: Mock, mock_get_stages: Mock) -> None:
         """Test that run() handles RuntimeError during task execution."""
-        mock_get_stages.return_value = [AsyncMock()]
+        mock_stage = AsyncMock()
+        mock_get_stages.return_value = [mock_stage]
         
         task = RuntimeLoaderTaskForDateAndStage(
             data_directory="/test/data",
@@ -491,7 +514,9 @@ class TestTransferTaskIntegration:
     @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
     def test_full_workflow_integration(self, mock_get_stages: Mock) -> None:
         """Test the complete workflow of runtime loader tasks."""
-        mock_get_stages.return_value = [AsyncMock(), AsyncMock()]  # 2 stages
+        mock_stage1 = AsyncMock()
+        mock_stage2 = AsyncMock()
+        mock_get_stages.return_value = [mock_stage1, mock_stage2]  # 2 stages
         
         # Create the main task
         main_task = RuntimeLoaderTask(

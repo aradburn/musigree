@@ -44,7 +44,7 @@ class TestRuntimeLoaderFunctions:
         mock_stage1 = AsyncMock()
         mock_stage2 = AsyncMock()
 
-        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2)]
+        mock_get_stages.return_value = [mock_stage1, mock_stage2]
 
         # Act
         await load_runtime_tables(mock_data_directory, mock_date)
@@ -63,7 +63,7 @@ class TestRuntimeLoaderFunctions:
         mock_stage2 = AsyncMock()
         mock_stage3 = AsyncMock()
 
-        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2), partial(mock_stage3)]
+        mock_get_stages.return_value = [mock_stage1, mock_stage2, mock_stage3]
 
         # Act
         await load_runtime_table_stage(mock_data_directory, mock_date, stage=1)
@@ -92,19 +92,19 @@ class TestRuntimeLoaderFunctions:
         mock_helper.runtime_async_engine = Mock()
         mock_db_manager.runtime_database_helper = mock_helper
 
-        # Mock vacuum method to return an AsyncMock coroutine
-        mock_helper.vacuum = AsyncMock()
+        # Mock vacuum method to return a Mock
+        mock_helper.vacuum = Mock()
 
-        # Mock the transfer manager methods to return AsyncMock coroutines
-        mock_transfer_manager.transfer_role = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
-        mock_transfer_manager.transfer_create_entity_details_index = AsyncMock()
-        mock_transfer_manager.transfer_entity_details = AsyncMock()
-        mock_transfer_manager.transfer_entity = AsyncMock()
-        mock_transfer_manager.transfer_relation = AsyncMock()
+        # Mock the transfer manager methods to return Mock objects
+        mock_transfer_manager.transfer_role = Mock()
+        mock_transfer_manager.transfer_load_text_search_index = Mock()
+        mock_transfer_manager.transfer_create_entity_details_index = Mock()
+        mock_transfer_manager.transfer_entity_details = Mock()
+        mock_transfer_manager.transfer_entity = Mock()
+        mock_transfer_manager.transfer_relation = Mock()
         
         # Mock the runtime role data access method
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
+        mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
 
         # Act
         result = get_load_runtime_table_stages(mock_data_directory, mock_date)
@@ -148,14 +148,14 @@ class TestRuntimeLoaderFunctions:
         mock_db_manager.runtime_database_helper = mock_helper
 
         # Mock all the transfer manager methods to avoid creating actual coroutines
-        mock_transfer_manager.transfer_role = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
-        mock_transfer_manager.transfer_create_entity_details_index = AsyncMock()
-        mock_transfer_manager.transfer_entity_details = AsyncMock()
-        mock_transfer_manager.transfer_entity = AsyncMock()
-        mock_transfer_manager.transfer_relation = AsyncMock()
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_helper.vacuum = AsyncMock()
+        mock_transfer_manager.transfer_role = Mock()
+        mock_transfer_manager.transfer_load_text_search_index = Mock()
+        mock_transfer_manager.transfer_create_entity_details_index = Mock()
+        mock_transfer_manager.transfer_entity_details = Mock()
+        mock_transfer_manager.transfer_entity = Mock()
+        mock_transfer_manager.transfer_relation = Mock()
+        mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
+        mock_helper.vacuum = Mock()
 
         # Act & Assert
         # The function should raise an assertion error when engine is None
@@ -292,12 +292,12 @@ class TestRuntimeLoaderIntegration:
         """Test integration of load_runtime_tables with all components."""
         # Mock get_load_runtime_table_stages to return awaitable mock stages
         with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
-            # Create AsyncMock objects for stages
+            # Create async mock stages
             mock_stage1 = AsyncMock()
             mock_stage2 = AsyncMock()
             mock_stage3 = AsyncMock()
 
-            mock_stages = [partial(mock_stage1), partial(mock_stage2), partial(mock_stage3)]
+            mock_stages = [mock_stage1, mock_stage2, mock_stage3]
             mock_get_stages.return_value = mock_stages
 
             data_directory = Path("/test/data")
@@ -316,12 +316,12 @@ class TestRuntimeLoaderIntegration:
         date = "2024-11-01"
 
         with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
-            # Create AsyncMock objects
+            # Create async mock stages
             mock_stage1 = AsyncMock()
             mock_stage2 = AsyncMock()
 
-            # Return AsyncMock coroutines
-            mock_stages = [partial(mock_stage1), partial(mock_stage2)]
+            # Return async mock stages
+            mock_stages = [mock_stage1, mock_stage2]
             mock_get_stages.return_value = mock_stages
 
             # Test valid stages
@@ -356,14 +356,14 @@ class TestRuntimeLoaderEdgeCases:
         mock_db_manager.runtime_database_helper = mock_helper
 
         # Mock all the transfer manager methods to avoid creating actual coroutines
-        mock_transfer_manager.transfer_role = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
-        mock_transfer_manager.transfer_create_entity_details_index = AsyncMock()
-        mock_transfer_manager.transfer_entity_details = AsyncMock()
-        mock_transfer_manager.transfer_entity = AsyncMock()
-        mock_transfer_manager.transfer_relation = AsyncMock()
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_helper.vacuum = AsyncMock()
+        mock_transfer_manager.transfer_role = Mock()
+        mock_transfer_manager.transfer_load_text_search_index = Mock()
+        mock_transfer_manager.transfer_create_entity_details_index = Mock()
+        mock_transfer_manager.transfer_entity_details = Mock()
+        mock_transfer_manager.transfer_entity = Mock()
+        mock_transfer_manager.transfer_relation = Mock()
+        mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
+        mock_helper.vacuum = Mock()
 
         # Should not raise error even with empty directory
         stages = get_load_runtime_table_stages(empty_directory, date)
@@ -380,12 +380,9 @@ class TestRuntimeLoaderEdgeCases:
         missing_directory = Path("/missing")
 
         # Mock the stages but have one of them raise FileNotFoundError
-        mock_stage_that_fails = AsyncMock()
-        mock_stage_that_fails.side_effect = FileNotFoundError(
-            "Text search file not found"
-        )
+        mock_stage_that_fails = AsyncMock(side_effect=FileNotFoundError("Text search file not found"))
 
-        mock_get_stages.return_value = [partial(mock_stage_that_fails)]
+        mock_get_stages.return_value = [mock_stage_that_fails]
 
         # Act & Assert - Should raise FileNotFoundError
         with pytest.raises(FileNotFoundError, match="Text search file not found"):
@@ -401,30 +398,29 @@ class TestRuntimeLoaderEdgeCases:
         data_directory = Path("/test/data")
         date = "2024-11-01"
         
-        mock_stage_that_fails = AsyncMock()
-        mock_stage_that_fails.side_effect = RuntimeError("Stage execution failed")
+        mock_stage_that_fails = AsyncMock(side_effect=RuntimeError("Stage execution failed"))
         
-        mock_get_stages.return_value = [partial(mock_stage_that_fails)]
+        mock_get_stages.return_value = [mock_stage_that_fails]
         
         # Act & Assert - Should raise RuntimeError
         with pytest.raises(RuntimeError, match="Stage execution failed"):
             await load_runtime_table_stage(data_directory, date, stage=0)
 
+    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
-    async def test_load_runtime_tables_empty_stages_list(self) -> None:
+    async def test_load_runtime_tables_empty_stages_list(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_tables with empty stages list."""
         # Arrange
         data_directory = Path("/test/data")
         date = "2024-11-01"
         
-        with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
-            mock_get_stages.return_value = []
-            
-            # Act - Should complete without error even with empty stages
-            await load_runtime_tables(data_directory, date)
-            
-            # Assert
-            mock_get_stages.assert_called_once_with(data_directory, date)
+        mock_get_stages.return_value = []
+        
+        # Act - Should complete without error even with empty stages
+        await load_runtime_tables(data_directory, date)
+        
+        # Assert
+        mock_get_stages.assert_called_once_with(data_directory, date)
 
     @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager") 
     @patch("musigree.transfer.transfer_manager.TransferManager")
@@ -445,14 +441,14 @@ class TestRuntimeLoaderEdgeCases:
         mock_db_manager.runtime_database_helper = mock_helper
         
         # Mock all transfer manager methods
-        mock_transfer_manager.transfer_role = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
-        mock_transfer_manager.transfer_create_entity_details_index = AsyncMock()
-        mock_transfer_manager.transfer_entity_details = AsyncMock()
-        mock_transfer_manager.transfer_entity = AsyncMock()
-        mock_transfer_manager.transfer_relation = AsyncMock()
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_helper.vacuum = AsyncMock()
+        mock_transfer_manager.transfer_role = Mock()
+        mock_transfer_manager.transfer_load_text_search_index = Mock()
+        mock_transfer_manager.transfer_create_entity_details_index = Mock()
+        mock_transfer_manager.transfer_entity_details = Mock()
+        mock_transfer_manager.transfer_entity = Mock()
+        mock_transfer_manager.transfer_relation = Mock()
+        mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
+        mock_helper.vacuum = Mock()
         
         # Test case 1: Both vacuum options enabled
         mock_helper.is_vacuum_full.return_value = True
@@ -492,7 +488,7 @@ class TestRuntimeLoaderEdgeCases:
         # We'll test this behavior
         with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
             mock_stage = AsyncMock()
-            mock_get_stages.return_value = [partial(mock_stage)]
+            mock_get_stages.return_value = [mock_stage]
             
             # This should work with negative indexing (accessing last element)
             import asyncio

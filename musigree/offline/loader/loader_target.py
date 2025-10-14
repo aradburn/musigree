@@ -122,7 +122,9 @@ class LoaderTarget(luigi.Target):
                     """Handle the case where the metadata record is not found."""
                     return False
 
-        metadata_exists = asyncio.run(check_metadata_exists())
+        with asyncio.Runner() as runner:
+            metadata_exists = runner.run(check_metadata_exists())
+
         log.debug(f"key exists: {metadata_exists}")
         """Log whether the key exists."""
         return metadata_exists

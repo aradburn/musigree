@@ -105,7 +105,10 @@ class TestBaseRepository:
             schema_class = MockTable
 
         # Mock session and schema creation
-        mock_session = AsyncMock()
+        mock_session = Mock()
+        mock_session.add = Mock()
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
         mock_table_instance = Mock()
 
         with patch.object(
