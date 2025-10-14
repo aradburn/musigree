@@ -1,8 +1,10 @@
 import logging
+import random
 from typing import AsyncGenerator
 
-from sqlalchemy import Result, select
+from sqlalchemy import Result, select, func
 
+from musigree.exceptions import UnprocessableError
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
@@ -41,6 +43,30 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
         async for instance in self._all():
             yield Token.model_validate(instance)
 
+    async def count(self) -> int:
+        """
+        Counts the total number of records in the associated database table.
+
+        Returns:
+            int: The total count of records.
+
+        Raises:
+            UnprocessableError: If the database query returns a non-integer value.
+        """
+        query = select(func.count()).select_from(self.schema_class)
+        result: Result = await self.execute(query)
+        value = result.scalar()
+
+        if not isinstance(value, int):
+            raise UnprocessableError(
+                message=(
+                    "For some reason count function returned not an integer."
+                    f"Value: {value}"
+                ),
+            )
+
+        return value
+
     async def get_by_token(self, token: str) -> list[int]:
         """
         Retrieves all ids for a token.
@@ -60,6 +86,20 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
         ids = result.scalars().all()
 
         return [int(item) for item in ids]
+
+    async def get_random_id(self) -> int | None:
+        """
+        Retrieves a random entity id.
+
+        Returns:
+            int | None: The entity id or None if none found.
+        """
+        max_row = await self.count()
+        random_row = random.randint(0, max_row - 1)
+        query = select(TokenTable.entity_id).where(TokenTable.id == random_row)
+        result: Result = await self.execute(query)
+
+        return result.scalar_one_or_none()
 
     async def create(self, token: Token) -> Token:
         """

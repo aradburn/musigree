@@ -10,8 +10,6 @@ Key functionalities include:
     - Loading tables with initial data (e.g., roles).
     - Generating SQL insert queries.
     - Retrieving network data for entities.
-    - Retrieving random entities.
-    - Searching text indexes.
     - Managing database connections and sessions.
     - Caching of frequently accessed data.
 
@@ -49,6 +47,7 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
 
@@ -364,12 +363,14 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     async def get_random_entity(
         entity_repository: RuntimeEntityRepository,
+        token_repository: TokenRepository,
     ) -> tuple[int, EntityType]:
         """
         Retrieves a random entity.
 
         Args:
             entity_repository: The entity repository.
+            token_repository: The token repository.
 
         Returns:
             tuple[int, EntityType]: A tuple containing the entity ID and type.
@@ -399,20 +400,21 @@ class RuntimeDatabaseHelper(ABC):
         counter = 0
 
         while True:
-            random_id = (
-                RuntimeDatabaseManager.runtime_database_helper.search_get_random_id()
-            )
+            entity = None
+
+            random_id = await token_repository.get_random_id()
+
+            if random_id is None:
+                continue
+
             entity_id, entity_type = to_entity_external_id(random_id)
             if entity_type == EntityType.LABEL:
-                log.debug("random skip label")
-                entity = None
                 continue
             try:
                 entity = await entity_repository.get_by_id(random_id)
             except NotFoundError:
                 log.debug("random not found")
                 counter += 1
-                entity = None
                 continue
 
             # if DatabaseHelper.entity_count_cached == 0:
@@ -431,7 +433,6 @@ class RuntimeDatabaseHelper(ABC):
             # log.debug(f"relation_counts: {relation_counts}")
             counter += 1
             if entity.entity_type == EntityType.LABEL:
-                log.debug("random skip label")
                 continue
             if (
                 relation_counts is not None
@@ -446,12 +447,10 @@ class RuntimeDatabaseHelper(ABC):
                 )
                 and entity.entity_type == EntityType.ARTIST
             ):
-                log.debug(f"random node: {entity} counter: {counter}")
                 break
-            else:
-                log.debug(f"random fail: {entity} counter: {counter}")
 
             if counter >= 1000:
+                entity = None
                 log.debug("random count expired")
                 break
 
@@ -505,15 +504,3 @@ class RuntimeDatabaseHelper(ABC):
             data.append(datum)
         result = {"results": tuple(data)}
         return result
-
-    @staticmethod
-    def search_get_random_id() -> int:
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling search_text_index()"
-        )
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper.text_search_index is not None
-        ), "text_search_index must be initialized before calling search_text_index()"
-        return RuntimeDatabaseManager.runtime_database_helper.text_search_index.get_random_id()

@@ -273,11 +273,14 @@ async def route__api__random(
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
+        token_repository = TokenRepository()
         try:
             (
                 entity_id,
                 entity_type,
-            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(entity_repository)
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
+                entity_repository, token_repository
+            )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random", exc_info=True)
