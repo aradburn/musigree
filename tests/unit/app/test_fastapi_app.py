@@ -274,14 +274,12 @@ class TestInitApp:
     @patch("musigree.app.fastapi_app.CacheManager")
     @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
     @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
-    @patch("musigree.app.fastapi_app.TransferManager")
     @patch("musigree.app.fastapi_app.asyncio_atexit")
     @patch("musigree.app.fastapi_app.sys.exit")
     async def test_init_app_success(
         self,
         mock_sys_exit: Mock,
         mock_asyncio_atexit: Mock,
-        mock_transfer_manager: Mock,
         mock_role_data_access: Mock,
         mock_runtime_db_manager: Mock,
         mock_cache_manager: Mock,
@@ -294,7 +292,6 @@ class TestInitApp:
         mock_cache_manager.get_cache.return_value = mock_cache
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
 
         # Act
         await init_app(test_config)
@@ -306,7 +303,6 @@ class TestInitApp:
         mock_cache_manager.clear.assert_called_once()
         mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
         mock_role_data_access.load_all_roles_into_cache.assert_called_once()
-        mock_transfer_manager.transfer_load_text_search_index.assert_called_once()
         mock_asyncio_atexit.register.assert_called_once()
         mock_sys_exit.assert_not_called()
 
@@ -318,12 +314,10 @@ class TestInitApp:
     @patch("musigree.app.fastapi_app.CacheManager")
     @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
     @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
-    @patch("musigree.app.fastapi_app.TransferManager")
     @patch("musigree.app.fastapi_app.asyncio_atexit")
     async def test_init_app_database_setup_called(
         self,
         mock_asyncio_atexit: Mock,
-        mock_transfer_manager: Mock,
         mock_role_data_access: Mock,
         mock_runtime_db_manager: Mock,
         mock_cache_manager: Mock,
@@ -336,7 +330,6 @@ class TestInitApp:
         mock_cache_manager.get_cache.return_value = mock_cache
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
 
         # Act
         await init_app(test_config)
@@ -344,40 +337,6 @@ class TestInitApp:
         # Assert
         mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
         mock_role_data_access.load_all_roles_into_cache.assert_called_once()
-        mock_transfer_manager.transfer_load_text_search_index.assert_called_once()
-
-    @pytest.mark.asyncio
-    @patch("musigree.app.fastapi_app.setup_logging")
-    @patch("musigree.app.fastapi_app.CacheManager")
-    @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
-    @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
-    @patch("musigree.app.fastapi_app.TransferManager")
-    @patch("musigree.app.fastapi_app.asyncio_atexit")
-    async def test_init_app_text_search_path_constructed(
-        self,
-        mock_asyncio_atexit: Mock,
-        mock_transfer_manager: Mock,
-        mock_role_data_access: Mock,
-        mock_runtime_db_manager: Mock,
-        mock_cache_manager: Mock,
-        mock_setup_logging: Mock,
-        test_config: Configuration,
-    ) -> None:
-        """Test that text search path is properly constructed and passed to TransferManager."""
-        # Arrange
-        mock_cache = MagicMock()
-        mock_cache_manager.get_cache.return_value = mock_cache
-        mock_runtime_db_manager.setup_database = AsyncMock()
-        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
-
-        # Act
-        await init_app(test_config)
-
-        # Assert
-        # Verify the path construction
-        expected_path = test_config.DATA_DIR / "text_search" / "text_search.data"
-        mock_transfer_manager.transfer_load_text_search_index.assert_called_once_with(expected_path)
 
 
 class TestShutdownApplication:
