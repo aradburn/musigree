@@ -79,14 +79,16 @@ const LoadingAnimation = (): null => {
         const data: ArcData[] = [];
 
         for (let i = 0; i < LOADING.ARC_COUNT; i++) {
-            const pair = [Math.random(), Math.random()].sort();
+            const pair = [Math.random() * 0.1, Math.min(Math.random() * 2.0, 1.0)].sort();
             values.push(pair[0], pair[1]);
 
+            const startAngle = 2 * Math.PI * Math.random();
             data.push({
                 active: true,
-                startAngle: 2 * Math.PI * Math.random(),
-                endAngle: 2 * Math.PI * Math.random(),
-                rotationRate: Math.random() * LOADING.MAX_ROTATION_RATE,
+                startAngle: startAngle,
+                endAngle: startAngle + Math.PI + Math.PI * Math.random(),
+                rotationRate: LOADING.MAX_ROTATION_RATE,
+//                 rotationRate: Math.random() * LOADING.MAX_ROTATION_RATE,
                 targetInnerRadius: pair[0],
                 targetOuterRadius: pair[1],
             });
@@ -149,16 +151,18 @@ const LoadingAnimation = (): null => {
     const transitionEnter = (
         selection: d3.Selection<d3.EnterElement, ArcData, SVGGElement, unknown>,
     ): void => {
-        const scale = d3.scaleOrdinal(d3.schemeCategory10);
-
+//         const scale = d3.scaleOrdinal(d3.schemeCategory10);
+//         const scale = d3.scaleOrdinal(d3.schemeGreys[9]);
+        const colorScheme = d3.interpolateGreys;
         selection
             .append("path")
             .attr("class", "arc")
             .attr("d", (d) => arcRef.current(d))
-            .attr("fill", (_, i) => scale(i.toString()))
+            .attr("fill", () => d3.color(colorScheme(Math.random() * 0.5 + 0.5)).copy({opacity: 0.5}))
+//             .attr("fill", (_, i) => scale(((i % 9) + 8).toString()))
             .each((d) => {
-                d.innerRadius = 0;
-                d.outerRadius = 0;
+                d.innerRadius = d.targetInnerRadius / 2.0;
+                d.outerRadius = d.targetOuterRadius / 2.0;
                 d.hasTimer = false;
             });
     };
@@ -170,11 +174,11 @@ const LoadingAnimation = (): null => {
     ): void => {
         selection
             .transition()
-            .duration(TIMING.ANIMATION_DURATION)
-            .delay(
-                (_, i) =>
-                    (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
-            )
+            .duration(TIMING.ANIMATION_DURATION / 2.0)
+//             .delay(
+//                 (_, i) =>
+//                     (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
+//             )
             .attrTween("d", (d): ((t: number) => string) => {
                 const inner = d3.interpolate(
                     d.innerRadius || 0,
@@ -198,7 +202,7 @@ const LoadingAnimation = (): null => {
     ): void => {
         selection
             .transition()
-            .duration(TIMING.ANIMATION_DURATION)
+            .duration(TIMING.ANIMATION_DURATION * 2.0)
             .attrTween("d", (d): ((t: number) => string) => {
                 const inner = d3.interpolate(d.innerRadius, 0);
                 const outer = d3.interpolate(d.outerRadius, 0);
@@ -225,8 +229,8 @@ const LoadingAnimation = (): null => {
             d.hasTimer = true;
             const path = d3.select(this);
             const timer = d3.timer((elapsed) => {
-                const delta =
-                    (elapsed / TIMING.ANIMATION_DURATION) * d.rotationRate;
+                const delta = d.rotationRate;
+//                 const delta = (elapsed / TIMING.ANIMATION_DURATION) * d.rotationRate;
                 d.startAngle += delta;
                 d.endAngle += delta;
                 path.attr("d", arcRef.current(d));
