@@ -12,9 +12,9 @@ export default defineConfig({
         alias: {
             "@": path.resolve(__dirname, "./source"),
             "~bootstrap": path.resolve(__dirname, "./node_modules/bootstrap"),
-            //      "bootstrap-icons/": path.resolve(__dirname, "./node_modules/bootstrap-icons/font"),
+            "~bootstrap-icons": path.resolve(__dirname, "./node_modules/bootstrap-icons/font/fonts"),
         },
-        extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
+        extensions: [".js", ".jsx", ".ts", ".tsx", ".json", ".woff", ".woff2"],
     },
     plugins: [react()],
     build: {
@@ -27,6 +27,7 @@ export default defineConfig({
         },
         emptyOutDir: true,
         copyPublicDir: false,
+        assetsInlineLimit: 0,
     },
     test: {
         environment: "jsdom",
@@ -63,11 +64,23 @@ export default defineConfig({
 //         include: [],
 //     },
     server: {
-        cors: true, // Allow all origins
+        origin: 'http://localhost:5173',
+        host: 'localhost',
+        cors: {
+            "origin": ["http://localhost:5173", "http://localhost:5000"],
+            "methods": "GET, PUT, POST, OPTIONS",
+            "preflightContinue": false,
+            "optionsSuccessStatus": 204
+        },
         headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-            "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+            "Access-Control-Allow-Methods": "GET, PUT, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization",
+            "Strict-Transport-Security": "max-age=86400; includeSubDomains", // Adds HSTS options to your website, with a expiry time of 1 day
+            "X-Content-Type-Options": "nosniff", // Protects from improper scripts runnings
+            "X-Frame-Options": "DENY", // Stops your site being used as an iframe
+            "X-XSS-Protection": "1; mode=block", // Gives XSS protection to legacy browsers
+            "Content-Security-Policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: http://localhost:5173; font-src 'self' data: http://localhost:5173",
         },
         proxy: {
             "/api": {
@@ -75,6 +88,14 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
             },
+        },
+        fs: {
+          strict: true,
+          // Allow serving files from one level up to the project root
+          allow: [
+              path.join(__dirname, "./source/"),
+              path.join(__dirname, "./node_modules/"),
+          ],
         },
     },
 });
