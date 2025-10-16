@@ -164,7 +164,8 @@ const LoadingAnimation = (): null => {
             .attr("fill", () =>
                 d3
                     .color(colorScheme(Math.random() * 0.5 + 0.5))
-                    .copy({ opacity: 0.5 }),
+                    .copy({ opacity: 0.5 })
+                    .formatHex8(),
             )
             //             .attr("fill", (_, i) => scale(((i % 9) + 8).toString()))
             .each((d) => {
