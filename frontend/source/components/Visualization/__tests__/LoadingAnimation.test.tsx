@@ -10,6 +10,13 @@ vi.mock("d3", () => {
         scaleOrdinal: vi.fn(),
         extent: vi.fn(),
         interpolate: vi.fn(),
+        interpolateGreys: vi.fn(
+            (t: number) =>
+                `rgb(${Math.floor(t * 255)}, ${Math.floor(t * 255)}, ${Math.floor(t * 255)})`,
+        ),
+        color: vi.fn((color: string) => ({
+            copy: vi.fn((opts: any) => ({ ...opts, toString: () => color })),
+        })),
         schemeCategory10: ["#000000", "#111111", "#222222"],
     };
 });
@@ -369,8 +376,15 @@ describe("LoadingAnimation", () => {
         const dataMock = vi.mocked(mockSvgElement.selectAll).mock.results[0]
             .value;
         expect(dataMock.transition).toHaveBeenCalled();
+
+        // The implementation now uses different durations for different transitions:
+        // - transitionUpdate: TIMING.ANIMATION_DURATION / 2.0 (500)
+        // - transitionExit: TIMING.ANIMATION_DURATION * 2.0 (2000)
         expect(dataMock.duration).toHaveBeenCalledWith(
-            TIMING.ANIMATION_DURATION,
+            TIMING.ANIMATION_DURATION / 2.0, // 500
+        );
+        expect(dataMock.duration).toHaveBeenCalledWith(
+            TIMING.ANIMATION_DURATION * 2.0, // 2000
         );
     });
 });
