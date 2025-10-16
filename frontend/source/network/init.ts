@@ -233,7 +233,6 @@ export const resetNetworkTransform = (): void => {
  * @param {d3.D3ZoomEvent<SVGSVGElement, unknown>} event - The zoom event object
  */
 const handleZoom = (event: d3.D3ZoomEvent<SVGElement, unknown>): void => {
-    console.log("handleZoom: ", event.transform)
     if (networkManager.layers.root) {
         networkManager.layers.root.attr(
             "transform",
