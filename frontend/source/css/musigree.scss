@@ -41,6 +41,17 @@ body {
     --bs-tooltip-color: $dg-tooltip-color;
 }
 
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.search-result {
+}
+
+.search-result:hover {
+    background-color: rgba(70, 115, 94, 0.5) !important;
+}
+
 .navbar {
     background-image: linear-gradient(
         #{$dg-secondary-color}55 0%,
