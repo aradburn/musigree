@@ -10,26 +10,34 @@ import * as d3 from "d3";
 import { hideAllTooltips } from "./tooltips";
 import { SVG, DOM_IDS } from "../constants";
 
-function getInitialTransform(): d3.Transform {
-        const scale =
-            Math.min(
-                musigreeManager.svgDimensions[0] / musigreeManager.dimensions[0],
-                musigreeManager.svgDimensions[1] / musigreeManager.dimensions[1],
-            ) * SVG.SCALING_MULTIPLIER;
-        console.log("scale: ", scale);
+type TransformFunction = (
+    selection:
+        | d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>
+        | d3.Transition<d3.BaseType, unknown, d3.BaseType, unknown>,
+    transform: d3.ZoomTransform,
+    point?: [number, number],
+) => void;
 
-        const initialTransform = d3.zoomIdentity
-                .scale(scale)
-                .translate(
-                    (musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
-                        musigreeManager.svgDimensions[0]) /
-                        2.0,
-                    (musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
-                        musigreeManager.svgDimensions[1]) /
-                        2.0,
-                );
-        console.log("initialTransform: ", initialTransform);
-        return initialTransform;
+function getInitialTransform(): d3.ZoomTransform {
+    const scale =
+        Math.min(
+            musigreeManager.svgDimensions[0] / musigreeManager.dimensions[0],
+            musigreeManager.svgDimensions[1] / musigreeManager.dimensions[1],
+        ) * SVG.SCALING_MULTIPLIER;
+    console.log("scale: ", scale);
+
+    const initialTransform = d3.zoomIdentity
+        .scale(scale)
+        .translate(
+            (musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+                musigreeManager.svgDimensions[0]) /
+                2.0,
+            (musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+                musigreeManager.svgDimensions[1]) /
+                2.0,
+        );
+    console.log("initialTransform: ", initialTransform);
+    return initialTransform;
 }
 
 /**
@@ -72,7 +80,7 @@ export const initNetwork = (svgSelector: string): void => {
         .scaleExtent([1, 8])
         .on("zoom", handleZoom);
     console.log("init zoom", zoom);
-//     networkManager.zoom = zoom;
+    //     networkManager.zoom = zoom;
     // console.log("zoom.transform method:", networkManager.zoom.transform);
     // console.log(
     //     "zoom methods:",
@@ -84,17 +92,16 @@ export const initNetwork = (svgSelector: string): void => {
 
     const initialTransform = getInitialTransform();
 
-    svgElement
-            .transition()
-            .duration(750)
-            .call(
-                zoom.transform,
-                initialTransform,
-//                 invertedPoint,
-            );
+    const transform = zoom.transform.bind(zoom) as TransformFunction;
+
+    svgElement.transition().duration(750).call(
+        transform,
+        initialTransform,
+        // invertedPoint,
+    );
 
     // Now that zoom is initialized, we can safely reset the transform
-//     resetNetworkTransform();
+    //     resetNetworkTransform();
 
     initForceLayout();
 
@@ -112,33 +119,33 @@ export const initNetwork = (svgSelector: string): void => {
  */
 export const resetNetworkTransform = (): void => {
     // Check if zoom behavior is initialized
-//     if (!networkManager.zoom) {
-//         console.warn(
-//             "Cannot reset network transform: zoom behavior not initialized",
-//         );
-//         return;
-//     }
+    //     if (!networkManager.zoom) {
+    //         console.warn(
+    //             "Cannot reset network transform: zoom behavior not initialized",
+    //         );
+    //         return;
+    //     }
 
-//     const scale =
-//         Math.min(
-//             musigreeManager.svgDimensions[0] / musigreeManager.dimensions[0],
-//             musigreeManager.svgDimensions[1] / musigreeManager.dimensions[1],
-//         ) * SVG.SCALING_MULTIPLIER;
-//     console.log("scale: ", scale);
+    //     const scale =
+    //         Math.min(
+    //             musigreeManager.svgDimensions[0] / musigreeManager.dimensions[0],
+    //             musigreeManager.svgDimensions[1] / musigreeManager.dimensions[1],
+    //         ) * SVG.SCALING_MULTIPLIER;
+    //     console.log("scale: ", scale);
 
     const svgElement = d3.select<SVGSVGElement, unknown>(DOM_IDS.SVG_ID);
     const initialTransform = getInitialTransform();
-//     const initialTransform = d3.zoomIdentity
-//         .scale(scale)
-//         .translate(
-//             (musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
-//                 musigreeManager.svgDimensions[0]) /
-//                 2.0,
-//             (musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
-//                 musigreeManager.svgDimensions[1]) /
-//                 2.0,
-//         );
-//     console.log("initialTransform: ", initialTransform);
+    //     const initialTransform = d3.zoomIdentity
+    //         .scale(scale)
+    //         .translate(
+    //             (musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
+    //                 musigreeManager.svgDimensions[0]) /
+    //                 2.0,
+    //             (musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
+    //                 musigreeManager.svgDimensions[1]) /
+    //                 2.0,
+    //         );
+    //     console.log("initialTransform: ", initialTransform);
 
     const svgNode = svgElement.node();
     if (!(svgNode instanceof Element)) {
@@ -168,31 +175,31 @@ export const resetNetworkTransform = (): void => {
     //         ])
     //         .scaleExtent([1, 8])
     //         .on("zoom", handleZoom);
-//     const zoom = networkManager.zoom;
-//     console.log("zoom: ", zoom);
-//     console.log("d3.zoom().transform: ", d3.zoom().transform);
-//     const w = musigreeManager.svgDimensions[0];
-//     const h = musigreeManager.svgDimensions[1];
-//     const zoom = d3.zoom()
-//                    .extent([
-//                              [0, 0],
-//                              [w, h],
-//                    ])
-//                    .scaleExtent([1, 8]);
-//     console.log("zoom: ", zoom);
-//     svgElement.call(zoom.scaleTo, initialTransform.k);
-//     svgElement.call(zoom.translateTo, initialTransform.x, initialTransform.y);
+    //     const zoom = networkManager.zoom;
+    //     console.log("zoom: ", zoom);
+    //     console.log("d3.zoom().transform: ", d3.zoom().transform);
+    //     const w = musigreeManager.svgDimensions[0];
+    //     const h = musigreeManager.svgDimensions[1];
+    //     const zoom = d3.zoom()
+    //                    .extent([
+    //                              [0, 0],
+    //                              [w, h],
+    //                    ])
+    //                    .scaleExtent([1, 8]);
+    //     console.log("zoom: ", zoom);
+    //     svgElement.call(zoom.scaleTo, initialTransform.k);
+    //     svgElement.call(zoom.translateTo, initialTransform.x, initialTransform.y);
     // const transform = networkManager.zoom.transform.bind(
     //     networkManager.zoom,
     // ) as TransformFunction;
-//     svgElement
-//         .transition()
-//         .duration(750)
-//         .call(
-//             zoom.transform,
-//             initialTransform,
-//             invertedPoint,
-//         );
+    //     svgElement
+    //         .transition()
+    //         .duration(750)
+    //         .call(
+    //             zoom.transform,
+    //             initialTransform,
+    //             invertedPoint,
+    //         );
     // networkManager.zoom.transform(svgElement, initialTransform, invertedPoint);
     // const transform = networkManager.zoom.transform.bind(
     //     networkManager.zoom,
@@ -207,7 +214,7 @@ export const resetNetworkTransform = (): void => {
         networkManager.layers.root
             .transition()
             .duration(1000)
-            .attr("transform", initialTransform);
+            .attr("transform", initialTransform.toString());
     }
 
     // Update the zoom behavior's internal transform state
@@ -236,7 +243,7 @@ const handleZoom = (event: d3.D3ZoomEvent<SVGElement, unknown>): void => {
     if (networkManager.layers.root) {
         networkManager.layers.root.attr(
             "transform",
-            event.transform,
+            event.transform.toString(),
         );
     }
     hideAllTooltips();
