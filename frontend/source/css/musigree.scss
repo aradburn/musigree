@@ -242,6 +242,10 @@ a {
             &.distance-8 {
                 stroke-width: 2;
             }
+            &:hover {
+                stroke: #700;
+                opacity: 1.0;
+            }
         }
 
         text {
