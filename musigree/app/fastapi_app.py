@@ -79,6 +79,7 @@ def create_app(config: Configuration) -> FastAPI:
     """
     from musigree.app.fastapi_api import router as api_router
     from musigree.app.fastapi_ui import router as ui_router
+    from musigree.app.fastapi_healthcheck import router as healthcheck_router
     from musigree.app.fastapi_assets import create_assets_router
 
     # Setup logging
@@ -170,6 +171,7 @@ def create_app(config: Configuration) -> FastAPI:
     app.include_router(assets_router)
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
+    app.include_router(healthcheck_router)
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -182,6 +184,15 @@ def create_app(config: Configuration) -> FastAPI:
                     "success": False,
                     "status": exc.status_code,
                     "message": exc.message,
+                },
+            )
+        elif request.url.path.startswith("/health"):
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "success": False,
+                    "status": exc.status_code,
+                    "message": "Bad healthcheck endpoint",
                 },
             )
         else:
