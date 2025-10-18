@@ -35,7 +35,7 @@ repos:
         hooks:
             -   id: release
                 name: release and bump version
-                entry: pwd
+                entry: ./release.sh --force patch
                 language: python
                 files: ''
                 exclude: (.pre-commit-config.yaml)|(.github/)
