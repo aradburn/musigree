@@ -6,6 +6,8 @@ set -e
 
 cd "$(dirname "$0")"
 
+export PATH="~/.local/bin:$PATH"
+
 FORCE=false
 
 usage() {
@@ -21,12 +23,6 @@ usage() {
     echo "  -h, --help:   show this help message"
     exit 1
 }
-
-echo "$0"
-echo "$1"
-echo "$2"
-echo "$3"
-echo "$4"
 
 # parse args
 while [ "$#" -gt 0 ]; do

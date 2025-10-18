@@ -36,6 +36,5 @@ repos:
             -   id: release
                 name: release and bump version
                 entry: ./release.sh --force patch
-                language: python
-                exclude: (.pre-commit-config.yaml)|(.github/)
+                language: system
                 verbose: true

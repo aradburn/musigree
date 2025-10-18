@@ -94,25 +94,13 @@ The project uses `uv` and `venv` to manage the Python environment and dependenci
 
 1. Create a virtual environment:
 
-    ```
-    python3 -m venv venv
-    ```
+   The project uses `uv` to install and run the Python environment
 
-2. Activate the virtual environment:
 
-    ```
-    # On Unix or MacOS
-    source venv/bin/activate
-
-    # On Windows
-    venv\Scripts\activate
-    ```
-
-3. Install dependencies:
+2. Install dependencies:
 
     ```
-    pip install --upgrade pip
-    pip install -r requirements.txt
+    uv sync
     ```
 
 #### Frontend Setup
