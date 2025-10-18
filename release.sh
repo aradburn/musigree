@@ -83,7 +83,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # push changes
     # git push origin main
-    git push origin "v$new_version"
+    # git push origin "v$new_version"
 else
     echo "Aborted."
     exit 1
