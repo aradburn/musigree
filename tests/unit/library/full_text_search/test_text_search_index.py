@@ -105,10 +105,7 @@ class TestTextSearchIndex:
 
         # IDF for "beatles" (appears in 1 out of 3 documents)
         expected_idf_beatles = math.log10(3 / 1)
-        assert (
-            abs(index.inverse_document_frequency("beatles") - expected_idf_beatles)
-            < 0.001
-        )
+        assert abs(index.inverse_document_frequency("beatles") - expected_idf_beatles) < 0.001
 
     def test_search_single_term(self) -> None:
         """Test searching with a single term."""

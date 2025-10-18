@@ -149,9 +149,7 @@ class TestSecurityHeadersMiddleware:
         assert response_start["type"] == "http.response.start"
 
         # Convert headers to dict for easier checking
-        headers_dict = {
-            name.decode(): value.decode() for name, value in response_start["headers"]
-        }
+        headers_dict = {name.decode(): value.decode() for name, value in response_start["headers"]}
 
         assert "x-content-type-options" in headers_dict
         assert headers_dict["x-content-type-options"] == "nosniff"
@@ -208,9 +206,7 @@ class TestEnvironmentValidation:
         with pytest.raises(ValueError) as excinfo:
             validate_environment_variables(cast(Configuration, config))
 
-        assert "Required environment variables for production are missing" in str(
-            excinfo.value
-        )
+        assert "Required environment variables for production are missing" in str(excinfo.value)
         assert "POSTGRES_DATABASE_USERNAME" in str(excinfo.value)
 
 

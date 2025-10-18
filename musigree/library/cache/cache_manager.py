@@ -82,9 +82,7 @@ class SimpleCache(BaseCache):
 class FileSystemCache(BaseCache):
     """File system based cache implementation."""
 
-    def __init__(
-        self, cache_dir: str, threshold: int = 1000000, default_timeout: int = 0
-    ):
+    def __init__(self, cache_dir: str, threshold: int = 1000000, default_timeout: int = 0):
         self.cache_dir = cache_dir
         self.threshold = threshold
         self.default_timeout = default_timeout
@@ -176,9 +174,7 @@ class RedisCache(BaseCache):
             self._client.ping()
             log.info("Successfully connected to Redis server")
         except Exception as e:
-            log.warning(
-                f"Failed to connect to Redis server: {e}. Using FakeRedis instead."
-            )
+            log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
             self._client = fakeredis.FakeRedis()
 
     def _get_redis_client(self) -> Any | fakeredis.FakeRedis:

@@ -6,6 +6,7 @@ It provides a mechanism for creating and managing SQLAlchemy async sessions,
 handling database errors, and using context variables to manage sessions in
 concurrent environments.
 """
+
 from contextvars import ContextVar
 from typing import Any
 
@@ -43,15 +44,11 @@ async def get_offline_session() -> AsyncSession:
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_offline_session()"
     )
     assert (
-        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
-        is not None
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory is not None
     ), (
         "OfflineDatabaseManager.offline_database_helper.offline_async_session_factory must be initialized before calling get_offline_session()"
     )
-    assert (
-        OfflineDatabaseManager.offline_database_helper.offline_async_engine
-        is not None
-    ), (
+    assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
         "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_offline_session()"
     )
 

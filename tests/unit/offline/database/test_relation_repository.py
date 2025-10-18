@@ -84,9 +84,7 @@ class TestRelationRepository:
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
-            mock_result.scalars.return_value.one_or_none.return_value = (
-                mock_relation_table
-            )
+            mock_result.scalars.return_value.one_or_none.return_value = mock_relation_table
             mock_session.execute.return_value = mock_result
 
             with patch.object(RelationDB, "model_validate") as mock_validate:
@@ -234,9 +232,7 @@ class TestRelationRepository:
             mock_get_all.return_value = [mock_relation_internal]
 
             # Act
-            result = await relation_repository.find_by_entity_and_roles(
-                entity_id, role_ids
-            )
+            result = await relation_repository.find_by_entity_and_roles(entity_id, role_ids)
 
             # Assert
             assert result == [mock_relation_internal]
@@ -328,9 +324,7 @@ class TestRelationRepository:
                     mock_database_helper.generate_insert_bulk_query.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_by_entitys_success(
-        self, relation_repository: RelationRepository
-    ) -> None:
+    async def test_delete_by_entitys_success(self, relation_repository: RelationRepository) -> None:
         """Test successful delete_by_entitys execution."""
         # Arrange
         entity_id = 100
@@ -357,9 +351,7 @@ class TestRelationRepository:
         assert repo.schema_class == RelationTable
 
     @pytest.mark.asyncio
-    async def test_find_by_key_not_found(
-        self, relation_repository: RelationRepository
-    ) -> None:
+    async def test_find_by_key_not_found(self, relation_repository: RelationRepository) -> None:
         """Test find_by_key when relation is not found."""
         # Arrange
         key = {"subject": 999, "role_name": "performer", "object": 888}

@@ -47,6 +47,7 @@ The FastAPI router for the UI routes.
 This router is used to organize the UI routes and their related functionality.
 """
 
+
 @router.get("/", response_class=HTMLResponse)
 async def route__index(
     request: Request,

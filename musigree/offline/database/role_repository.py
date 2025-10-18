@@ -113,9 +113,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         for role in roles:
             role_dict = role.model_dump()
             role_dicts.append(role_dict)
-        query = (
-            OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
-                self.schema_class, role_dicts, on_conflict_do_nothing
-            )
+        query = OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
+            self.schema_class, role_dicts, on_conflict_do_nothing
         )
         await self._session.execute(query)

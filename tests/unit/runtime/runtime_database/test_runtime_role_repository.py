@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -217,7 +216,7 @@ class TestRuntimeRoleRepository:
         """Test the all() iterator method."""
         # GIVEN
         from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
-        
+
         mock_result1 = Mock()
         mock_result1.id = 1
         mock_result1.role_name = "Producer"
@@ -232,7 +231,7 @@ class TestRuntimeRoleRepository:
 
         # Mock session and set in context
         mock_session = AsyncMock()
-        
+
         # Mock the stream result to return an async iterator
         class MockStreamResult:
             def __init__(self) -> None:

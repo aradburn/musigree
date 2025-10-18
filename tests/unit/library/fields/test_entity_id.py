@@ -172,4 +172,3 @@ class TestEntityId:
         min_label = 1
         result = to_entity_internal_id(min_label, EntityType.LABEL)
         assert min_label + LABEL_ENTITY_ID_OFFSET == result
-

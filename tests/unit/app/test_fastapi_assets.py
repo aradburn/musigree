@@ -108,9 +108,7 @@ class TestCreateAssetsRouter:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch.dict(os.environ, {"VITE_ORIGIN": "http://custom:3000"})
-    def test_create_assets_router_custom_vite_origin(
-        self, mock_templates: Mock
-    ) -> None:
+    def test_create_assets_router_custom_vite_origin(self, mock_templates: Mock) -> None:
         """Test create_assets_router with custom VITE_ORIGIN."""
         # Setup
         config = SqliteTestConfiguration()
@@ -132,9 +130,7 @@ class TestCreateAssetsRouter:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch.dict(os.environ, {}, clear=True)
-    def test_create_assets_router_default_vite_origin(
-        self, mock_templates: Mock
-    ) -> None:
+    def test_create_assets_router_default_vite_origin(self, mock_templates: Mock) -> None:
         """Test create_assets_router with default VITE_ORIGIN."""
         # Setup
         config = SqliteTestConfiguration()
@@ -160,9 +156,7 @@ class TestDevAssetFunction:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch("musigree.app.fastapi_assets.log")
-    def test_dev_asset_function_logging(
-        self, mock_log: Mock, mock_templates: Mock
-    ) -> None:
+    def test_dev_asset_function_logging(self, mock_log: Mock, mock_templates: Mock) -> None:
         """Test that dev_asset function logs correctly."""
         # Setup
         config = SqliteTestConfiguration()
@@ -182,7 +176,9 @@ class TestDevAssetFunction:
         result = asset_func("styles/main.css")
 
         # Verify logging
-        mock_log.debug.assert_called_with("dev asset: styles/main.css -> http://localhost:5173/assets/styles/main.css")
+        mock_log.debug.assert_called_with(
+            "dev asset: styles/main.css -> http://localhost:5173/assets/styles/main.css"
+        )
         assert result == "http://localhost:5173/assets/styles/main.css"
 
     @patch("musigree.app.fastapi_assets.templates")
@@ -343,9 +339,7 @@ class TestAssetRouterEndpoints:
         mock_frontend_dir.__truediv__ = Mock(return_value=Path("/fake/frontend/dist"))
 
         # Mock manifest file to avoid OSError
-        with patch(
-            "builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
-        ):
+        with patch("builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')):
             # Test
             router, templates = create_assets_router(config)
 
@@ -368,9 +362,7 @@ class TestAssetRouterEndpoints:
 
         # In development, should only have the context endpoint, no static file mounts
         route_paths = [getattr(route, "path", None) for route in router.routes]
-        static_routes = [
-            path for path in route_paths if path and path.startswith("/assets")
-        ]
+        static_routes = [path for path in route_paths if path and path.startswith("/assets")]
         assert len(static_routes) == 0
 
 
@@ -385,9 +377,7 @@ class TestLogging:
 
     @patch("musigree.app.fastapi_assets.log")
     @patch("musigree.app.fastapi_assets.templates")
-    def test_production_flag_logging(
-        self, mock_templates: Mock, mock_log: Mock
-    ) -> None:
+    def test_production_flag_logging(self, mock_templates: Mock, mock_log: Mock) -> None:
         """Test that production flag is logged."""
         # Setup
         config = SqliteTestConfiguration()
@@ -396,9 +386,7 @@ class TestLogging:
         mock_templates.env.globals.update = Mock()
 
         # Mock manifest file to avoid OSError
-        with patch(
-            "builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
-        ):
+        with patch("builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')):
             with patch("musigree.app.fastapi_assets.FRONTEND_DIR"):
                 # Test
                 create_assets_router(config)

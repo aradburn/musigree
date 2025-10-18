@@ -47,9 +47,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
@@ -59,9 +57,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(
-                entity_repository, relation_repository
-            )
+            network = await grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -189,9 +185,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
             log.debug(f"artist: {artist}")
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
@@ -201,9 +195,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=5,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(
-                entity_repository, relation_repository
-            )
+            network = await grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
             log.debug(f"network: {actual}")
 
@@ -329,9 +321,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            artist = await entity_repository.get_by_type_and_name(entity_type, entity_name)
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
                 center_entity=artist,
@@ -340,9 +330,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(
-                entity_repository, relation_repository
-            )
+            network = await grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN
@@ -483,9 +471,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(
-                entity_repository, relation_repository
-            )
+            network = await grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         expected_network = {
@@ -698,9 +684,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            label = await entity_repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            label = await entity_repository.get_by_type_and_name(entity_type, entity_name)
             print(f"label: {label}")
             roles = ["Recorded At"]
             grapher = RelationGrapher(
@@ -710,9 +694,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                 max_nodes=RuntimeDatabaseHelper.MAX_NODES,
                 role_names=roles,
             )
-            network = await grapher.get_relation_graph(
-                entity_repository, relation_repository
-            )
+            network = await grapher.get_relation_graph(entity_repository, relation_repository)
             actual = utils.normalize_dict(network)
 
         # THEN

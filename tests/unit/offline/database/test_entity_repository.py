@@ -78,9 +78,7 @@ class TestEntityRepository:
 
         with patch.object(entity_repository, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
-            mock_result.scalars.return_value.one_or_none.return_value = (
-                mock_entity_table
-            )
+            mock_result.scalars.return_value.one_or_none.return_value = mock_entity_table
             mock_execute.return_value = mock_result
 
             with patch.object(Entity, "model_validate") as mock_validate:
@@ -97,9 +95,7 @@ class TestEntityRepository:
                 mock_validate.assert_called_once_with(mock_entity_table)
 
     @pytest.mark.asyncio
-    async def test_get_one_by_query_not_found(
-        self, entity_repository: EntityRepository
-    ) -> None:
+    async def test_get_one_by_query_not_found(self, entity_repository: EntityRepository) -> None:
         """Test _get_one_by_query when no entity is found."""
         # Arrange
         query = select(EntityTable).where(EntityTable.id == 999)
@@ -143,9 +139,7 @@ class TestEntityRepository:
                 mock_validate.assert_called_once_with(mock_entity_table)
 
     @pytest.mark.asyncio
-    async def test_get_all_by_query_empty_result(
-        self, entity_repository: EntityRepository
-    ) -> None:
+    async def test_get_all_by_query_empty_result(self, entity_repository: EntityRepository) -> None:
         """Test _get_all_by_query when no entities are found."""
         # Arrange
         query = select(EntityTable).where(EntityTable.entity_type == EntityType.LABEL)
@@ -296,9 +290,7 @@ class TestEntityRepository:
             mock_get_all.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_batched_ids_success(
-        self, entity_repository: EntityRepository
-    ) -> None:
+    async def test_get_batched_ids_success(self, entity_repository: EntityRepository) -> None:
         """Test successful get_batched_ids execution."""
         # Arrange
         batch_size = 2
@@ -317,9 +309,7 @@ class TestEntityRepository:
             assert batches == expected_batches
 
     @pytest.mark.asyncio
-    async def test_get_batched_ids_empty_result(
-        self, entity_repository: EntityRepository
-    ) -> None:
+    async def test_get_batched_ids_empty_result(self, entity_repository: EntityRepository) -> None:
         """Test get_batched_ids with empty result."""
         # Arrange
         batch_size = 2
@@ -389,9 +379,7 @@ class TestEntityRepository:
             mock_get_one.return_value = mock_entity
 
             # Act
-            result = await entity_repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            result = await entity_repository.get_by_type_and_name(entity_type, entity_name)
 
             # Assert
             assert result == mock_entity

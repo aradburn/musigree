@@ -43,6 +43,7 @@ for database related exception. It interacts with `musigree.offline.database` fo
 database related operations and `musigree.offline.offline_database_manager` for
 managing concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -61,7 +62,9 @@ The logger for the worker entity pass three module.
 """
 
 
-async def process_entity_pass_three_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
+async def process_entity_pass_three_worker_async(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing entity records in the third pass.
 
@@ -187,6 +190,7 @@ async def worker_pass_three_single(
                 exc_info=True,
             )
             raise e
+
 
 def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function

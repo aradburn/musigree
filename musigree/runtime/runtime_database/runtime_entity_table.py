@@ -100,12 +100,8 @@ class RuntimeEntityTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set(
-            [column.name for column in inspect(RuntimeEntityTable).columns]
-        )
-        superentries = {
-            k: entries[k] for k in column_names.intersection(entries.keys())
-        }
+        column_names = set([column.name for column in inspect(RuntimeEntityTable).columns])
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 
     def __repr__(self) -> str:

@@ -14,9 +14,7 @@ class TestLoaderEntity:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "artist", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         element = next(iterator)
         entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))
@@ -83,9 +81,7 @@ class TestLoaderEntity:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "artist", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         element = next(iterator)
         while element.find("name").text != "Seefeel":
             element = next(iterator)
@@ -128,9 +124,7 @@ class TestLoaderEntity:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "label", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "label", "testinsert")
         element = next(iterator)
         entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))

@@ -309,12 +309,8 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        with patch(
-            "musigree.offline.data_access_layer.release_data_access.log"
-        ) as mock_log:
-            result = await ReleaseDataAccess.create_entity_details_index(
-                mock_repository
-            )
+        with patch("musigree.offline.data_access_layer.release_data_access.log") as mock_log:
+            result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()

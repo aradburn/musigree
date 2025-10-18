@@ -48,6 +48,7 @@ for database related exception. It interacts with `musigree.offline.database` fo
 database related operations and `musigree.offline.offline_database_manager` for
 managing concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -67,7 +68,9 @@ The logger for the worker release pass two module.
 """
 
 
-async def process_release_pass_two_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
+async def process_release_pass_two_worker_async(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing release records in the second pass.
 
@@ -140,9 +143,7 @@ async def worker_pass_two_single(
     """
     release = await release_repository.get_by_id(release_id)
     """Retrieve the release."""
-    changed = await EntityDataAccess.resolve_release_references(
-        entity_repository, release
-    )
+    changed = await EntityDataAccess.resolve_release_references(entity_repository, release)
     """Resolve entity references."""
 
     if changed:
@@ -160,7 +161,9 @@ async def worker_pass_two_single(
         """Commit the transaction."""
 
 
-def process_release_pass_two_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+def process_release_pass_two_worker(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -173,7 +176,9 @@ def process_release_pass_two_worker(release_ids: list[int], current_total: int, 
     OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
     """Initialize the database engine."""
 
-    loop.run_until_complete(process_release_pass_two_worker_async(release_ids, current_total, total_count))
+    loop.run_until_complete(
+        process_release_pass_two_worker_async(release_ids, current_total, total_count)
+    )
 
     OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
     """Close the database engine."""

@@ -62,9 +62,7 @@ class TestResolveEntityReferences:
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
         object.__setattr__(entity, "entities", None)
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is False
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
@@ -75,9 +73,7 @@ class TestResolveEntityReferences:
         """Test resolve_entity_references with empty entities dict."""
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is False
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
@@ -95,9 +91,7 @@ class TestResolveEntityReferences:
         # Mock the get_id method to return different IDs
         mock_get_id.side_effect = [123, 456]
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is True
         assert isinstance(entity.entities, dict)
@@ -121,9 +115,7 @@ class TestResolveEntityReferences:
         # Mock the get_id method to return different IDs
         mock_get_id.side_effect = [101, 102, 201, 202]
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is True
         assert isinstance(entity.entities, dict)
@@ -149,9 +141,7 @@ class TestResolveEntityReferences:
         # Mock the get_id method to return different IDs
         mock_get_id.side_effect = [301, 401, 402]
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is True
         assert isinstance(entity.entities, dict)
@@ -173,9 +163,7 @@ class TestResolveEntityReferences:
         # Mock the get_id method to return None (not found)
         mock_get_id.return_value = None
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is False
         # Original values should remain unchanged
@@ -197,9 +185,7 @@ class TestResolveEntityReferences:
         # Mock the get_id method to return mixed results
         mock_get_id.side_effect = [123, None, 456]
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is True  # At least one was resolved
         assert isinstance(entity.entities, dict)
@@ -217,9 +203,7 @@ class TestResolveEntityReferences:
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
         object.__setattr__(entity, "entities", "not_a_dict")
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is False
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
@@ -256,9 +240,7 @@ class TestResolveReleaseReferences:
         """Fixture for mock entity repository."""
         return AsyncMock()
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id")
     async def test_resolve_release_references_with_labels(
         self, mock_to_internal_id: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -277,9 +259,7 @@ class TestResolveReleaseReferences:
         ]
         mock_to_internal_id.side_effect = [101, 102]
 
-        result = await EntityDataAccess.resolve_release_references(
-            mock_entity_repository, release
-        )
+        result = await EntityDataAccess.resolve_release_references(mock_entity_repository, release)
 
         assert result is True
         assert mock_to_internal_id.call_count == 2
@@ -287,10 +267,7 @@ class TestResolveReleaseReferences:
         mock_to_internal_id.assert_any_call(12)
 
         # Verify repository calls
-        assert (
-            mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.call_count
-            == 2
-        )
+        assert mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.call_count == 2
         mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.assert_any_call(
             EntityType.LABEL, "Label1"
         )
@@ -298,9 +275,7 @@ class TestResolveReleaseReferences:
             EntityType.LABEL, "Label2"
         )
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id")
     async def test_resolve_release_references_with_companies(
         self, mock_to_internal_id: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -319,32 +294,24 @@ class TestResolveReleaseReferences:
         ]
         mock_to_internal_id.side_effect = [201, 202]
 
-        result = await EntityDataAccess.resolve_release_references(
-            mock_entity_repository, release
-        )
+        result = await EntityDataAccess.resolve_release_references(mock_entity_repository, release)
 
         assert result is True
         assert mock_to_internal_id.call_count == 2
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id")
     async def test_resolve_release_references_no_labels_or_companies(
         self, mock_to_internal_id: Mock, mock_entity_repository: AsyncMock
     ) -> None:
         """Test resolve_release_references with no labels or companies."""
         release = self.create_test_release()
 
-        result = await EntityDataAccess.resolve_release_references(
-            mock_entity_repository, release
-        )
+        result = await EntityDataAccess.resolve_release_references(mock_entity_repository, release)
 
         assert result is False
         mock_to_internal_id.assert_not_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.to_entity_label_internal_id")
     async def test_resolve_release_references_with_both(
         self, mock_to_internal_id: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -360,9 +327,7 @@ class TestResolveReleaseReferences:
         ]
         mock_to_internal_id.side_effect = [101, 201]
 
-        result = await EntityDataAccess.resolve_release_references(
-            mock_entity_repository, release
-        )
+        result = await EntityDataAccess.resolve_release_references(mock_entity_repository, release)
 
         assert result is True
         assert mock_to_internal_id.call_count == 2
@@ -381,9 +346,7 @@ class TestGetIdByEntityTypeAndEntityName:
         """Fixture for mock cache."""
         return Mock()
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_hit(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -402,9 +365,7 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_cache.get.assert_called_once_with("Test Artist_EntityType.ARTIST")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_null_entry(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -423,9 +384,7 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_cache.get.assert_called_once_with("Test Artist_EntityType.ARTIST")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_hit(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -448,9 +407,7 @@ class TestGetIdByEntityTypeAndEntityName:
         )
         mock_cache.set.assert_called_once_with("Test Label_EntityType.LABEL", 456)
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_miss(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: AsyncMock
     ) -> None:
@@ -458,8 +415,8 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
-            NotFoundError(message="Entity not found")
+        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
+            message="Entity not found"
         )
 
         # Test
@@ -477,9 +434,7 @@ class TestGetIdByEntityTypeAndEntityName:
             "Nonexistent Artist_EntityType.ARTIST", EntityDataAccess.CACHE_ENTRY_IS_NULL
         )
 
-    @patch(
-        "musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     @patch("musigree.offline.data_access_layer.entity_data_access.LOGGING_TRACE", True)
     @patch("musigree.offline.data_access_layer.entity_data_access.log")
     async def test_get_id_cache_miss_db_miss_with_logging(
@@ -493,8 +448,8 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
-            NotFoundError(message="Entity not found")
+        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
+            message="Entity not found"
         )
 
         # Test
@@ -619,9 +574,7 @@ class TestAdditionalEdgeCases:
         # Mock get_id to return None for empty values
         mock_get_id.return_value = None
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         # Should return False since no valid processing occurred
         assert result is False
@@ -635,9 +588,7 @@ class TestAdditionalEdgeCases:
             EntityType.ARTIST, entities=entities
         )
 
-        result = await EntityDataAccess.resolve_entity_references(
-            mock_entity_repository, entity
-        )
+        result = await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
         assert result is False
 
@@ -658,9 +609,7 @@ class TestAdditionalEdgeCases:
 
         # Exception should propagate since it's not handled in the implementation
         with pytest.raises(Exception, match="Database error"):
-            await EntityDataAccess.resolve_entity_references(
-                mock_entity_repository, entity
-            )
+            await EntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
 
 
 class TestLogging:

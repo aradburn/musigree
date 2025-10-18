@@ -89,9 +89,13 @@ class LoaderRelation(LoaderBase):
 
         batched_release_ids = utils.batched(release_ids, BULK_INSERT_BATCH_SIZE)
 
-        worker_coroutines = utils.worker_generator(process_relation_pass_one_worker, batched_release_ids, total_count)
+        worker_coroutines = utils.worker_generator(
+            process_relation_pass_one_worker, batched_release_ids, total_count
+        )
 
-        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
+        await utils.queue_worker_functions(
+            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+        )
 
     # noinspection Mypy
     @staticmethod

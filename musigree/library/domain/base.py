@@ -31,8 +31,7 @@ def to_camelcase(string: str) -> str:
         str: The converted string in camelCase.
     """
     resp = "".join(
-        word.capitalize() if index else word
-        for index, word in enumerate(string.split("_"))
+        word.capitalize() if index else word for index, word in enumerate(string.split("_"))
     )
     return resp
 

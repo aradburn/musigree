@@ -31,9 +31,7 @@ class TestRoleNameLookup:
         assert result == ("Vocals", 100)
 
     @patch("musigree.offline.data_access_layer.role_data_access.RoleCache")
-    def test_role_name_lookup_case_insensitive_match(
-        self, mock_role_cache: Mock
-    ) -> None:
+    def test_role_name_lookup_case_insensitive_match(self, mock_role_cache: Mock) -> None:
         """Test role_name_lookup with case insensitive match."""
         # Setup
         mock_role_cache.role_name_set = {"Vocals", "Guitar", "Bass"}
@@ -138,13 +136,9 @@ class TestRoleNameFuzzyLookup:
 class TestFindRole:
     """Test class for find_role method."""
 
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner")
     @patch("musigree.offline.data_access_layer.role_data_access.log")
-    def test_find_role_direct_match(
-        self, mock_log: Mock, mock_find_role_inner: Mock
-    ) -> None:
+    def test_find_role_direct_match(self, mock_log: Mock, mock_find_role_inner: Mock) -> None:
         """Test find_role with direct match on first try."""
         # Setup
         mock_find_role_inner.return_value = ("Vocals", 100)
@@ -157,13 +151,9 @@ class TestFindRole:
         mock_find_role_inner.assert_called_with("Vocals")
         mock_log.debug.assert_not_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner")
     @patch("musigree.offline.data_access_layer.role_data_access.log")
-    def test_find_role_no_match(
-        self, mock_log: Mock, mock_find_role_inner: Mock
-    ) -> None:
+    def test_find_role_no_match(self, mock_log: Mock, mock_find_role_inner: Mock) -> None:
         """Test find_role with no match found."""
         # Setup
         mock_find_role_inner.return_value = None
@@ -175,9 +165,7 @@ class TestFindRole:
         assert result is None
         mock_log.debug.assert_called_once_with("role not found: Unknown Role")
 
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner")
     def test_find_role_with_word_breakdown(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with word breakdown algorithm."""
 
@@ -196,9 +184,7 @@ class TestFindRole:
         assert result == "Vocals"
         assert mock_find_role_inner.call_count >= 2
 
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner")
     def test_find_role_low_score_threshold(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with score below threshold."""
         # Setup
@@ -210,15 +196,11 @@ class TestFindRole:
         # Assertions
         assert result is None
 
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.find_role_inner")
     def test_find_role_complex_sentence_split(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with complex sentence that gets split."""
         # Setup - simulate a very long role name that needs splitting
-        long_role_name = (
-            "Very Long Complex Role Name With Many Words That Should Be Split"
-        )
+        long_role_name = "Very Long Complex Role Name With Many Words That Should Be Split"
 
         def mock_find_role_inner_func(role_name: str) -> tuple[str, int] | None:
             if "Very Long Complex Role Name With" in role_name:
@@ -250,9 +232,7 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.substitute_role_alternatives"
     )
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup")
     def test_find_role_inner_direct_lookup_success(
         self, mock_lookup: Mock, mock_substitute: Mock
     ) -> None:
@@ -272,9 +252,7 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.substitute_role_alternatives"
     )
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup")
     @patch(
         "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_fuzzy_lookup"
     )
@@ -299,9 +277,7 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.substitute_role_alternatives"
     )
-    @patch(
-        "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup"
-    )
+    @patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_lookup")
     @patch(
         "musigree.offline.data_access_layer.role_data_access.RoleDataAccess.role_name_fuzzy_lookup"
     )
@@ -328,9 +304,7 @@ class TestSubstituteRoleAlternatives:
     """Test class for substitute_role_alternatives method."""
 
     @patch("musigree.offline.data_access_layer.role_data_access.RoleDataUtils")
-    def test_substitute_role_alternatives_match_found(
-        self, mock_role_data_utils: Mock
-    ) -> None:
+    def test_substitute_role_alternatives_match_found(self, mock_role_data_utils: Mock) -> None:
         """Test substitute_role_alternatives with alternative found."""
         # Setup
         mock_role_data_utils.ALTERNATIVES = {"singer": "Vocals", "guitarist": "Guitar"}
@@ -342,9 +316,7 @@ class TestSubstituteRoleAlternatives:
         assert result == "Vocals"
 
     @patch("musigree.offline.data_access_layer.role_data_access.RoleDataUtils")
-    def test_substitute_role_alternatives_no_match(
-        self, mock_role_data_utils: Mock
-    ) -> None:
+    def test_substitute_role_alternatives_no_match(self, mock_role_data_utils: Mock) -> None:
         """Test substitute_role_alternatives with no alternative found."""
         # Setup
         mock_role_data_utils.ALTERNATIVES = {"singer": "Vocals", "guitarist": "Guitar"}
@@ -454,9 +426,12 @@ class TestLoadAllRolesIntoCache:
         mock_role_cache: Mock,
     ) -> None:
         """Test load_all_roles_into_cache with empty database."""
+
         # Setup
+        # noinspection PyUnreachableCode
         async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
             return
+            # noinspection PyTypeChecker
             yield  # This line will never be reached, but makes it a proper async generator
 
         mock_repository = Mock()

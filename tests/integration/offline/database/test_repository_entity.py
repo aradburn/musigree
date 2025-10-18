@@ -22,9 +22,7 @@ class TestRepositoryEntity(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "artist", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
 
@@ -44,9 +42,7 @@ class TestRepositoryEntity(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "label", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "label", "testinsert")
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
 

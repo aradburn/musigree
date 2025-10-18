@@ -258,9 +258,7 @@ class EntityDataAccess:
         cache = CacheManager.get_cache()
         """Get an instance of the cache."""
 
-        entity_key_str = (
-            f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-        )
+        entity_key_str = f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
         """Create the cache key."""
 
         id_ = cache.get(entity_key_str)

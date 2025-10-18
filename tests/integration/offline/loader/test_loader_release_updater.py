@@ -71,9 +71,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
                     "value": "WAP-54-B\u2081 MA.",
                 },
             ],
-            "labels": [
-                {"catalog_number": "WAP54", "id": 1000023528, "name": "Warp Records"}
-            ],
+            "labels": [{"catalog_number": "WAP54", "id": 1000023528, "name": "Warp Records"}],
             "master_id": 1315,
             "notes": None,
             "release_date": "1994-09-03",
@@ -127,9 +125,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
                     "value": "DISCTRONICS S HIA 2 CD 01",
                 },
             ],
-            "labels": [
-                {"catalog_number": "HIACD2", "id": 1000000233, "name": "Beyond"}
-            ],
+            "labels": [{"catalog_number": "HIACD2", "id": 1000000233, "name": "Beyond"}],
             "master_id": 21103,
             "notes": None,
             "release_date": "1994-01-01",
@@ -151,9 +147,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
                 },
                 {
                     "duration": "6:24",
-                    "extra_artists": [
-                        {"id": 41, "name": "Autechre", "roles": [{"name": "Remix"}]}
-                    ],
+                    "extra_artists": [{"id": 41, "name": "Autechre", "roles": [{"name": "Remix"}]}],
                     "position": "2",
                     "title": "Speech3 (Conoid Tone Reformed By Autechre)",
                 },

@@ -49,6 +49,7 @@ Default roles to display if none are specified in the request.
 # Global Redis client - will be initialized based on environment
 _redis_client: Any = None
 
+
 def get_entity_type(entity_type_str: str) -> EntityType:
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
@@ -112,6 +113,7 @@ def get_roles(roles: str | None = None) -> list[str]:
     roles_list: list[str] = list(sorted(roles_result))
     # log.debug(f"Requested roles: {roles}")
     return roles_list
+
 
 def get_redis_client() -> Any:
     """

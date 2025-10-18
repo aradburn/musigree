@@ -36,9 +36,7 @@ class TestRuntimeEntityStructuralRolesToRelations(AbstractDatabaseTest):
             )
             print(f"entity: {entity}")
             roles = ["Alias", "Member Of"]
-            relations = RuntimeEntityDataAccess.structural_roles_to_relations(
-                entity, roles=roles
-            )
+            relations = RuntimeEntityDataAccess.structural_roles_to_relations(entity, roles=roles)
             print(f"relations: {relations}")
             actual = utils.normalize_dict(relations)
             print(f"actual: {actual}")

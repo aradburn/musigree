@@ -1,5 +1,8 @@
 import enum
+from importlib.metadata import version
 from pathlib import Path
+
+VERSION = version("musigree")
 
 # DIRECTORY PATHS
 APP_DIR = Path(__file__).parent.resolve()
@@ -70,6 +73,7 @@ BULK_REPORTING_SIZE = 10000
 """The number of records to process before reporting progress."""
 BULK_YIELD_SIZE = 20000
 """The number of records to stream in a chunk from the database."""
+
 
 class DatabaseType(enum.Enum):
     POSTGRES = 1

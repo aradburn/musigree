@@ -142,9 +142,7 @@ class RuntimeEntityDataAccess:
     ) -> int | None:
         cache = CacheManager.get_cache()
 
-        entity_key_str = (
-            f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-        )
+        entity_key_str = f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
 
         id_: int | None = cache.get(entity_key_str)
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
@@ -152,10 +150,8 @@ class RuntimeEntityDataAccess:
 
         if id_ is None:
             try:
-                internal_id = (
-                    await entity_repository.get_id_by_entity_type_and_entity_name(
-                        entity_type, entity_name
-                    )
+                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
+                    entity_type, entity_name
                 )
                 # Store the internal id, not entity_id
                 cache.set(entity_key_str, internal_id)
@@ -172,7 +168,9 @@ class RuntimeEntityDataAccess:
         return id_
 
     @staticmethod
-    async def get_entity_name_by_id(entity_repository: RuntimeEntityRepository, id_: int) -> str | None:
+    async def get_entity_name_by_id(
+        entity_repository: RuntimeEntityRepository, id_: int
+    ) -> str | None:
         cache = CacheManager.get_cache()
 
         entity_key_str = f"{id_}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}NAME"
@@ -204,7 +202,9 @@ class RuntimeEntityDataAccess:
         runtime_entity_dict_list: list[dict[str, Any]] = []
 
         for entity in entity_list:
-            runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+            runtime_entity_dict = to_runtime_entity_dict(
+                RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity
+            )
             runtime_entity_dict_list.append(runtime_entity_dict)
 
         return runtime_entity_dict_list

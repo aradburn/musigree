@@ -75,18 +75,25 @@ dev-dependencies = [
     "ruff==0.13.1",
     "hatchling==1.27.0",
     "yappi==1.6.10",
+    "pre-commit==4.3.0",
 ]
 reinstall-package = ["musigree"]
 
 [tool.mypy]
 python_version = "3.13"
+#strict = true                    # Enable more checks
 warn_return_any = true
 disallow_untyped_defs = true
+ignore_missing_imports = false   # Display error for all missing imports
 
 [tool.ruff]
-line-length = 120
+line-length = 100                # Line length for formatting
+target-version = "py313"         # Target Python version
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
 
 [tool.ruff.lint]
 extend-select = ["B"]
-
-
+fixable = ["ALL"]                # Allow automatic fixes for all fixable issues

@@ -70,9 +70,7 @@ def test_converts_runtime_entity_db_to_domain_representation() -> None:
     assert entity.entities["parent_label"] == ["Parent1"]
 
 
-def test_converts_runtime_entity_db_to_domain_representation_with_none_entities() -> (
-    None
-):
+def test_converts_runtime_entity_db_to_domain_representation_with_none_entities() -> None:
     db_entity = RuntimeEntityDB(
         id=1,
         entity_id=100,

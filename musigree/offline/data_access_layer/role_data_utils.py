@@ -85,9 +85,7 @@ class RoleDataUtils:
         ]
         # noinspection PyTypeChecker
         input_names_list = [
-            re.split(r"\. ", name)
-            for name in input_names
-            if name is not None and name != ""
+            re.split(r"\. ", name) for name in input_names if name is not None and name != ""
         ]
         input_names = [
             name
@@ -191,11 +189,7 @@ class RoleDataUtils:
         def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 
-        if (
-            re.match(r"^[A-Z]+$", input_name)
-            and not input_name == "ANR"
-            and not input_name == "FX"
-        ):
+        if re.match(r"^[A-Z]+$", input_name) and not input_name == "ANR" and not input_name == "FX":
             return input_name
 
         name = input_name
@@ -214,8 +208,7 @@ class RoleDataUtils:
         name = RoleDataUtils.get_instrument_name_with_number(name)
 
         name = " ".join(
-            word.capitalize() if not word.isupper() else word
-            for word in name.split(" ")
+            word.capitalize() if not word.isupper() else word for word in name.split(" ")
         )
         # Capitalise after hyphen
         name = re.sub(r"(-[a-z])", upper, name)
@@ -340,9 +333,7 @@ class RoleDataUtils:
         if match := re.search(r"^(\S)\.(\S)\. *$", name):
             name = match.group(1).upper() + match.group(2).upper()
         if match := re.search(r"^(\S)\.(\S)\.(\S)\. *$", name):
-            name = (
-                match.group(1).upper() + match.group(2).upper() + match.group(3).upper()
-            )
+            name = match.group(1).upper() + match.group(2).upper() + match.group(3).upper()
         if match := re.search(r"^(\S)\.(\S)\.(\S)\.(\S)\. *$", name):
             name = (
                 match.group(1).upper()

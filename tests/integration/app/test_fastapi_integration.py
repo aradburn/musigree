@@ -31,9 +31,7 @@ class TestFastAPIIntegration:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_security_headers_in_response_development(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_security_headers_in_response_development(self, client: AsyncClient) -> None:
         """Test that security headers are properly added to responses in development mode."""
         response = await client.get("/docs")
 
@@ -89,9 +87,7 @@ class TestFastAPIIntegrationWithMocking:
     """Integration tests that require specific mocking."""
 
     @pytest.mark.asyncio
-    async def test_security_headers_production_behavior(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_security_headers_production_behavior(self, client: AsyncClient) -> None:
         """Test production-like security header behavior."""
         # This test uses the standard client but checks for security headers
         # The actual production/development behavior is determined by the config

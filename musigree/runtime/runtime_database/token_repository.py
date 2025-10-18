@@ -59,10 +59,7 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
 
         if not isinstance(value, int):
             raise UnprocessableError(
-                message=(
-                    "For some reason count function returned not an integer."
-                    f"Value: {value}"
-                ),
+                message=f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value

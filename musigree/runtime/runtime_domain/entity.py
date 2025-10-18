@@ -167,17 +167,11 @@ class RuntimeEntity(InternalDomainObject):
         entity_dict: dict = self.model_dump()
         entities: dict = entity_dict.get("entities", {})
         # noinspection PyUnreachableCode
-        aliases: dict | None = (
-            entities.get("aliases", None) if isinstance(entities, dict) else None
-        )
+        aliases: dict | None = entities.get("aliases", None) if isinstance(entities, dict) else None
         # noinspection PyUnreachableCode
-        groups: dict | None = (
-            entities.get("groups", None) if isinstance(entities, dict) else None
-        )
+        groups: dict | None = entities.get("groups", None) if isinstance(entities, dict) else None
         # noinspection PyUnreachableCode
-        members: dict | None = (
-            entities.get("members", None) if isinstance(entities, dict) else None
-        )
+        members: dict | None = entities.get("members", None) if isinstance(entities, dict) else None
         # noinspection PyUnreachableCode
         parent_label: dict | None = (
             entities.get("parent_label", None) if isinstance(entities, dict) else None

@@ -56,9 +56,7 @@ class RuntimeRelationDataAccess:
             #     entity_id, entity_type
             # )
             # log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
-            entity_relations = await relation_repository.find_by_entity_and_roles(
-                _id, role_ids
-            )
+            entity_relations = await relation_repository.find_by_entity_and_roles(_id, role_ids)
             # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)
 
@@ -147,7 +145,9 @@ class RuntimeRelationDataAccess:
     #     # return relation_links
 
     @staticmethod
-    def get_runtime_relation_dicts_from_relations(relation_dbs: list[RelationDB]) -> list[dict[str, Any]]:
+    def get_runtime_relation_dicts_from_relations(
+        relation_dbs: list[RelationDB],
+    ) -> list[dict[str, Any]]:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None

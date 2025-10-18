@@ -100,17 +100,11 @@ class TestRoleTypeCategory:
     def test_category_names(self) -> None:
         """Test Category enum names are correct."""
         # Act & Assert
-        assert (
-            RoleType.Category.ACTING_LITERARY_AND_SPOKEN.name
-            == "ACTING_LITERARY_AND_SPOKEN"
-        )
+        assert RoleType.Category.ACTING_LITERARY_AND_SPOKEN.name == "ACTING_LITERARY_AND_SPOKEN"
         assert RoleType.Category.COMPANIES.name == "COMPANIES"
         assert RoleType.Category.CONDUCTING_AND_LEADING.name == "CONDUCTING_AND_LEADING"
         assert RoleType.Category.DJ_MIX.name == "DJ_MIX"
-        assert (
-            RoleType.Category.FEATURING_AND_PRESENTING.name
-            == "FEATURING_AND_PRESENTING"
-        )
+        assert RoleType.Category.FEATURING_AND_PRESENTING.name == "FEATURING_AND_PRESENTING"
         assert RoleType.Category.INSTRUMENTS.name == "INSTRUMENTS"
         assert RoleType.Category.MANAGEMENT.name == "MANAGEMENT"
         assert RoleType.Category.PRODUCTION.name == "PRODUCTION"
@@ -119,9 +113,7 @@ class TestRoleTypeCategory:
         assert RoleType.Category.TECHNICAL.name == "TECHNICAL"
         assert RoleType.Category.VISUAL.name == "VISUAL"
         assert RoleType.Category.VOCAL.name == "VOCAL"
-        assert (
-            RoleType.Category.WRITING_AND_ARRANGEMENT.name == "WRITING_AND_ARRANGEMENT"
-        )
+        assert RoleType.Category.WRITING_AND_ARRANGEMENT.name == "WRITING_AND_ARRANGEMENT"
 
     def test_category_count(self) -> None:
         """Test that all expected Category values exist."""

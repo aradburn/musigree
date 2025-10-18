@@ -39,9 +39,7 @@ def test_app_exists(mock_create_app: MagicMock) -> None:
 @pytest.fixture
 def mock_app_setup() -> Generator[MagicMock, None, None]:
     """Fixture to mock the entire app setup process."""
-    with patch(
-        "musigree.app.fastapi_dev_app.create_development_app"
-    ) as mock_create_app:
+    with patch("musigree.app.fastapi_dev_app.create_development_app") as mock_create_app:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
         yield mock_app

@@ -131,9 +131,7 @@ class TestWorkerEntityPassThree:
 
         # Act & Assert
         with pytest.raises(DatabaseError):
-            await worker_pass_three_single(
-                mock_entity_repo, mock_relation_repo, entity_id
-            )
+            await worker_pass_three_single(mock_entity_repo, mock_relation_repo, entity_id)
 
     @pytest.mark.asyncio
     async def test_worker_pass_three_single_duplicate_relations(self) -> None:
@@ -179,8 +177,9 @@ class TestWorkerEntityPassThree:
     ) -> None:
         """Test process_entity_pass_three_worker with single-threaded execution."""
         # Arrange
-        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
-
+        with patch(
+            "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
+        ) as mock_offline_transaction:
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)
@@ -207,7 +206,9 @@ class TestWorkerEntityPassThree:
     ) -> None:
         """Test process_entity_pass_three_worker with multi-threaded execution."""
         # Arrange
-        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+        with patch(
+            "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
+        ) as mock_offline_transaction:
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)
@@ -236,7 +237,9 @@ class TestWorkerEntityPassThree:
     ) -> None:
         """Test process_entity_pass_three_worker with progress reporting."""
         # Arrange
-        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+        with patch(
+            "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
+        ) as mock_offline_transaction:
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)
@@ -271,7 +274,9 @@ class TestWorkerEntityPassThree:
     ) -> None:
         """Test process_entity_pass_three_worker handles database errors properly."""
         # Arrange
-        with patch("musigree.offline.loader.worker_entity_pass_three.offline_transaction") as mock_offline_transaction:
+        with patch(
+            "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
+        ) as mock_offline_transaction:
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)

@@ -3,7 +3,7 @@ Unit tests for musigree.app.fastapi_app module.
 """
 
 import logging
-from typing import Union, Awaitable
+from typing import Union, Awaitable, Callable
 from unittest.mock import patch, AsyncMock, MagicMock, Mock
 
 import pytest
@@ -33,9 +33,9 @@ class TestCreateApp:
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     def test_create_app_basic_structure(
-        self, 
+        self,
         mock_setup_security: Mock,
-        mock_create_assets_router: Mock, 
+        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that create_app returns a properly configured FastAPI instance."""
@@ -59,15 +59,15 @@ class TestCreateApp:
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     def test_create_app_production_cors(
-        self, 
-        mock_setup_security: Mock,
+        self,
+        _mock_setup_security: Mock,
         mock_create_assets_router: Mock,
     ) -> None:
         """Test CORS configuration in production mode."""
         # Arrange
         config = SqliteTestConfiguration()
         config.PRODUCTION = True
-        
+
         mock_assets_router = MagicMock()
         mock_assets_templates = MagicMock()
         mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
@@ -78,20 +78,20 @@ class TestCreateApp:
         # Assert
         assert isinstance(app, FastAPI)
         # Check that middleware was added by checking user_middleware or routes
-        assert hasattr(app, 'user_middleware') or hasattr(app, 'middleware')
+        assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     def test_create_app_development_cors(
-        self, 
-        mock_setup_security: Mock,
+        self,
+        _mock_setup_security: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test CORS configuration in development mode."""
         # Arrange
         test_config.PRODUCTION = False
-        
+
         mock_assets_router = MagicMock()
         mock_assets_templates = MagicMock()
         mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
@@ -102,13 +102,13 @@ class TestCreateApp:
         # Assert
         assert isinstance(app, FastAPI)
         # Check that middleware was added by checking user_middleware or routes
-        assert hasattr(app, 'user_middleware') or hasattr(app, 'middleware')
+        assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     def test_create_app_routers_included(
-        self, 
-        mock_setup_security: Mock,
+        self,
+        _mock_setup_security: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
@@ -140,8 +140,8 @@ class TestExceptionHandlers:
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     def app(
-        self, 
-        mock_setup_security: Mock,
+        self,
+        _mock_setup_security: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> FastAPI:
@@ -149,7 +149,7 @@ class TestExceptionHandlers:
         mock_assets_router = MagicMock()
         mock_assets_templates = MagicMock()
         mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
-        
+
         return create_app(test_config)
 
     @pytest.fixture
@@ -166,7 +166,7 @@ class TestExceptionHandlers:
         error = BaseError(message="Test error", status_code=400)
 
         # Find the exception handler
-        handler = None
+        handler: Callable | None = None
         for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
@@ -175,17 +175,19 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
-        if hasattr(result, '__await__'):
-            response: Response = await result  # type: ignore
-        else:
-            response = result  # type: ignore
+        if handler is not None:
+            # noinspection PyCallingNonCallable
+            result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+            if hasattr(result, "__await__"):
+                response: Response = await result  # type: ignore
+            else:
+                response = result  # type: ignore
 
-        # Assert
-        assert isinstance(response, JSONResponse)
-        assert response.status_code == 400
+            # Assert
+            assert isinstance(response, JSONResponse)
+            assert response.status_code == 400
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_base_error_handler_non_api_route(self, app: FastAPI) -> None:
         """Test BaseError handler for non-API routes."""
         # Arrange
@@ -194,7 +196,7 @@ class TestExceptionHandlers:
         error = BaseError(message="Test error", status_code=500)
 
         # Find the exception handler
-        handler = None
+        handler: Callable | None = None
         for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
@@ -203,16 +205,18 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
-        if hasattr(result, '__await__'):
-            response: Response = await result  # type: ignore
-        else:
-            response = result  # type: ignore
+        if handler is not None:
+            # noinspection PyCallingNonCallable
+            result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+            if hasattr(result, "__await__"):
+                response: Response = await result  # type: ignore
+            else:
+                response = result  # type: ignore
 
-        # Assert
-        assert response.status_code == 500
-        # Response should be a TemplateResponse for non-API routes
-        assert hasattr(response, 'template')
+            # Assert
+            assert response.status_code == 500
+            # Response should be a TemplateResponse for non-API routes
+            assert hasattr(response, "template")
 
     @pytest.mark.asyncio
     async def test_not_found_handler(self, app: FastAPI) -> None:
@@ -228,14 +232,14 @@ class TestExceptionHandlers:
 
         # Act
         result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
-        if hasattr(result, '__await__'):
+        if hasattr(result, "__await__"):
             response: Response = await result  # type: ignore
         else:
             response = result  # type: ignore
 
         # Assert
         assert response.status_code == 404
-        assert hasattr(response, 'template')
+        assert hasattr(response, "template")
 
     @pytest.mark.asyncio
     async def test_server_error_handler(self, app: FastAPI) -> None:
@@ -251,14 +255,14 @@ class TestExceptionHandlers:
 
         # Act
         result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
-        if hasattr(result, '__await__'):
+        if hasattr(result, "__await__"):
             response: Response = await result  # type: ignore
         else:
             response = result  # type: ignore
 
         # Assert
         assert response.status_code == 500
-        assert hasattr(response, 'template')
+        assert hasattr(response, "template")
 
 
 class TestInitApp:
@@ -283,7 +287,7 @@ class TestInitApp:
         mock_role_data_access: Mock,
         mock_runtime_db_manager: Mock,
         mock_cache_manager: Mock,
-        mock_setup_logging: Mock,
+        _mock_setup_logging: Mock,
         test_config: Configuration,
     ) -> None:
         """Test successful app initialization."""
@@ -317,11 +321,11 @@ class TestInitApp:
     @patch("musigree.app.fastapi_app.asyncio_atexit")
     async def test_init_app_database_setup_called(
         self,
-        mock_asyncio_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         mock_role_data_access: Mock,
         mock_runtime_db_manager: Mock,
         mock_cache_manager: Mock,
-        mock_setup_logging: Mock,
+        _mock_setup_logging: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that database setup is called during initialization."""
@@ -387,8 +391,8 @@ class TestTemplatesGlobal:
         """Test that the global templates variable is properly created."""
         # Assert
         assert templates is not None
-        assert hasattr(templates, 'get_template')
-        assert hasattr(templates, 'TemplateResponse')
+        assert hasattr(templates, "get_template")
+        assert hasattr(templates, "TemplateResponse")
 
 
 class TestModuleLogging:
@@ -398,11 +402,11 @@ class TestModuleLogging:
         """Test that the module logger is properly created."""
         # Import the module to access its logger
         from musigree.app import fastapi_app
-        
+
         # Assert
-        assert hasattr(fastapi_app, 'log')
+        assert hasattr(fastapi_app, "log")
         assert isinstance(fastapi_app.log, logging.Logger)
-        assert fastapi_app.log.name == 'musigree.app.fastapi_app'
+        assert fastapi_app.log.name == "musigree.app.fastapi_app"
 
 
 class TestIntegrationScenarios:
@@ -413,12 +417,12 @@ class TestIntegrationScenarios:
         """Provide test configuration."""
         return SqliteTestConfiguration()
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_security_middleware")
     async def test_exception_handlers_integration(
         self,
-        mock_setup_security: Mock,
+        _mock_setup_security: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:

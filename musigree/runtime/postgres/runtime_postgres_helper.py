@@ -189,8 +189,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                     "work_mem": "100MB",
                     "maintenance_work_mem": "100MB",
                     "effective_cache_size": "2GB",
-                    "max_connections": RuntimeDatabaseManager.get_concurrency_count()
-                    + 4,
+                    "max_connections": RuntimeDatabaseManager.get_concurrency_count() + 4,
                     "shared_buffers": "3GB",
                 }
                 """The option for the db."""
@@ -269,23 +268,16 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """
         log.info("Shutting down Postgres runtime database")
 
-        if (
-            RuntimePostgresHelper._is_test
-            and RuntimePostgresHelper.postgres_test_db is not None
-        ):
+        if RuntimePostgresHelper._is_test and RuntimePostgresHelper.postgres_test_db is not None:
             """If it is a test database."""
             log.info("Cleaning up Postgres Test Database")
             RuntimePostgresHelper.postgres_test_db.cleanup()
             """Clean up the temp database."""
 
-            log.info(
-                f"Delete data dir: {RuntimePostgresHelper.postgres_test_db.pg_data_dir}"
-            )
+            log.info(f"Delete data dir: {RuntimePostgresHelper.postgres_test_db.pg_data_dir}")
             shutil.rmtree(RuntimePostgresHelper.postgres_test_db.pg_data_dir)
             """Remove the data dir."""
-            log.info(
-                f"Delete socket dir: {RuntimePostgresHelper.postgres_test_db.pg_socket_dir}"
-            )
+            log.info(f"Delete socket dir: {RuntimePostgresHelper.postgres_test_db.pg_socket_dir}")
             shutil.rmtree(RuntimePostgresHelper.postgres_test_db.pg_socket_dir)
             """Remove the socket dir."""
             if RuntimePostgresHelper.pg_runtime_dirname is not None:
@@ -361,9 +353,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """Drop the tables."""
 
     @staticmethod
-    async def vacuum(
-        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -382,9 +372,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         query += " " + table_name
         query += ";"
 
-        async with engine.execution_options(
-            isolation_level="AUTOCOMMIT"
-        ).connect() as connection:
+        async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
             await connection.execute(text(query))
             await connection.commit()
 
@@ -433,10 +421,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         if on_conflict_do_nothing:
             """If the `on_conflict_do_nothing` flag is enable."""
             return (
-                insert(schema_class)
-                .on_conflict_do_nothing()
-                .values(values)
-                .returning(schema_class)
+                insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
             )
         else:
             """If the `on_conflict_do_nothing` flag is disable."""

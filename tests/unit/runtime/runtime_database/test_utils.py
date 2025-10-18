@@ -357,9 +357,7 @@ class RoleCacheMockHelper:
                 p.__exit__(None, None, None)
 
     @staticmethod
-    def setup_role_cache_mock(
-        mock_role_cache: Mock, role_mappings: dict[str, int]
-    ) -> None:
+    def setup_role_cache_mock(mock_role_cache: Mock, role_mappings: dict[str, int]) -> None:
         """
         Set up a RoleCache mock with the specified role mappings.
 

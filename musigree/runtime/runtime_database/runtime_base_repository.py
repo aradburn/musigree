@@ -59,9 +59,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
                 message="Can not initiate the class without schema_class attribute"
             )
 
-    async def _update(
-        self, key: str, value: Any, payload: dict[str, Any]
-    ) -> RuntimeConcreteTable:
+    async def _update(self, key: str, value: Any, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
         Updates an existing instance of the model in the related table.
 
@@ -113,9 +111,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             NotFoundError: If no matching record is found.
         """
         # noinspection PyTypeChecker
-        query = select(self.schema_class).where(
-            getattr(self.schema_class, key) == value
-        )
+        query = select(self.schema_class).where(getattr(self.schema_class, key) == value)
         result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
@@ -139,10 +135,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
         if not isinstance(value, int):
             raise UnprocessableError(
-                message=(
-                    "For some reason count function returned not an integer."
-                    f"Value: {value}"
-                ),
+                message=f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value
@@ -161,9 +154,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = await self.execute(
-            select(self.schema_class).order_by(asc(by)).limit(1)
-        )
+        result: Result = await self.execute(select(self.schema_class).order_by(asc(by)).limit(1))
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
@@ -184,9 +175,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = await self.execute(
-            select(self.schema_class).order_by(desc(by)).limit(1)
-        )
+        result: Result = await self.execute(select(self.schema_class).order_by(desc(by)).limit(1))
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError

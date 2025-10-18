@@ -164,9 +164,7 @@ class TextSearchIndex:
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(query)
         analyzed_query = [
-            token
-            for token in normalized_query.split()
-            if token not in TextSearchIndex.STOP_WORDS
+            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
         ]
 
         # Handle empty query after filtering stop words

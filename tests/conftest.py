@@ -158,9 +158,9 @@ async def runtime_database_setup(
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "Database helper not initialized"
     )
-    assert (
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
-    ), "Database async_engine not initialized"
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+        "Database async_engine not initialized"
+    )
 
     # Drop and recreate tables (excluding role tables)
     await RuntimeDatabaseManager.runtime_database_helper.drop_tables(

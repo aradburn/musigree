@@ -34,6 +34,7 @@ The `delete_releases_worker` function interacts with the following components:
 The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -49,9 +50,9 @@ The logger for the worker release deleter module.
 """
 
 
-async def delete_releases_worker_async(bulk_deletes: list[int],
-                                       processed_count: int,
-                                       _total_count: int) -> None:
+async def delete_releases_worker_async(
+    bulk_deletes: list[int], processed_count: int, _total_count: int
+) -> None:
     """
     Worker function for deleting release records from the database.
 

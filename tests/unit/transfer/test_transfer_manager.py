@@ -46,9 +46,7 @@ class TestTransferManager:
         mock_entity_details.get_styles_for_id.return_value = "Alternative,Indie"
 
         # Mock that we have no offline data to process
-        with patch(
-            "musigree.transfer.transfer_manager.EntityRepository"
-        ) as mock_offline_repo:
+        with patch("musigree.transfer.transfer_manager.EntityRepository") as mock_offline_repo:
             mock_offline_instance = AsyncMock()
             mock_offline_repo.return_value = mock_offline_instance
             mock_offline_instance.count.return_value = 0
@@ -64,9 +62,7 @@ class TestTransferManager:
             with patch(
                 "musigree.transfer.transfer_manager.RuntimeDatabaseManager"
             ) as mock_db_manager:
-                mock_db_manager.get_concurrency_count.return_value = (
-                    1  # Single threaded
-                )
+                mock_db_manager.get_concurrency_count.return_value = 1  # Single threaded
 
                 # Mock the new RuntimeEntityDataAccess method
                 # noinspection PyUnreachableCode
@@ -144,9 +140,7 @@ class TestTransferManager:
         mock_runtime_instance.count.return_value = 0
 
         # Mock offline relation repository
-        with patch(
-            "musigree.transfer.transfer_manager.RelationRepository"
-        ) as mock_offline_repo:
+        with patch("musigree.transfer.transfer_manager.RelationRepository") as mock_offline_repo:
             mock_offline_instance = AsyncMock()
             mock_offline_repo.return_value = mock_offline_instance
             mock_offline_instance.count.return_value = 0
@@ -162,9 +156,7 @@ class TestTransferManager:
             with patch(
                 "musigree.transfer.transfer_manager.RuntimeDatabaseManager"
             ) as mock_db_manager:
-                mock_db_manager.get_concurrency_count.return_value = (
-                    1  # Single threaded
-                )
+                mock_db_manager.get_concurrency_count.return_value = 1  # Single threaded
 
                 # Mock the new RuntimeRelationDataAccess method
                 # noinspection PyUnreachableCode
@@ -208,9 +200,7 @@ class TestTransferManager:
         mock_runtime_instance.count.return_value = 3
 
         # Mock offline relation repository
-        with patch(
-            "musigree.transfer.transfer_manager.RelationRepository"
-        ) as mock_offline_repo:
+        with patch("musigree.transfer.transfer_manager.RelationRepository") as mock_offline_repo:
             mock_offline_instance = AsyncMock()
             mock_offline_repo.return_value = mock_offline_instance
             mock_offline_instance.count.return_value = 5
@@ -363,18 +353,26 @@ class TestTransferManager:
             mock_db_manager.runtime_database_helper = mock_runtime_db_helper
 
             # Mock the TextSearchIndex.load_text_search_index_from_file method
-            with patch("musigree.transfer.transfer_manager.TextSearchIndex") as mock_text_search_index_class:
+            with patch(
+                "musigree.transfer.transfer_manager.TextSearchIndex"
+            ) as mock_text_search_index_class:
                 # Create a mock text search index with proper token_index structure
                 mock_text_search_index = Mock()
                 mock_text_search_index.token_index = {
                     "test_token": [1, 2, 3],
-                    "another_token": [4, 5]
+                    "another_token": [4, 5],
                 }
-                mock_text_search_index_class.load_text_search_index_from_file.return_value = mock_text_search_index
+                mock_text_search_index_class.load_text_search_index_from_file.return_value = (
+                    mock_text_search_index
+                )
 
                 # Mock runtime_transaction and TokenRepository
-                with patch("musigree.transfer.transfer_manager.runtime_transaction") as mock_runtime_transaction:
-                    with patch("musigree.transfer.transfer_manager.TokenRepository") as mock_token_repo_class:
+                with patch(
+                    "musigree.transfer.transfer_manager.runtime_transaction"
+                ) as mock_runtime_transaction:
+                    with patch(
+                        "musigree.transfer.transfer_manager.TokenRepository"
+                    ) as mock_token_repo_class:
                         # Mock the transaction context manager
                         mock_context_manager = AsyncMock()
                         mock_context_manager.__aenter__.return_value = AsyncMock()
@@ -392,9 +390,11 @@ class TestTransferManager:
                         await TransferManager.transfer_load_text_search_index(test_path)
 
                         # Verify the text search index was loaded and assigned
-                        mock_text_search_index_class.load_text_search_index_from_file.assert_called_once_with(test_path)
+                        mock_text_search_index_class.load_text_search_index_from_file.assert_called_once_with(
+                            test_path
+                        )
                         assert mock_runtime_db_helper.text_search_index == mock_text_search_index
-                        
+
                         # Verify the token repository was used
                         assert mock_token_repo.create.call_count == 5  # 3 + 2 tokens
 
@@ -411,7 +411,9 @@ class TestTransferManager:
             mock_db_manager.runtime_database_helper = mock_runtime_db_helper
 
             # Mock the TextSearchIndex.load_text_search_index_from_file method
-            with patch("musigree.transfer.transfer_manager.EntityDetailsIndex") as mock_entity_details_index_class:
+            with patch(
+                "musigree.transfer.transfer_manager.EntityDetailsIndex"
+            ) as mock_entity_details_index_class:
                 mock_entity_details_index = Mock()
                 mock_entity_details_index_class.load_entity_details_index_from_file.return_value = (
                     mock_entity_details_index
@@ -424,7 +426,9 @@ class TestTransferManager:
                 await TransferManager.transfer_load_entity_details_index(test_path)
 
                 # Verify the text search index was loaded and assigned
-                mock_entity_details_index_class.load_entity_details_index_from_file.assert_called_once_with(test_path)
+                mock_entity_details_index_class.load_entity_details_index_from_file.assert_called_once_with(
+                    test_path
+                )
                 assert mock_runtime_db_helper.entity_details_index == mock_entity_details_index
 
     @pytest.mark.asyncio
@@ -446,13 +450,11 @@ class TestTransferManager:
             patch(
                 "musigree.transfer.transfer_manager.RuntimeEntityRepository"
             ) as mock_runtime_repo,
+            patch("musigree.transfer.transfer_manager.EntityRepository") as mock_offline_repo,
+            patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager") as mock_db_manager,
             patch(
-                "musigree.transfer.transfer_manager.EntityRepository"
-            ) as mock_offline_repo,
-            patch(
-                "musigree.transfer.transfer_manager.RuntimeDatabaseManager"
-            ) as mock_db_manager,
-            patch("musigree.transfer.transfer_manager.RuntimeEntityDataAccess") as mock_runtime_entity_data_access,
+                "musigree.transfer.transfer_manager.RuntimeEntityDataAccess"
+            ) as mock_runtime_entity_data_access,
         ):
             # Setup basic mocks to allow the method to complete successfully
             mock_runtime_instance = AsyncMock()
@@ -476,9 +478,7 @@ class TestTransferManager:
 
             mock_offline_instance.all = Mock(return_value=EmptyAsyncGenerator())
 
-            mock_db_manager.get_concurrency_count.return_value = (
-                4  # Enable multithreading
-            )
+            mock_db_manager.get_concurrency_count.return_value = 4  # Enable multithreading
             mock_db_manager.runtime_database_helper = Mock()  # Required by the transfer method
 
             # async_chunks is no longer used in the transfer manager
@@ -490,7 +490,9 @@ class TestTransferManager:
                 # noinspection PyTypeChecker
                 yield  # pragma: no cover
 
-            mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
+            mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = (
+                empty_entity_dicts()
+            )
 
             # The test passes if the method completes without throwing an exception
             await TransferManager.transfer_entity()
@@ -526,9 +528,7 @@ class TestTransferManager:
         mock_offline_repo.return_value = mock_offline_instance
 
         # Mock database error during count operation in the first runtime transaction
-        mock_runtime_instance.count.side_effect = Exception(
-            "Database connection failed"
-        )
+        mock_runtime_instance.count.side_effect = Exception("Database connection failed")
 
         # Create a proper mock for EntityDetailsIndex
         _mock_entity_details = Mock(spec=EntityDetailsIndex)
@@ -585,14 +585,18 @@ class TestTransferManager:
 
         # async_chunks is no longer used in the transfer manager
         # Mock the new RuntimeEntityDataAccess method
-        with patch("musigree.transfer.transfer_manager.RuntimeEntityDataAccess") as mock_runtime_entity_data_access:
+        with patch(
+            "musigree.transfer.transfer_manager.RuntimeEntityDataAccess"
+        ) as mock_runtime_entity_data_access:
             # noinspection PyUnreachableCode
             async def empty_entity_dicts() -> AsyncGenerator[dict[str, Any], None]:
                 return
                 # noinspection PyTypeChecker
                 yield  # pragma: no cover
 
-            mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = empty_entity_dicts()
+            mock_runtime_entity_data_access.get_runtime_entity_dicts_from_entities.return_value = (
+                empty_entity_dicts()
+            )
 
             # The test passes if the method completes without throwing an exception
             await TransferManager.transfer_entity()

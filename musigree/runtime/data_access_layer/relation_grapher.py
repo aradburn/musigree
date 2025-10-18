@@ -70,9 +70,7 @@ class RelationGrapher:
             RuntimeDatabaseHelper,
         )
 
-        log.debug(
-            f"RelationGrapher for {center_entity.entity_type}-{center_entity.entity_name}"
-        )
+        log.debug(f"RelationGrapher for {center_entity.entity_type}-{center_entity.entity_name}")
         self._center_entity = center_entity
         degree = int(degree)
         assert degree > 0
@@ -97,9 +95,7 @@ class RelationGrapher:
             # elif not isinstance(role_names, collections_abc.Iterable):
             #     role_names = (role_names,)
             # role_names = tuple(role_names)
-            assert all(
-                _ in RoleCache.role_name_to_role_id_lookup.keys() for _ in role_names
-            )
+            assert all(_ in RoleCache.role_name_to_role_id_lookup.keys() for _ in role_names)
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
                     self._structural_role_names.append(role_name)
@@ -149,9 +145,7 @@ class RelationGrapher:
             if len(self.entity_keys_to_visit) > self.max_nodes:
                 break
             log.debug(f"        Search for {len(self.entity_keys_to_visit)} entities")
-            entities = await self.search_entities(
-                entity_repository, self.entity_keys_to_visit
-            )
+            entities = await self.search_entities(entity_repository, self.entity_keys_to_visit)
             log.debug(f"        Search found {len(entities)} entities")
             relations: dict[str, RuntimeRelationResult] = {}
             self.process_entities(distance, entities)
@@ -164,9 +158,7 @@ class RelationGrapher:
             self.test_loop_one(distance)
             self.prune_roles(distance, provisional_role_names)
             if not self.should_break_loop:
-                self.search_via_structural_roles(
-                    distance, provisional_role_names, relations
-                )
+                self.search_via_structural_roles(distance, provisional_role_names, relations)
                 await self.search_via_relational_roles(
                     relation_repository=relation_repository,
                     distance=distance,
@@ -189,12 +181,10 @@ class RelationGrapher:
         # log.debug(f"self.links: {self.links}")
         # log.debug(f"self.nodes: {self.nodes}")
         json_links = tuple(
-            link.as_json()
-            for key, link in sorted(self.links.items(), key=lambda x: x[0])
+            link.as_json() for key, link in sorted(self.links.items(), key=lambda x: x[0])
         )
         json_nodes = tuple(
-            node.as_json()
-            for key, node in sorted(self.nodes.items(), key=lambda x: x[0])
+            node.as_json() for key, node in sorted(self.nodes.items(), key=lambda x: x[0])
         )
         network = {
             "center": {
@@ -241,9 +231,7 @@ class RelationGrapher:
             )
             if 0 < distance and self.max_links < relational_count:
                 self.entity_keys_to_visit.remove(entity_key)
-                log.debug(
-                    f"            Pre-pruned {entity.entity_name} [{relational_count}]"
-                )
+                log.debug(f"            Pre-pruned {entity.entity_name} [{relational_count}]")
         if provisional_roles and distance < self.degree:
             log.debug("        Retrieving relational relations")
             keys = sorted(self.entity_keys_to_visit)
@@ -343,14 +331,10 @@ class RelationGrapher:
             ):
                 self.links.pop(link_key)
                 continue
-        log.debug(
-            f"    Built trellis: {len(self.nodes)} nodes / {len(self.links)} links"
-        )
+        log.debug(f"    Built trellis: {len(self.nodes)} nodes / {len(self.links)} links")
 
     @staticmethod
-    def find_trellis_distance(
-        trellis_nodes_by_distance: dict[int, list], threshold: float
-    ) -> int:
+    def find_trellis_distance(trellis_nodes_by_distance: dict[int, list], threshold: float) -> int:
         log.debug(f"        Maximum depth: {max(trellis_nodes_by_distance)}")
         log.debug(f"        Subgraph threshold: {threshold}")
         distancewise_average_subgraph_size = {}
@@ -410,9 +394,7 @@ class RelationGrapher:
                 # log.debug(f"        add TrellisNode for entity: {entity_key}")
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
-    def process_relations(
-        self, relation_links: dict[str, RuntimeRelationResult]
-    ) -> None:
+    def process_relations(self, relation_links: dict[str, RuntimeRelationResult]) -> None:
         log.debug(f"    process {len(relation_links)} relation_links")
         for link_key, relation in sorted(relation_links.items()):
             # log.debug(f"        link_key: {link_key}")

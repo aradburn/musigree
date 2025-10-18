@@ -37,6 +37,7 @@ The `delete_entities_worker` function interacts with the following components:
 The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -54,7 +55,9 @@ The logger for the worker entity deleter module.
 """
 
 
-async def delete_entities_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
+async def delete_entities_worker_async(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """Worker function for deleting entity records from the database.
     This function is designed to be used with ProcessPoolExecutor to perform
     concurrent deletion of entity records.
@@ -93,13 +96,13 @@ async def delete_single_entity(
     entity_repository: EntityRepository, relation_repository: RelationRepository, entity_id: int
 ) -> None:
     """Async function to handle entity deletion.
-        Args:
-            entity_repository (EntityRepository): The repository for entity operations.
-            relation_repository (RelationRepository): The repository for relation operations.
-            entity_id (int): The ID of the entity to delete.
-        Raises:
-            DatabaseError: If there's an error during database operations.
-        """
+    Args:
+        entity_repository (EntityRepository): The repository for entity operations.
+        relation_repository (RelationRepository): The repository for relation operations.
+        entity_id (int): The ID of the entity to delete.
+    Raises:
+        DatabaseError: If there's an error during database operations.
+    """
     try:
         """Attempt to delete the entity and its relations."""
         await relation_repository.delete_by_entitys(entity_id)

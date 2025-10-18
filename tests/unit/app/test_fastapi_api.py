@@ -56,9 +56,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -104,9 +102,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -146,9 +142,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -179,9 +173,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method as async
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_network = AsyncMock(
-            return_value={"graph": {"nodes": [], "edges": []}}
-        )
+        mock_db_helper.get_network = AsyncMock(return_value={"graph": {"nodes": [], "edges": []}})
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -194,9 +186,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -236,9 +226,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -269,9 +257,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method as async
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_network = AsyncMock(
-            return_value={"graph": {"nodes": [], "edges": []}}
-        )
+        mock_db_helper.get_network = AsyncMock(return_value={"graph": {"nodes": [], "edges": []}})
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -292,9 +278,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -325,9 +309,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method as async
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_network = AsyncMock(
-            return_value={"graph": {"nodes": [], "edges": []}}
-        )
+        mock_db_helper.get_network = AsyncMock(return_value={"graph": {"nodes": [], "edges": []}})
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -343,9 +325,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -376,9 +356,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method as async
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_network = AsyncMock(
-            return_value={"graph": {"nodes": [], "edges": []}}
-        )
+        mock_db_helper.get_network = AsyncMock(return_value={"graph": {"nodes": [], "edges": []}})
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -415,9 +393,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method for search
         mock_db_helper = MagicMock()
-        mock_db_helper.search_text_index = MagicMock(
-            return_value=[(123, "Test Artist")]
-        )
+        mock_db_helper.search_text_index = MagicMock(return_value=[(123, "Test Artist")])
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Mock the runtime transaction context manager
@@ -434,7 +410,9 @@ class TestFastAPIRoutes:
         data = response.json()
         assert "results" in data
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities")
+    @patch(
+        "musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities"
+    )
     @patch("musigree.app.fastapi_api.runtime_transaction")
     def test_route_search_empty_results(
         self, mock_runtime_transaction: Mock, mock_search_entities: Mock, client: TestClient
@@ -442,7 +420,7 @@ class TestFastAPIRoutes:
         """Test search with empty results."""
         # Arrange
         mock_search_entities.return_value = {"results": []}
-        
+
         # Mock the runtime transaction context manager
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__.return_value = AsyncMock()
@@ -458,7 +436,9 @@ class TestFastAPIRoutes:
         assert data["results"] == []
         mock_search_entities.assert_called_once()
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities")
+    @patch(
+        "musigree.runtime.data_access_layer.runtime_entity_search.RuntimeEntitySearch.search_entities"
+    )
     @patch("musigree.app.fastapi_api.runtime_transaction")
     def test_route_search_exception(
         self, mock_runtime_transaction: Mock, mock_search_entities: Mock, client: TestClient
@@ -466,7 +446,7 @@ class TestFastAPIRoutes:
         """Test search with exception."""
         # Arrange
         mock_search_entities.side_effect = Exception("Search index error")
-        
+
         # Mock the runtime transaction context manager
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__.return_value = AsyncMock()
@@ -479,9 +459,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     async def test_route_entity_details_success(
         self,
         mock_entity_repo_class: Mock,
@@ -515,9 +493,7 @@ class TestFastAPIRoutes:
         mock_entity.styles = []
 
         # Configure the async method to return the mock entity
-        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(
-            return_value=mock_entity
-        )
+        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(return_value=mock_entity)
 
         # Act
         response = client.get("/api/artist/details/123")
@@ -531,9 +507,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     async def test_route_entity_details_invalid_entity_id(
         self,
         mock_entity_repo_class: Mock,
@@ -565,9 +539,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     async def test_route_entity_details_not_found(
         self,
         mock_entity_repo_class: Mock,
@@ -589,18 +561,14 @@ class TestFastAPIRoutes:
         mock_runtime_transaction.return_value = mock_context_manager
 
         # Configure the mock to return None (entity not found)
-        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(
-            return_value=None
-        )
+        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(return_value=None)
 
         # Act & Assert - entity not found causes AttributeError because the endpoint doesn't handle None
         with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'entity_id'"):
             client.get("/api/artist/details/999")
 
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )
@@ -634,9 +602,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method as async returning None
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_relations_by_entity_id_and_entity_type = AsyncMock(
-            return_value=None
-        )
+        mock_db_helper.get_relations_by_entity_id_and_entity_type = AsyncMock(return_value=None)
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -646,9 +612,7 @@ class TestFastAPIRoutes:
         assert response.status_code == 404
 
     @patch("musigree.library.cache.role_cache.RoleCache")
-    def test_route_roles_success(
-        self, mock_role_cache: Mock, client: TestClient
-    ) -> None:
+    def test_route_roles_success(self, mock_role_cache: Mock, client: TestClient) -> None:
         """Test successful roles retrieval."""
         # Arrange
         expected_data = {"roles": ["vocals", "guitar", "drums"]}
@@ -664,9 +628,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
     async def test_route_random_success(
         self,
@@ -691,9 +653,7 @@ class TestFastAPIRoutes:
 
         # Mock the database helper method
         mock_db_helper = AsyncMock()
-        mock_db_helper.get_random_entity = AsyncMock(
-            return_value=(123, EntityType.ARTIST)
-        )
+        mock_db_helper.get_random_entity = AsyncMock(return_value=(123, EntityType.ARTIST))
         mock_db_manager_class.runtime_database_helper = mock_db_helper
 
         # Act
@@ -706,9 +666,7 @@ class TestFastAPIRoutes:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
     async def test_route_random_database_error(
         self,
@@ -791,7 +749,7 @@ class TestAdditionalEndpointScenarios:
 
     def test_route_invalid_entity_id_negative(self, client: TestClient) -> None:
         """Test endpoint with negative entity ID."""
-        # Act  
+        # Act
         response = client.get("/api/artist/details/-1")
 
         # Assert
@@ -839,9 +797,7 @@ class TestAdditionalEndpointScenarios:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     async def test_route_entity_details_label_type(
         self,
         mock_entity_repo_class: Mock,
@@ -875,9 +831,7 @@ class TestAdditionalEndpointScenarios:
         mock_entity.styles = ["Alternative"]
 
         # Configure the async method to return the mock entity
-        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(
-            return_value=mock_entity
-        )
+        mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(return_value=mock_entity)
 
         # Act
         response = client.get("/api/label/details/456")
@@ -902,9 +856,7 @@ class TestAdditionalEndpointScenarios:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_api.runtime_transaction")
-    @patch(
-        "musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository"
-    )
+    @patch("musigree.runtime.runtime_database.runtime_entity_repository.RuntimeEntityRepository")
     @patch(
         "musigree.runtime.runtime_database.runtime_relation_repository.RuntimeRelationRepository"
     )

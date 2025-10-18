@@ -4,6 +4,7 @@ Unit tests for the loader_base module.
 This module contains comprehensive unit tests for the LoaderBase class,
 which provides the foundation for data loading operations in the offline system.
 """
+
 import gzip
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
@@ -62,7 +63,7 @@ class TestLoaderBase:
     def test_tags_to_fields_mapping_can_be_set(self) -> None:
         """Test that _tags_to_fields_mapping can be modified."""
         original_mapping = LoaderBase._tags_to_fields_mapping
-        
+
         try:
             test_mapping = {"test_tag": {"field": "value"}}
             LoaderBase._tags_to_fields_mapping = test_mapping
@@ -90,7 +91,9 @@ class TestProcessXml:
 
     @patch("musigree.offline.loader.loader_base.ParserUtils.iterparse")
     @patch("musigree.offline.loader.loader_base.gzip.GzipFile")
-    def test_process_xml_success(self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock) -> None:
+    def test_process_xml_success(
+        self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock
+    ) -> None:
         """Test successful XML processing."""
         # Setup
         mock_element = Mock()
@@ -111,7 +114,9 @@ class TestProcessXml:
 
     @patch("musigree.offline.loader.loader_base.ParserUtils.iterparse")
     @patch("musigree.offline.loader.loader_base.gzip.GzipFile")
-    def test_process_xml_with_skip_without(self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock) -> None:
+    def test_process_xml_with_skip_without(
+        self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock
+    ) -> None:
         """Test XML processing with skip_without filtering."""
         # Setup
         mock_element1 = Mock()
@@ -119,15 +124,17 @@ class TestProcessXml:
         mock_iterparse.return_value = [mock_element1, mock_element2]
         mock_file = Mock()
         mock_gzip.return_value.__enter__.return_value = mock_file
-        
+
         # First element has required field, second doesn't
         mock_parser.tags_to_fields.side_effect = [
             {"id": 1, "name": "test", "required_field": "value"},
-            {"id": 2, "name": "test2", "required_field": None}
+            {"id": 2, "name": "test2", "required_field": None},
         ]
 
         # Execute
-        result = list(LoaderBase.process_xml(mock_parser, "test.xml.gz", "artist", ["required_field"]))
+        result = list(
+            LoaderBase.process_xml(mock_parser, "test.xml.gz", "artist", ["required_field"])
+        )
 
         # Verify - only first element should be returned
         assert len(result) == 1
@@ -135,7 +142,9 @@ class TestProcessXml:
 
     @patch("musigree.offline.loader.loader_base.ParserUtils.iterparse")
     @patch("musigree.offline.loader.loader_base.gzip.GzipFile")
-    def test_process_xml_data_error(self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock) -> None:
+    def test_process_xml_data_error(
+        self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock
+    ) -> None:
         """Test XML processing with DataError."""
         # Setup
         mock_element = Mock()
@@ -150,7 +159,9 @@ class TestProcessXml:
 
     @patch("musigree.offline.loader.loader_base.ParserUtils.iterparse")
     @patch("musigree.offline.loader.loader_base.gzip.GzipFile")
-    def test_process_xml_empty_result(self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock) -> None:
+    def test_process_xml_empty_result(
+        self, mock_gzip: Mock, mock_iterparse: Mock, mock_parser: Mock
+    ) -> None:
         """Test XML processing with empty result."""
         # Setup
         mock_iterparse.return_value = []
@@ -190,7 +201,7 @@ class TestLoaderPassOneManager:
     async def test_loader_pass_one_manager_bulk_inserts(
         self,
         mock_concurrency: Mock,
-        mock_queue_worker: AsyncMock,
+        _mock_queue_worker: AsyncMock,
         mock_worker_gen: Mock,
         mock_batched: Mock,
         mock_gen_with_id: Mock,
@@ -209,10 +220,14 @@ class TestLoaderPassOneManager:
         mock_gen_with_id.return_value = [{"id": 1, "name": "test"}]
         mock_batched.side_effect = lambda x, size: [list(x)]
         mock_worker_gen.return_value = []
-        
+
         with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
-            with patch.object(ConcreteLoaderBase, "get_insert_worker_function") as mock_insert_worker:
-                with patch.object(ConcreteLoaderBase, "get_delete_worker_function") as mock_delete_worker:
+            with patch.object(
+                ConcreteLoaderBase, "get_insert_worker_function"
+            ) as mock_insert_worker:
+                with patch.object(
+                    ConcreteLoaderBase, "get_delete_worker_function"
+                ) as mock_delete_worker:
                     mock_insert_worker.return_value = Mock()
                     mock_delete_worker.return_value = Mock()
 
@@ -225,11 +240,13 @@ class TestLoaderPassOneManager:
                         "artist",
                         "id",
                         [],
-                        is_bulk_inserts=True
+                        is_bulk_inserts=True,
                     )
 
                     # Verify
-                    assert result == 0  # processed_count starts at 0 and isn't updated in the current logic
+                    assert (
+                        result == 0
+                    )  # processed_count starts at 0 and isn't updated in the current logic
                     mock_repository.count.assert_called()
                     mock_get_xml_path.assert_called_once_with(Path("/test"), "artist", "2023-01-01")
                     mock_insert_worker.assert_called_once()
@@ -245,7 +262,7 @@ class TestLoaderPassOneManager:
     async def test_loader_pass_one_manager_updates(
         self,
         mock_concurrency: Mock,
-        mock_queue_worker: AsyncMock,
+        _mock_queue_worker: AsyncMock,
         mock_worker_gen: Mock,
         mock_batched: Mock,
         mock_gen_with_id: Mock,
@@ -264,10 +281,14 @@ class TestLoaderPassOneManager:
         mock_gen_with_id.return_value = [{"id": 1, "name": "test"}]
         mock_batched.side_effect = lambda x, size: [list(x)]
         mock_worker_gen.return_value = []
-        
+
         with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
-            with patch.object(ConcreteLoaderBase, "get_update_worker_function") as mock_update_worker:
-                with patch.object(ConcreteLoaderBase, "get_delete_worker_function") as mock_delete_worker:
+            with patch.object(
+                ConcreteLoaderBase, "get_update_worker_function"
+            ) as mock_update_worker:
+                with patch.object(
+                    ConcreteLoaderBase, "get_delete_worker_function"
+                ) as mock_delete_worker:
                     mock_update_worker.return_value = Mock()
                     mock_delete_worker.return_value = Mock()
 
@@ -280,7 +301,7 @@ class TestLoaderPassOneManager:
                         "artist",
                         "id",
                         [],
-                        is_bulk_inserts=False
+                        is_bulk_inserts=False,
                     )
 
                     # Verify
@@ -317,12 +338,16 @@ class TestLoaderPassOneManager:
         mock_gen_with_id.return_value = [{"id": 1, "name": "test"}]
         mock_batched.side_effect = lambda x, size: [list(x)]
         mock_worker_gen.return_value = []
-        
+
         # Set up scenario where database has IDs {1, 2, 3} but XML only has {1}
         # So IDs {2, 3} should be deleted
         with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
-            with patch.object(ConcreteLoaderBase, "get_update_worker_function") as mock_update_worker:
-                with patch.object(ConcreteLoaderBase, "get_delete_worker_function") as mock_delete_worker:
+            with patch.object(
+                ConcreteLoaderBase, "get_update_worker_function"
+            ) as mock_update_worker:
+                with patch.object(
+                    ConcreteLoaderBase, "get_delete_worker_function"
+                ) as mock_delete_worker:
                     mock_update_worker.return_value = Mock()
                     mock_delete_worker.return_value = Mock()
 
@@ -335,7 +360,7 @@ class TestLoaderPassOneManager:
                         "artist",
                         "id",
                         [],
-                        is_bulk_inserts=False
+                        is_bulk_inserts=False,
                     )
 
                     # Verify
@@ -354,7 +379,7 @@ class TestLoaderPassOneManager:
         insert_worker = ConcreteLoaderBase.get_insert_worker_function()
         update_worker = ConcreteLoaderBase.get_update_worker_function()
         delete_worker = ConcreteLoaderBase.get_delete_worker_function()
-        
+
         assert insert_worker is not None
         assert update_worker is not None
         assert delete_worker is not None

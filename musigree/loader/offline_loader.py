@@ -13,6 +13,7 @@ The loader is responsible for:
     - Registering cleanup functions to be run when the application exits.
     - Running the loader process between specified dates.
 """
+
 import asyncio
 import atexit
 import datetime
@@ -51,9 +52,7 @@ from musigree.utils import log_banner
 log = logging.getLogger(__name__)
 
 
-async def load_offline_tables(
-    data_directory: Path, date: str, is_bulk_inserts: bool
-) -> None:
+async def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: bool) -> None:
     """
     Loads data into the offline tables.
 
@@ -109,9 +108,7 @@ def get_load_offline_table_stages(
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_load_offline_table_stages()"
     )
-    assert (
-        OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
-    ), (
+    assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
         "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_load_offline_table_stages()"
     )
 
@@ -261,7 +258,11 @@ def offline_loader_main() -> None:
         "offline_database_helper must be initialized before calling initialize()"
     )
     with asyncio.Runner() as runner:
-        runner.run(OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES))
+        runner.run(
+            OfflineDatabaseManager.offline_database_helper.create_tables(
+                ALL_OFFLINE_DATABASE_TABLE_NAMES
+            )
+        )
         # Load roles, may be empty if no roles in database yet
         runner.run(RoleDataAccess.load_all_roles_into_cache())
         runner.close()
@@ -273,7 +274,9 @@ def offline_loader_main() -> None:
     # end_date = datetime.datetime.now()
     offline_data_directory: str = str(offline_config.DATA_DIR)
     tasks = [
-        LoaderSetupTask(data_directory=offline_data_directory, start_date=start_date, end_date=end_date),
+        LoaderSetupTask(
+            data_directory=offline_data_directory, start_date=start_date, end_date=end_date
+        ),
     ]
     luigi_run_result = luigi.build(
         tasks,

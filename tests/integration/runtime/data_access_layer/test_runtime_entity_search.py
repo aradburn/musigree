@@ -26,9 +26,7 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         """Test text search functionality for 'Wax' query."""
-        text_search_path = (
-            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-        )
+        text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
@@ -38,7 +36,9 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
             runtime_entity_repository = RuntimeEntityRepository()
             token_repository = TokenRepository()
 
-            results = await RuntimeEntitySearch.search_entities(runtime_entity_repository, token_repository, "Wax")
+            results = await RuntimeEntitySearch.search_entities(
+                runtime_entity_repository, token_repository, "Wax"
+            )
 
         # THEN
         expected = [
@@ -68,9 +68,7 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         """Test text search functionality for 'Joker' query."""
-        text_search_path = (
-            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-        )
+        text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         assert RuntimeDatabaseManager.runtime_database_helper is not None
 
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
@@ -80,7 +78,9 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
             runtime_entity_repository = RuntimeEntityRepository()
             token_repository = TokenRepository()
 
-            results = await RuntimeEntitySearch.search_entities(runtime_entity_repository, token_repository, "Joker")
+            results = await RuntimeEntitySearch.search_entities(
+                runtime_entity_repository, token_repository, "Joker"
+            )
 
         # THEN
         expected = [

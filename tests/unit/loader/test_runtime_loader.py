@@ -1,7 +1,7 @@
 """
 Unit tests for musigree.loader.runtime_loader module.
 """
-from functools import partial
+
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
@@ -102,7 +102,7 @@ class TestRuntimeLoaderFunctions:
         mock_transfer_manager.transfer_entity_details = Mock()
         mock_transfer_manager.transfer_entity = Mock()
         mock_transfer_manager.transfer_relation = Mock()
-        
+
         # Mock the runtime role data access method
         mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
 
@@ -128,7 +128,9 @@ class TestRuntimeLoaderFunctions:
         with pytest.raises(AssertionError) as excinfo:
             get_load_runtime_table_stages(mock_data_directory, mock_date)
 
-        assert "RuntimeDatabaseManager.runtime_database_helper must be initialized" in str(excinfo.value)
+        assert "RuntimeDatabaseManager.runtime_database_helper must be initialized" in str(
+            excinfo.value
+        )
 
     @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
@@ -291,7 +293,9 @@ class TestRuntimeLoaderIntegration:
     ) -> None:
         """Test integration of load_runtime_tables with all components."""
         # Mock get_load_runtime_table_stages to return awaitable mock stages
-        with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
+        with patch(
+            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+        ) as mock_get_stages:
             # Create async mock stages
             mock_stage1 = AsyncMock()
             mock_stage2 = AsyncMock()
@@ -315,7 +319,9 @@ class TestRuntimeLoaderIntegration:
         data_directory = Path("/test/data")
         date = "2024-11-01"
 
-        with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
+        with patch(
+            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+        ) as mock_get_stages:
             # Create async mock stages
             mock_stage1 = AsyncMock()
             mock_stage2 = AsyncMock()
@@ -372,15 +378,15 @@ class TestRuntimeLoaderEdgeCases:
 
     @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
-    async def test_load_runtime_tables_missing_text_search(
-        self, mock_get_stages: Mock
-    ) -> None:
+    async def test_load_runtime_tables_missing_text_search(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_tables when text search file is missing."""
         # Arrange
         missing_directory = Path("/missing")
 
         # Mock the stages but have one of them raise FileNotFoundError
-        mock_stage_that_fails = AsyncMock(side_effect=FileNotFoundError("Text search file not found"))
+        mock_stage_that_fails = AsyncMock(
+            side_effect=FileNotFoundError("Text search file not found")
+        )
 
         mock_get_stages.return_value = [mock_stage_that_fails]
 
@@ -390,18 +396,16 @@ class TestRuntimeLoaderEdgeCases:
 
     @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
-    async def test_load_runtime_table_stage_with_exception(
-        self, mock_get_stages: Mock
-    ) -> None:
+    async def test_load_runtime_table_stage_with_exception(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_table_stage when a stage raises an exception."""
         # Arrange
         data_directory = Path("/test/data")
         date = "2024-11-01"
-        
+
         mock_stage_that_fails = AsyncMock(side_effect=RuntimeError("Stage execution failed"))
-        
+
         mock_get_stages.return_value = [mock_stage_that_fails]
-        
+
         # Act & Assert - Should raise RuntimeError
         with pytest.raises(RuntimeError, match="Stage execution failed"):
             await load_runtime_table_stage(data_directory, date, stage=0)
@@ -413,33 +417,33 @@ class TestRuntimeLoaderEdgeCases:
         # Arrange
         data_directory = Path("/test/data")
         date = "2024-11-01"
-        
+
         mock_get_stages.return_value = []
-        
+
         # Act - Should complete without error even with empty stages
         await load_runtime_tables(data_directory, date)
-        
+
         # Assert
         mock_get_stages.assert_called_once_with(data_directory, date)
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager") 
+    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_vacuum_configurations(
         self,
         mock_runtime_role_data_access: Mock,
-        mock_transfer_manager: Mock, 
+        mock_transfer_manager: Mock,
         mock_db_manager: Mock,
     ) -> None:
         """Test get_load_runtime_table_stages with different vacuum configurations."""
         # Arrange
         data_directory = Path("/test/data")
         date = "2024-11-01"
-        
+
         mock_helper = Mock()
         mock_helper.runtime_async_engine = Mock()
         mock_db_manager.runtime_database_helper = mock_helper
-        
+
         # Mock all transfer manager methods
         mock_transfer_manager.transfer_role = Mock()
         mock_transfer_manager.transfer_load_text_search_index = Mock()
@@ -449,35 +453,35 @@ class TestRuntimeLoaderEdgeCases:
         mock_transfer_manager.transfer_relation = Mock()
         mock_runtime_role_data_access.load_all_roles_into_cache = Mock()
         mock_helper.vacuum = Mock()
-        
+
         # Test case 1: Both vacuum options enabled
         mock_helper.is_vacuum_full.return_value = True
         mock_helper.is_vacuum_analyze.return_value = True
-        
+
         stages = get_load_runtime_table_stages(data_directory, date)
         assert isinstance(stages, list)
         assert len(stages) > 0
-        
+
         # Test case 2: Only vacuum_full enabled
-        mock_helper.is_vacuum_full.return_value = True 
+        mock_helper.is_vacuum_full.return_value = True
         mock_helper.is_vacuum_analyze.return_value = False
-        
+
         stages = get_load_runtime_table_stages(data_directory, date)
         assert isinstance(stages, list)
         assert len(stages) > 0
-        
+
         # Test case 3: Only vacuum_analyze enabled
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = True
-        
+
         stages = get_load_runtime_table_stages(data_directory, date)
         assert isinstance(stages, list)
         assert len(stages) > 0
-        
+
         # Test case 4: Both vacuum options disabled
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = False
-        
+
         stages = get_load_runtime_table_stages(data_directory, date)
         assert isinstance(stages, list)
         assert len(stages) > 0
@@ -486,14 +490,17 @@ class TestRuntimeLoaderEdgeCases:
         """Test load_runtime_table_stage with negative stage index."""
         # This would be handled by Python's list indexing, which allows negative indices
         # We'll test this behavior
-        with patch("musigree.loader.runtime_loader.get_load_runtime_table_stages") as mock_get_stages:
+        with patch(
+            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+        ) as mock_get_stages:
             mock_stage = AsyncMock()
             mock_get_stages.return_value = [mock_stage]
-            
+
             # This should work with negative indexing (accessing last element)
             import asyncio
+
             asyncio.run(load_runtime_table_stage(Path("/test"), "2024-11-01", stage=-1))
-            
+
             mock_get_stages.assert_called_once()
 
     @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
@@ -504,16 +511,18 @@ class TestRuntimeLoaderEdgeCases:
         """Test get_load_runtime_table_stages with None date parameter."""
         # Arrange
         data_directory = Path("/test/data")
-        
+
         mock_helper = Mock()
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = False
         mock_helper.runtime_async_engine = Mock()
         mock_db_manager.runtime_database_helper = mock_helper
         mock_helper.vacuum = AsyncMock()
-        
+
         with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:
-            with patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess") as mock_runtime_role_data_access:
+            with patch(
+                "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess"
+            ) as mock_runtime_role_data_access:
                 # Mock all transfer manager methods
                 mock_transfer_manager.transfer_role = AsyncMock()
                 mock_transfer_manager.transfer_load_text_search_index = AsyncMock()
@@ -522,10 +531,10 @@ class TestRuntimeLoaderEdgeCases:
                 mock_transfer_manager.transfer_entity = AsyncMock()
                 mock_transfer_manager.transfer_relation = AsyncMock()
                 mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
-                
+
                 # Act - Should work with None date
                 stages = get_load_runtime_table_stages(data_directory, None)
-                
+
                 # Assert
                 assert isinstance(stages, list)
                 assert len(stages) > 0
@@ -535,7 +544,7 @@ class TestRuntimeLoaderShutdown:
     """Test cases for runtime loader shutdown functionality."""
 
     @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager") 
+    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.runtime_loader.CacheManager")
     @patch("musigree.loader.runtime_loader.setup_logging")
     @patch("musigree.loader.runtime_loader.shutdown_logging")
@@ -553,16 +562,17 @@ class TestRuntimeLoaderShutdown:
         # Arrange
         mock_offline_db_manager.shutdown_database = AsyncMock()
         mock_runtime_db_manager.shutdown_database = AsyncMock()
-        
+
         # Mock asyncio.Runner context manager
         mock_runner_instance = Mock()
         mock_runner.return_value.__enter__.return_value = mock_runner_instance
         mock_runner.return_value.__exit__.return_value = None
-        
+
         # Act
         from musigree.loader.runtime_loader import shutdown_loader
+
         shutdown_loader()
-        
+
         # Assert
         mock_setup_logging.assert_called_once()
         mock_offline_db_manager.shutdown_database.assert_called_once()
@@ -587,17 +597,20 @@ class TestRuntimeLoaderShutdown:
     ) -> None:
         """Test shutdown_loader when database shutdown fails."""
         # Arrange
-        mock_offline_db_manager.shutdown_database = AsyncMock(side_effect=Exception("Database shutdown failed"))
+        mock_offline_db_manager.shutdown_database = AsyncMock(
+            side_effect=Exception("Database shutdown failed")
+        )
         mock_runtime_db_manager.shutdown_database = AsyncMock()
-        
+
         # Mock asyncio.Runner context manager to propagate the exception
         mock_runner_instance = Mock()
         mock_runner_instance.run.side_effect = Exception("Database shutdown failed")
         mock_runner.return_value.__enter__.return_value = mock_runner_instance
         mock_runner.return_value.__exit__.return_value = None
-        
+
         # Act & Assert - Should propagate the exception when runner.run is called
         from musigree.loader.runtime_loader import shutdown_loader
+
         with pytest.raises(Exception, match="Database shutdown failed"):
             shutdown_loader()
 
@@ -628,38 +641,40 @@ class TestRuntimeLoaderMainAdditional:
         # Arrange
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
-        
+
         mock_build_result = Mock()
         mock_build_result.summary_text = "Build failed with errors"
         mock_luigi.build.return_value = mock_build_result
-        
+
         # Mock database setup methods to return AsyncMock
         mock_offline_db_manager.setup_database = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
-        
+
         # Mock offline database helper
         mock_offline_helper = Mock()
         mock_offline_helper.create_tables = AsyncMock()
         mock_offline_db_manager.offline_database_helper = mock_offline_helper
-        
+
         # Mock runtime database helper
         mock_runtime_helper = Mock()
         mock_runtime_helper.drop_tables = AsyncMock()
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
-        
+
         # Mock RoleDataAccess.load_all_roles_into_cache
-        with patch("musigree.offline.data_access_layer.role_data_access.RoleDataAccess") as mock_role_data_access:
+        with patch(
+            "musigree.offline.data_access_layer.role_data_access.RoleDataAccess"
+        ) as mock_role_data_access:
             mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-            
+
             # Mock asyncio.Runner context manager
             mock_runner_instance = Mock()
             mock_runner.return_value.__enter__.return_value = mock_runner_instance
             mock_runner.return_value.__exit__.return_value = None
-            
+
             # Act
             runtime_loader_main()
-            
+
             # Assert
             mock_luigi.build.assert_called_once()
 
@@ -686,17 +701,17 @@ class TestRuntimeLoaderMainAdditional:
         # Arrange
         mock_cache = Mock()
         mock_cache_manager.get_cache.return_value = mock_cache
-        
+
         # Make database setup fail by making runner.run fail
         mock_offline_db_manager.setup_database = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
-        
+
         # Mock asyncio.Runner context manager to fail on run
         mock_runner_instance = Mock()
         mock_runner_instance.run.side_effect = Exception("Database setup failed")
         mock_runner.return_value.__enter__.return_value = mock_runner_instance
         mock_runner.return_value.__exit__.return_value = None
-        
+
         # Act & Assert - Should propagate the exception
         with pytest.raises(Exception, match="Database setup failed"):
             runtime_loader_main()

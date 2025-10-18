@@ -130,9 +130,7 @@ class TestLoaderRelease:
             "companies": [],
             "country": "Canada",
             "extra_artists": [],
-            "formats": [
-                {"descriptions": ['12"', "EP"], "name": "Vinyl", "quantity": "1"}
-            ],
+            "formats": [{"descriptions": ['12"', "EP"], "name": "Vinyl", "quantity": "1"}],
             "genres": ["Electronic"],
             "identifiers": None,
             "labels": [{"catalog_number": "NT006", "name": "Nordic Trax"}],
@@ -173,9 +171,7 @@ class TestLoaderRelease:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "release", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "release", "testinsert")
         release_element = next(iterator)
 
         # WHEN
@@ -248,9 +244,7 @@ class TestLoaderRelease:
         offline_config = SqliteTestConfiguration()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "release", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "release", "testinsert")
         next(iterator)
         next(iterator)
         next(iterator)
@@ -307,9 +301,7 @@ class TestLoaderRelease:
                 },
                 {
                     "duration": "6:24",
-                    "extra_artists": [
-                        {"id": 41, "name": "Autechre", "roles": [{"name": "Remix"}]}
-                    ],
+                    "extra_artists": [{"id": 41, "name": "Autechre", "roles": [{"name": "Remix"}]}],
                     "position": "2",
                     "title": "Speech3 (Conoid Tone Reformed By Autechre)",
                 },

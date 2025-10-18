@@ -10,7 +10,9 @@ from musigree.offline.database.relation_repository import RelationRepository
 from musigree.offline.database.role_repository import RoleRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
-from musigree.runtime.data_access_layer.runtime_relation_data_access import RuntimeRelationDataAccess
+from musigree.runtime.data_access_layer.runtime_relation_data_access import (
+    RuntimeRelationDataAccess,
+)
 from musigree.runtime.runtime_database.country_repository import CountryRepository
 from musigree.runtime.runtime_database.genre_repository import GenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
@@ -34,13 +36,14 @@ from musigree.runtime.runtime_domain.token import Token
 from musigree.transfer.transfer_worker_entity_inserter import (
     transfer_worker_entity_inserter_async,
 )
-from musigree.transfer.transfer_worker_relation_inserter import transfer_worker_relation_inserter_async
+from musigree.transfer.transfer_worker_relation_inserter import (
+    transfer_worker_relation_inserter_async,
+)
 
 log = logging.getLogger(__name__)
 
 
 class TransferManager:
-
     @staticmethod
     async def transfer_entity() -> None:
         log.debug("Running transfer_entity()")
@@ -65,8 +68,12 @@ class TransferManager:
 
             inserted_count = 0
             async for entity_list in entities:
-                runtime_entity_dicts_list = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entity_list)
-                await transfer_worker_entity_inserter_async(runtime_entity_dicts_list, inserted_count, total_count)
+                runtime_entity_dicts_list = (
+                    RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entity_list)
+                )
+                await transfer_worker_entity_inserter_async(
+                    runtime_entity_dicts_list, inserted_count, total_count
+                )
                 inserted_count += len(entity_list)
 
         async with runtime_transaction():
@@ -77,9 +84,9 @@ class TransferManager:
     async def transfer_relation() -> None:
         log.debug("Running transfer_relation()")
 
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper is not None
-        ), "runtime_database_helper must be initialized before calling initialize()"
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
 
         async with runtime_transaction():
             runtime_relation_repository = RuntimeRelationRepository()
@@ -99,10 +106,14 @@ class TransferManager:
 
             inserted_count = 0
             async for relation_dbs in relations:
-                runtime_relation_dicts_list = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(
-                    relation_dbs
+                runtime_relation_dicts_list = (
+                    RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(
+                        relation_dbs
+                    )
                 )
-                await transfer_worker_relation_inserter_async(runtime_relation_dicts_list, inserted_count, total_count)
+                await transfer_worker_relation_inserter_async(
+                    runtime_relation_dicts_list, inserted_count, total_count
+                )
                 inserted_count += len(relation_dbs)
 
             # chunked_runtime_relation_dicts = async_chunks(runtime_relation_dicts, BULK_INSERT_BATCH_SIZE)
@@ -204,9 +215,10 @@ class TransferManager:
     @staticmethod
     async def transfer_load_entity_details_index(entity_details_path: Path) -> None:
         log.debug("Running transfer load entity details index")
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper is not None
-        ), "runtime_database_helper must be initialized before calling initialize()"
-        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(entity_details_path)
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(
+            entity_details_path
+        )
         RuntimeDatabaseManager.runtime_database_helper.entity_details_index = entity_details_index
-            

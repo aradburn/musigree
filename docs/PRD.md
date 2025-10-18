@@ -295,4 +295,4 @@ making it easy for users to discover and explore connections between artists, ba
 - [WCAG 2.1 Guidelines](https://www.w3.org/TR/WCAG21/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
-- 
+-

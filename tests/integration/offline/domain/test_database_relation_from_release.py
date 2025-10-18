@@ -39,9 +39,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
             actual = RelationDataAccess.from_release(release_document)
 
         # THEN
@@ -193,9 +191,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
             actual = RelationDataAccess.from_release(release_document)
 
         expected = [
@@ -365,9 +361,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
             actual = RelationDataAccess.from_release(release_document)
 
         expected = [
@@ -698,9 +692,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
             actual = RelationDataAccess.from_release(release_document)
 
         expected = [
@@ -1375,9 +1367,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         print(f"release_document: {release_document}")
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
             print(f"release_document: {release_document}")
             actual = RelationDataAccess.from_release(release_document)
 

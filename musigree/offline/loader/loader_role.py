@@ -36,9 +36,7 @@ class LoaderRole(LoaderBase):
         file_roles = cls.load_roles_from_files(roles_directory)
         await cls.save_roles(file_roles)
 
-        hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments(
-            instruments_directory
-        )
+        hornbostel_sachs_roles = cls.load_hornbostel_sachs_instruments(instruments_directory)
         await cls.save_roles(hornbostel_sachs_roles)
 
         wikipedia_roles = cls.load_wikipedia_instruments(instruments_directory)
@@ -50,9 +48,7 @@ class LoaderRole(LoaderBase):
         log.debug("Initial roles loaded OK")
 
     @classmethod
-    def load_wikipedia_instruments(
-        cls, instruments_directory: Path
-    ) -> list[RoleUncommitted]:
+    def load_wikipedia_instruments(cls, instruments_directory: Path) -> list[RoleUncommitted]:
         log.info("Loading Wikipedia instruments")
 
         roles = []
@@ -70,16 +66,12 @@ class LoaderRole(LoaderBase):
                 for row in csv_reader:
                     instrument_name: str = row["Instrument"]
                     instrument_class: str = row["Classification"]
-                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
-                        instrument_name
-                    )
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(instrument_name)
 
                     for normalised_role_name in normalised_role_name_list:
                         category_id = RoleType.Category.INSTRUMENTS
                         category_name = RoleType.category_names[category_id]
-                        subcategory_id = RoleType.hornbostel_sachs_to_subcategory(
-                            instrument_class
-                        )
+                        subcategory_id = RoleType.hornbostel_sachs_to_subcategory(instrument_class)
                         subcategory_name = RoleType.subcategory_names[subcategory_id]
                         new_role = RoleUncommitted(
                             role_name=normalised_role_name,
@@ -118,15 +110,11 @@ class LoaderRole(LoaderBase):
                     instrument_class = "Unknown"
                 category_id = RoleType.Category.INSTRUMENTS
                 category_name = RoleType.category_names[category_id]
-                subcategory_id = RoleType.hornbostel_sachs_to_subcategory(
-                    instrument_class
-                )
+                subcategory_id = RoleType.hornbostel_sachs_to_subcategory(instrument_class)
                 subcategory_name = RoleType.subcategory_names[subcategory_id]
 
                 for instrument_name in instrument_entry.instruments:
-                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
-                        instrument_name
-                    )
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(instrument_name)
 
                     for normalised_role_name in normalised_role_name_list:
                         new_role = RoleUncommitted(
@@ -160,9 +148,7 @@ class LoaderRole(LoaderBase):
                 for row in csv_reader:
                     # row: dict
                     role_name = row["name"]
-                    normalised_role_name_list = RoleDataUtils.normalise_role_names(
-                        role_name
-                    )
+                    normalised_role_name_list = RoleDataUtils.normalise_role_names(role_name)
 
                     for normalised_role_name in normalised_role_name_list:
                         category_str: str = row["category"]
@@ -201,7 +187,6 @@ class LoaderRole(LoaderBase):
         role_repository = RoleRepository()
 
         async with offline_transaction():
-
             try:
                 await role_repository.create_bulk(roles, on_conflict_do_nothing=True)
                 await role_repository.commit()

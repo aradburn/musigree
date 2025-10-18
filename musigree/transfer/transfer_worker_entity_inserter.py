@@ -45,6 +45,7 @@ exception and `retrying` for retry. It interacts with
 `musigree.runtime.runtime_database` for database related operations,
 and `musigree.runtime.runtime_database_manager` for managing concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -60,9 +61,9 @@ from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 log = logging.getLogger(__name__)
 
 
-async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any]],
-                                                inserted_count: int,
-                                                total_count: int) -> None:
+async def transfer_worker_entity_inserter_async(
+    bulk_inserts: list[dict[str, Any]], inserted_count: int, total_count: int
+) -> None:
     """
     A worker process for inserting entity records into the runtime database.
     This function is designed to be run in a separate process to handle the
@@ -94,7 +95,9 @@ async def transfer_worker_entity_inserter_async(bulk_inserts: list[dict[str, Any
     """Log the number of entities inserted."""
 
 
-def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+def transfer_worker_entity_inserter(
+    bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -107,7 +110,9 @@ def transfer_worker_entity_inserter(bulk_inserts: list[dict[str, Any]], current_
     RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
     """Initialize the database engine."""
 
-    loop.run_until_complete(transfer_worker_entity_inserter_async(bulk_inserts, current_total, total_count))
+    loop.run_until_complete(
+        transfer_worker_entity_inserter_async(bulk_inserts, current_total, total_count)
+    )
 
     RuntimeDatabaseManager.dispose_runtime_database_async_engine(loop)
     """Close the database engine."""

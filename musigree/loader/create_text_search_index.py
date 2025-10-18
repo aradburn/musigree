@@ -7,7 +7,11 @@ from musigree.config import (
     PostgresDevelopmentConfiguration,
     SqliteDevelopmentConfiguration,
 )
-from musigree.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME, ALL_RUNTIME_DATABASE_TABLE_NAMES
+from musigree.constants import (
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
+    ALL_RUNTIME_DATABASE_TABLE_NAMES,
+)
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
 from musigree.offline.loader.loader_entity import LoaderEntity
@@ -69,20 +73,25 @@ def create_text_search_index() -> None:
         runner.close()
 
     text_search_path = offline_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    
-    assert (
-        OfflineDatabaseManager.offline_database_helper is not None
-    ), "offline_database_helper must be initialized before calling initialize()"
-    assert (
-        RuntimeDatabaseManager.runtime_database_helper is not None
-    ), "runtime_database_helper must be initialized before calling initialize()"
+
+    assert OfflineDatabaseManager.offline_database_helper is not None, (
+        "offline_database_helper must be initialized before calling initialize()"
+    )
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
 
     with asyncio.Runner() as runner:
-        runner.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES))
+        runner.run(
+            RuntimeDatabaseManager.runtime_database_helper.create_tables(
+                ALL_RUNTIME_DATABASE_TABLE_NAMES
+            )
+        )
         # Copy text search index into runtime database
         runner.run(LoaderEntity().loader_create_text_search_index(text_search_path))
         runner.run(TransferManager().transfer_load_text_search_index(text_search_path))
         runner.close()
+
 
 if __name__ == "__main__":
     create_text_search_index()

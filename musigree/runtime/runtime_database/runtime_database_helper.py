@@ -164,10 +164,9 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling create_tables()"
         )
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
-            is not None
-        ), "runtime_async_engine must be initialized before calling create_tables()"
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+            "runtime_async_engine must be initialized before calling create_tables()"
+        )
         async with (
             RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
         ):
@@ -192,10 +191,9 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling drop_tables()"
         )
-        assert (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
-            is not None
-        ), "runtime_async_engine must be initialized before calling drop_tables()"
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+            "runtime_async_engine must be initialized before calling drop_tables()"
+        )
 
         if tables is not None:
             table_definitions: list[Table] = [
@@ -221,9 +219,7 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    async def vacuum(
-        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -353,9 +349,7 @@ class RuntimeDatabaseHelper(ABC):
             max_nodes=max_nodes,
             role_names=roles,
         )
-        data = await relation_grapher.get_relation_graph(
-            entity_repository, relation_repository
-        )
+        data = await relation_grapher.get_relation_graph(entity_repository, relation_repository)
         if cache_key is not None and len(cache_key) < 200:
             cache.set(cache_key, data)
         return data
@@ -439,10 +433,7 @@ class RuntimeDatabaseHelper(ABC):
                 and (
                     "Member Of" in relation_counts
                     or "Alias" in relation_counts
-                    or (
-                        "members" in entities
-                        and len(list(entities.get("members", []))) > 0
-                    )
+                    or ("members" in entities and len(list(entities.get("members", []))) > 0)
                     or ("groups" in entities and len(entities["groups"]) > 0)
                 )
                 and entity.entity_type == EntityType.ARTIST
@@ -484,9 +475,7 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             dict[str, Any]: The relations data.
         """
-        entity = await entity_repository.get_by_entity_id_and_entity_type(
-            entity_id, entity_type
-        )
+        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
         relation_internals = await relation_repository.find_by_entity(entity.id)
 
         role_dict: dict[str, dict[str, int | None]] = {}

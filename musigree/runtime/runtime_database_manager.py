@@ -62,13 +62,10 @@ class RuntimeDatabaseManager:
             if connection_record.info["pid"] != pid:
                 log.error(f"New engine checkout using wrong pid: {dbapi_con}")
 
-                connection_record.dbapi_connection = (
-                    connection_proxy.dbapi_connection
-                ) = None
+                connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
                 raise exc.DisconnectionError(
                     "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s"
-                    % (connection_record.info["pid"], pid)
+                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
                 )
 
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
@@ -76,9 +73,11 @@ class RuntimeDatabaseManager:
             listen(async_engine.sync_engine, "checkout", engine_on_checkout)
 
         # a async_sessionmaker(), also in the same scope as the engine
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = async_sessionmaker(
-            bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
-            expire_on_commit=False,
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = (
+            async_sessionmaker(
+                bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+                expire_on_commit=False,
+            )
         )
 
         # Set logging level for SqlAlchemy
@@ -86,9 +85,7 @@ class RuntimeDatabaseManager:
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
-        await RuntimeDatabaseManager.runtime_database_helper.check_connection(
-            config, async_engine
-        )
+        await RuntimeDatabaseManager.runtime_database_helper.check_connection(config, async_engine)
 
     @classmethod
     async def shutdown_database(cls) -> None:
@@ -100,10 +97,7 @@ class RuntimeDatabaseManager:
             "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling shutdown_database()"
         )
 
-        if (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine
-            is not None
-        ):
+        if RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None:
             await RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose()
 
         await RuntimeDatabaseManager.runtime_database_helper.shutdown_database()
@@ -124,7 +118,9 @@ class RuntimeDatabaseManager:
                 and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
             ):
                 loop.run_until_complete(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False)
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
+                        close=False
+                    )
                 )
 
     @classmethod
@@ -143,5 +139,7 @@ class RuntimeDatabaseManager:
                 and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
             ):
                 loop.run_until_complete(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=True)
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
+                        close=True
+                    )
                 )

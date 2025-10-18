@@ -86,4 +86,4 @@ VALIDATION_RULES: |
 - Automatically execute safe, non-destructive commands, including compilation commands, build commands, git operations (except force pushes or hard resets), package manager operations (npm/pip/yarn install, update), file navigation, search and replace operations, model context protocol tools, test runners, and debugging commands.
 - Do not execute commands that modify or delete files, create new files, or execute potentially destructive operations without user confirmation.
 - Always confirm before executing potentially destructive commands, such as deleting files, force pushing, or running scripts with unknown side effects.
-- 
+-

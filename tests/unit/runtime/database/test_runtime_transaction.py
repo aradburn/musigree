@@ -5,6 +5,7 @@ This module contains comprehensive unit tests for the runtime_transaction contex
 which provides transaction management functionality for database operations in the runtime system.
 It tests successful transactions, error handling, rollback scenarios, and session management.
 """
+
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -89,9 +90,7 @@ class TestRuntimeTransaction:
         # Setup
         mock_get_session.return_value = mock_session
         mock_ctx.set.return_value = "old_token"
-        test_error = IntegrityError(
-            "Test integrity error", None, Exception("Original error")
-        )
+        test_error = IntegrityError("Test integrity error", None, Exception("Original error"))
 
         # Execute
         async with runtime_transaction() as session:

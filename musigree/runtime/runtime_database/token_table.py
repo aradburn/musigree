@@ -36,7 +36,6 @@ class TokenTable(RuntimeBase):
     The entity id.
     """
 
-
     def __init__(self, **entries: Any) -> None:
         """
         Initializes a TokenTable instance.
@@ -50,9 +49,7 @@ class TokenTable(RuntimeBase):
                 columns and their values.
         """
         column_names = set([column.name for column in inspect(TokenTable).columns])
-        superentries = {
-            k: entries[k] for k in column_names.intersection(entries.keys())
-        }
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 
     def __repr__(self) -> str:

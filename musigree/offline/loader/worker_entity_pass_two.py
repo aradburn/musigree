@@ -52,6 +52,7 @@ for database related exceptions. It interacts with `musigree.offline.database` f
 related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -72,7 +73,9 @@ The logger for the worker entity pass two module.
 """
 
 
-async def process_entity_pass_two_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
+async def process_entity_pass_two_worker_async(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing entity records in the second pass.
 
@@ -117,7 +120,9 @@ async def process_entity_pass_two_worker_async(ids: list[int], current_total: in
                     """Log the progress."""
             except NotFoundError:
                 """Handle the case where the entity is not found."""
-                log.warning(f"Database NotFoundError: entity with id {entity_id} in process: {proc_name}")
+                log.warning(
+                    f"Database NotFoundError: entity with id {entity_id} in process: {proc_name}"
+                )
                 await entity_repository.rollback()
                 """Rollback the transaction."""
 
@@ -147,9 +152,7 @@ async def worker_pass_two_single(
     if LOGGING_TRACE:
         log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await EntityDataAccess.resolve_entity_references(
-        entity_repository, entity
-    )
+    changed = await EntityDataAccess.resolve_entity_references(entity_repository, entity)
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""

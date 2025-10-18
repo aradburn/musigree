@@ -123,9 +123,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
             DatabaseError: If there is an error updating the release.
         """
         query = (
-            update(self.schema_class)
-            .where(ReleaseTable.release_id == release_id)
-            .values(payload)
+            update(self.schema_class).where(ReleaseTable.release_id == release_id).values(payload)
         )
         await self._session.execute(query)
         await self._session.flush()
@@ -137,7 +135,5 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         Args:
             release_id: The ID of the release to delete.
         """
-        await self.execute(
-            delete(self.schema_class).where(ReleaseTable.release_id == release_id)
-        )
+        await self.execute(delete(self.schema_class).where(ReleaseTable.release_id == release_id))
         await self._session.flush()

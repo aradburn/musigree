@@ -19,9 +19,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         assert entity.id == 1
         assert entity.entity_id == 123
         assert entity.entity_type == EntityType.ARTIST
@@ -41,9 +41,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test label content"
+            search_content="test label content",
         )
-        
+
         assert entity.entity_key == (456, EntityType.LABEL)
 
     def test_json_entity_key_property(self) -> None:
@@ -56,9 +56,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         assert entity.json_entity_key == "artist-789"
 
     def test_to_json_entity_key_artist(self) -> None:
@@ -73,13 +73,14 @@ class TestEntity:
 
     def test_to_json_entity_key_invalid_type(self) -> None:
         """Test to_json_entity_key with valid entity types only."""
+
         # Since only ARTIST and LABEL are supported, this test can verify the ValueError
         # is raised for an unsupported case. Let's create a mock entity type
         class MockEntityType:
             def __init__(self, value: int, name: str):
                 self.value = value
                 self.name = name
-        
+
         mock_type = MockEntityType(999, "UNKNOWN")
         with pytest.raises(ValueError):
             Entity.to_json_entity_key(123, mock_type)  # type: ignore
@@ -94,9 +95,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={"members": ["Member1", "Member2", "Member3"]},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         assert entity.size == 3
 
     def test_size_property_artist_with_list_entities(self) -> None:
@@ -109,9 +110,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities=["Member1", "Member2"],
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         assert entity.size == 2
 
     def test_size_property_label_with_dict_entities(self) -> None:
@@ -124,9 +125,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={"sublabels": ["Sublabel1", "Sublabel2"]},
-            search_content="test label content"
+            search_content="test label content",
         )
-        
+
         assert entity.size == 2
 
     def test_size_property_label_with_list_entities(self) -> None:
@@ -139,9 +140,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities=["Sublabel1"],
-            search_content="test label content"
+            search_content="test label content",
         )
-        
+
         assert entity.size == 1
 
     def test_size_property_empty_entities(self) -> None:
@@ -154,9 +155,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         assert entity.size == 0
 
     def test_to_domain_method(self) -> None:
@@ -169,9 +170,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         domain_entity = entity.to_domain()
         assert domain_entity is entity  # Should return self
 
@@ -185,9 +186,9 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         db_entity = entity.to_db()
         assert db_entity is entity  # Should return self
 
@@ -201,8 +202,8 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content"
+            search_content="test artist content",
         )
-        
+
         serialized_type = entity.serialize_entity_type(EntityType.ARTIST)
         assert serialized_type == "ARTIST"

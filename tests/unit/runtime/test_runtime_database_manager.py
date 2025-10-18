@@ -94,9 +94,7 @@ class TestRuntimeDatabaseManager:
         mock_session_factory = Mock()
         mock_async_sessionmaker.return_value = mock_session_factory
 
-        with patch.object(
-            RuntimeDatabaseManager, "get_concurrency_count", return_value=4
-        ):
+        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):
             with patch(
                 "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
             ) as _mock_runtime_helper_class:
@@ -145,9 +143,7 @@ class TestRuntimeDatabaseManager:
         mock_helper_instance.check_connection.return_value = None
         mock_sqlite_helper.return_value = mock_helper_instance
 
-        with patch.object(
-            RuntimeDatabaseManager, "get_concurrency_count", return_value=4
-        ):
+        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):
             with patch(
                 "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
             ) as _mock_runtime_helper_class:
@@ -180,9 +176,7 @@ class TestRuntimeDatabaseManager:
         mock_helper_instance.check_connection.return_value = None
         mock_sqlite_helper.return_value = mock_helper_instance
 
-        with patch.object(
-            RuntimeDatabaseManager, "get_concurrency_count", return_value=1
-        ):
+        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=1):
             with patch(
                 "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
             ) as _mock_runtime_helper_class:
@@ -201,9 +195,7 @@ class TestRuntimeDatabaseManager:
         mock_config.DATABASE = "UNKNOWN_TYPE"
 
         # Act & Assert
-        with pytest.raises(
-            ValueError, match="Configuration Error: Unknown database type"
-        ):
+        with pytest.raises(ValueError, match="Configuration Error: Unknown database type"):
             await RuntimeDatabaseManager.setup_database(mock_config)
 
     def test_engine_event_handlers_behavior(self) -> None:
@@ -241,9 +233,7 @@ class TestRuntimeDatabaseManager:
     # Test shutdown_database method
     @pytest.mark.asyncio
     @patch("musigree.runtime.runtime_database_manager.close_all_sessions")
-    async def test_shutdown_database_success(
-        self, mock_close_all_sessions: Mock
-    ) -> None:
+    async def test_shutdown_database_success(self, mock_close_all_sessions: Mock) -> None:
         """Test successful database shutdown."""
         # Arrange
         mock_helper = AsyncMock()

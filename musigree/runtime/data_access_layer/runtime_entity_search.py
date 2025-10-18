@@ -26,7 +26,9 @@ log = logging.getLogger(__name__)
 class RuntimeEntitySearch:
     @staticmethod
     async def search_entities(
-        entity_repository: RuntimeEntityRepository, token_repository: TokenRepository, search_string: str,
+        entity_repository: RuntimeEntityRepository,
+        token_repository: TokenRepository,
+        search_string: str,
     ) -> dict[str, tuple[dict[str, str], ...]]:
         cache = CacheManager.get_cache()
 
@@ -42,7 +44,9 @@ class RuntimeEntitySearch:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "RuntimeDatabaseManager.runtime_database_helper is not set."
         )
-        documents = await RuntimeEntitySearch.search_text_index(entity_repository, token_repository, normalised_search_string)
+        documents = await RuntimeEntitySearch.search_text_index(
+            entity_repository, token_repository, normalised_search_string
+        )
 
         sorted_documents = RuntimeEntitySearch.sort_search_results(search_string, documents)
 
@@ -112,10 +116,11 @@ class RuntimeEntitySearch:
         return result_documents
 
     @staticmethod
-    async def search_text_index(entity_repository: RuntimeEntityRepository,
-                                token_repository: TokenRepository,
-                                search_text: str,
-                                ) -> list[tuple[int, str]]:
+    async def search_text_index(
+        entity_repository: RuntimeEntityRepository,
+        token_repository: TokenRepository,
+        search_text: str,
+    ) -> list[tuple[int, str]]:
         """
         Searches the database for documents matching the query.
 
@@ -134,16 +139,16 @@ class RuntimeEntitySearch:
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(search_text)
         analyzed_query = [
-            token
-            for token in normalized_query.split()
-            if token not in TextSearchIndex.STOP_WORDS
+            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
         ]
 
         # Handle empty query after filtering stop words
         if not analyzed_query:
             return []
 
-        result_sets = await RuntimeEntitySearch.get_lists_of_ids_from_token_db(token_repository, analyzed_query)
+        result_sets = await RuntimeEntitySearch.get_lists_of_ids_from_token_db(
+            token_repository, analyzed_query
+        )
 
         # all tokens must be in the document
         search_results: list[tuple[int, str]] = []
@@ -156,7 +161,9 @@ class RuntimeEntitySearch:
         return search_results
 
     @staticmethod
-    async def get_lists_of_ids_from_token_db(token_repository: TokenRepository, analyzed_query: list[str]) -> list[set[int]]:
+    async def get_lists_of_ids_from_token_db(
+        token_repository: TokenRepository, analyzed_query: list[str]
+    ) -> list[set[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
 

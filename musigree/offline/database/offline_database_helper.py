@@ -79,10 +79,7 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine
-            is not None
-        ), (
+        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
         )
 
@@ -120,10 +117,7 @@ class OfflineDatabaseHelper(ABC):
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
-        assert (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine
-            is not None
-        ), (
+        assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
         )
 

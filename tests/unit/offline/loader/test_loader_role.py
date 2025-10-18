@@ -19,9 +19,7 @@ from musigree.offline.loader.loader_role import LoaderRole
 class TestLoaderRole:
     """Test class for LoaderRole."""
 
-    @patch(
-        "musigree.offline.loader.loader_role.RoleDataAccess.load_all_roles_into_cache"
-    )
+    @patch("musigree.offline.loader.loader_role.RoleDataAccess.load_all_roles_into_cache")
     @patch.object(LoaderRole, "save_roles")
     @patch.object(LoaderRole, "load_wikipedia_instruments")
     @patch.object(LoaderRole, "load_hornbostel_sachs_instruments")
@@ -48,9 +46,7 @@ class TestLoaderRole:
         mock_load_wikipedia.return_value = wiki_roles
 
         # Execute
-        await LoaderRole.load_roles_into_database(
-            roles_directory, instruments_directory
-        )
+        await LoaderRole.load_roles_into_database(roles_directory, instruments_directory)
 
         # Verify
         mock_load_roles_from_files.assert_called_once_with(roles_directory)
@@ -293,9 +289,7 @@ class TestLoaderRole:
         instruments_directory = Path("/nonexistent/path")
 
         # Execute & Verify
-        with patch(
-            "musigree.offline.loader.loader_role.open", side_effect=FileNotFoundError
-        ):
+        with patch("musigree.offline.loader.loader_role.open", side_effect=FileNotFoundError):
             with pytest.raises(FileNotFoundError):
                 LoaderRole.load_hornbostel_sachs_instruments(instruments_directory)
 

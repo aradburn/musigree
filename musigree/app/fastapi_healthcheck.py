@@ -11,10 +11,12 @@ The logger for this module.
 
 router = APIRouter()
 
+
 class HealthCheck(BaseModel):
     """Response model to validate and return when performing a health check."""
 
     status: str = "OK"
+
 
 @router.get(
     "/health",

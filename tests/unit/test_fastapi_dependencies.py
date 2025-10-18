@@ -67,9 +67,7 @@ class TestRateLimiter:
     def fresh_redis_client(self) -> Generator[FakeStrictRedis, Any, None]:
         """Provide a fresh Redis client for each test."""
         client = fakeredis.FakeStrictRedis(decode_responses=True)
-        with patch(
-            "musigree.app.fastapi_dependencies.get_redis_client", return_value=client
-        ):
+        with patch("musigree.app.fastapi_dependencies.get_redis_client", return_value=client):
             yield client
 
     @pytest.mark.asyncio
@@ -229,9 +227,7 @@ class TestRateLimiter:
                 # Verify that warnings were logged for Redis errors
                 mock_log.warning.assert_called()
                 warning_calls = [call for call in mock_log.warning.call_args_list]
-                assert any(
-                    "Redis error in rate limiter" in str(call) for call in warning_calls
-                )
+                assert any("Redis error in rate limiter" in str(call) for call in warning_calls)
 
                 # Verify response headers are still set (with fallback values)
                 assert "X-RateLimit-Limit" in mock_response.headers

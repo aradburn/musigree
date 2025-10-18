@@ -30,6 +30,7 @@ The module utilizes `logging` for logging operations, `luigi` for the task
 management and `luigi.contrib.simulate` for the `RunAnywayTarget`. It
 interacts with `musigree.transfer` for the transfer logic.
 """
+
 import asyncio
 import datetime
 import logging
@@ -46,6 +47,7 @@ log = logging.getLogger(__name__)
 """
 The logger for the TransferTask module.
 """
+
 
 class RuntimeLoaderSetupTask(luigi.Task):
     """
@@ -158,8 +160,7 @@ class RuntimeLoaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now()
-                - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         )
         log.debug(f"RuntimeLoaderTaskForDate priority: {diff}")
@@ -215,8 +216,7 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
         """
         diff = int(
             (
-                datetime.datetime.now()
-                - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         ) + (100 - int(str(self.stage)))
         log.debug(

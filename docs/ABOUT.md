@@ -125,4 +125,3 @@ This compiles the frontend files into frontend/dist.
 
 run wsgi.py in IDE
 This starts a production server on localhost:8080
-

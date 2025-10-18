@@ -77,9 +77,7 @@ class TestRuntimeRelationTable:
     def test_primary_key(self) -> None:
         """Test that id column is the primary key."""
         # GIVEN/WHEN
-        primary_key_columns = [
-            col.name for col in inspect(RuntimeRelationTable).primary_key
-        ]
+        primary_key_columns = [col.name for col in inspect(RuntimeRelationTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]

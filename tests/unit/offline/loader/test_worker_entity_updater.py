@@ -368,9 +368,7 @@ class TestWorkerEntityUpdater:
         # Should detect differences
         assert differences != {}
 
-    @patch(
-        "musigree.library.full_text_search.text_search_utils.normalise_search_content"
-    )
+    @patch("musigree.library.full_text_search.text_search_utils.normalise_search_content")
     def test_search_content_normalization(self, mock_normalize: Mock) -> None:
         """Test that search content is properly normalized."""
         mock_normalize.return_value = "normalized_content"

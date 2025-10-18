@@ -113,7 +113,6 @@ class LoaderEntity(LoaderBase):
 
     @classmethod
     async def loader_start_workers(cls, worker_function: Callable) -> None:
-
         async with offline_transaction():
             entity_repository = EntityRepository()
             total_count = await entity_repository.count()
@@ -123,7 +122,9 @@ class LoaderEntity(LoaderBase):
 
         worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
 
-        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
+        await utils.queue_worker_functions(
+            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+        )
 
     @classmethod
     # @timeit
@@ -160,8 +161,8 @@ class LoaderEntity(LoaderBase):
         log.debug("Running loader create entity details index")
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            entity_details_index = await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            entity_details_index = await ReleaseDataAccess.create_entity_details_index(
+                offline_release_repository
+            )
 
         return entity_details_index
-
-

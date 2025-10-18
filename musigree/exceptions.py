@@ -205,9 +205,7 @@ class DatabaseError(BaseError):
             message (str, optional): The error message. Defaults to
                 "Database error".
         """
-        super().__init__(
-            message=message, status_code=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+        super().__init__(message=message, status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
         """Call the constructor of the parent class."""
 
 
@@ -218,9 +216,7 @@ class ProcessError(BaseError):
     This exception is raised when an error occurs in a background process.
     """
 
-    def __init__(
-        self, *_: tuple[Any], message: str = "Background process error"
-    ) -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Background process error") -> None:
         """
         Initializes a ProcessError instance.
 
@@ -229,9 +225,7 @@ class ProcessError(BaseError):
             message (str, optional): The error message. Defaults to
                 "Background process error".
         """
-        super().__init__(
-            message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        super().__init__(message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         """Call the constructor of the parent class."""
 
 

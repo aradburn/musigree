@@ -115,9 +115,7 @@ class TestMetadataRepository:
                 mock_validate.assert_called_once_with(mock_metadata_table)
 
     @pytest.mark.asyncio
-    async def test_get_by_id_not_found(
-        self, metadata_repository: MetadataRepository
-    ) -> None:
+    async def test_get_by_id_not_found(self, metadata_repository: MetadataRepository) -> None:
         """Test get_by_id when metadata is not found."""
         # Arrange
         metadata_id = 999
@@ -162,9 +160,7 @@ class TestMetadataRepository:
                 mock_validate.assert_called_once_with(mock_metadata_table)
 
     @pytest.mark.asyncio
-    async def test_get_by_key_not_found(
-        self, metadata_repository: MetadataRepository
-    ) -> None:
+    async def test_get_by_key_not_found(self, metadata_repository: MetadataRepository) -> None:
         """Test get_by_key when metadata is not found."""
         # Arrange
         key = "nonexistent_key"
@@ -250,9 +246,7 @@ class TestMetadataRepository:
         assert repo.schema_class == MetadataTable
 
     @pytest.mark.asyncio
-    async def test_all_empty_result(
-        self, metadata_repository: MetadataRepository
-    ) -> None:
+    async def test_all_empty_result(self, metadata_repository: MetadataRepository) -> None:
         """Test all() method with empty result."""
         # Arrange
         with patch.object(metadata_repository, "_all") as mock_all:

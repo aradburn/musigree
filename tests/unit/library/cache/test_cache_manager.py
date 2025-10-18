@@ -261,9 +261,7 @@ class TestCacheManager:
             CacheManager.shutdown_cache()
 
     @patch("musigree.library.cache.cache_manager.SimpleCache")
-    def test_cache_manager_setup_simple_cache(
-        self, mock_simple_cache: MagicMock
-    ) -> None:
+    def test_cache_manager_setup_simple_cache(self, mock_simple_cache: MagicMock) -> None:
         """Test CacheManager setup with simple cache."""
         config = MagicMock()
         config.CACHE_TYPE = CacheType.MEMORY
@@ -488,7 +486,7 @@ class TestRedisCacheMethods:
         mock_client = MagicMock()
         mock_redis.Redis.return_value = mock_client
         mock_client.ping.side_effect = Exception("Ping failed")
-        
+
         mock_fake_client = MagicMock()
         mock_fakeredis.FakeRedis.return_value = mock_fake_client
 
