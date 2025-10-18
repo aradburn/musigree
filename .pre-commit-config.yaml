@@ -25,3 +25,18 @@ repos:
         rev: 0.9.3
         hooks:
             -   id: uv-lock
+    -   repo: https://github.com/thoughtworks/talisman
+        rev: 'v1.37.0'  # Update me!
+        hooks:
+            # both pre-commit and pre-push supported
+            # -   id: talisman-push
+            -   id: talisman-commit
+    -   repo: local
+        hooks:
+            -   id: release
+                name: release and bump version
+                entry: pwd
+                language: python
+                files: ''
+                exclude: (.pre-commit-config.yaml)|(.github/)
+                verbose: true

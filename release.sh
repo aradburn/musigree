@@ -22,6 +22,12 @@ usage() {
     exit 1
 }
 
+echo "$0"
+echo "$1"
+echo "$2"
+echo "$3"
+echo "$4"
+
 # parse args
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -39,7 +45,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 # check if version is specified
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ]; then
     usage
 fi
 
@@ -78,7 +84,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # commit changes
     git add pyproject.toml uv.lock
-    git commit -m "bump version to $new_version"
+    # git commit -m "bump version to $new_version"
     git tag -a "v$new_version" -m "v$new_version"
 
     # push changes
