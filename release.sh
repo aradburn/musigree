@@ -78,8 +78,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     new_version=$(uv version --short)
 
+    # Update frontend to be same version as backend
+    cd frontend
+    npm version --no-git-tag-version $new_version
+    cd ..
+
     # commit changes
-    git add pyproject.toml uv.lock
+    git add pyproject.toml uv.lock frontend/package.json frontend/package-lock.json
     # git commit -m "bump version to $new_version"
     git tag -a "v$new_version" -m "v$new_version"
 

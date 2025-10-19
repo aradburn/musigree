@@ -37,4 +37,6 @@ repos:
                 name: release and bump version
                 entry: ./release.sh --force patch
                 language: system
+                pass_filenames: false
+                stages: [ pre-commit, pre-push ]
                 verbose: true
