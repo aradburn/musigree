@@ -4,6 +4,7 @@ import React from "react";
 import { Navbar, Container, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SearchInput } from "../Search";
 import { FSM } from "../../constants";
+import { version } from "../../version";
 
 interface HeaderProps {
     onShowHelp?: () => void;
@@ -52,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                             </h3>
                         </OverlayTrigger>
                         <h6 className="text-body mb-0 collapse navbar-collapse">
-                            &nbsp;v2.0
+                            &nbsp;v{version}
                         </h6>
                     </div>
                 </div>
