@@ -18,7 +18,6 @@ import { version } from "./version";
 
 // Initialize the application when the DOM is loaded
 document.addEventListener("DOMContentLoaded", (): void => {
-
     // Initialize React app using dynamic import
     import("./components/index.tsx")
         .then((module) => {
