@@ -81,6 +81,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Update frontend to be same version as backend
     cd frontend
     npm version --no-git-tag-version $new_version
+    echo "const version = $new_version;" > public/js/version.js
     cd ..
 
     # commit changes
