@@ -23,8 +23,8 @@ document.addEventListener("DOMContentLoaded", (): void => {
         .then((module) => {
             if (typeof module.initReactApp === "function") {
                 try {
-                    module.initReactApp();
                     console.log("Musigree v" + version);
+                    module.initReactApp();
                     console.log("React app initialized successfully");
 
                     // Initialize the original app after React app is ready
