@@ -1,8 +1,14 @@
-# Musigree
+Musigree
+========
+
+![GitHub License](https://img.shields.io/github/license/aradburn/musigree)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https://raw.githubusercontent.com/aradburn/musigree/main/pyproject.toml)
+![GitHub Tag](https://img.shields.io/github/v/tag/aradburn/musigree)
 
 Interactive visualization of the Discogs Database
 
-## What is Musigree?
+What is Musigree?
+-----------------
 
 Musigree is an interactive visualization tool that maps the complex network of relationships between musicians, bands,
 and record labels. It provides a visual representation of the connections within the music industry, helping users
@@ -15,11 +21,11 @@ All of Musigree's data is derived from the [Discogs](http://www.discogs.com) mus
 - 18 million releases
 - Over 100 million different relationships
 
-## Live Demo
+### Live Demo
 
 Visit the live site at https://musigree.azurewebsites.net.
 
-## How to Use
+### How to Use
 
 1. Visit the website
 2. Type an artist, band, or label name into the search box
@@ -38,14 +44,14 @@ Visit the live site at https://musigree.azurewebsites.net.
 The graph shows at most 100 entities at a time for performance reasons. Double-click on nodes with plus-signs to expand
 and see more connections.
 
-## Target Audience
+### Target Audience
 
 - Music enthusiasts and collectors
 - Musicians and industry professionals
 - Researchers studying musical connections and influences
 - Casual users interested in discovering relationships in the music industry
 
-## Features
+### Features
 
 - Interactive network graph visualization of music industry relationships
 - Search functionality to find specific artists, bands, or labels
@@ -54,20 +60,17 @@ and see more connections.
 - Responsive design for desktop and mobile devices
 - Detailed information about entities and their relationships
 
-## Technology Stack
+### Technology Stack
 
-### Frontend
+#### Frontend
 
 - [D3.js](https://d3js.org): Handles SVG, animation, and force layout of nodes in the graph
-- [Machina-JS](http://machina-js.org/): A finite state machine for simplifying single-page state
-- [jQuery](https://jquery.com): For event binding
-- [Twitter Typeahead](https://github.com/twitter/typeahead.js/): For entity lookups
 - [Bootstrap](http://getbootstrap.com/): For CSS styling
 - [Vite](https://vitejs.dev/): For bundling and serving the front-end
-- [React](https://reactjs.org): UI framework (in newer versions)
+- [React](https://reactjs.org): UI framework
 - [TypeScript](https://www.typescriptlang.org/): For type safety
 
-### Backend
+#### Backend
 
 - Python 3
 - [FastAPI](https://fastapi.tiangolo.com/): FastAPI is a modern, high-performance, web framework
@@ -77,25 +80,25 @@ and see more connections.
 - [SQLite](https://www.sqlite.org/): For a smaller runtime database
 - [Redis](https://redis.io/): For caching and rate limiting
 
-## Development
+### Development
 
 The project uses `uv` and `venv` to manage the Python environment and dependencies.
 
-### Prerequisites
+#### Prerequisites
 
-- Python 3.13+
-- Node.js 22+ (for frontend development)
+- Python 3.13
+- Node.js 22 (for frontend development)
 - PostgreSQL (for full database) and/or SQLite (for development and runtime)
 - Redis (optional, for caching)
 
-### Setting Up the Development Environment
+#### Setting Up the Development Environment
 
 #### Backend Setup
 
 1. Create a virtual environment:
 
-   The project uses `uv` to install and run the Python environment
-
+   The project uses `uv` to install and run the Python environment. See the documentation
+   here: https://docs.astral.sh/uv/getting-started/
 
 2. Install dependencies:
 
@@ -112,12 +115,12 @@ cd frontend
 npm install
 ```
 
-### Running the Application
+### Running the Development Application
 
 1. Start the backend server:
 
     ```
-    python wsgi.py
+    uv run wsgi.py
     ```
 
 2. Start the frontend development server:
@@ -129,16 +132,23 @@ npm install
 
 3. Visit `http://localhost:5000` in your browser.
 
-### Database Structure
+### Running the Production Application
 
-Musigree uses a graph database structure with two primary tables:
+1. Build the front end:
+   ```
+   cd frontend
+   npm run build
+   ```
+2. Start the backend server:
 
-- **Entities**: All artists and labels
-- **Relations**: Connections between entities
+    ```
+    uv run wsgi.py
+    ```
 
 For more details on the database structure and implementation, see the [technical documentation](docs/ABOUT.md).
 
-## Contributing
+Contributing
+------------
 
 If you notice any omissions or errors in the data, please consider contributing to
 the [Discogs database](https://www.discogs.com/) directly, as all our data is sourced from there.
@@ -150,6 +160,7 @@ For code contributions:
 3. Make your changes
 4. Submit a pull request
 
-## License
+License
+-------
 
 This project is licensed under the terms of the [LICENSE](LICENSE) file.
