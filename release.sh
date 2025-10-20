@@ -86,7 +86,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # commit changes
     git add pyproject.toml uv.lock frontend/package.json frontend/package-lock.json frontend/source/version.ts
-    # git commit -m "bump version to $new_version"
+    git commit -m "bump version to $new_version"
     git tag -a "v$new_version" -m "v$new_version"
 
     # push changes
