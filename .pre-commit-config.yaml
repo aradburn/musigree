@@ -18,8 +18,10 @@ repos:
         hooks:
             # Run the linter.
             -   id: ruff-check
+                files: ^musigree/
             # Run the formatter.
             -   id: ruff-format
+                files: ^musigree/
     -   repo: https://github.com/astral-sh/uv-pre-commit
         # uv version.
         rev: 0.9.3
