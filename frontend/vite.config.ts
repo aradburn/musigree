@@ -24,6 +24,7 @@ export default defineConfig({
         manifest: "manifest.json",
         rollupOptions: {
             input: "source/index.ts",
+            external: [ /public/ ],
         },
         emptyOutDir: true,
         copyPublicDir: false,
