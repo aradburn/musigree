@@ -81,7 +81,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Update frontend to be same version as backend
     cd frontend
     npm version --no-git-tag-version $new_version
-    echo "export const version = $new_version;" > source/version.ts
+    echo "export const version = \"$new_version\";" > source/version.ts
     cd ..
 
     # commit changes
