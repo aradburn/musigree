@@ -75,7 +75,7 @@ export const TIMING = {
     ANIMATION_DELAY_MULTIPLIER: 100,
     TYPEAHEAD_DEBOUNCE: 1000,
     RADIAL_TRANSITION: {
-        DURATION: 500,
+        DURATION: 1000,
         DELAY_MULTIPLIER: 25,
     },
 };
@@ -87,10 +87,10 @@ export const EXPORT = {
 
 // Loading Animation Constants
 export const LOADING = {
-    BAR_HEIGHT: 200,
-    BAR_HEIGHT_MIN_SCALE: 0.25, // 1/4
-    ARC_COUNT: 10,
-    MAX_ROTATION_RATE: 10,
+    BAR_HEIGHT: 500,
+    BAR_HEIGHT_MIN_SCALE: 0.1, // 1/10
+    ARC_COUNT: 20,
+    MAX_ROTATION_RATE: 0.2,
 };
 
 // Typeahead Constants

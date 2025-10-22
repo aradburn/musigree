@@ -1,6 +1,7 @@
 """
 Unit tests for musigree.loader.offline_loader module.
 """
+
 from functools import partial
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
@@ -23,7 +24,7 @@ class TestOfflineLoaderFunctions:
     @pytest.fixture
     def test_config(self) -> Configuration:
         """Provide test configuration.
-        
+
         Returns:
             Configuration: A SQLite test configuration instance.
         """
@@ -32,7 +33,7 @@ class TestOfflineLoaderFunctions:
     @pytest.fixture
     def mock_data_directory(self) -> Path:
         """Provide mock data directory.
-        
+
         Returns:
             Path: A mock data directory path for testing.
         """
@@ -41,7 +42,7 @@ class TestOfflineLoaderFunctions:
     @pytest.fixture
     def mock_date(self) -> str:
         """Provide mock date.
-        
+
         Returns:
             str: A mock date string in YYYY-MM-DD format.
         """
@@ -53,7 +54,7 @@ class TestOfflineLoaderFunctions:
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of offline tables.
-        
+
         Verifies that load_offline_tables function correctly orchestrates
         the execution of all loading stages when provided with valid
         data directory, date, and bulk insert settings.
@@ -76,7 +77,7 @@ class TestOfflineLoaderFunctions:
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of a specific offline table stage.
-        
+
         Verifies that load_offline_table_stage function correctly executes
         a single stage from the available loading stages based on the
         provided stage index.
@@ -86,7 +87,11 @@ class TestOfflineLoaderFunctions:
         mock_stage2 = AsyncMock()
         mock_stage3 = AsyncMock()
 
-        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2), partial(mock_stage3)]
+        mock_get_stages.return_value = [
+            partial(mock_stage1),
+            partial(mock_stage2),
+            partial(mock_stage3),
+        ]
 
         # Act
         await load_offline_table_stage(
@@ -118,9 +123,7 @@ class TestOfflineLoaderFunctions:
         mock_helper = Mock()
         mock_helper.is_vacuum_full.return_value = False
         mock_helper.is_vacuum_analyze.return_value = True
-        mock_helper.offline_async_engine = (
-            Mock()
-        )
+        mock_helper.offline_async_engine = Mock()
         mock_db_manager.offline_database_helper = mock_helper
 
         # Mock vacuum method to return an AsyncMock coroutine
@@ -137,9 +140,7 @@ class TestOfflineLoaderFunctions:
         mock_loader_relation.loader_relation_pass_one = AsyncMock()
 
         # Act
-        result = get_load_offline_table_stages(
-            mock_data_directory, mock_date, is_bulk_inserts=True
-        )
+        result = get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
 
         # Assert
         assert isinstance(result, list)
@@ -158,13 +159,10 @@ class TestOfflineLoaderFunctions:
 
         # Act & Assert
         with pytest.raises(AssertionError) as excinfo:
-            get_load_offline_table_stages(
-                mock_data_directory, mock_date, is_bulk_inserts=True
-            )
+            get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
 
-        assert (
-            "OfflineDatabaseManager.offline_database_helper must be initialized"
-            in str(excinfo.value)
+        assert "OfflineDatabaseManager.offline_database_helper must be initialized" in str(
+            excinfo.value
         )
 
     @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
@@ -205,9 +203,7 @@ class TestOfflineLoaderFunctions:
         # Act & Assert
         # The function should raise an assertion error when engine is None
         with pytest.raises(AssertionError) as excinfo:
-            get_load_offline_table_stages(
-                mock_data_directory, mock_date, is_bulk_inserts=True
-            )
+            get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
 
         assert "offline_async_engine must be initialized" in str(excinfo.value)
 
@@ -311,7 +307,7 @@ class TestOfflineLoaderFunctions:
 
 class TestOfflineLoaderIntegration:
     """Integration tests for loader functions.
-    
+
     This test class focuses on testing the integration between different
     components of the offline loader system, verifying that they work
     together correctly.
@@ -320,7 +316,7 @@ class TestOfflineLoaderIntegration:
     @pytest.fixture
     def test_config(self) -> Configuration:
         """Provide test configuration.
-        
+
         Returns:
             Configuration: A SQLite test configuration instance.
         """
@@ -380,23 +376,17 @@ class TestOfflineLoaderIntegration:
             mock_get_stages.return_value = mock_stages
 
             # Test valid stages
-            await load_offline_table_stage(
-                data_directory, date, is_bulk_inserts=True, stage=0
-            )
-            await load_offline_table_stage(
-                data_directory, date, is_bulk_inserts=True, stage=1
-            )
+            await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=0)
+            await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=1)
 
             # Test bounds checking
             with pytest.raises(IndexError):
-                await load_offline_table_stage(
-                    data_directory, date, is_bulk_inserts=True, stage=2
-                )
+                await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=2)
 
 
 class TestOfflineLoaderEdgeCases:
     """Test edge cases for loader functions.
-    
+
     This test class covers edge cases, boundary conditions, and error
     scenarios to ensure the offline loader behaves correctly under
     various unusual or exceptional circumstances.
@@ -439,9 +429,7 @@ class TestOfflineLoaderEdgeCases:
             mock_helper.vacuum = AsyncMock()
 
             # Should not raise error even with empty directory
-            stages = get_load_offline_table_stages(
-                empty_directory, date, is_bulk_inserts=False
-            )
+            stages = get_load_offline_table_stages(empty_directory, date, is_bulk_inserts=False)
             assert isinstance(stages, list)
             assert len(stages) > 0
 
@@ -509,9 +497,7 @@ class TestOfflineLoaderEdgeCases:
             mock_get_stages.return_value = [partial(mock_stage)]
 
             # Test negative index (should work due to Python's negative indexing)
-            await load_offline_table_stage(
-                data_directory, date, is_bulk_inserts=True, stage=-1
-            )
+            await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=-1)
 
     @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
@@ -708,9 +694,7 @@ class TestOfflineLoaderEdgeCases:
             mock_get_stages.return_value = [partial(mock_stage)]
 
             # Test with valid stage index 0
-            await load_offline_table_stage(
-                data_directory, date, is_bulk_inserts=True, stage=0
-            )
+            await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=0)
 
             # Verify the stage was called
             mock_get_stages.assert_called_with(data_directory, date, True)

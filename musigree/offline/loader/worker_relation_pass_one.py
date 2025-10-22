@@ -43,6 +43,7 @@ The `process_relation_pass_one_worker` function interacts with the following com
 The module utilizes `logging` for logging operations and handles various database
 exceptions including `DatabaseError`, `IntegrityError`, and `OperationalError`.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -65,7 +66,9 @@ The logger for the worker relation pass one module.
 """
 
 
-async def process_relation_pass_one_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
+async def process_relation_pass_one_worker_async(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing relations in the first pass.
 
@@ -123,9 +126,7 @@ async def create_relation_bulk(
     # save, do nothing if already exists
     try:
         """Attempt to create relations in bulk."""
-        await relation_repository.create_bulk(
-            relations, on_conflict_do_nothing=True
-        )
+        await relation_repository.create_bulk(relations, on_conflict_do_nothing=True)
         """Create the relations."""
         await relation_repository.commit()
         """Commit the transaction."""
@@ -143,9 +144,7 @@ async def create_relation_bulk(
             """Try to create relations one by one."""
             try:
                 """Attempt to create individual relation."""
-                await relation_repository.create(
-                    relation, on_conflict_do_nothing=True
-                )
+                await relation_repository.create(relation, on_conflict_do_nothing=True)
                 """Create the relation."""
                 await relation_repository.commit()
                 """Commit the transaction."""
@@ -187,9 +186,7 @@ async def process_release(release_id: int) -> None:
         """Extract relations from the release."""
     except NotFoundError:
         """Handle the case where the release is not found."""
-        log.debug(
-            f"process_relation_pass_one_worker release_id not found: {release_id}"
-        )
+        log.debug(f"process_relation_pass_one_worker release_id not found: {release_id}")
     except DatabaseError:
         """Handle database errors."""
         log.error("Error in process_relation_pass_one_worker")
@@ -204,7 +201,9 @@ async def process_release(release_id: int) -> None:
         """Create the relations in bulk."""
 
 
-def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
+def process_relation_pass_one_worker(
+    release_ids: list[int], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -217,7 +216,9 @@ def process_relation_pass_one_worker(release_ids: list[int], current_total: int,
     OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
     """Initialize the database engine."""
 
-    loop.run_until_complete(process_relation_pass_one_worker_async(release_ids, current_total, total_count))
+    loop.run_until_complete(
+        process_relation_pass_one_worker_async(release_ids, current_total, total_count)
+    )
 
     OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
     """Close the database engine."""

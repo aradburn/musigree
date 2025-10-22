@@ -47,6 +47,17 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
+    async def test_random(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        client: AsyncClient,
+    ) -> None:
+        """Test random endpoint with valid label ID."""
+        response = await client.get("/api/random")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
     async def test_search_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
@@ -120,9 +131,9 @@ class TestFastAPIAPI:
                     "29373": 1992,
                     "315067": 1992,
                     "3564784": 1992,
-                    "549": 1992
+                    "549": 1992,
                 },
-                "role": "Producer"
+                "role": "Producer",
             },
             {
                 "releases": {
@@ -137,18 +148,11 @@ class TestFastAPIAPI:
                     "3564784": 1992,
                     "549": 1992,
                     "85213": 1994,
-                    "89013": 1995
+                    "89013": 1995,
                 },
-                "role": "Written By"
+                "role": "Written By",
             },
-            {
-                "releases": {
-                    "102382": 1995,
-                    "134822": 1996,
-                    "3097008": 1996
-                },
-                "role": "Mixed By"
-            },
+            {"releases": {"102382": 1995, "134822": 1996, "3097008": 1996}, "role": "Mixed By"},
             {
                 "releases": {
                     "1530077": 2002,
@@ -161,9 +165,9 @@ class TestFastAPIAPI:
                     "3564784": 1992,
                     "51781": 1993,
                     "548125": 1992,
-                    "549": 1992
+                    "549": 1992,
                 },
-                "role": "Compiled On"
+                "role": "Compiled On",
             },
             {
                 "releases": {
@@ -171,18 +175,11 @@ class TestFastAPIAPI:
                     "2455278": 2010,
                     "4625": 1990,
                     "61862": 1993,
-                    "89013": 1995
+                    "89013": 1995,
                 },
-                "role": "Remix"
+                "role": "Remix",
             },
-            {
-                "releases": {
-                    "2267734": 1990,
-                    "4625": 1990,
-                    "61862": 1993
-                },
-                "role": "Turntables"
-            },
+            {"releases": {"2267734": 1990, "4625": 1990, "61862": 1993}, "role": "Turntables"},
         ]
 
         actual_str = normalize_dict_list(actual["results"])

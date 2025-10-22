@@ -59,9 +59,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     schema_class = RuntimeEntityTable
     """The SQLAlchemy table class for runtime entities."""
 
-    async def _get_one_by_query(
-        self, query: Select[tuple[RuntimeEntityTable]]
-    ) -> RuntimeEntity:
+    async def _get_one_by_query(self, query: Select[tuple[RuntimeEntityTable]]) -> RuntimeEntity:
         """
         Executes a query that should return a single `RuntimeEntity`.
 
@@ -97,9 +95,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         result: Result = await self.execute(query)
 
         instances = result.scalars().all()
-        entity_dbs = [
-            RuntimeEntityDB.model_validate(instance) for instance in instances
-        ]
+        entity_dbs = [RuntimeEntityDB.model_validate(instance) for instance in instances]
         entities = [entity_db.to_domain() for entity_db in entity_dbs]
         return entities
 
@@ -126,10 +122,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
         if not isinstance(value, int):
             raise UnprocessableError(
-                message=(
-                    "For some reason count function returned not an integer."
-                    f"Value: {value}"
-                ),
+                message=f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value
@@ -218,9 +211,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             list[int]: A list of internal entity IDs of the specified type.
         """
         result = await self._session.scalars(
-            select(RuntimeEntityTable.id).where(
-                RuntimeEntityTable.entity_type == entity_type
-            )
+            select(RuntimeEntityTable.id).where(RuntimeEntityTable.entity_type == entity_type)
         )
         return result.all()
 
@@ -304,19 +295,20 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         )
         return result.scalar_one_or_none()
 
-    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-    #     """
-    #     Retrieves all internal entity IDs in batches.
-    #
-    #     Args:
-    #         num_in_batch: The number of IDs per batch.
-    #
-    #     Returns:
-    #         Generator[list[int], None, None]: A generator yielding lists of
-    #             internal entity IDs.
-    #     """
-    #     ids = await self.get_ids()
-    #     return utils.batched(iter(ids), num_in_batch)
+    async def get_entity_name_by_id(self, id_: int) -> str | None:
+        """
+        Retrieves an entity name by its id.
+
+        Args:
+            id_: The id of the entity.
+
+        Returns:
+            str | None: The entity name, or None if not found.
+        """
+        result = await self._session.execute(
+            select(RuntimeEntityTable.entity_name).where(RuntimeEntityTable.id == id_)
+        )
+        return result.scalar_one_or_none()
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
         """
@@ -377,11 +369,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Raises:
             DatabaseError: If there is an error during the update operation.
         """
-        query = (
-            update(self.schema_class)
-            .where(RuntimeEntityTable.id == id_)
-            .values(payload)
-        )
+        query = update(self.schema_class).where(RuntimeEntityTable.id == id_).values(payload)
         _result: Result = await self._session.execute(query)
         await self._session.flush()
 
@@ -392,14 +380,10 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Args:
             id_: The internal ID of the entity to delete.
         """
-        await self.execute(
-            delete(self.schema_class).where(RuntimeEntityTable.id == id_)
-        )
+        await self.execute(delete(self.schema_class).where(RuntimeEntityTable.id == id_))
         await self._session.flush()
 
-    async def search_multi(
-        self, entity_keys: list[tuple[int, EntityType]]
-    ) -> list[RuntimeEntity]:
+    async def search_multi(self, entity_keys: list[tuple[int, EntityType]]) -> list[RuntimeEntity]:
         """
         Retrieves multiple entities based on a list of entity keys.
 

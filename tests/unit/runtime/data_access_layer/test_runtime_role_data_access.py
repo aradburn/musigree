@@ -65,18 +65,14 @@ class TestBuildRoleTree:
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         ["Vocals"],
     )
-    async def test_build_role_tree_with_default_role(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_with_default_role(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that should be selected by default."""
         # Setup
 
         mock_role_cache.role_jstree.data = []
         mock_role_cache.role_category_to_role_name_lookup = {}
 
-        role = self.create_test_runtime_role(
-            role_name="Vocals", role_category_name="Vocal"
-        )
+        role = self.create_test_runtime_role(role_name="Vocals", role_category_name="Vocal")
 
         # Test
         await RuntimeRoleDataAccess.build_role_tree([role])
@@ -97,18 +93,14 @@ class TestBuildRoleTree:
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         [],
     )
-    async def test_build_role_tree_with_non_default_role(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_with_non_default_role(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that should not be selected by default."""
         # Setup
 
         mock_role_cache.role_jstree.data = []
         mock_role_cache.role_category_to_role_name_lookup = {}
 
-        role = self.create_test_runtime_role(
-            role_name="Guitar", role_category_name="Instruments"
-        )
+        role = self.create_test_runtime_role(role_name="Guitar", role_category_name="Instruments")
 
         # Test
         await RuntimeRoleDataAccess.build_role_tree([role])
@@ -129,9 +121,7 @@ class TestBuildRoleTree:
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         [],
     )
-    async def test_build_role_tree_with_subcategory(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_with_subcategory(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that has a subcategory."""
         # Setup
 
@@ -157,18 +147,14 @@ class TestBuildRoleTree:
 
         # Assertions
         assert role_entry is not None
-        assert (
-            role_entry.parent == "String Instruments"
-        )  # Should use subcategory as parent
+        assert role_entry.parent == "String Instruments"  # Should use subcategory as parent
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
     @patch(
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         [],
     )
-    async def test_build_role_tree_with_no_subcategory(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_with_no_subcategory(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that has no subcategory."""
         # Setup
 
@@ -201,9 +187,7 @@ class TestBuildRoleTree:
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         [],
     )
-    async def test_build_role_tree_multiple_roles_sorted(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_multiple_roles_sorted(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with multiple roles to verify sorting."""
         # Setup
 
@@ -228,9 +212,7 @@ class TestBuildRoleTree:
         assert "Vocal" in mock_role_cache.role_category_to_role_name_lookup
         assert "Instruments" in mock_role_cache.role_category_to_role_name_lookup
         vocal_names = mock_role_cache.role_category_to_role_name_lookup["Vocal"]
-        instruments_names = mock_role_cache.role_category_to_role_name_lookup[
-            "Instruments"
-        ]
+        instruments_names = mock_role_cache.role_category_to_role_name_lookup["Instruments"]
         assert len(vocal_names) == 1
         assert "Vocals" in vocal_names
         assert len(instruments_names) == 2
@@ -242,9 +224,7 @@ class TestBuildRoleTree:
         "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ROLES",
         [],
     )
-    async def test_build_role_tree_category_structure(
-        self, mock_role_cache: Mock
-    ) -> None:
+    async def test_build_role_tree_category_structure(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree creates proper category structure."""
         # Setup
 
@@ -286,12 +266,8 @@ class TestLoadAllRolesIntoCache:
         )
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction"
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction")
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.log")
     async def test_load_all_roles_into_cache_success(
         self,
@@ -333,21 +309,14 @@ class TestLoadAllRolesIntoCache:
 
         # Verify cache was populated
         assert mock_role_cache.role_id_to_role_name_lookup[1] == "Vocals"
-        assert (
-            mock_role_cache.role_id_to_role_category_lookup[1]
-            == RoleType.Category.VOCAL
-        )
+        assert mock_role_cache.role_id_to_role_category_lookup[1] == RoleType.Category.VOCAL
 
         # Verify build_role_tree was called
         mock_build_tree.assert_called_once()
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction"
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction")
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.log")
     async def test_load_all_roles_into_cache_empty_database(
         self,
@@ -394,12 +363,8 @@ class TestLoadAllRolesIntoCache:
         mock_build_tree.assert_called_once_with([])
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction"
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction")
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository")
     @patch(
         "musigree.runtime.data_access_layer.runtime_role_data_access.LOGGING_TRACE",
         True,
@@ -443,12 +408,8 @@ class TestLoadAllRolesIntoCache:
         mock_log.debug.assert_any_call("Vocals")  # Trace logging of individual roles
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction"
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction")
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository")
     async def test_load_all_roles_into_cache_multiple_roles(
         self, mock_repository_class: Mock, mock_transaction: Mock, mock_role_cache: Mock
     ) -> None:
@@ -487,14 +448,8 @@ class TestLoadAllRolesIntoCache:
         # Assertions
         assert mock_role_cache.role_id_to_role_name_lookup[1] == "Vocals"
         assert mock_role_cache.role_id_to_role_name_lookup[2] == "Guitar"
-        assert (
-            mock_role_cache.role_id_to_role_category_lookup[1]
-            == RoleType.Category.VOCAL
-        )
-        assert (
-            mock_role_cache.role_id_to_role_category_lookup[2]
-            == RoleType.Category.VOCAL
-        )
+        assert mock_role_cache.role_id_to_role_category_lookup[1] == RoleType.Category.VOCAL
+        assert mock_role_cache.role_id_to_role_category_lookup[2] == RoleType.Category.VOCAL
 
         # Verify reverse lookup was created
         assert mock_role_cache.role_name_to_role_id_lookup["Vocals"] == 1
@@ -505,12 +460,8 @@ class TestLoadAllRolesIntoCache:
         assert "Guitar" in mock_role_cache.role_name_set
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction"
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.runtime_transaction")
+    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleRepository")
     async def test_load_all_roles_into_cache_clears_existing_cache(
         self, mock_repository_class: Mock, mock_transaction: Mock, mock_role_cache: Mock
     ) -> None:

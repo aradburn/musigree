@@ -24,7 +24,7 @@ class TextSearchIndex:
 
     Attributes:
         STOP_WORDS (set[str]): A set of common words to ignore during indexing and searching.
-        index (dict[str, set[int]]): The inverted index mapping tokens to sets of document IDs.
+        token_index (dict[str, set[int]]): The inverted index mapping tokens to sets of document IDs.
         documents (dict[int, str]): A mapping of document IDs to their original text content.
         keys (list[int]): A list of all document IDs in the index, used for random access.
     """
@@ -50,12 +50,13 @@ class TextSearchIndex:
         """
         Initializes an empty TextSearchIndex.
         """
-        self.index: dict[str, list[int]] = {}
+        self.token_index: dict[str, list[int]] = {}
         """The inverted index mapping tokens to sets of document IDs."""
         self.documents: dict[int, str] = {}
         """A mapping of document IDs to their original text content."""
         self.keys: list[int] = []
         """A list of all document IDs in the index."""
+        self.number_of_documents = 0
 
     def index_entry(self, id_: int, text: str) -> None:
         """
@@ -70,28 +71,29 @@ class TextSearchIndex:
             text: The text content of the document.
         """
         # Save the original document to return when searched for
-        self.documents[id_] = text
+        self.save_document_text(id_, text)
         self.keys.append(id_)
 
         normalised_text = normalise_search_content(text)
-        for token in normalised_text.split():
-            if token in TextSearchIndex.STOP_WORDS:
-                continue
-            if token not in self.index:
-                self.index[token] = list[int]()
-            self.index[token].append(id_)
-            # log.debug(f"search add: {token}: {self.index[token]}")
+        self.add_tokens(normalised_text, id_)
 
         # Handle cases like hyphens in surnames
         if "-" in normalised_text:
             normalised_text_no_hyphens = normalised_text.replace("-", " ")
-            for token in normalised_text_no_hyphens.split():
-                if token in TextSearchIndex.STOP_WORDS:
-                    continue
-                if token not in self.index:
-                    self.index[token] = list[int]()
-                self.index[token].append(id_)
-                # log.debug(f"search add: {token}: {self.index[token]}")
+            self.add_tokens(normalised_text_no_hyphens, id_)
+
+        self.number_of_documents += 1
+
+    def add_tokens(self, tokens: str, id_: int) -> None:
+        for token in tokens.split():
+            if token in TextSearchIndex.STOP_WORDS:
+                continue
+            self.add_token(token, id_)
+
+    def add_token(self, token: str, id_: int) -> None:
+        if token not in self.token_index:
+            self.token_index[token] = list[int]()
+        self.token_index[token].append(id_)
 
     def document_frequency(self, token: str) -> int:
         """
@@ -105,7 +107,7 @@ class TextSearchIndex:
         Returns:
             int: The document frequency of the token.
         """
-        token_occurrences = self.index.get(token, list[int]())
+        token_occurrences = self.token_index.get(token, list[int]())
         return len(set(token_occurrences))
 
     def inverse_document_frequency(self, token: str) -> float:
@@ -125,9 +127,9 @@ class TextSearchIndex:
         # Manning, Hinrich and Schütze use log10, so we do too, even though it
         # doesn't really matter which log we use anyway
         # https://nlp.stanford.edu/IR-book/html/htmledition/inverse-document-frequency-1.html
-        return math.log10(len(self.documents) / self.document_frequency(token))
+        return math.log10(self.number_of_documents / self.document_frequency(token))
 
-    def _results(self, analyzed_query: list[str]) -> list[list[int]]:
+    def get_ids_from_token_index(self, analyzed_query: list[str]) -> list[list[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
 
@@ -135,10 +137,15 @@ class TextSearchIndex:
             analyzed_query: A list of tokens in the query.
 
         Returns:
-            list[set[int]]: A list of sets, where each set contains the document IDs
+            list[list[int]]: A list of sets, where each set contains the document IDs
                 for a token in the query.
         """
-        return [self.index.get(token, list[int]()) for token in analyzed_query]
+        result_ids_list: list[list[int]] = []
+        for token in analyzed_query:
+            # result_ids = get_token_ids_from_db(token)
+            result_ids = self.token_index.get(token, list[int]())
+            result_ids_list.append(result_ids)
+        return result_ids_list
 
     def search(self, query: str) -> list[tuple[int, str]]:
         """
@@ -157,9 +164,7 @@ class TextSearchIndex:
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(query)
         analyzed_query = [
-            token
-            for token in normalized_query.split()
-            if token not in TextSearchIndex.STOP_WORDS
+            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
         ]
 
         # Handle empty query after filtering stop words
@@ -168,18 +173,24 @@ class TextSearchIndex:
 
         # log.debug(f"search analyzed_query: {analyzed_query}")
 
-        results = self._results(analyzed_query)
+        results = self.get_ids_from_token_index(analyzed_query)
         result_sets = [set[int](result) for result in results]
         # all tokens must be in the document
-        documents: list[tuple[int, str]] = []
+        search_results: list[tuple[int, str]] = []
         document_results: set[int] = set.intersection(*result_sets)
         for doc_id in document_results:
-            document_entry = (doc_id, self.documents[doc_id])
-            documents.append(document_entry)
-        return self.rank(analyzed_query, documents)
+            document_entry = (doc_id, self.get_document_text(doc_id))
+            search_results.append(document_entry)
+        return self.rank(analyzed_query, search_results)
+
+    def get_document_text(self, doc_id: int) -> str:
+        return self.documents[doc_id]
+
+    def save_document_text(self, id_: int, text: str) -> None:
+        self.documents[id_] = text
 
     def rank(
-        self, analyzed_query: list[str], documents: list[tuple[int, str]]
+        self, analyzed_query: list[str], search_results: list[tuple[int, str]]
     ) -> list[tuple[int, str]]:
         """
         Ranks documents based on their relevance to the query.
@@ -189,17 +200,17 @@ class TextSearchIndex:
 
         Args:
             analyzed_query: A list of query tokens.
-            documents: A list of document ID and text tuples to be ranked.
+            search_results: A list of document ID and text tuples to be ranked.
 
         Returns:
             list[tuple[int, str]]: A list of document ID and text tuples,
                 ordered by their relevance to the query.
         """
-        results: list[tuple[tuple[int, str], float]] = []
-        if not documents:
+        unranked_results: list[tuple[tuple[int, str], float]] = []
+        if not search_results:
             return list[tuple[int, str]]()
-        for document in documents:
-            normalised_name = normalise_search_content(document[1])
+        for search_result in search_results:
+            normalised_name = normalise_search_content(search_result[1])
             term_frequencies = Counter(normalised_name.split())
 
             score = 0.0
@@ -210,14 +221,15 @@ class TextSearchIndex:
                 # tf = document.term_frequency(token)
                 idf = self.inverse_document_frequency(token)
                 score += tf * idf
-            results.append((document, score))
-        ranked = sorted(results, key=lambda doc: doc[1], reverse=True)
-        return [ranked_item[0] for ranked_item in ranked]
+            unranked_results.append((search_result, score))
+
+        ranked_results = sorted(unranked_results, key=lambda doc: doc[1], reverse=True)
+        return [ranked_item[0] for ranked_item in ranked_results]
 
     def reduce_list_to_set(self) -> None:
-        for key, words in self.index.items():
+        for key, words in self.token_index.items():
             reduced_set = set(words)
-            self.index[key] = list(reduced_set)
+            self.token_index[key] = list(reduced_set)
 
     def generate_list_of_stop_words(self) -> list[str]:
         """
@@ -230,7 +242,7 @@ class TextSearchIndex:
             list[str]: A list of potential stop words.
         """
         results = {}
-        for key, words in self.index.items():
+        for key, words in self.token_index.items():
             if len(words) > 10000:
                 # print(f"{key}: {len(words)}")
                 results[key] = len(words)
@@ -244,12 +256,13 @@ class TextSearchIndex:
         """
         Calculates and logs the memory size of the index, documents, and keys.
         """
-        size_index = calculate_size(self.index)
+        size_index = calculate_size(self.token_index)
         size_documents = calculate_size(self.documents)
         size_keys = calculate_size(self.keys)
+        log.debug(f"number in index  : {self.number_of_documents}")
         log.debug(f"size of index    : {size_index}")
         log.debug(f"size of documents: {size_documents}")
-        log.debug(f"size of keys: {size_keys}")
+        log.debug(f"size of keys     : {size_keys}")
 
     def get_random_id(self) -> int:
         """
@@ -288,6 +301,10 @@ class TextSearchIndex:
         with open(filename, "rb") as file:
             # read pickle dump information from that file
             text_search_index: TextSearchIndex = pickle.load(file)
+
+        text_search_index.print_sizes()
+
+        # text_search_index.number_of_documents = len(text_search_index.documents)
 
         # noinspection Mypy
         return text_search_index  # type: ignore

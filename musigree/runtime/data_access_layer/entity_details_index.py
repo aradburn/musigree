@@ -161,9 +161,7 @@ class EntityDetailsIndex:
         entity_genres = self.entity_genres.get(id_)
         if entity_genres is None:
             return None
-        entity_genres_strs = [
-            self.genres_list[genre_index] for genre_index in entity_genres
-        ]
+        entity_genres_strs = [self.genres_list[genre_index] for genre_index in entity_genres]
         sorted_entity_genres_strs = sorted(entity_genres_strs)
         return ",".join(sorted_entity_genres_strs)
 
@@ -181,9 +179,7 @@ class EntityDetailsIndex:
         entity_styles = self.entity_styles.get(id_)
         if entity_styles is None:
             return None
-        entity_styles_strs = [
-            self.styles_list[style_index] for style_index in entity_styles
-        ]
+        entity_styles_strs = [self.styles_list[style_index] for style_index in entity_styles]
         sorted_entity_styles_strs = sorted(entity_styles_strs)
         return ",".join(sorted_entity_styles_strs)
 

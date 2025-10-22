@@ -18,13 +18,12 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_init_text_search_index(
         self, offline_database_setup: AsyncGenerator[None, None]
     ) -> None:
-
         async with offline_transaction():
             entity_repository = EntityRepository()
             index = await EntityDataAccess.create_text_search_index(entity_repository)
 
         # THEN
-        assert len(index.index.items()) == 7221
+        assert len(index.token_index.items()) == 7221
         assert len(index.documents.items()) == 6216
 
     @pytest.mark.asyncio
@@ -52,9 +51,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 48
         entity_type = EntityType.ARTIST
-        entity = id_utils.get_test_entity_by_id(
-            discogs_data_directory, entity_id, entity_type
-        )
+        entity = id_utils.get_test_entity_by_id(discogs_data_directory, entity_id, entity_type)
 
         # WHEN
         async with offline_transaction():
@@ -81,9 +78,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 98
         entity_type = EntityType.ARTIST
-        entity = id_utils.get_test_entity_by_id(
-            discogs_data_directory, entity_id, entity_type
-        )
+        entity = id_utils.get_test_entity_by_id(discogs_data_directory, entity_id, entity_type)
 
         # WHEN
         async with offline_transaction():
@@ -111,9 +106,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 288
         entity_type = EntityType.ARTIST
-        entity = id_utils.get_test_entity_by_id(
-            discogs_data_directory, entity_id, entity_type
-        )
+        entity = id_utils.get_test_entity_by_id(discogs_data_directory, entity_id, entity_type)
 
         # WHEN
         async with offline_transaction():
@@ -138,9 +131,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 61
         entity_type = EntityType.LABEL
-        entity = id_utils.get_test_entity_by_id(
-            discogs_data_directory, entity_id, entity_type
-        )
+        entity = id_utils.get_test_entity_by_id(discogs_data_directory, entity_id, entity_type)
 
         # WHEN
         async with offline_transaction():
@@ -170,9 +161,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.labels
 
         # THEN
@@ -196,9 +185,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.companies
 
         # THEN
@@ -250,9 +237,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.artists
 
         # THEN
@@ -273,9 +258,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.extra_artists
 
         # THEN

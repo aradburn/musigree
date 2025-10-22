@@ -14,10 +14,10 @@ class TestTextSearchIndex:
         """Test TextSearchIndex initialization."""
         index = TextSearchIndex()
 
-        assert isinstance(index.index, dict)
+        assert isinstance(index.token_index, dict)
         assert isinstance(index.documents, dict)
         assert isinstance(index.keys, list)
-        assert len(index.index) == 0
+        assert len(index.token_index) == 0
         assert len(index.documents) == 0
         assert len(index.keys) == 0
 
@@ -36,10 +36,10 @@ class TestTextSearchIndex:
         assert 1 in index.documents
         assert index.documents[1] == "Hello World"
         assert 1 in index.keys
-        assert "hello" in index.index
-        assert "world" in index.index
-        assert 1 in index.index["hello"]
-        assert 1 in index.index["world"]
+        assert "hello" in index.token_index
+        assert "world" in index.token_index
+        assert 1 in index.token_index["hello"]
+        assert 1 in index.token_index["world"]
 
     def test_index_entry_with_stop_words(self) -> None:
         """Test that stop words are not indexed."""
@@ -47,12 +47,12 @@ class TestTextSearchIndex:
         index.index_entry(1, "The Beatles and The Rolling Stones")
 
         # "the" and "and" should not be in the index
-        assert "the" not in index.index
-        assert "and" not in index.index
+        assert "the" not in index.token_index
+        assert "and" not in index.token_index
         # But "beatles", "rolling", "stones" should be
-        assert "beatles" in index.index
-        assert "rolling" in index.index
-        assert "stones" in index.index
+        assert "beatles" in index.token_index
+        assert "rolling" in index.token_index
+        assert "stones" in index.token_index
 
     def test_index_entry_with_hyphens(self) -> None:
         """Test indexing with hyphenated words."""
@@ -62,8 +62,8 @@ class TestTextSearchIndex:
         # Both hyphenated and split versions should be indexed
         assert 1 in index.documents
         # Should contain both "self-contained" processing and "self contained"
-        assert "self" in index.index
-        assert "contained" in index.index
+        assert "self" in index.token_index
+        assert "contained" in index.token_index
 
     def test_index_multiple_entries(self) -> None:
         """Test indexing multiple entries."""
@@ -73,10 +73,10 @@ class TestTextSearchIndex:
 
         assert len(index.documents) == 2
         assert len(index.keys) == 2
-        assert 1 in index.index["beatles"]
-        assert 2 in index.index["rolling"]
-        assert 1 in index.index["album"]
-        assert 2 in index.index["album"]
+        assert 1 in index.token_index["beatles"]
+        assert 2 in index.token_index["rolling"]
+        assert 1 in index.token_index["album"]
+        assert 2 in index.token_index["album"]
 
     def test_document_frequency(self) -> None:
         """Test document frequency calculation."""
@@ -105,10 +105,7 @@ class TestTextSearchIndex:
 
         # IDF for "beatles" (appears in 1 out of 3 documents)
         expected_idf_beatles = math.log10(3 / 1)
-        assert (
-            abs(index.inverse_document_frequency("beatles") - expected_idf_beatles)
-            < 0.001
-        )
+        assert abs(index.inverse_document_frequency("beatles") - expected_idf_beatles) < 0.001
 
     def test_search_single_term(self) -> None:
         """Test searching with a single term."""
@@ -206,7 +203,7 @@ class TestTextSearchIndex:
         index.reduce_list_to_set()
 
         # After reduction, should have sets without duplicates
-        for token_list in index.index.values():
+        for token_list in index.token_index.values():
             assert isinstance(token_list, (list, set))
 
     def test_list_stop_words(self) -> None:

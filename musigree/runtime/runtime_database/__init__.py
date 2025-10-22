@@ -6,6 +6,7 @@ from musigree.runtime.runtime_database.runtime_relation_table import (
     RuntimeRelationTable,
 )
 from musigree.runtime.runtime_database.style_table import StyleTable
+from musigree.runtime.runtime_database.token_table import TokenTable
 
 ALL_RUNTIME_DATABASE_TABLES = [
     RuntimeEntityTable,
@@ -14,4 +15,5 @@ ALL_RUNTIME_DATABASE_TABLES = [
     CountryTable,
     StyleTable,
     GenreTable,
+    TokenTable,
 ]

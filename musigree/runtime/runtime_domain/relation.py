@@ -268,7 +268,9 @@ class RuntimeRelation(_RuntimeRelationBase):
         return RuntimeRelationDB.model_validate(relation_dict)
 
     @staticmethod
-    def from_relation_internals(relation_internals: list["RuntimeRelationInternal"]) -> "RuntimeRelation":
+    def from_relation_internals(
+        relation_internals: list["RuntimeRelationInternal"],
+    ) -> "RuntimeRelation":
         releases: dict[str, int | None] = {}
         subjects: set[int] = set()
         roles: set[str] = set()

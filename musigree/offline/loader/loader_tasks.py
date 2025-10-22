@@ -133,9 +133,7 @@ class LoaderSetupTask(luigi.Task):
         logging.getLogger("luigi").handlers = logging.getLogger("musigree").handlers
         logging.getLogger("luigi").propagate = False
         logging.getLogger("luigi").setLevel(logging.WARNING)
-        logging.getLogger("luigi-interface").handlers = logging.getLogger(
-            "musigree"
-        ).handlers
+        logging.getLogger("luigi-interface").handlers = logging.getLogger("musigree").handlers
         logging.getLogger("luigi-interface").propagate = False
         logging.getLogger("luigi-interface").setLevel(logging.WARNING)
         self.output().done()
@@ -183,9 +181,7 @@ class LoaderTask(luigi.WrapperTask):
             datetime.date.fromisoformat(str(self.end_date)),
         )
         for date in dates:
-            yield DiscogsDownloaderTaskForDate(
-                data_directory=self.data_directory, dump_date=date
-            )
+            yield DiscogsDownloaderTaskForDate(data_directory=self.data_directory, dump_date=date)
             yield LoaderTaskForDate(data_directory=self.data_directory, dump_date=date)
 
 
@@ -215,8 +211,7 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now()
-                - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         )
         log.debug(f"DiscogsDownloaderTaskForDate priority: {diff}")
@@ -281,8 +276,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now()
-                - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         )
         log.debug(f"LoaderTaskForDate priority: {diff}")
@@ -345,8 +339,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
         """
         diff = int(
             (
-                datetime.datetime.now()
-                - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
             ).total_seconds()
         ) + (100 - int(str(self.stage)))
         log.debug(

@@ -32,10 +32,17 @@ from typing import Annotated
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
-
+from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.app.fastapi_dependencies import rate_limiter, get_entity_type, get_entity_id, get_roles, get_year
+from musigree.app.fastapi_dependencies import (
+    rate_limiter,
+    get_entity_type,
+    get_entity_id,
+    get_roles,
+    get_year,
+)
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
 """
@@ -48,6 +55,7 @@ The FastAPI router for the API endpoints.
 
 This router is used to organize the API routes and their related functionality.
 """
+
 
 # noinspection PyUnusedLocal
 @router.get("/{entity_type_str}/relations/{entity_id}")
@@ -185,7 +193,14 @@ async def route__api__search(
     )
 
     log.debug(f"search_string: {search_string}")
-    data = RuntimeEntitySearch.search_entities(search_string)
+
+    async with runtime_transaction():
+        entity_repository = RuntimeEntityRepository()
+        token_repository = TokenRepository()
+
+        data = await RuntimeEntitySearch.search_entities(
+            entity_repository, token_repository, search_string
+        )
     return data
 
 
@@ -267,11 +282,14 @@ async def route__api__random(
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
+        token_repository = TokenRepository()
         try:
             (
                 entity_id,
                 entity_type,
-            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(entity_repository)
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
+                entity_repository, token_repository
+            )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random", exc_info=True)

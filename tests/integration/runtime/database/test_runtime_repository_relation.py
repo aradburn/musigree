@@ -80,12 +80,8 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
             created_entity_1 = await repository.create(runtime_entity_1)
             created_entity_2 = await repository.create(runtime_entity_2)
 
-        id_1 = to_entity_internal_id(
-            created_entity_1.entity_id, created_entity_1.entity_type
-        )
-        id_2 = to_entity_internal_id(
-            created_entity_2.entity_id, created_entity_2.entity_type
-        )
+        id_1 = to_entity_internal_id(created_entity_1.entity_id, created_entity_1.entity_type)
+        id_2 = to_entity_internal_id(created_entity_2.entity_id, created_entity_2.entity_type)
         relation = RuntimeRelationInternal(
             id=1,
             subject=id_1,
@@ -100,17 +96,13 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
         # WHEN - Create relation
         async with runtime_transaction():
             relation_repository = RuntimeRelationRepository()
-            uncommitted_relations = RuntimeRelationUncommitted.from_dicts(
-                relation_dicts
-            )
+            uncommitted_relations = RuntimeRelationUncommitted.from_dicts(relation_dicts)
 
             await relation_repository.create(uncommitted_relations[0])
             created_relations: list[RuntimeRelationInternal] = []
             async for created_relation_db in relation_repository.all():
                 """Retrieve all created relations."""
-                assert created_relation_db is not None, (
-                    "Created relation db should not be None"
-                )
+                assert created_relation_db is not None, "Created relation db should not be None"
                 created_relations.append(created_relation_db)
 
             created_relation = RuntimeRelation.from_relation_internals(created_relations)

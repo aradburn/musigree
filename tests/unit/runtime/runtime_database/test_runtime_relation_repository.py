@@ -58,7 +58,12 @@ class TestRuntimeRelationRepository:
 
             with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
                 expected_relation = RuntimeRelationDB(
-                    id=relation_id, subject=12345, predicate=3, object=67890, release_id=12, year=1999,
+                    id=relation_id,
+                    subject=12345,
+                    predicate=3,
+                    object=67890,
+                    release_id=12,
+                    year=1999,
                 )
                 mock_validate.return_value = expected_relation
 
@@ -162,9 +167,7 @@ class TestRuntimeRelationRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(
-            RuntimeRelationRepository, "_get_one_by_query"
-        ) as mock_get_one:
+        with patch.object(RuntimeRelationRepository, "_get_one_by_query") as mock_get_one:
             mock_relation = Mock()
             mock_get_one.return_value = mock_relation
 
@@ -199,9 +202,7 @@ class TestRuntimeRelationRepository:
             mock_result.scalars.return_value = mock_scalars
             mock_execute.return_value = mock_result
 
-            with patch.object(
-                RuntimeRelationRepository, "_get_all_by_query"
-            ) as mock_get_all:
+            with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
                 mock_relation = Mock()
                 mock_get_all.return_value = mock_relation
 
@@ -236,9 +237,7 @@ class TestRuntimeRelationRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(
-            RuntimeRelationRepository, "_get_all_by_query"
-        ) as mock_get_one:
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_one:
             mock_relations = [Mock(), Mock()]
             mock_get_one.return_value = mock_relations
 
@@ -269,9 +268,7 @@ class TestRuntimeRelationRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(
-            RuntimeRelationRepository, "_get_all_by_query"
-        ) as mock_get_all:
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
             mock_relations = [Mock()]
             mock_get_all.return_value = mock_relations
 

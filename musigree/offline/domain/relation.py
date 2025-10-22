@@ -127,9 +127,7 @@ class RelationDB(_RelationBase):
         """
         relation_db_dict: dict[str, Any] = self.model_dump()
         _role_id = relation_db_dict.get("predicate")
-        role_id: int = (
-            _role_id if _role_id is not None and isinstance(_role_id, int) else 0
-        )
+        role_id: int = _role_id if _role_id is not None and isinstance(_role_id, int) else 0
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]
         relation_db_dict.update(role=role_name)
         return RelationInternal.model_validate(relation_db_dict)

@@ -93,9 +93,7 @@ class TestOfflineDatabaseManager:
         mock_session_factory = Mock()
         mock_sessionmaker.return_value = mock_session_factory
 
-        with patch.object(
-            OfflineDatabaseManager, "get_concurrency_count", return_value=4
-        ):
+        with patch.object(OfflineDatabaseManager, "get_concurrency_count", return_value=4):
             # Act
             await OfflineDatabaseManager.setup_database(mock_config)
 
@@ -112,12 +110,8 @@ class TestOfflineDatabaseManager:
 
         mock_postgres_helper.assert_called_once()
         mock_helper_instance.setup_database.assert_called_once_with(mock_config)
-        mock_helper_instance.check_connection.assert_called_once_with(
-            mock_config, mock_engine
-        )
-        mock_sessionmaker.assert_called_once_with(
-            bind=mock_engine, expire_on_commit=False
-        )
+        mock_helper_instance.check_connection.assert_called_once_with(mock_config, mock_engine)
+        mock_sessionmaker.assert_called_once_with(bind=mock_engine, expire_on_commit=False)
         # Should register event listeners for concurrency > 1
         assert mock_listen.call_count == 2
 
@@ -149,9 +143,7 @@ class TestOfflineDatabaseManager:
         mock_helper_instance.check_connection = AsyncMock()
         mock_sqlite_helper.return_value = mock_helper_instance
 
-        with patch.object(
-            OfflineDatabaseManager, "get_concurrency_count", return_value=4
-        ):
+        with patch.object(OfflineDatabaseManager, "get_concurrency_count", return_value=4):
             # Act
             await OfflineDatabaseManager.setup_database(mock_config)
 
@@ -181,9 +173,7 @@ class TestOfflineDatabaseManager:
         mock_helper_instance.check_connection = AsyncMock()
         mock_sqlite_helper.return_value = mock_helper_instance
 
-        with patch.object(
-            OfflineDatabaseManager, "get_concurrency_count", return_value=1
-        ):
+        with patch.object(OfflineDatabaseManager, "get_concurrency_count", return_value=1):
             # Act
             await OfflineDatabaseManager.setup_database(mock_config)
 
@@ -199,9 +189,7 @@ class TestOfflineDatabaseManager:
         mock_config.DATABASE = "UNKNOWN_TYPE"
 
         # Act & Assert
-        with pytest.raises(
-            ValueError, match="Configuration Error: Unknown database type"
-        ):
+        with pytest.raises(ValueError, match="Configuration Error: Unknown database type"):
             await OfflineDatabaseManager.setup_database(mock_config)
 
     def test_engine_event_handlers_behavior(self) -> None:

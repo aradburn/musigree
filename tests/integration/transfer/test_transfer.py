@@ -59,7 +59,9 @@ class TestTransfer(AbstractDatabaseTest):
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         # GIVEN
-        entity_details_path = runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+        entity_details_path = (
+            runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+        )
         await TransferManager.transfer_load_entity_details_index(entity_details_path)
 
         # WHEN
@@ -115,9 +117,7 @@ class TestTransfer(AbstractDatabaseTest):
 
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            await ReleaseDataAccess.create_entity_details_index(
-                offline_release_repository
-            )
+            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
 
         # WHEN
         await TransferManager.transfer_entity_details()

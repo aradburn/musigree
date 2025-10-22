@@ -24,10 +24,7 @@ class TestTextSearchUtils:
         result = normalise_search_content(
             "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890!@#$%^&*()_+-=[]{}|;':\",.<>?/"
         )
-        assert (
-            result
-            == "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz 1234567890-"
-        )
+        assert result == "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz 1234567890-"
 
     def test_normalise_search_content_with_punctuation_4(self) -> None:
         """Test normalization with punctuation that should be removed."""

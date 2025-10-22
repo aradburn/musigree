@@ -41,8 +41,6 @@ from musigree.config import Configuration
 from musigree.constants import (
     TEMPLATES_DIR,
     PUBLIC_DIR,
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     FRONTEND_DIR,
 )
 from musigree.exceptions import (
@@ -56,7 +54,6 @@ from musigree.runtime.data_access_layer.runtime_role_data_access import (
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.app.fastapi_security import setup_security_middleware
-from musigree.transfer.transfer_manager import TransferManager
 from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
@@ -82,6 +79,7 @@ def create_app(config: Configuration) -> FastAPI:
     """
     from musigree.app.fastapi_api import router as api_router
     from musigree.app.fastapi_ui import router as ui_router
+    from musigree.app.fastapi_healthcheck import router as healthcheck_router
     from musigree.app.fastapi_assets import create_assets_router
 
     # Setup logging
@@ -173,6 +171,7 @@ def create_app(config: Configuration) -> FastAPI:
     app.include_router(assets_router)
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
+    app.include_router(healthcheck_router)
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -185,6 +184,15 @@ def create_app(config: Configuration) -> FastAPI:
                     "success": False,
                     "status": exc.status_code,
                     "message": exc.message,
+                },
+            )
+        elif request.url.path.startswith("/health"):
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "success": False,
+                    "status": exc.status_code,
+                    "message": "Bad healthcheck endpoint",
                 },
             )
         else:
@@ -268,10 +276,6 @@ async def init_app(config: Configuration) -> None:
 
     # Load role cache in memory
     await RuntimeRoleDataAccess.load_all_roles_into_cache()
-
-    # Load text search index for entities
-    text_search_path = config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-    await TransferManager.transfer_load_text_search_index(text_search_path)
 
     # Shutdown on app exit
     asyncio_atexit.register(shutdown_application)

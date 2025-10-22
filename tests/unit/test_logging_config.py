@@ -103,9 +103,7 @@ class TestLoggingConfig:
 
     @patch("logging.config.dictConfig")
     @patch("logging.getLogger")
-    def test_setup_logging_production(
-        self, mock_get_logger: Mock, mock_dict_config: Mock
-    ) -> None:
+    def test_setup_logging_production(self, mock_get_logger: Mock, mock_dict_config: Mock) -> None:
         """Test setup_logging with production config."""
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
@@ -120,9 +118,7 @@ class TestLoggingConfig:
 
     @patch("logging.config.dictConfig")
     @patch("logging.getLogger")
-    def test_setup_logging_testing(
-        self, mock_get_logger: Mock, mock_dict_config: Mock
-    ) -> None:
+    def test_setup_logging_testing(self, mock_get_logger: Mock, mock_dict_config: Mock) -> None:
         """Test setup_logging with testing config."""
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
@@ -171,9 +167,7 @@ class TestLoggingConfig:
     @patch("logging.shutdown")
     @patch("logging.getLogger")
     @patch("logging.root.manager.loggerDict", new={})
-    def test_shutdown_logging_no_loggers(
-        self, mock_get_logger: Mock, mock_shutdown: Mock
-    ) -> None:
+    def test_shutdown_logging_no_loggers(self, mock_get_logger: Mock, mock_shutdown: Mock) -> None:
         """Test shutdown_logging when no loggers exist."""
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
@@ -195,12 +189,8 @@ class TestLoggingConfig:
             formatters = config["formatters"]
 
             for formatter_name, formatter in formatters.items():
-                assert "format" in formatter, (
-                    f"{config_name}.{formatter_name} missing format"
-                )
-                assert "datefmt" in formatter, (
-                    f"{config_name}.{formatter_name} missing datefmt"
-                )
+                assert "format" in formatter, f"{config_name}.{formatter_name} missing format"
+                assert "datefmt" in formatter, f"{config_name}.{formatter_name} missing datefmt"
 
                 # Check that format includes essential fields
                 format_str = formatter["format"]
@@ -219,9 +209,7 @@ class TestLoggingConfig:
 
             for handler_name, handler in handlers.items():
                 assert "level" in handler, f"{config_name}.{handler_name} missing level"
-                assert "formatter" in handler, (
-                    f"{config_name}.{handler_name} missing formatter"
-                )
+                assert "formatter" in handler, f"{config_name}.{handler_name} missing formatter"
                 assert "class" in handler, f"{config_name}.{handler_name} missing class"
 
                 # Check that the formatter referenced exists
@@ -239,12 +227,8 @@ class TestLoggingConfig:
             loggers = config["loggers"]
 
             for logger_name, logger_config in loggers.items():
-                assert "handlers" in logger_config, (
-                    f"{config_name}.{logger_name} missing handlers"
-                )
-                assert "level" in logger_config, (
-                    f"{config_name}.{logger_name} missing level"
-                )
+                assert "handlers" in logger_config, f"{config_name}.{logger_name} missing handlers"
+                assert "level" in logger_config, f"{config_name}.{logger_name} missing level"
                 assert "propagate" in logger_config, (
                     f"{config_name}.{logger_name} missing propagate"
                 )

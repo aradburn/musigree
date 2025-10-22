@@ -78,7 +78,7 @@ class RoleDataAccess:
             else:
                 # Long sentence makes processing too complex, so split in two
                 word_list_part_one = word_list[: len(word_list) // 2]
-                word_list_part_two = word_list[len(word_list) // 2:]
+                word_list_part_two = word_list[len(word_list) // 2 :]
                 part_1 = " ".join(word_list_part_one)
                 part_2 = " ".join(word_list_part_two)
                 queue.append(part_1)
@@ -158,6 +158,4 @@ class RoleDataAccess:
             sorted_list = sorted(RoleCache.role_name_set)
             for item in sorted_list:
                 log.debug(f"{item}")
-        log.debug(
-            f"Loaded {len(RoleCache.role_name_to_role_id_lookup)} roles from RoleRepository"
-        )
+        log.debug(f"Loaded {len(RoleCache.role_name_to_role_id_lookup)} roles from RoleRepository")

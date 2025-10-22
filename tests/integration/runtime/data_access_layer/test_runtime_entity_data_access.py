@@ -27,10 +27,8 @@ class TestRuntimeEntityDataAccess(AbstractDatabaseTest):
         entity_name = "Joker, The (3)"
         async with runtime_transaction():
             runtime_entity_repository = RuntimeEntityRepository()
-            actual = (
-                await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-                    runtime_entity_repository, entity_type, entity_name
-                )
+            actual = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                runtime_entity_repository, entity_type, entity_name
             )
 
         # THEN

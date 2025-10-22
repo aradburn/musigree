@@ -1,14 +1,14 @@
 ---
 description: Enforce general coding rules for tests to prevent common errors.
-globs: 
+globs:
 alwaysApply: true
 ---
 
-## General Testing 
+## General Testing
 
 - Write tests first, then the code, then run the tests and update the code until tests pass.
 - Include appropriate unit tests for all code.
- 
+
 ## Frontend Typescript Tests
 
 - For Typescript tests use subdirectories named **`/__tests__/`** inline in the source tree.

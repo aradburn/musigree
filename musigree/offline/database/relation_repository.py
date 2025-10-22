@@ -37,9 +37,7 @@ class RelationRepository(BaseRepository[RelationTable]):
     schema_class = RelationTable
     """The SQLAlchemy table class for relations."""
 
-    async def _get_one_by_query(
-        self, query: Select[tuple[RelationTable]]
-    ) -> RelationInternal:
+    async def _get_one_by_query(self, query: Select[tuple[RelationTable]]) -> RelationInternal:
         """
         Executes a query that should return a single Relation.
 
@@ -317,10 +315,8 @@ class RelationRepository(BaseRepository[RelationTable]):
             role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
             relation_dict.update(predicate=role_id)
             relation_dicts.append(relation_dict)
-        query = (
-            OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
-                self.schema_class, relation_dicts, on_conflict_do_nothing
-            )
+        query = OfflineDatabaseManager.offline_database_helper.generate_insert_bulk_query(
+            self.schema_class, relation_dicts, on_conflict_do_nothing
         )
         await self._session.execute(query)
 

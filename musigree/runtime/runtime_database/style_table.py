@@ -33,9 +33,7 @@ class StyleTable(RuntimeBase):
     The primary key of the table, an auto-incrementing integer representing
     the unique identifier for the runtime style.
     """
-    style_name: Mapped[str] = mapped_column(
-        String, index=True, unique=True, nullable=False
-    )
+    style_name: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
     """
     The name of the style (e.g., 'Electronic', 'Rock'). Indexed for faster lookup.
     """
@@ -53,9 +51,7 @@ class StyleTable(RuntimeBase):
                 columns and their values.
         """
         column_names = set([column.name for column in inspect(StyleTable).columns])
-        superentries = {
-            k: entries[k] for k in column_names.intersection(entries.keys())
-        }
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 
     def __repr__(self) -> str:

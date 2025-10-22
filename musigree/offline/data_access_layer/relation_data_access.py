@@ -122,9 +122,7 @@ class RelationDataAccess:
         for subject_id, company in iterator:
             if subject_id is not None and company is not None and "entity_type_name" in company:
                 company_role_str = company["entity_type_name"]
-                company_role_strs_list = RoleDataUtils.normalise_role_names(
-                    company_role_str
-                )
+                company_role_strs_list = RoleDataUtils.normalise_role_names(company_role_str)
                 """Normalize the role names."""
                 for role_str in company_role_strs_list:
                     role_name = RoleDataAccess.find_role(role_str)
@@ -147,9 +145,7 @@ class RelationDataAccess:
             for object_id, credit in iterator:
                 for roles in credit.get("roles", ()):
                     track_role_str: str = roles["name"]
-                    track_role_strs_list = RoleDataUtils.normalise_role_names(
-                        track_role_str
-                    )
+                    track_role_strs_list = RoleDataUtils.normalise_role_names(track_role_str)
                     """Normalize the role names."""
                     for role_str in track_role_strs_list:
                         role_name = RoleDataAccess.find_role(role_str)
@@ -234,9 +230,7 @@ class RelationDataAccess:
         )
         """Set to store unique artist IDs."""
         # log.debug(f"get_release_setup artists: {artist_ids}")
-        label_ids: set[int] = set(
-            label["id"] for label in (release.labels or []) if "id" in label
-        )
+        label_ids: set[int] = set(label["id"] for label in (release.labels or []) if "id" in label)
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
@@ -249,9 +243,7 @@ class RelationDataAccess:
             artist_ids.clear()
             for track in release.tracklist or []:
                 artist_ids.update(
-                    artist["id"]
-                    for artist in track.get("artists", ())
-                    if "id" in artist
+                    artist["id"] for artist in track.get("artists", ()) if "id" in artist
                 )
             # log.debug(f"get_release_setup various artists: {artist_ids}")
         return artist_ids, label_ids, is_compilation

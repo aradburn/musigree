@@ -271,7 +271,7 @@ describe("Network Link Functions", () => {
             expect(mockText.text).toHaveBeenCalledWith(expect.any(Function));
             const textCall = (mockText.text as Mock).mock.calls[0];
             const textFunc = textCall[0] as (d: SimLink) => string;
-            expect(textFunc(mockLink)).toBe("TR"); // First letters of "Test Role"
+            expect(textFunc(mockLink)).toBe("Test Role \u{2192}"); // Used to be first letters of "Test Role"
         });
 
         it("should bind mouse events with tooltip handling", () => {

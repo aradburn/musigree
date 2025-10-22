@@ -78,9 +78,7 @@ class TestMainExecution:
 
         # Assertions
         mock_create_app.assert_called_once()
-        mock_uvicorn_run.assert_called_once_with(
-            app, host="0.0.0.0", port=5000, log_level="info"
-        )
+        mock_uvicorn_run.assert_called_once_with(app, host="0.0.0.0", port=5000, log_level="info")
 
     @patch("musigree.app.fastapi_dev_app.uvicorn")
     @patch("musigree.app.fastapi_dev_app.create_development_app")
@@ -97,6 +95,4 @@ class TestMainExecution:
         mock_uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
 
         # Assertions
-        mock_uvicorn.run.assert_called_once_with(
-            app, host="0.0.0.0", port=5000, log_level="info"
-        )
+        mock_uvicorn.run.assert_called_once_with(app, host="0.0.0.0", port=5000, log_level="info")

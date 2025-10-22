@@ -25,9 +25,7 @@ class TestFastAPIUI:
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
-    @patch(
-        "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
-    )
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
     @pytest.mark.asyncio
     async def test_route_index_basic(
         self,
@@ -65,9 +63,7 @@ class TestFastAPIUI:
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
-    @patch(
-        "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
-    )
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
     @pytest.mark.asyncio
     async def test_route_index_with_parameters(
         self,
@@ -86,9 +82,7 @@ class TestFastAPIUI:
         mock_request.base_url = "http://localhost:8000/"
 
         # Call the route
-        response = await route__index(
-            mock_request, roles=["Artist", "Album"], year=2000
-        )
+        response = await route__index(mock_request, roles=["Artist", "Album"], year=2000)
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -101,9 +95,7 @@ class TestFastAPIUI:
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
-    @patch(
-        "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
-    )
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
     @pytest.mark.asyncio
     async def test_route_entity_type_entity_id_success(
@@ -153,7 +145,7 @@ class TestFastAPIUI:
     def test_get_entity_type_invalid(self) -> None:
         """Test the get_entity_type dependency with invalid entity type."""
         from musigree.app.fastapi_dependencies import get_entity_type
-        
+
         with pytest.raises(BadRequestError) as exc_info:
             get_entity_type("invalid_type")
 
@@ -162,7 +154,7 @@ class TestFastAPIUI:
     def test_get_entity_id_invalid(self) -> None:
         """Test the get_entity_id dependency with non-numeric entity ID."""
         from musigree.app.fastapi_dependencies import get_entity_id
-        
+
         with pytest.raises(BadRequestError) as exc_info:
             get_entity_id("not_a_number")
 
@@ -170,14 +162,10 @@ class TestFastAPIUI:
 
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
     @pytest.mark.asyncio
-    async def test_route_entity_type_entity_id_no_network_data(
-        self, mock_db_manager: Mock
-    ) -> None:
+    async def test_route_entity_type_entity_id_no_network_data(self, mock_db_manager: Mock) -> None:
         """Test the entity route when no network data is found."""
         # Setup mocks
-        mock_db_manager.runtime_database_helper.get_network = AsyncMock(
-            return_value=None
-        )
+        mock_db_manager.runtime_database_helper.get_network = AsyncMock(return_value=None)
 
         mock_request = Mock(spec=Request)
         mock_request.base_url = "http://localhost:8000/"
@@ -198,9 +186,7 @@ class TestFastAPIUI:
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
-    @patch(
-        "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
-    )
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
     @pytest.mark.asyncio
     async def test_route_index_url_generation(
         self,
@@ -227,9 +213,7 @@ class TestFastAPIUI:
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
-    @patch(
-        "musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping"
-    )
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
     @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
     @pytest.mark.asyncio
     async def test_route_entity_url_generation(
@@ -271,7 +255,7 @@ class TestFastAPIUI:
     def test_entity_type_validation(self) -> None:
         """Test entity type validation via dependency function."""
         from musigree.app.fastapi_dependencies import get_entity_type
-        
+
         # Valid entity types should work
         valid_types = ["artist", "label"]
         for entity_type in valid_types:

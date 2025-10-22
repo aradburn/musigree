@@ -79,9 +79,7 @@ class TestRuntimeRoleTable:
         # THEN
         assert role_table.role_name == "Guitarist"
         assert role_table.role_category == RoleType.Category.INSTRUMENTS
-        assert (
-            role_table.role_subcategory == RoleType.Subcategory.STRINGED_INSTRUMENTS
-        )
+        assert role_table.role_subcategory == RoleType.Subcategory.STRINGED_INSTRUMENTS
         assert role_table.role_category_name == "Instruments"
         assert role_table.role_subcategory_name == "String Instruments"
 
@@ -114,9 +112,7 @@ class TestRuntimeRoleTable:
     def test_primary_key(self) -> None:
         """Test that id column is the primary key."""
         # GIVEN/WHEN
-        primary_key_columns = [
-            col.name for col in inspect(RuntimeRoleTable).primary_key
-        ]
+        primary_key_columns = [col.name for col in inspect(RuntimeRoleTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]
@@ -206,7 +202,4 @@ class TestRuntimeRoleTable:
         assert isinstance(role_table.role_category, RoleType.Category)
         assert isinstance(role_table.role_subcategory, RoleType.Subcategory)
         assert role_table.role_category.value == 6  # INSTRUMENTS = 6
-        assert (
-            role_table.role_subcategory.value == 1
-        )  # DRUMS_AND_PERCUSSION = 1
-
+        assert role_table.role_subcategory.value == 1  # DRUMS_AND_PERCUSSION = 1

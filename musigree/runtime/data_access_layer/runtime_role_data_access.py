@@ -104,14 +104,9 @@ class RuntimeRoleDataAccess:
 
         for subcategory_name in sorted(RoleType.subcategory_names.values()):
             """Iterate over each subcategory."""
-            if (
-                subcategory_name
-                is not RoleType.subcategory_names[RoleType.Subcategory.NONE]
-            ):
+            if subcategory_name is not RoleType.subcategory_names[RoleType.Subcategory.NONE]:
                 """Skip the NONE subcategory."""
-                state = RuntimeRoleJSTreeState(
-                    opened=False, disabled=False, selected=False
-                )
+                state = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=False)
                 """Create the `RuntimeRoleJSTreeState` object."""
                 tree_entry = RuntimeRoleJSTreeEntry(
                     id=subcategory_name,
@@ -145,14 +140,10 @@ class RuntimeRoleDataAccess:
                 parent = role.role_category_name
             if role.role_name in UI_DEFAULT_ROLES:
                 """Check if the role is selected by default."""
-                state = RuntimeRoleJSTreeState(
-                    opened=False, disabled=False, selected=True
-                )
+                state = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=True)
             else:
                 """Or not."""
-                state = RuntimeRoleJSTreeState(
-                    opened=False, disabled=False, selected=False
-                )
+                state = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=False)
             """Create the `RuntimeRoleJSTreeState` object."""
             tree_entry = RuntimeRoleJSTreeEntry(
                 id=str(role.id),
@@ -237,6 +228,4 @@ class RuntimeRoleDataAccess:
                 """Iterate over the role."""
                 log.debug(f"{item}")
                 """Log the role name."""
-        log.debug(
-            f"Loaded {len(RoleCache.role_name_to_role_id_lookup)} roles from RoleRepository"
-        )
+        log.debug(f"Loaded {len(RoleCache.role_name_to_role_id_lookup)} roles from RoleRepository")

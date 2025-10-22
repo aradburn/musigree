@@ -38,18 +38,10 @@ class TestRuntimeEntityTable:
         assert entity_table.entity_type == EntityType.ARTIST
         assert entity_table.entity_name == "The Beatles"
         assert entity_table.relation_counts == {"releases": 100, "tracks": 500}
-        assert (
-            entity_table.entity_metadata == {"formed": "1960", "disbanded": "1970"}
-        )
-        assert (
-            entity_table.aliases == {"alternate_names": ["Beatles", "Fab Four"]}
-        )
-        assert (
-            entity_table.groups == {"members": ["John", "Paul", "George", "Ringo"]}
-        )
-        assert (
-            entity_table.members == {"current": [], "former": ["John Lennon"]}
-        )
+        assert entity_table.entity_metadata == {"formed": "1960", "disbanded": "1970"}
+        assert entity_table.aliases == {"alternate_names": ["Beatles", "Fab Four"]}
+        assert entity_table.groups == {"members": ["John", "Paul", "George", "Ringo"]}
+        assert entity_table.members == {"current": [], "former": ["John Lennon"]}
         assert entity_table.countries == "United Kingdom"
         assert entity_table.genres == "Rock, Pop"
         assert entity_table.styles == "Merseybeat, Pop Rock"
@@ -139,9 +131,7 @@ class TestRuntimeEntityTable:
         mock_inspect.return_value = mock_inspector
 
         # WHEN
-        primary_key_columns = [
-            col.name for col in inspect(RuntimeEntityTable).primary_key
-        ]
+        primary_key_columns = [col.name for col in inspect(RuntimeEntityTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]
@@ -256,4 +246,3 @@ class TestRuntimeEntityTable:
         assert entity_table.countries is None
         assert entity_table.genres is None
         assert entity_table.styles is None
-

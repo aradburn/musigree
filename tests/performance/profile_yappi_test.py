@@ -22,12 +22,14 @@ def run_profiled_test() -> None:
     test_file = "../integration/transfer/sqlite/test_sqlite_transfer.py"
 
     # Use pytest to run the test
-    pytest.main([
-        test_file,
-        "-v",
-        "--tb=short",
-        "-s"  # Allow print statements
-    ])
+    pytest.main(
+        [
+            test_file,
+            "-v",
+            "--tb=short",
+            "-s",  # Allow print statements
+        ]
+    )
 
 
 def analyze_yappi_stats() -> None:
@@ -82,7 +84,11 @@ def analyze_yappi_stats() -> None:
         print(f"\n{i + 1}. Function: {func_name}")
         print(f"   Total Time: {stat.ttot:.6f}s")
         print(f"   Calls: {stat.ncall}")
-        print(f"   Average Time: {stat.ttot / stat.ncall:.6f}s" if stat.ncall > 0 else "   Average Time: N/A")
+        print(
+            f"   Average Time: {stat.ttot / stat.ncall:.6f}s"
+            if stat.ncall > 0
+            else "   Average Time: N/A"
+        )
         # print(f"   File: {stat.path}")
         print(f"   Line: {stat.lineno}")
 
@@ -101,7 +107,11 @@ def save_detailed_stats() -> None:
             f.write(f"Function: {stat.module}.{stat.name}\n")
             f.write(f"Total Time: {stat.ttot:.6f}s\n")
             f.write(f"Calls: {stat.ncall}\n")
-            f.write(f"Average Time: {stat.ttot / stat.ncall:.6f}s\n" if stat.ncall > 0 else "Average Time: N/A\n")
+            f.write(
+                f"Average Time: {stat.ttot / stat.ncall:.6f}s\n"
+                if stat.ncall > 0
+                else "Average Time: N/A\n"
+            )
             # f.write(f"File: {stat.path}\n")
             f.write(f"Line: {stat.lineno}\n")
             f.write("-" * 40 + "\n")
@@ -139,6 +149,7 @@ def main() -> None:
     except Exception as e:
         print(f"Error during test execution: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         # Stop profiling

@@ -28,9 +28,7 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
         actual = RelationDataAccess.from_release(release)
@@ -290,9 +288,7 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(
-                entity_repository, release
-            )
+            await EntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
         actual = RelationDataAccess.from_release(release)

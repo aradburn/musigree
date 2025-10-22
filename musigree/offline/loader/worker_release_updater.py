@@ -48,6 +48,7 @@ related exception and `pprint` for pretty print the diff between releases. It
 interacts with `musigree.offline.database` for database related operations,
 and `musigree.offline.offline_database_manager` for managing concurrency.
 """
+
 import asyncio
 import logging
 import pprint
@@ -70,8 +71,9 @@ The logger for the update_releases_worker module.
 """
 
 
-async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], processed_count: int,
-                                       _total_count: int) -> None:
+async def update_releases_worker_async(
+    bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int
+) -> None:
     """
     A worker function for updating or inserting release records.
 
@@ -223,13 +225,14 @@ async def update_releases_worker_async(bulk_updates: list[dict[str, Any]], proce
                 raise e
 
     log.info(
-        f"worker updated {updated_count} inserted {inserted_count} releases total"
-        f" processed {processed_count}"
+        f"worker updated {updated_count} inserted {inserted_count} releases total processed {processed_count}"
     )
     """Log the number of updated and inserted releases."""
 
 
-def update_releases_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+def update_releases_worker(
+    bulk_updates: list[dict[str, Any]], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

@@ -112,9 +112,7 @@ class TestRolesToRelationCount:
         entities = {"parent_label": {"parent1": 1}}
         entity = self.create_test_entity(EntityType.LABEL, entities=entities)
 
-        result = RuntimeEntityDataAccess.roles_to_relation_count(
-            entity, ["Sublabel Of"]
-        )
+        result = RuntimeEntityDataAccess.roles_to_relation_count(entity, ["Sublabel Of"])
 
         assert result == 1
 
@@ -123,9 +121,7 @@ class TestRolesToRelationCount:
         entities = {"sublabels": {"sub1": 1, "sub2": 2}}
         entity = self.create_test_entity(EntityType.LABEL, entities=entities)
 
-        result = RuntimeEntityDataAccess.roles_to_relation_count(
-            entity, ["Sublabel Of"]
-        )
+        result = RuntimeEntityDataAccess.roles_to_relation_count(entity, ["Sublabel Of"])
 
         assert result == 2
 
@@ -134,31 +130,23 @@ class TestRolesToRelationCount:
         entities = {"parent_label": {"parent1": 1}, "sublabels": {"sub1": 2, "sub2": 3}}
         entity = self.create_test_entity(EntityType.LABEL, entities=entities)
 
-        result = RuntimeEntityDataAccess.roles_to_relation_count(
-            entity, ["Sublabel Of"]
-        )
+        result = RuntimeEntityDataAccess.roles_to_relation_count(entity, ["Sublabel Of"])
 
         assert result == 3  # 1 parent + 2 sublabels
 
     def test_roles_to_relation_count_other_roles(self) -> None:
         """Test roles_to_relation_count with other roles from relation_counts."""
         relation_counts = {"Producer": 5, "Engineer": 3}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, relation_counts=relation_counts
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, relation_counts=relation_counts)
 
-        result = RuntimeEntityDataAccess.roles_to_relation_count(
-            entity, ["Producer", "Engineer"]
-        )
+        result = RuntimeEntityDataAccess.roles_to_relation_count(entity, ["Producer", "Engineer"])
 
         assert result == 8  # 5 + 3
 
     def test_roles_to_relation_count_other_roles_missing(self) -> None:
         """Test roles_to_relation_count with roles not in relation_counts."""
         relation_counts = {"Producer": 5}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, relation_counts=relation_counts
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, relation_counts=relation_counts)
 
         result = RuntimeEntityDataAccess.roles_to_relation_count(
             entity, ["Producer", "Nonexistent"]
@@ -174,9 +162,7 @@ class TestRolesToRelationCount:
             EntityType.ARTIST, entities=entities, relation_counts=relation_counts
         )
 
-        result = RuntimeEntityDataAccess.roles_to_relation_count(
-            entity, ["Alias", "Producer"]
-        )
+        result = RuntimeEntityDataAccess.roles_to_relation_count(entity, ["Alias", "Producer"])
 
         assert result == 5  # 2 aliases + 3 producer
 
@@ -221,13 +207,9 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_artist_alias(self) -> None:
         """Test structural_roles_to_relations for artist with aliases."""
         entities = {"aliases": {"alias1": 2, "alias2": 3}}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Alias"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Alias"])
 
         assert len(result) == 2
 
@@ -243,13 +225,9 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_artist_alias_empty_values(self) -> None:
         """Test structural_roles_to_relations for artist with empty alias values."""
         entities = {"aliases": {"alias1": None, "alias2": 0, "alias3": 3}}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Alias"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Alias"])
 
         # Should only create relation for alias3 (non-empty value)
         assert len(result) == 1
@@ -257,13 +235,9 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_artist_member_of_groups(self) -> None:
         """Test structural_roles_to_relations for artist member of groups."""
         entities = {"groups": {"group1": 2, "group2": 3}}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Member Of"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Member Of"])
 
         assert len(result) == 2
 
@@ -275,13 +249,9 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_artist_member_of_members(self) -> None:
         """Test structural_roles_to_relations for artist with members."""
         entities = {"members": {"member1": 2, "member2": 3}}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Member Of"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Member Of"])
 
         assert len(result) == 2
 
@@ -293,26 +263,18 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_artist_member_of_both(self) -> None:
         """Test structural_roles_to_relations for artist with both groups and members."""
         entities = {"groups": {"group1": 2}, "members": {"member1": 3, "member2": 4}}
-        entity = self.create_test_entity(
-            EntityType.ARTIST, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.ARTIST, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Member Of"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Member Of"])
 
         assert len(result) == 3  # 1 group + 2 members
 
     def test_structural_roles_to_relations_label_sublabel_of_parent(self) -> None:
         """Test structural_roles_to_relations for label with parent."""
         entities = {"parent_label": {"parent1": 2}}
-        entity = self.create_test_entity(
-            EntityType.LABEL, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.LABEL, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Sublabel Of"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Sublabel Of"])
 
         assert len(result) == 1
 
@@ -324,13 +286,9 @@ class TestStructuralRolesToRelations:
     def test_structural_roles_to_relations_label_sublabel_of_sublabels(self) -> None:
         """Test structural_roles_to_relations for label with sublabels."""
         entities = {"sublabels": {"sub1": 2, "sub2": 3}}
-        entity = self.create_test_entity(
-            EntityType.LABEL, entity_id=1, entities=entities
-        )
+        entity = self.create_test_entity(EntityType.LABEL, entity_id=1, entities=entities)
 
-        result = RuntimeEntityDataAccess.structural_roles_to_relations(
-            entity, ["Sublabel Of"]
-        )
+        result = RuntimeEntityDataAccess.structural_roles_to_relations(entity, ["Sublabel Of"])
 
         assert len(result) == 2
 
@@ -388,9 +346,7 @@ class TestGetIdByEntityTypeAndEntityName:
         """Fixture for mock entity repository."""
         return AsyncMock()
 
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_hit(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
@@ -409,9 +365,7 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_cache.get.assert_called_once_with("Test Artist_EntityType.ARTIST")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_null_entry(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
@@ -430,9 +384,7 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_cache.get.assert_called_once_with("Test Artist_EntityType.ARTIST")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_hit(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
@@ -455,9 +407,7 @@ class TestGetIdByEntityTypeAndEntityName:
         )
         mock_cache.set.assert_called_once_with("Test Label_EntityType.LABEL", 456)
 
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_miss(
         self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
@@ -465,8 +415,8 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
-            NotFoundError(message="Entity not found")
+        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
+            message="Entity not found"
         )
 
         # Test
@@ -484,9 +434,7 @@ class TestGetIdByEntityTypeAndEntityName:
             "Test Label_EntityType.LABEL", RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL
         )
 
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
-    )
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     @patch(
         "musigree.runtime.data_access_layer.runtime_entity_data_access.LOGGING_TRACE",
         True,
@@ -503,8 +451,8 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
-            NotFoundError(message="Entity not found")
+        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
+            message="Entity not found"
         )
 
         # Test
@@ -523,9 +471,7 @@ class TestGetIdByEntityTypeAndEntityName:
         # This is implicit in the other tests, but let's be explicit
         entity_name = "Test Entity"
         entity_type = EntityType.ARTIST
-        expected_key = (
-            f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-        )
+        expected_key = f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
 
         assert expected_key == "Test Entity_EntityType.ARTIST"
 
@@ -538,6 +484,4 @@ class TestLogging:
         from musigree.runtime.data_access_layer.runtime_entity_data_access import log
 
         assert isinstance(log, logging.Logger)
-        assert (
-            log.name == "musigree.runtime.data_access_layer.runtime_entity_data_access"
-        )
+        assert log.name == "musigree.runtime.data_access_layer.runtime_entity_data_access"

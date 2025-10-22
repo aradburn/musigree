@@ -44,9 +44,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
                 message="Can not initiate the class without schema_class attribute"
             )
 
-    async def _update(
-        self, key: str, value: Any, payload: dict[str, Any]
-    ) -> ConcreteTable:
+    async def _update(self, key: str, value: Any, payload: dict[str, Any]) -> ConcreteTable:
         """
         Updates an existing instance of the model in the related table.
 
@@ -98,9 +96,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         """
 
         # noinspection PyTypeChecker
-        query = select(self.schema_class).where(
-            getattr(self.schema_class, key) == value
-        )
+        query = select(self.schema_class).where(getattr(self.schema_class, key) == value)
         result: Result = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
@@ -124,10 +120,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         if not isinstance(value, int):
             raise UnprocessableError(
-                message=(
-                    "For some reason count function returned not an integer."
-                    f"Value: {value}"
-                ),
+                message=f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value

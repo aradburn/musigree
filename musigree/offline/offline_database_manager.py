@@ -51,15 +51,9 @@ class OfflineDatabaseManager:
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
-        async_engine = (
-            await OfflineDatabaseManager.offline_database_helper.setup_database(config)
-        )
-        OfflineDatabaseManager.offline_database_helper.offline_async_engine = (
-            async_engine
-        )
-        log.debug(
-            f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}"
-        )
+        async_engine = await OfflineDatabaseManager.offline_database_helper.setup_database(config)
+        OfflineDatabaseManager.offline_database_helper.offline_async_engine = async_engine
+        log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
 
         def engine_on_connect(dbapi_con, connection_record) -> None:  # type: ignore
             if LOGGING_TRACE:
@@ -73,13 +67,10 @@ class OfflineDatabaseManager:
             if connection_record.info["pid"] != pid:
                 log.error(f"Checkout engine connection using wrong pid: {dbapi_con}")
 
-                connection_record.dbapi_connection = (
-                    connection_proxy.dbapi_connection
-                ) = None
+                connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
                 raise exc.DisconnectionError(
                     "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s"
-                    % (connection_record.info["pid"], pid)
+                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
                 )
 
         # noinspection PyUnusedLocal
@@ -99,9 +90,11 @@ class OfflineDatabaseManager:
             # listen(async_engine.sync_engine, "close", engine_on_close)
 
         # a async_sessionmaker(), also in the same scope as the engine
-        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = async_sessionmaker(
-            bind=OfflineDatabaseManager.offline_database_helper.offline_async_engine,
-            expire_on_commit=False,
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = (
+            async_sessionmaker(
+                bind=OfflineDatabaseManager.offline_database_helper.offline_async_engine,
+                expire_on_commit=False,
+            )
         )
 
         # Set logging level for SqlAlchemy
@@ -112,9 +105,7 @@ class OfflineDatabaseManager:
         # logging.getLogger("asyncio").setLevel(logging.DEBUG)
 
         # Check database connection
-        await OfflineDatabaseManager.offline_database_helper.check_connection(
-            config, async_engine
-        )
+        await OfflineDatabaseManager.offline_database_helper.check_connection(config, async_engine)
 
     @classmethod
     async def shutdown_database(cls) -> None:
@@ -126,10 +117,7 @@ class OfflineDatabaseManager:
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling shutdown_database()"
         )
 
-        if (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine
-            is not None
-        ):
+        if OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None:
             await OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose()
 
         await OfflineDatabaseManager.offline_database_helper.shutdown_database()
@@ -145,8 +133,10 @@ class OfflineDatabaseManager:
         if OfflineDatabaseManager.get_concurrency_count() > 1:
             """Check if concurrency is enabled."""
 
-            if (OfflineDatabaseManager.offline_database_helper is not None and
-                OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
+            if (
+                OfflineDatabaseManager.offline_database_helper is not None
+                and OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
+            ):
                 loop.run_until_complete(
                     OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
                         close=False
@@ -164,8 +154,10 @@ class OfflineDatabaseManager:
         if OfflineDatabaseManager.get_concurrency_count() > 1:
             """Check if concurrency is enabled."""
 
-            if (OfflineDatabaseManager.offline_database_helper is not None and
-                OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None):
+            if (
+                OfflineDatabaseManager.offline_database_helper is not None
+                and OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
+            ):
                 loop.run_until_complete(
                     OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
                         close=True

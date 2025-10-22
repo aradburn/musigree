@@ -49,9 +49,7 @@ class TestParserBase:
             return cls()
 
         @classmethod
-        def preprocess_data(
-            cls, data: dict[str, Any], element: Element
-        ) -> dict[str, Any]:
+        def preprocess_data(cls, data: dict[str, Any], element: Element) -> dict[str, Any]:
             """Preprocess data by converting name to uppercase."""
             if "name" in data:
                 data["name"] = data["name"].upper()

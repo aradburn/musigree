@@ -330,8 +330,8 @@ class TestEntityDetailsIndex:
 
         # Should handle special characters properly
         assert len(self.index.countries_list) == 2  # São Paulo, Rio de Janeiro
-        assert len(self.index.genres_list) == 2     # Punk, Rock  
-        assert len(self.index.styles_list) == 2     # Post-Rock, Ambient
+        assert len(self.index.genres_list) == 2  # Punk, Rock
+        assert len(self.index.styles_list) == 2  # Post-Rock, Ambient
 
     def test_sorted_retrieval(self) -> None:
         """Test that retrieved values are sorted."""

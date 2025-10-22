@@ -21,9 +21,7 @@ class TestRepositoryRelease(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "release", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "release", "testinsert")
         release_element = next(iterator)
         release = ParserRelease().from_element(release_element)
 
@@ -43,9 +41,7 @@ class TestRepositoryRelease(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "release", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "release", "testinsert")
         next(iterator)
         next(iterator)
         next(iterator)

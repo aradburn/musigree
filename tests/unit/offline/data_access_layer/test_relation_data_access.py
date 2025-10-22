@@ -29,19 +29,13 @@ class TestRelationDataAccess:
             title="Test Release",
             artists=[{"id": 1, "name": "Test Artist"}],
             labels=[{"id": 2, "name": "Test Label"}],
-            extra_artists=[
-                {"id": 3, "name": "Producer", "roles": [{"name": "Producer"}]}
-            ],
-            companies=[
-                {"id": 4, "name": "Test Company", "entity_type_name": "Distributed By"}
-            ],
+            extra_artists=[{"id": 3, "name": "Producer", "roles": [{"name": "Producer"}]}],
+            companies=[{"id": 4, "name": "Test Company", "entity_type_name": "Distributed By"}],
             tracklist=[
                 {
                     "title": "Test Track",
                     "artists": [{"id": 5, "name": "Track Artist"}],
-                    "extra_artists": [
-                        {"id": 6, "name": "Vocalist", "roles": [{"name": "Vocals"}]}
-                    ],
+                    "extra_artists": [{"id": 6, "name": "Vocalist", "roles": [{"name": "Vocals"}]}],
                 }
             ],
         )
@@ -52,22 +46,16 @@ class TestRelationDataAccess:
         return Release(
             release_id=456,
             title="Various Artists - Compilation",
-            artists=[
-                {"id": 194, "name": "Various Artists"}
-            ],  # Discogs ID for Various Artists
+            artists=[{"id": 194, "name": "Various Artists"}],  # Discogs ID for Various Artists
             labels=[{"id": 2, "name": "Test Label"}],
-            extra_artists=[
-                {"id": 3, "name": "Producer", "roles": [{"name": "Producer"}]}
-            ],
+            extra_artists=[{"id": 3, "name": "Producer", "roles": [{"name": "Producer"}]}],
             tracklist=[
                 {"title": "Track 1", "artists": [{"id": 5, "name": "Artist 1"}]},
                 {"title": "Track 2", "artists": [{"id": 6, "name": "Artist 2"}]},
             ],
         )
 
-    @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role"
-    )
+    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
     @patch(
         "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
     )
@@ -88,9 +76,7 @@ class TestRelationDataAccess:
         mock_normalise_roles.assert_called()
         mock_find_role.assert_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role"
-    )
+    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
     @patch(
         "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
     )
@@ -116,9 +102,7 @@ class TestRelationDataAccess:
     def test_get_release_setup_normal_release(self, sample_release: Release) -> None:
         """Test get_release_setup for normal release."""
         # Act
-        artist_ids, label_ids, is_compilation = RelationDataAccess.get_release_setup(
-            sample_release
-        )
+        artist_ids, label_ids, is_compilation = RelationDataAccess.get_release_setup(sample_release)
 
         # Assert
         assert isinstance(artist_ids, set)
@@ -128,9 +112,7 @@ class TestRelationDataAccess:
         assert 2 in label_ids  # Label ID from sample_release
         assert not is_compilation  # Should not be compilation
 
-    def test_get_release_setup_compilation_release(
-        self, compilation_release: Release
-    ) -> None:
+    def test_get_release_setup_compilation_release(self, compilation_release: Release) -> None:
         """Test get_release_setup for compilation release."""
         # Act
         artist_ids, label_ids, is_compilation = RelationDataAccess.get_release_setup(
@@ -235,7 +217,7 @@ class TestRelationDataAccess:
         mock_relation_internal.object = 2
         mock_relation_internal.release_id = 123
         mock_relation_internal.year = 2020
-        
+
         mock_relation = Mock(spec=Relation)
         mock_relation_internal.to_relation.return_value = mock_relation
         mock_relation_repo.find_by_key.return_value = [mock_relation_internal]
@@ -311,9 +293,7 @@ class TestRelationDataAccess:
     #     assert all("entity_one_id" in item for item in result)
     #     assert all("entity_two_id" in item for item in result)
 
-    @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role"
-    )
+    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
     @patch(
         "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
     )
@@ -335,9 +315,7 @@ class TestRelationDataAccess:
             mock_normalise_roles.assert_called()
             mock_find_role.assert_called()
 
-    @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role"
-    )
+    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
     @patch(
         "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
     )
@@ -398,9 +376,7 @@ class TestRelationDataAccess:
         assert isinstance(result, list)
         # Should handle None values gracefully without crashing
 
-    @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role"
-    )
+    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
     @patch(
         "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
     )

@@ -6,10 +6,7 @@ from musigree.runtime.data_access_layer.role_entry import RoleEntry
 class TestRoleEntry:
     def test_role_entry_from_element_1(self) -> None:
         element = ElementTree.fromstring("<test></test>")
-        element.text = (
-            "Shekere [Xequere, Original Musician], Guiro [Original Musician], "
-            "Claves [Original Musician]"
-        )
+        element.text = "Shekere [Xequere, Original Musician], Guiro [Original Musician], Claves [Original Musician]"
         roles = RoleEntry.from_element(element)
         assert roles == [
             RoleEntry(name="Shekere", detail="Xequere, Original Musician"),
@@ -20,8 +17,7 @@ class TestRoleEntry:
     def test_role_entry_from_element_2(self) -> None:
         element = ElementTree.fromstring("<test></test>")
         element.text = (
-            "Co-producer, Arranged By, Directed By, Other [Guided By], "
-            "Other [Created By]"
+            "Co-producer, Arranged By, Directed By, Other [Guided By], Other [Created By]"
         )
         roles = RoleEntry.from_element(element)
         assert roles == [
@@ -34,9 +30,7 @@ class TestRoleEntry:
 
     def test_role_entry_from_element_3(self) -> None:
         element = ElementTree.fromstring("<test></test>")
-        element.text = (
-            "Organ [Original Musician], Electric Piano [Rhodes, Original Musician]"
-        )
+        element.text = "Organ [Original Musician], Electric Piano [Rhodes, Original Musician]"
         roles = RoleEntry.from_element(element)
         assert roles == [
             RoleEntry(
@@ -121,8 +115,6 @@ class TestRoleEntry:
         element.text = "Performer [Enigmatic [K] Voice, Moog, Korg Vocoder], Lyrics By"
         roles = RoleEntry.from_element(element)
         assert roles == [
-            RoleEntry(
-                name="Performer", detail="Enigmatic [K] Voice, Moog, Korg Vocoder"
-            ),
+            RoleEntry(name="Performer", detail="Enigmatic [K] Voice, Moog, Korg Vocoder"),
             RoleEntry(name="Lyrics By"),
         ]

@@ -40,9 +40,9 @@ describe("SearchResult", () => {
             />,
         );
 
-        // Check if the bg-light class is applied when active=true
+        // Check if the bg-success-subtle class is applied when active=true
         const resultDiv = container.firstChild as HTMLElement;
-        expect(resultDiv).toHaveClass("bg-light");
+        expect(resultDiv).toHaveClass("bg-success-subtle");
     });
 
     it("does not apply active styling when active prop is false", () => {
@@ -56,9 +56,9 @@ describe("SearchResult", () => {
             />,
         );
 
-        // Check if the bg-light class is not applied when active=false
+        // Check if the bg-light class is applied when active=false
         const resultDiv = container.firstChild as HTMLElement;
-        expect(resultDiv).not.toHaveClass("bg-light");
+        expect(resultDiv).toHaveClass("bg-light");
     });
 
     it("calls onClick handler when clicked", () => {

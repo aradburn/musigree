@@ -3,6 +3,7 @@ Unit tests for the entity_type module.
 
 This module contains unit tests for the EntityType enum and its utility methods.
 """
+
 import enum
 
 import pytest
@@ -24,9 +25,9 @@ class TestEntityType:
 
     def test_entity_type_members(self) -> None:
         """Test EntityType enum members."""
-        assert hasattr(EntityType, 'ARTIST')
-        assert hasattr(EntityType, 'LABEL')
-        
+        assert hasattr(EntityType, "ARTIST")
+        assert hasattr(EntityType, "LABEL")
+
         # Test that these are the only members
         members = list(EntityType)
         assert len(members) == 2
@@ -133,7 +134,7 @@ class TestEntityTypeLessThan:
         """Test that EntityTypes can be sorted."""
         types_list = [EntityType.LABEL, EntityType.ARTIST]
         sorted_types = sorted(types_list)
-        
+
         assert sorted_types[0] == EntityType.ARTIST
         assert sorted_types[1] == EntityType.LABEL
 
@@ -163,25 +164,22 @@ class TestEntityTypeIntegration:
     def test_entity_type_in_set(self) -> None:
         """Test EntityType in set operations."""
         entity_set = {EntityType.ARTIST, EntityType.LABEL}
-        
+
         assert EntityType.ARTIST in entity_set
         assert EntityType.LABEL in entity_set
         assert len(entity_set) == 2
 
     def test_entity_type_as_dict_key(self) -> None:
         """Test EntityType as dictionary keys."""
-        entity_dict = {
-            EntityType.ARTIST: "artist_data",
-            EntityType.LABEL: "label_data"
-        }
-        
+        entity_dict = {EntityType.ARTIST: "artist_data", EntityType.LABEL: "label_data"}
+
         assert entity_dict[EntityType.ARTIST] == "artist_data"
         assert entity_dict[EntityType.LABEL] == "label_data"
 
     def test_entity_type_iteration(self) -> None:
         """Test iterating over EntityType values."""
         all_types = list(EntityType)
-        
+
         assert len(all_types) == 2
         assert EntityType.ARTIST in all_types
         assert EntityType.LABEL in all_types

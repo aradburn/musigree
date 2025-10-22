@@ -3,14 +3,19 @@ import re
 
 import rapidfuzz
 
+from musigree.exceptions import DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import (
     LABEL_ENTITY_ID_OFFSET,
     to_entity_external_id,
 )
+from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
+from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
+from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
 from musigree.utils import URLIFY_REGEX
@@ -20,7 +25,11 @@ log = logging.getLogger(__name__)
 
 class RuntimeEntitySearch:
     @staticmethod
-    def search_entities(search_string: str) -> dict[str, tuple[dict[str, str], ...]]:
+    async def search_entities(
+        entity_repository: RuntimeEntityRepository,
+        token_repository: TokenRepository,
+        search_string: str,
+    ) -> dict[str, tuple[dict[str, str], ...]]:
         cache = CacheManager.get_cache()
 
         normalised_search_string = normalise_search_content(search_string)
@@ -35,14 +44,11 @@ class RuntimeEntitySearch:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "RuntimeDatabaseManager.runtime_database_helper is not set."
         )
-        documents = RuntimeDatabaseManager.runtime_database_helper.search_text_index(
-            normalised_search_string
+        documents = await RuntimeEntitySearch.search_text_index(
+            entity_repository, token_repository, normalised_search_string
         )
-        # log.debug(f"search results: {documents}")
 
-        sorted_documents = RuntimeEntitySearch.sort_search_results(
-            search_string, documents
-        )
+        sorted_documents = RuntimeEntitySearch.sort_search_results(search_string, documents)
 
         # log.debug(f"{cache_key}: NOT CACHED")
         data: list[dict[str, str]] = []
@@ -108,3 +114,83 @@ class RuntimeEntitySearch:
         )
         result_documents = [sorted_document[1] for sorted_document in sorted_documents]
         return result_documents
+
+    @staticmethod
+    async def search_text_index(
+        entity_repository: RuntimeEntityRepository,
+        token_repository: TokenRepository,
+        search_text: str,
+    ) -> list[tuple[int, str]]:
+        """
+        Searches the database for documents matching the query.
+
+        This method returns documents that contain all of the query terms, and
+        ranks them based on their relevance to the query.
+
+        Args:
+            entity_repository: The runtime entity repository.
+            token_repository: The token repository.
+            search_text: The text to search for.
+
+        Returns:
+            list[tuple[int, str]]: A list of tuples, where each tuple contains a
+                document ID and the corresponding document text, ordered by relevance.
+        """
+        # Normalize the query and filter out stop words
+        normalized_query = normalise_search_content(search_text)
+        analyzed_query = [
+            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
+        ]
+
+        # Handle empty query after filtering stop words
+        if not analyzed_query:
+            return []
+
+        result_sets = await RuntimeEntitySearch.get_lists_of_ids_from_token_db(
+            token_repository, analyzed_query
+        )
+
+        # all tokens must be in the document
+        search_results: list[tuple[int, str]] = []
+        document_results: set[int] = set.intersection(*result_sets)
+        for id_ in document_results:
+            name = await RuntimeEntityDataAccess.get_entity_name_by_id(entity_repository, id_)
+            if name is not None:
+                document_entry = (id_, name)
+                search_results.append(document_entry)
+        return search_results
+
+    @staticmethod
+    async def get_lists_of_ids_from_token_db(
+        token_repository: TokenRepository, analyzed_query: list[str]
+    ) -> list[set[int]]:
+        """
+        Retrieves the sets of document IDs for each token in a query.
+
+        Args:
+            token_repository: The token reporitory.
+            analyzed_query: A list of tokens in the query.
+
+        Returns:
+            list[set[int]]: A list of sets, where each set contains the document IDs
+                for a token in the query.
+        """
+        result_ids_list: list[set[int]] = []
+        for token in analyzed_query:
+            result_ids = await RuntimeEntitySearch.get_ids_from_token_db(token_repository, token)
+            result_ids_list.append(result_ids)
+        return result_ids_list
+
+    @staticmethod
+    async def get_ids_from_token_db(token_repository: TokenRepository, token: str) -> set[int]:
+        result_set: set[int] = set[int]()
+        try:
+            """Attempt to get the entity ids for the token."""
+            token_ids = await token_repository.get_by_token(token)
+            result_set = set[int](token_ids)
+
+        except DatabaseError:
+            """Handle potential database errors."""
+            log.error("Error in text_search data access")
+
+        return result_set

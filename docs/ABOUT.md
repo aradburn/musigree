@@ -5,20 +5,20 @@ About Musigree
 - Single-page application, using asynchronous calls to a JSON API
 - Uses the Discogs XML dump, heavily transformed
 
-The Stack
----------
+The Technology Stack
+--------------------
 
-The front-end:
+### Front End
 
 - [D3](https://d3js.org): handles svg, animation, and force layout of nodes in the graph
-- a custom finite state machine for simplifying single-page state
+- A custom finite state machine for simplifying single-page state
 - [React](https://reactjs.org/): for the UI
 - [Bootstrap](http://getbootstrap.com/): for CSS and styling
 - [Vite](https://vitejs.dev/): for bundling and serving the front-end
 
-The back-end:
+### Back End
 
-- Python 3
+- Python 3.13
 - [FastAPI](https://fastapi.tiangolo.com/) : web framework
 - [SQLAlchemy](https://www.sqlalchemy.org/): to access the database
 - [Pydantic](https://pydantic-docs.helpmanual.io/): for data validation
@@ -26,8 +26,8 @@ The back-end:
 - [SQLite](https://www.sqlite.org/): for a smaller runtime database
 - [Redis](https://redis.io/): for caching and rate limiting
 
-The DB Structure
-----------------
+The Database Structure
+----------------------
 
 A classic graph-search problem, with two primary tables:
 
@@ -36,7 +36,7 @@ A classic graph-search problem, with two primary tables:
 - *Roles*: the roles (or credit on the release) for each relation
 - *Releases*: the releases (tracks / albums / CDs etc) that the relations are drawn on
 
-The graph-search algorithm
+The graph search algorithm
 --------------------------
 
 1. Start with an entity
@@ -100,29 +100,80 @@ Searching around Morris Day...
 Network query time: 0.6372168064117432
 ```
 
-# Development
+Development
+-----------
 
-## Run Frontend:
+#### Prerequisites
 
+- Python 3.13 (for backendend development)
+- Node.js 22 (for frontend development)
+- PostgreSQL (for full database) and/or SQLite (for development and runtime)
+- Redis (optional, for caching)
+
+### Setting Up the Development Environment
+
+#### Backend Setup
+
+1. Create a virtual environment:
+
+   The project uses `uv` to install and run the Python environment. See the documentation
+   here: https://docs.astral.sh/uv/getting-started/
+
+2. Install dependencies:
+
+    ```
+    uv sync
+    ```
+
+#### Frontend Setup
+
+Navigate to the frontend directory and install dependencies:
+
+```
+cd frontend
+npm install
+```
+
+### Run Development Frontend
+
+```
+cd frontend
 npm install
 npm run dev
+```
+
 This runs a dev server on localhost:5173/assets/ that serves up raw typescript files.
 
-## Run backend
+### Run Development Backend
 
-run musigree/app/fastapi_dev_app.py in IDE
-This starts a dev server on localhost:5000
+The project uses `uv` and `venv` to manage the backend Python environment and dependencies.
 
-# Production
+run `musigree/app/fastapi_dev_app.py` in an IDE or
 
-## Run Frontend:
+```
+uv run musigree/app/fastapi_dev_app.py
+```
 
-npm install
+This starts a dev server on `localhost:5000`
+
+Production
+----------
+
+### Build for production
+
+```
+cd frontend
 npm run build
-This compiles the frontend files into frontend/dist.
+```
 
-## Run backend
+This compiles the frontend files into `frontend/dist`.
 
-run wsgi.py in IDE
-This starts a production server on localhost:8080
+### Run production server
 
+```
+uv run wsgi.py
+```
+
+This runs the backend server and uses the statically built frontend files from frontend/dist.
+
+The production server runs on `localhost:8080`

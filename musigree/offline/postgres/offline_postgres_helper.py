@@ -187,21 +187,14 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     async def shutdown_database() -> None:
         log.info("Shutting down Postgres offline database")
 
-        if (
-            OfflinePostgresHelper._is_test
-            and OfflinePostgresHelper.postgres_test_db is not None
-        ):
+        if OfflinePostgresHelper._is_test and OfflinePostgresHelper.postgres_test_db is not None:
             log.info("Cleaning up Postgres Test Offline Database")
 
             OfflinePostgresHelper.postgres_test_db.cleanup()
 
-            log.info(
-                f"Delete data dir: {OfflinePostgresHelper.postgres_test_db.pg_data_dir}"
-            )
+            log.info(f"Delete data dir: {OfflinePostgresHelper.postgres_test_db.pg_data_dir}")
             shutil.rmtree(OfflinePostgresHelper.postgres_test_db.pg_data_dir)
-            log.info(
-                f"Delete socket dir: {OfflinePostgresHelper.postgres_test_db.pg_socket_dir}"
-            )
+            log.info(f"Delete socket dir: {OfflinePostgresHelper.postgres_test_db.pg_socket_dir}")
             shutil.rmtree(OfflinePostgresHelper.postgres_test_db.pg_socket_dir)
             if OfflinePostgresHelper.pg_offline_dirname is not None:
                 log.info(f"Delete temp dir: {OfflinePostgresHelper.pg_offline_dirname}")

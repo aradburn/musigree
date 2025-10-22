@@ -178,9 +178,7 @@ class TestRuntimeEntityRepository:
 
     @pytest.mark.asyncio
     @patch.object(RuntimeEntityRepository, "execute")
-    async def test_get_by_entity_id_and_entity_type_not_found(
-        self, mock_execute: Mock
-    ) -> None:
+    async def test_get_by_entity_id_and_entity_type_not_found(self, mock_execute: Mock) -> None:
         """Test get_by_entity_id_and_entity_type when entity not found."""
         # GIVEN
         entity_id = 12345
@@ -194,15 +192,11 @@ class TestRuntimeEntityRepository:
 
         # WHEN/THEN
         with pytest.raises(NotFoundError):
-            await self.repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
-            )
+            await self.repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
 
     @pytest.mark.asyncio
     @patch.object(RuntimeEntityRepository, "execute")
-    async def test_get_by_entity_id_and_entity_type_success(
-        self, mock_execute: Mock
-    ) -> None:
+    async def test_get_by_entity_id_and_entity_type_success(self, mock_execute: Mock) -> None:
         """Test successfully getting entity by entity_id and entity_type."""
         # GIVEN
         entity_id = 12345
@@ -235,9 +229,7 @@ class TestRuntimeEntityRepository:
             mock_validate.return_value = mock_entity_db
 
             # WHEN
-            result = await self.repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
-            )
+            result = await self.repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
 
             # THEN
             assert result == mock_domain_entity
@@ -297,9 +289,7 @@ class TestRuntimeEntityRepository:
             mock_validate.return_value = mock_entity_db
 
             # WHEN
-            result = await self.repository.get_by_type_and_name(
-                entity_type, entity_name
-            )
+            result = await self.repository.get_by_type_and_name(entity_type, entity_name)
 
             # THEN
             assert result == mock_domain_entity

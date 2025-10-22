@@ -143,9 +143,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_artist_9999999(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_artist_9999999(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_id = 9999999
         entity_type = EntityType.ARTIST
@@ -242,9 +240,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_label_record_1(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_label_record_1(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_id = 1
         entity_type = EntityType.LABEL

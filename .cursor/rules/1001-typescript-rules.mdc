@@ -11,9 +11,9 @@ This document outlines best practices and coding standards for developing TypeSc
 ## 1. Code Organization and Structure
 
 - **Directory Structure:**
-    
+
     - **Type-based:**  Separate files based on their role (components, services, types, etc.).
-```   
+```
     src/
     ├── components/
     │   ├── Feature1Component.tsx

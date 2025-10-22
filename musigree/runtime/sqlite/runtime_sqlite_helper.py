@@ -117,11 +117,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         else:
             query = {}
 
-        target_url = URL.create(
-            SQLITE_DRIVER_NAME,
-            database=str(target_path),
-            query=query
-        )
+        target_url = URL.create(SQLITE_DRIVER_NAME, database=str(target_path), query=query)
 
         log.info(f"Sqlite Database URL: {target_url}")
 
@@ -130,7 +126,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             poolclass = AsyncAdaptedQueuePool
         else:
             # During loading we have a single thread, so we can use a static pool
-            poolclass=StaticPool
+            poolclass = StaticPool
 
         engine = create_async_engine(
             target_url,
@@ -172,9 +168,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
             async with engine.connect() as connection:
                 """Open a connection."""
-                version = await connection.execute(
-                    text("SELECT sqlite_version() AS version;")
-                )
+                version = await connection.execute(text("SELECT sqlite_version() AS version;"))
                 """Get the sqlite version."""
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
                 """Log the version."""
@@ -239,9 +233,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    async def vacuum(
-        table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -308,10 +300,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         if on_conflict_do_nothing:
             """If `on_conflict_do_nothing` is enabled."""
             return (
-                insert(schema_class)
-                .on_conflict_do_nothing()
-                .values(values)
-                .returning(schema_class)
+                insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
             )
         else:
             """If `on_conflict_do_nothing` is disabled."""

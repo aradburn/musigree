@@ -78,9 +78,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         result: Result = await self._session.execute(query)
 
         instances = result.scalars().all()
-        relation_dbs = [
-            RuntimeRelationDB.model_validate(instance) for instance in instances
-        ]
+        relation_dbs = [RuntimeRelationDB.model_validate(instance) for instance in instances]
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
@@ -109,9 +107,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         Raises:
             NotFoundError: If no relation is found with the given ID.
         """
-        query = select(RuntimeRelationTable).where(
-            RuntimeRelationTable.id == relation_id
-        )
+        query = select(RuntimeRelationTable).where(RuntimeRelationTable.id == relation_id)
         result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
@@ -227,10 +223,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         query = (
             select(RuntimeRelationTable)
             .where(
-                (
-                    (RuntimeRelationTable.subject == id_)
-                    | (RuntimeRelationTable.object == id_)
-                )
+                ((RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_))
                 & (RuntimeRelationTable.predicate.in_(role_ids))
             )
             .order_by(
@@ -300,10 +293,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             role_id = RoleCache.role_name_to_role_id_lookup[relation.role_name]
             relation_dict.update(predicate=role_id)
             relation_dicts.append(relation_dict)
-        query = (
-            RuntimeDatabaseManager.runtime_database_helper.generate_insert_bulk_query(
-                self.schema_class, relation_dicts, on_conflict_do_nothing
-            )
+        query = RuntimeDatabaseManager.runtime_database_helper.generate_insert_bulk_query(
+            self.schema_class, relation_dicts, on_conflict_do_nothing
         )
         await self._session.execute(query)
 

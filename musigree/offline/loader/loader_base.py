@@ -146,17 +146,25 @@ class LoaderBase(ABC):
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
 
-        worker = cls.get_insert_worker_function() if is_bulk_inserts else cls.get_update_worker_function()
+        worker = (
+            cls.get_insert_worker_function()
+            if is_bulk_inserts
+            else cls.get_update_worker_function()
+        )
 
         records = cls.process_xml(parser, xml_path, xml_tag, skip_without)
 
-        records_with_accumulated_ids = utils.generator_with_id_accumulator(records, id_accumulator, id_attr)
+        records_with_accumulated_ids = utils.generator_with_id_accumulator(
+            records, id_accumulator, id_attr
+        )
 
         batch_records = utils.batched(records_with_accumulated_ids, BULK_INSERT_BATCH_SIZE)
 
         worker_coroutines = utils.worker_generator(worker, batch_records, 0)
 
-        await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
+        await utils.queue_worker_functions(
+            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+        )
 
         for _id in id_accumulator:
             set_of_updated_ids.add(_id)
@@ -188,11 +196,17 @@ class LoaderBase(ABC):
         if len(ids_to_be_deleted) > 0:
             delete_worker = cls.get_delete_worker_function()
 
-            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(list(ids_to_be_deleted), BULK_INSERT_BATCH_SIZE)
+            batched_ids_to_be_deleted: Iterator[list[int]] = utils.batched(
+                list(ids_to_be_deleted), BULK_INSERT_BATCH_SIZE
+            )
 
-            worker_coroutines = utils.worker_generator(delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted))
+            worker_coroutines = utils.worker_generator(
+                delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted)
+            )
 
-            await utils.queue_worker_functions(OfflineDatabaseManager.get_concurrency_count(), worker_coroutines)
+            await utils.queue_worker_functions(
+                OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+            )
 
         return processed_count
 

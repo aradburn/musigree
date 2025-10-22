@@ -52,13 +52,13 @@ for database related exceptions. It interacts with `musigree.offline.database` f
 related operations and `musigree.offline.offline_database_manager` for managing
 concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
 from musigree.offline.database.entity_repository import EntityRepository
 from musigree.offline.database.entity_table import EntityTable
@@ -72,7 +72,9 @@ The logger for the worker entity pass two module.
 """
 
 
-async def process_entity_pass_two_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
+async def process_entity_pass_two_worker_async(
+    ids: list[int], current_total: int, total_count: int
+) -> None:
     """
     Worker function for processing entity records in the second pass.
 
@@ -102,12 +104,12 @@ async def process_entity_pass_two_worker_async(ids: list[int], current_total: in
         entity_repository = EntityRepository()
         """Instance of EntityRepository for database operations on entities."""
 
-        for entity_id in ids:
+        for _id in ids:
             # log.debug(f"[{proc_name}] processing entity id: {_id}")
             """Iterate over the entity IDs."""
             try:
                 """Attempt to process the entity."""
-                entity = await entity_repository.get_by_id(entity_id)
+                entity = await entity_repository.get_by_id(_id)
                 """Retrieve the entity."""
                 await worker_pass_two_single(entity_repository, entity, proc_name)
                 """Process the entity."""
@@ -115,13 +117,12 @@ async def process_entity_pass_two_worker_async(ids: list[int], current_total: in
                 # """Increment the entity counter."""
                 if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
                     """Log the progress."""
+                    log.debug(f"[{proc_name}] processed {count} of {total_count}")
             except NotFoundError:
                 """Handle the case where the entity is not found."""
-                log.warning(f"Database NotFoundError: entity with id {entity_id} in process: {proc_name}")
+                log.warning(f"Database NotFoundError: entity with id {_id} in process: {proc_name}")
                 await entity_repository.rollback()
                 """Rollback the transaction."""
-
-                log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -144,20 +145,17 @@ async def worker_pass_two_single(
     Raises:
         DatabaseError: If there's an error during database operations.
     """
-    if LOGGING_TRACE:
-        log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
+    # if LOGGING_TRACE:
+    # log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await EntityDataAccess.resolve_entity_references(
-        entity_repository, entity
-    )
+    changed = await EntityDataAccess.resolve_entity_references(entity_repository, entity)
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""
-        if LOGGING_TRACE:
-            log.debug(
-                f"Entity (Pass 2) [{proc_name}]\t"
-                + f"          (id: {entity.entity_id}-{entity.entity_type}): {entity.entity_name}"
-            )
+        # log.debug(
+        #     f"Entity (Pass 2) [{proc_name}]\t"
+        #     + f"          (id: {entity.entity_id}-{entity.entity_type}): {entity.entities}"
+        # )
         try:
             await entity_repository.update(
                 entity.id,
@@ -166,13 +164,11 @@ async def worker_pass_two_single(
             """Update the entity in the database."""
             await entity_repository.commit()
             """Commit the transaction."""
-        except DatabaseError as e:
+        except DatabaseError:
             """Handle potential database errors."""
-            log.exception(
-                f"Database Error for id: {entity.id}",
-                exc_info=True,
-            )
-            raise e
+            log.warning(f"Database Error for id: {entity.id}")
+            await entity_repository.rollback()
+            # raise e
 
 
 def process_entity_pass_two_worker(ids: list[int], current_total: int, total_count: int) -> None:

@@ -54,6 +54,7 @@ It interacts with `musigree.offline.database` for database related operations,
 `musigree.library.full_text_search` for text normalization and
 `musigree.offline.offline_database_manager` for managing concurrency.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -79,9 +80,9 @@ The logger for the worker entity updater module.
 """
 
 
-async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
-                                       processed_count: int,
-                                       _total_count: int) -> None:
+async def update_entities_worker_async(
+    bulk_updates: list[dict[str, Any]], processed_count: int, _total_count: int
+) -> None:
     """
     Worker function for updating or inserting entity records.
 
@@ -121,14 +122,10 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
                 """Attempt to update the entity."""
                 if LOGGING_TRACE:
                     """Log if trace logging is enabled."""
-                    log.debug(
-                        f"update: {updated_entity.entity_id}-{updated_entity.entity_type}"
-                    )
+                    log.debug(f"update: {updated_entity.entity_id}-{updated_entity.entity_type}")
 
-                db_entity = (
-                    await entity_repository.get_by_entity_id_and_entity_type(
-                        updated_entity.entity_id, updated_entity.entity_type
-                    )
+                db_entity = await entity_repository.get_by_entity_id_and_entity_type(
+                    updated_entity.entity_id, updated_entity.entity_type
                 )
                 """Retrieve the existing entity from the database."""
 
@@ -141,18 +138,12 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
                     """Check if the entity name has changed."""
                     # Update name
                     db_entity.entity_name = updated_entity.entity_name
-                    update_payload[EntityTable.entity_name.key] = (
-                        db_entity.entity_name
-                    )
+                    update_payload[EntityTable.entity_name.key] = db_entity.entity_name
                     """Update the entity name."""
 
                     # Update search_content
-                    db_entity.search_content = normalise_search_content(
-                        updated_entity.entity_name
-                    )
-                    update_payload[EntityTable.search_content.key] = (
-                        db_entity.search_content
-                    )
+                    db_entity.search_content = normalise_search_content(updated_entity.entity_name)
+                    update_payload[EntityTable.search_content.key] = db_entity.search_content
                     """Update the search content."""
                     is_changed = True
                     """Set the changed flag."""
@@ -180,9 +171,7 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
                     db_entity.entity_metadata = updated_entity.entity_metadata
                     """Update the entity metadata."""
 
-                    update_payload[EntityTable.entity_metadata.key] = (
-                        db_entity.entity_metadata
-                    )
+                    update_payload[EntityTable.entity_metadata.key] = db_entity.entity_metadata
                     """Add the metadata to the update payload."""
                     is_changed = True
                     """Set the changed flag."""
@@ -224,7 +213,9 @@ async def update_entities_worker_async(bulk_updates: list[dict[str, Any]],
     """Log the number of entities processed, updated, and inserted."""
 
 
-def update_entities_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+def update_entities_worker(
+    bulk_updates: list[dict[str, Any]], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

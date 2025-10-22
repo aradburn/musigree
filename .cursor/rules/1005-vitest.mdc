@@ -14,7 +14,7 @@ This document outlines best practices for using Vitest to create reliable, maint
 
 *   **Use a dedicated `tests` directory for end-to-end tests or integration tests.  For larger projects, a `tests` directory at the root level can house end-to-end tests, integration tests that require a specific environment, or shared testing utilities.
 
-```    
+```
     tests/
       e2e/
         specs/
@@ -22,10 +22,10 @@ This document outlines best practices for using Vitest to create reliable, maint
         support/
           commands.ts
       integration/
-        db.setup.ts # Setup for integration tests 
-    src/ 
+        db.setup.ts # Setup for integration tests
+    src/
       ...
-```    
+```
 
 ### 1.2 File Naming Conventions
 
@@ -55,7 +55,7 @@ This document outlines best practices for using Vitest to create reliable, maint
         });
       });
     });
-```    
+```
 
 ### 1.4 Component Architecture
 
@@ -83,7 +83,7 @@ This document outlines best practices for using Vitest to create reliable, maint
         expect(dynamicModule.default).toBe(mockModule);
       });
     });
-```    
+```
 
 ## 2. Common Patterns and Anti-patterns
 
@@ -103,7 +103,7 @@ This document outlines best practices for using Vitest to create reliable, maint
       // Assert
       expect(result).toBe(5);
     });
-```    
+```
 
 *   **Page Object Model (POM):** For end-to-end tests, use the Page Object Model to abstract away the details of the user interface and make tests more resilient to UI changes. Define dedicated classes representing different pages or components.
 
@@ -121,7 +121,7 @@ This document outlines best practices for using Vitest to create reliable, maint
     it('should reject with an error', async () => {
       await expect(Promise.reject(new Error('Something went wrong'))).rejects.toThrow('Something went wrong');
     });
-    
+
 
 ### 2.3 Anti-patterns and Code Smells to Avoid
 
@@ -153,7 +153,7 @@ This document outlines best practices for using Vitest to create reliable, maint
         expect(mockAction).toHaveBeenCalledWith('increment');
       });
     });
-```    
+```
 
 ### 2.5 Error Handling Patterns
 
@@ -176,14 +176,14 @@ This document outlines best practices for using Vitest to create reliable, maint
         threads: true,  // Enable parallel execution
       },
     })
-```    
+```
 
 *   **Use `--changed` and `--related` flags:**  When running tests, use the `--changed` flag to only run tests that have changed since the last commit or the `--related` flag to run tests related to specific files.
 ```
     bash
     vitest --changed
     vitest --related src/components/MyComponent.vue
-```    
+```
 
 *   **Optimize test setup:**  Minimize the amount of setup required for each test.  Use `beforeAll` and `afterAll` hooks to perform setup and teardown operations once for each test suite, rather than for each test case.
 
@@ -205,7 +205,7 @@ This document outlines best practices for using Vitest to create reliable, maint
       const wrapper = shallowMount(MyComponent);
       expect(wrapper.exists()).toBe(true);
     });
-```    
+```
 
 ### 3.4 Bundle Size Optimization
 
@@ -251,7 +251,7 @@ This document outlines best practices for using Vitest to create reliable, maint
 
 *   **Test all code paths:** Ensure your unit tests cover all possible code paths, including normal execution paths, error conditions, and edge cases.
 
-*   **Use mocks and stubs:** Use mocks and stubs to isolate units of code and control their behavior during testing. 
+*   **Use mocks and stubs:** Use mocks and stubs to isolate units of code and control their behavior during testing.
 
 ### 5.2 Integration Testing
 

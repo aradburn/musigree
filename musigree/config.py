@@ -151,14 +151,10 @@ class PostgresTestConfiguration(Configuration):
 
         # Dynamically set the database names
         data["POSTGRES_OFFLINE_DATA"] = (
-            TEST_DIR
-            / OFFLINE_DATABASE
-            / f"musigree_offline_{self._offline_random_string}_test"
+            TEST_DIR / OFFLINE_DATABASE / f"musigree_offline_{self._offline_random_string}_test"
         )
         data["POSTGRES_RUNTIME_DATA"] = (
-            TEST_DIR
-            / RUNTIME_DATABASE
-            / f"musigree_runtime_{self._runtime_random_string}_test"
+            TEST_DIR / RUNTIME_DATABASE / f"musigree_runtime_{self._runtime_random_string}_test"
         )
 
         super().__init__(**data)
@@ -225,14 +221,10 @@ class SqliteTestConfiguration(Configuration):
 
         # Dynamically set the database names
         data["SQLITE_OFFLINE_DATABASE_NAME"] = (
-            TEST_DIR
-            / OFFLINE_DATABASE
-            / f"musigree_offline_{self._offline_random_string}_test.db"
+            TEST_DIR / OFFLINE_DATABASE / f"musigree_offline_{self._offline_random_string}_test.db"
         )
         data["SQLITE_RUNTIME_DATABASE_NAME"] = (
-            TEST_DIR
-            / RUNTIME_DATABASE
-            / f"musigree_runtime_{self._runtime_random_string}_test.db"
+            TEST_DIR / RUNTIME_DATABASE / f"musigree_runtime_{self._runtime_random_string}_test.db"
         )
 
         super().__init__(**data)

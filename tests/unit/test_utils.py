@@ -230,6 +230,7 @@ def test_normalize_dict_list_01() -> None:
     """
     assert actual == utils.strip_input(expected)
 
+
 def test_normalize_dict_list_2() -> None:
     """Test normalize_dict_list with list of dictionaries containing complex nested data."""
     input_list = [
@@ -490,12 +491,13 @@ def test_normalize_dict_list_duplicate_entries() -> None:
 def test_normalize_dict_list_extreme_values() -> None:
     """Test normalize_dict_list with extreme numeric values."""
     input_list = [
-        {"max_int": 2**63 - 1, "min_int": -2**63, "max_float": 1e308, "min_float": -1e308},
-        {"zero": 0, "neg_zero": -0.0, "inf": float('inf'), "neg_inf": float('-inf')},
+        {"max_int": 2**63 - 1, "min_int": -(2**63), "max_float": 1e308, "min_float": -1e308},
+        {"zero": 0, "neg_zero": -0.0, "inf": float("inf"), "neg_inf": float("-inf")},
     ]
     actual = utils.normalize_dict_list(input_list)
     assert isinstance(actual, str)
     # Should handle extreme values (though some might be converted to null or string)
+
 
 def test_normalize_str_list() -> None:
     """Test normalize_str_list with list of formatted strings."""
@@ -746,9 +748,7 @@ def test_to_ascii_basic() -> None:
 def test_to_ascii_with_accents() -> None:
     """Test to_ascii function preserves non-ASCII when is_latin is False."""
     result = utils.to_ascii("naïve résumé")
-    assert (
-        result == "naïve résumé"
-    )  # Function preserves non-ASCII when is_latin is False
+    assert result == "naïve résumé"  # Function preserves non-ASCII when is_latin is False
 
 
 def test_to_ascii_non_latin() -> None:
@@ -829,37 +829,45 @@ def test_normalize_empty_string() -> None:
 
 # Queue Worker Function Tests
 
+
 # Module-level worker functions for testing
 def _test_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
     """Test worker function that processes records."""
     pass
 
-def _test_failing_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
+
+def _test_failing_worker_function(
+    _records: list[int], _processed_count: int, _total_count: int
+) -> None:
     """Test worker function that raises an exception."""
     raise ValueError("Test error")
 
-def _test_delay_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
+
+def _test_delay_worker_function(
+    _records: list[int], _processed_count: int, _total_count: int
+) -> None:
     """Test worker function that simulates some work."""
     time.sleep(0.01)  # Small delay to simulate work
+
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_basic_operation() -> None:
     """Test queue_worker_functions with basic partial function processing."""
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
     # We can only test that the function completes without error
-    
+
     # Create partial functions using worker_generator
     def records_generator() -> Any:
         yield [1, 2, 3]
         yield [4, 5]
         yield [6]
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 6)
-    
+
     # Run the queue worker functions
     # This should complete without error
     await utils.queue_worker_functions(2, worker_partials)
-    
+
     # Note: We can't easily verify results in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -870,17 +878,17 @@ async def test_queue_worker_functions_concurrency() -> None:
     """Test queue_worker_functions respects concurrency limits."""
     # Note: This test uses ProcessPoolExecutor, so we can't easily track concurrency
     # across processes in unit tests
-    
+
     def records_generator() -> Any:
         for i in range(5):
             yield [i]
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 5)
-    
+
     # Run with concurrency limit of 2
     # This should complete without error
     await utils.queue_worker_functions(2, worker_partials)
-    
+
     # Note: We can't easily verify concurrency limits in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -894,9 +902,9 @@ async def test_queue_worker_functions_empty_generator() -> None:
     def empty_generator() -> Any:
         return
         yield [0]  # This line never executes, making it an empty generator
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, empty_generator(), 0)
-    
+
     # Should complete without error
     await utils.queue_worker_functions(2, worker_partials)
 
@@ -905,17 +913,17 @@ async def test_queue_worker_functions_empty_generator() -> None:
 async def test_queue_worker_functions_single_worker() -> None:
     """Test queue_worker_functions with single worker."""
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-    
+
     def records_generator() -> Any:
         for i in range(3):
             yield [i]
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 3)
-    
+
     # Run with single worker
     # This should complete without error
     await utils.queue_worker_functions(1, worker_partials)
-    
+
     # Note: We can't easily verify sequential execution in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -926,22 +934,24 @@ async def test_queue_worker_functions_exception_handling() -> None:
     """Test queue_worker_functions handles exceptions in worker functions."""
     # Note: This test uses ProcessPoolExecutor, so exceptions are propagated
     # from the worker processes back to the main process
-    
+
     def mixed_generator() -> Any:
         yield [1]  # Working worker
         yield [2]  # Failing worker
         yield [3]  # Working worker
-    
+
     # Create worker partials with mixed functions
     worker_partials = []
     processed_count = 0
     for i, records in enumerate(mixed_generator()):
         if i == 1:  # Second item should fail
-            worker_partials.append(partial(_test_failing_worker_function, records, processed_count, 3))
+            worker_partials.append(
+                partial(_test_failing_worker_function, records, processed_count, 3)
+            )
         else:
             worker_partials.append(partial(_test_worker_function, records, processed_count, 3))
         processed_count += len(records)
-    
+
     # The function should propagate exceptions from worker processes
     with pytest.raises(ValueError, match="Test error"):
         await utils.queue_worker_functions(2, worker_partials)
@@ -951,17 +961,17 @@ async def test_queue_worker_functions_exception_handling() -> None:
 async def test_queue_worker_functions_zero_concurrency() -> None:
     """Test queue_worker_functions with zero concurrency creates one worker."""
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-    
+
     def records_generator() -> Any:
         for i in range(2):
             yield [i]
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 2)
-    
+
     # Run with zero concurrency (should default to 1 worker)
     # This should complete without error
     await utils.queue_worker_functions(0, worker_partials)
-    
+
     # Note: We can't easily verify execution in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -971,17 +981,17 @@ async def test_queue_worker_functions_zero_concurrency() -> None:
 async def test_queue_worker_functions_with_list_input() -> None:
     """Test queue_worker_functions with list of partial functions."""
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-    
+
     # Create a list of partial functions directly
     worker_partials = [
         partial(_test_worker_function, [1, 2], 0, 4),
         partial(_test_worker_function, [3, 4], 2, 4),
     ]
-    
+
     # Run with multiple workers
     # This should complete without error
     await utils.queue_worker_functions(2, worker_partials)
-    
+
     # Note: We can't easily verify execution in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -989,20 +999,22 @@ async def test_queue_worker_functions_with_list_input() -> None:
 
 async def test_queue_worker_functions_timing() -> None:
     """Test queue_worker_functions includes timing functionality."""
+
     def worker_generator() -> Any:
         yield [1]
-    
+
     worker_partials = utils.worker_generator(_test_delay_worker_function, worker_generator(), 1)
-    
+
     # Mock the time.monotonic to verify timing is tracked
-    with patch('musigree.utils.time.monotonic') as mock_time:
+    with patch("musigree.utils.time.monotonic") as mock_time:
         # Provide enough mock values - asyncio's internal timing may call this many times
         # Use itertools.cycle to provide infinite values
         from itertools import cycle
+
         mock_time.side_effect = cycle([0.0, 0.01, 0.02, 0.03, 0.04, 0.05])
-        
+
         await utils.queue_worker_functions(1, worker_partials)
-        
+
         # Verify time.monotonic was called for timing (at least start and end)
         assert mock_time.call_count >= 2
 
@@ -1011,19 +1023,19 @@ async def test_queue_worker_functions_timing() -> None:
 async def test_queue_worker_functions_large_number_of_tasks() -> None:
     """Test queue_worker_functions handles large number of tasks efficiently."""
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-    
+
     task_count = 10  # Reduced for faster testing
-    
+
     def records_generator() -> Any:
         for i in range(task_count):
             yield [i]
-    
+
     worker_partials = utils.worker_generator(_test_worker_function, records_generator(), task_count)
-    
+
     # Run with multiple workers
     # This should complete without error
     await utils.queue_worker_functions(5, worker_partials)
-    
+
     # Note: We can't easily verify execution in unit tests because
     # the functions run in separate processes and don't share state
     # This test serves as a basic smoke test
@@ -1031,23 +1043,25 @@ async def test_queue_worker_functions_large_number_of_tasks() -> None:
 
 # Worker Generator Tests
 
+
 def test_worker_generator_basic_operation() -> None:
     """Test worker_generator with basic input."""
+
     # Arrange
     def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
-    
+
     def test_records_generator() -> Any:
         """Generator that yields lists of test records."""
         yield [1, 2, 3]
         yield [4, 5]
         yield [6]
-    
+
     # Act
     worker_partials = utils.worker_generator(mock_worker_function, test_records_generator(), 6)
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 3
     # Each item should be a partial function
@@ -1057,6 +1071,7 @@ def test_worker_generator_basic_operation() -> None:
 
 def test_worker_generator_empty_generator() -> None:
     """Test worker_generator with empty input generator."""
+
     # Arrange
     def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
@@ -1067,30 +1082,31 @@ def test_worker_generator_empty_generator() -> None:
         """Empty generator."""
         return
         yield [0]  # This line is never reached but keeps it as a generator
-    
+
     # Act
     worker_partials = utils.worker_generator(mock_worker_function, empty_records_generator(), 0)
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 0
 
 
 def test_worker_generator_single_record() -> None:
     """Test worker_generator with single record batch."""
+
     # Arrange
     def mock_worker_function(_records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         pass
-    
+
     def single_record_generator() -> Any:
         """Generator that yields a single batch."""
         yield ["single_record"]
-    
+
     # Act
     worker_partials = utils.worker_generator(mock_worker_function, single_record_generator(), 1)
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 1
     assert callable(partials_list[0])
@@ -1098,22 +1114,25 @@ def test_worker_generator_single_record() -> None:
 
 def test_worker_generator_multiple_batches() -> None:
     """Test worker_generator with multiple batches of varying sizes."""
+
     # Arrange
-    def mock_worker_function(_records: list[dict[str, Any]], _processed_count: int, _total_count: int) -> None:
+    def mock_worker_function(
+        _records: list[dict[str, Any]], _processed_count: int, _total_count: int
+    ) -> None:
         """Mock worker function that processes records."""
         pass
-    
+
     def multiple_batches_generator() -> Any:
         """Generator that yields multiple batches of different sizes."""
         yield [{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}]  # 4 records
         yield [{"id": 5}, {"id": 6}]  # 2 records
         yield [{"id": 7}]  # 1 record
         yield [{"id": 8}, {"id": 9}, {"id": 10}]  # 3 records
-    
+
     # Act
     worker_partials = utils.worker_generator(mock_worker_function, multiple_batches_generator(), 10)
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 4
     for partial_func in partials_list:
@@ -1124,25 +1143,27 @@ def test_worker_generator_processed_count_tracking() -> None:
     """Test that worker_generator correctly tracks processed count."""
     # Arrange
     processed_counts: list[int] = []
-    
-    def tracking_worker_function(_records: list[int], processed_count: int, _total_count: int) -> None:
+
+    def tracking_worker_function(
+        _records: list[int], processed_count: int, _total_count: int
+    ) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
-    
+
     def test_records_generator() -> Any:
         """Generator that yields batches of different sizes."""
         yield [1, 2, 3]  # 3 records, processed_count should be 0
-        yield [4, 5]     # 2 records, processed_count should be 3
-        yield [6]        # 1 record, processed_count should be 5
+        yield [4, 5]  # 2 records, processed_count should be 3
+        yield [6]  # 1 record, processed_count should be 5
         yield [7, 8, 9, 10]  # 4 records, processed_count should be 6
-    
+
     # Act
     worker_partials = utils.worker_generator(tracking_worker_function, test_records_generator(), 10)
-    
+
     # Execute all partials to test the tracking
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     expected_counts = [0, 3, 5, 6]
     assert processed_counts == expected_counts
@@ -1150,21 +1171,24 @@ def test_worker_generator_processed_count_tracking() -> None:
 
 def test_worker_generator_with_string_records() -> None:
     """Test worker_generator with string record types."""
+
     # Arrange
-    def string_worker_function(_records: list[str], _processed_count: int, _total_count: int) -> None:
+    def string_worker_function(
+        _records: list[str], _processed_count: int, _total_count: int
+    ) -> None:
         """Mock worker function that processes string records."""
         pass
-    
+
     def string_records_generator() -> Any:
         """Generator that yields batches of string records."""
         yield ["record1", "record2"]
         yield ["record3"]
         yield ["record4", "record5", "record6"]
-    
+
     # Act
     worker_partials = utils.worker_generator(string_worker_function, string_records_generator(), 6)
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 3
     for partial_func in partials_list:
@@ -1173,11 +1197,14 @@ def test_worker_generator_with_string_records() -> None:
 
 def test_worker_generator_with_empty_batches() -> None:
     """Test worker_generator with some empty batches."""
+
     # Arrange
-    def empty_batch_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
+    def empty_batch_worker_function(
+        _records: list[int], _processed_count: int, _total_count: int
+    ) -> None:
         """Mock worker function that processes records."""
         pass
-    
+
     def mixed_batches_generator() -> Any:
         """Generator that yields some empty and some non-empty batches."""
         yield [1, 2]
@@ -1185,11 +1212,13 @@ def test_worker_generator_with_empty_batches() -> None:
         yield [3]
         yield []  # Another empty batch
         yield [4, 5, 6]
-    
+
     # Act
-    worker_partials = utils.worker_generator(empty_batch_worker_function, mixed_batches_generator(), 6)
+    worker_partials = utils.worker_generator(
+        empty_batch_worker_function, mixed_batches_generator(), 6
+    )
     partials_list = list(worker_partials)
-    
+
     # Assert
     assert len(partials_list) == 5  # All batches should generate partials, even empty ones
     for partial_func in partials_list:
@@ -1200,26 +1229,28 @@ def test_worker_generator_processed_count_with_empty_batches() -> None:
     """Test that processed count tracking works correctly with empty batches."""
     # Arrange
     processed_counts: list[int] = []
-    
-    def tracking_worker_function(_records: list[int], processed_count: int, _total_count: int) -> None:
+
+    def tracking_worker_function(
+        _records: list[int], processed_count: int, _total_count: int
+    ) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
-    
+
     def mixed_batches_generator() -> Any:
         """Generator with mixed empty and non-empty batches."""
-        yield [1, 2]     # 2 records, processed_count should be 0
-        yield []         # 0 records, processed_count should be 2
-        yield [3]        # 1 record, processed_count should be 2
-        yield []         # 0 records, processed_count should be 3
+        yield [1, 2]  # 2 records, processed_count should be 0
+        yield []  # 0 records, processed_count should be 2
+        yield [3]  # 1 record, processed_count should be 2
+        yield []  # 0 records, processed_count should be 3
         yield [4, 5, 6]  # 3 records, processed_count should be 3
-    
+
     # Act
     worker_partials = utils.worker_generator(tracking_worker_function, mixed_batches_generator(), 6)
-    
+
     # Execute all partials to test the tracking
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     expected_counts = [0, 2, 2, 3, 3]
     assert processed_counts == expected_counts
@@ -1230,25 +1261,29 @@ def test_worker_generator_large_batches() -> None:
     # Arrange
     processed_counts: list[int] = []
     batch_sizes: list[int] = []
-    
-    def size_tracking_worker_function(records: list[int], processed_count: int, _total_count: int) -> None:
+
+    def size_tracking_worker_function(
+        records: list[int], processed_count: int, _total_count: int
+    ) -> None:
         """Worker function that tracks batch sizes and processed counts."""
         processed_counts.append(processed_count)
         batch_sizes.append(len(records))
-    
+
     def large_batches_generator() -> Any:
         """Generator that yields large batches."""
-        yield list(range(100))    # 100 records
-        yield list(range(50))     # 50 records  
-        yield list(range(200))    # 200 records
-    
+        yield list(range(100))  # 100 records
+        yield list(range(50))  # 50 records
+        yield list(range(200))  # 200 records
+
     # Act
-    worker_partials = utils.worker_generator(size_tracking_worker_function, large_batches_generator(), 350)
-    
+    worker_partials = utils.worker_generator(
+        size_tracking_worker_function, large_batches_generator(), 350
+    )
+
     # Execute all partials
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     expected_counts = [0, 100, 150]
     expected_sizes = [100, 50, 200]
@@ -1259,16 +1294,12 @@ def test_worker_generator_large_batches() -> None:
 def test_generator_with_id_accumulator_basic_operation() -> None:
     """Test generator_with_id_accumulator with basic input data."""
     # Arrange
-    test_data = [
-        {"id": 1, "name": "Alice"},
-        {"id": 2, "name": "Bob"},
-        {"id": 3, "name": "Charlie"}
-    ]
+    test_data = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [1, 2, 3]
@@ -1279,10 +1310,10 @@ def test_generator_with_id_accumulator_empty_iterable() -> None:
     # Arrange
     test_data: list[dict[str, Any]] = []
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == []
     assert id_accumulator == []
@@ -1294,13 +1325,13 @@ def test_generator_with_id_accumulator_custom_id_attribute() -> None:
     test_data = [
         {"user_id": 100, "name": "Alice"},
         {"user_id": 200, "name": "Bob"},
-        {"user_id": 300, "name": "Charlie"}
+        {"user_id": 300, "name": "Charlie"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "user_id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [100, 200, 300]
@@ -1309,15 +1340,12 @@ def test_generator_with_id_accumulator_custom_id_attribute() -> None:
 def test_generator_with_id_accumulator_preserves_existing_accumulator() -> None:
     """Test generator_with_id_accumulator preserves existing values in accumulator."""
     # Arrange
-    test_data = [
-        {"id": 4, "name": "David"},
-        {"id": 5, "name": "Eve"}
-    ]
+    test_data = [{"id": 4, "name": "David"}, {"id": 5, "name": "Eve"}]
     id_accumulator = [1, 2, 3]  # Pre-existing values
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [1, 2, 3, 4, 5]
@@ -1329,13 +1357,13 @@ def test_generator_with_id_accumulator_string_ids() -> None:
     test_data = [
         {"id": "10", "name": "Alice"},
         {"id": "20", "name": "Bob"},
-        {"id": "30", "name": "Charlie"}
+        {"id": "30", "name": "Charlie"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [10, 20, 30]
@@ -1347,13 +1375,13 @@ def test_generator_with_id_accumulator_negative_ids() -> None:
     test_data = [
         {"id": -1, "name": "Alice"},
         {"id": -2, "name": "Bob"},
-        {"id": -3, "name": "Charlie"}
+        {"id": -3, "name": "Charlie"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [-1, -2, -3]
@@ -1362,16 +1390,12 @@ def test_generator_with_id_accumulator_negative_ids() -> None:
 def test_generator_with_id_accumulator_zero_ids() -> None:
     """Test generator_with_id_accumulator handles zero IDs."""
     # Arrange
-    test_data = [
-        {"id": 0, "name": "Alice"},
-        {"id": 1, "name": "Bob"},
-        {"id": 0, "name": "Charlie"}
-    ]
+    test_data = [{"id": 0, "name": "Alice"}, {"id": 1, "name": "Bob"}, {"id": 0, "name": "Charlie"}]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [0, 1, 0]
@@ -1383,13 +1407,13 @@ def test_generator_with_id_accumulator_large_numbers() -> None:
     test_data = [
         {"id": 999999999, "name": "Alice"},
         {"id": 1000000000, "name": "Bob"},
-        {"id": 2147483647, "name": "Charlie"}  # Max 32-bit signed int
+        {"id": 2147483647, "name": "Charlie"},  # Max 32-bit signed int
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [999999999, 1000000000, 2147483647]
@@ -1401,10 +1425,10 @@ def test_generator_with_id_accumulator_missing_id_attribute() -> None:
     test_data: list[dict[str, Any]] = [
         {"name": "Alice"},  # Missing 'id' attribute
         {"id": 2, "name": "Bob"},
-        {"name": "Charlie"}  # Missing 'id' attribute
+        {"name": "Charlie"},  # Missing 'id' attribute
     ]
     id_accumulator: list[int] = []
-    
+
     # Act & Assert
     with pytest.raises(KeyError):
         list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
@@ -1415,10 +1439,10 @@ def test_generator_with_id_accumulator_invalid_id_type() -> None:
     # Arrange
     test_data: list[dict[str, Any]] = [
         {"id": "not_a_number", "name": "Alice"},
-        {"id": 2, "name": "Bob"}
+        {"id": 2, "name": "Bob"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act & Assert
     with pytest.raises(ValueError):
         list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
@@ -1430,13 +1454,13 @@ def test_generator_with_id_accumulator_float_ids() -> None:
     test_data = [
         {"id": 1.0, "name": "Alice"},
         {"id": 2.5, "name": "Bob"},
-        {"id": 3.9, "name": "Charlie"}
+        {"id": 3.9, "name": "Charlie"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [1, 2, 3]
@@ -1450,20 +1474,20 @@ def test_generator_with_id_accumulator_complex_records() -> None:
             "id": 1,
             "name": "Alice",
             "metadata": {"age": 30, "city": "New York"},
-            "tags": ["developer", "python"]
+            "tags": ["developer", "python"],
         },
         {
             "id": 2,
             "name": "Bob",
             "metadata": {"age": 25, "city": "San Francisco"},
-            "tags": ["designer", "ui"]
-        }
+            "tags": ["designer", "ui"],
+        },
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [1, 2]
@@ -1471,22 +1495,23 @@ def test_generator_with_id_accumulator_complex_records() -> None:
 
 def test_generator_with_id_accumulator_generator_input() -> None:
     """Test generator_with_id_accumulator works with generator input."""
+
     # Arrange
     def data_generator() -> Any:
         yield {"id": 1, "name": "Alice"}
         yield {"id": 2, "name": "Bob"}
         yield {"id": 3, "name": "Charlie"}
-    
+
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(data_generator(), id_accumulator, "id"))
-    
+
     # Assert
     expected_data = [
         {"id": 1, "name": "Alice"},
         {"id": 2, "name": "Bob"},
-        {"id": 3, "name": "Charlie"}
+        {"id": 3, "name": "Charlie"},
     ]
     assert result == expected_data
     assert id_accumulator == [1, 2, 3]
@@ -1495,21 +1520,19 @@ def test_generator_with_id_accumulator_generator_input() -> None:
 def test_generator_with_id_accumulator_iterator_input() -> None:
     """Test generator_with_id_accumulator works with iterator input."""
     # Arrange
-    test_data = iter([
-        {"id": 1, "name": "Alice"},
-        {"id": 2, "name": "Bob"},
-        {"id": 3, "name": "Charlie"}
-    ])
+    test_data = iter(
+        [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}]
+    )
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     expected_data = [
         {"id": 1, "name": "Alice"},
         {"id": 2, "name": "Bob"},
-        {"id": 3, "name": "Charlie"}
+        {"id": 3, "name": "Charlie"},
     ]
     assert result == expected_data
     assert id_accumulator == [1, 2, 3]
@@ -1521,11 +1544,11 @@ def test_generator_with_id_accumulator_multiple_calls() -> None:
     test_data_1 = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
     test_data_2 = [{"id": 3, "name": "Charlie"}, {"id": 4, "name": "David"}]
     id_accumulator: list[int] = []
-    
+
     # Act
     result_1 = list(utils.generator_with_id_accumulator(test_data_1, id_accumulator, "id"))
     result_2 = list(utils.generator_with_id_accumulator(test_data_2, id_accumulator, "id"))
-    
+
     # Assert
     assert result_1 == test_data_1
     assert result_2 == test_data_2
@@ -1535,12 +1558,9 @@ def test_generator_with_id_accumulator_multiple_calls() -> None:
 def test_generator_with_id_accumulator_none_id() -> None:
     """Test generator_with_id_accumulator raises TypeError for None ID."""
     # Arrange
-    test_data: list[dict[str, Any]] = [
-        {"id": None, "name": "Alice"},
-        {"id": 2, "name": "Bob"}
-    ]
+    test_data: list[dict[str, Any]] = [{"id": None, "name": "Alice"}, {"id": 2, "name": "Bob"}]
     id_accumulator: list[int] = []
-    
+
     # Act & Assert
     with pytest.raises(TypeError):
         list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
@@ -1550,15 +1570,15 @@ def test_generator_with_id_accumulator_boolean_id() -> None:
     """Test generator_with_id_accumulator converts boolean IDs to integers."""
     # Arrange
     test_data = [
-        {"id": True, "name": "Alice"},   # True becomes 1
-        {"id": False, "name": "Bob"},    # False becomes 0
-        {"id": 2, "name": "Charlie"}
+        {"id": True, "name": "Alice"},  # True becomes 1
+        {"id": False, "name": "Bob"},  # False becomes 0
+        {"id": 2, "name": "Charlie"},
     ]
     id_accumulator: list[int] = []
-    
+
     # Act
     result = list(utils.generator_with_id_accumulator(test_data, id_accumulator, "id"))
-    
+
     # Assert
     assert result == test_data
     assert id_accumulator == [1, 0, 2]
@@ -1566,7 +1586,7 @@ def test_generator_with_id_accumulator_boolean_id() -> None:
 
 # Tests for download_file function
 @pytest.mark.skip
-@patch('musigree.utils.requests.get')
+@patch("musigree.utils.requests.get")
 def test_download_file_success(mock_get: MagicMock) -> None:
     """Test download_file successfully downloads and writes content."""
     # Arrange
@@ -1574,14 +1594,14 @@ def test_download_file_success(mock_get: MagicMock) -> None:
     mock_response.raw = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_get.return_value.__enter__.return_value = mock_response
-    
+
     mock_output_file = MagicMock()
     mock_output_file.flush.return_value = None
     mock_output_file.close.return_value = None
-    
+
     # Act
     utils.download_file("https://example.com/test.txt", mock_output_file)
-    
+
     # Assert
     mock_get.assert_called_once_with("https://example.com/test.txt", stream=True)
     mock_response.raise_for_status.assert_called_once()
@@ -1589,35 +1609,36 @@ def test_download_file_success(mock_get: MagicMock) -> None:
     mock_output_file.close.assert_called_once()
 
 
-@patch('musigree.utils.requests.get')
+@patch("musigree.utils.requests.get")
 def test_download_file_http_error(mock_get: MagicMock) -> None:
     """Test download_file raises exception on HTTP error."""
     # Arrange
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
     mock_get.return_value.__enter__.return_value = mock_response
-    
+
     mock_output_file = MagicMock()
-    
+
     # Act & Assert
     with pytest.raises(requests.HTTPError, match="404 Not Found"):
         utils.download_file("https://example.com/notfound.txt", mock_output_file)
 
 
-@patch('musigree.utils.requests.get')
+@patch("musigree.utils.requests.get")
 def test_download_file_network_error(mock_get: MagicMock) -> None:
     """Test download_file raises exception on network error."""
     # Arrange
     mock_get.side_effect = requests.RequestException("Network error")
-    
+
     mock_output_file = MagicMock()
-    
+
     # Act & Assert
     with pytest.raises(requests.RequestException, match="Network error"):
         utils.download_file("https://example.com/test.txt", mock_output_file)
 
+
 @pytest.mark.skip
-@patch('musigree.utils.requests.get')
+@patch("musigree.utils.requests.get")
 def test_download_file_with_buffered_writer(mock_get: MagicMock) -> None:
     """Test download_file works with BufferedWriter."""
     # Arrange
@@ -1625,15 +1646,15 @@ def test_download_file_with_buffered_writer(mock_get: MagicMock) -> None:
     mock_response.raw = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_get.return_value.__enter__.return_value = mock_response
-    
+
     # Create a mock BufferedWriter
     mock_output_file = MagicMock()
     mock_output_file.flush.return_value = None
     mock_output_file.close.return_value = None
-    
+
     # Act
     utils.download_file("https://example.com/test.txt", mock_output_file)
-    
+
     # Assert
     mock_get.assert_called_once_with("https://example.com/test.txt", stream=True)
     mock_response.raise_for_status.assert_called_once()
@@ -1647,24 +1668,24 @@ async def test_async_worker_generator_basic_operation() -> None:
     """Test async_worker_generator with basic async iterable input."""
     # Arrange
     results: list[int] = []
-    
+
     def mock_worker(records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
         results.extend(records)
-    
+
     async def async_records_generator() -> AsyncGenerator[list[int], None]:
         """Async generator that yields lists of test records."""
         yield [1, 2, 3]
         yield [4, 5]
         yield [6]
-    
+
     # Act
     worker_partials = await utils.async_worker_generator(mock_worker, async_records_generator(), 6)
-    
+
     # Execute all partials
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     assert len(worker_partials) == 3
     assert results == [1, 2, 3, 4, 5, 6]
@@ -1673,6 +1694,7 @@ async def test_async_worker_generator_basic_operation() -> None:
 @pytest.mark.asyncio
 async def test_async_worker_generator_empty_generator() -> None:
     """Test async_worker_generator with empty async generator."""
+
     # Arrange
     def mock_worker(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
@@ -1683,10 +1705,10 @@ async def test_async_worker_generator_empty_generator() -> None:
         """Empty async generator."""
         return
         yield [0]  # This line is never reached
-    
+
     # Act
     worker_partials = await utils.async_worker_generator(mock_worker, empty_async_generator(), 0)
-    
+
     # Assert
     assert len(worker_partials) == 0
 
@@ -1696,25 +1718,27 @@ async def test_async_worker_generator_processed_count_tracking() -> None:
     """Test that async_worker_generator correctly tracks processed count."""
     # Arrange
     processed_counts: list[int] = []
-    
+
     def tracking_worker(_records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
-    
+
     async def async_test_records_generator() -> AsyncGenerator[list[int], None]:
         """Async generator that yields batches of different sizes."""
         yield [1, 2, 3]  # 3 records, processed_count should be 0
-        yield [4, 5]     # 2 records, processed_count should be 3
-        yield [6]        # 1 record, processed_count should be 5
+        yield [4, 5]  # 2 records, processed_count should be 3
+        yield [6]  # 1 record, processed_count should be 5
         yield [7, 8, 9, 10]  # 4 records, processed_count should be 6
-    
+
     # Act
-    worker_partials = await utils.async_worker_generator(tracking_worker, async_test_records_generator(), 10)
-    
+    worker_partials = await utils.async_worker_generator(
+        tracking_worker, async_test_records_generator(), 10
+    )
+
     # Execute all partials to test the tracking
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     expected_counts = [0, 3, 5, 6]
     assert processed_counts == expected_counts
@@ -1725,24 +1749,26 @@ async def test_async_worker_generator_with_string_records() -> None:
     """Test async_worker_generator with string record types."""
     # Arrange
     results: list[str] = []
-    
+
     def string_worker(records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes string records."""
         results.extend(records)
-    
+
     async def async_string_records_generator() -> AsyncGenerator[list[str], None]:
         """Async generator that yields batches of string records."""
         yield ["record1", "record2"]
         yield ["record3"]
         yield ["record4", "record5", "record6"]
-    
+
     # Act
-    worker_partials = await utils.async_worker_generator(string_worker, async_string_records_generator(), 6)
-    
+    worker_partials = await utils.async_worker_generator(
+        string_worker, async_string_records_generator(), 6
+    )
+
     # Execute all partials
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     assert len(worker_partials) == 3
     assert results == ["record1", "record2", "record3", "record4", "record5", "record6"]
@@ -1754,25 +1780,27 @@ async def test_async_worker_generator_large_batches() -> None:
     # Arrange
     processed_counts: list[int] = []
     batch_sizes: list[int] = []
-    
+
     def size_tracking_worker(records: list[int], processed_count: int, _total_count: int) -> None:
         """Worker function that tracks batch sizes and processed counts."""
         processed_counts.append(processed_count)
         batch_sizes.append(len(records))
-    
+
     async def async_large_batches_generator() -> AsyncGenerator[list[int], None]:
         """Async generator that yields large batches."""
-        yield list(range(100))    # 100 records
-        yield list(range(50))     # 50 records  
-        yield list(range(200))    # 200 records
-    
+        yield list(range(100))  # 100 records
+        yield list(range(50))  # 50 records
+        yield list(range(200))  # 200 records
+
     # Act
-    worker_partials = await utils.async_worker_generator(size_tracking_worker, async_large_batches_generator(), 350)
-    
+    worker_partials = await utils.async_worker_generator(
+        size_tracking_worker, async_large_batches_generator(), 350
+    )
+
     # Execute all partials
     for partial_func in worker_partials:
         partial_func()
-    
+
     # Assert
     expected_counts = [0, 100, 150]
     expected_sizes = [100, 50, 200]

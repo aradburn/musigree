@@ -48,11 +48,9 @@ class RuntimeEntityDataAccess:
     def structural_roles_to_relations(
         entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
-        # log.debug(f"            structural_roles_to_relations entity: {self}")
-        # log.debug(
-        #     f"            structural_roles_to_relations entities: {self.entities}"
-        # )
-        # log.debug(f"            structural_roles_to_relations roles: {roles}")
+        log.debug(f"            structural_roles_to_relations entity: {entity}")
+        log.debug(f"            structural_roles_to_relations entities: {entity.entities}")
+        log.debug(f"            structural_roles_to_relations roles: {roles}")
         relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
             role = "Alias"
@@ -131,7 +129,7 @@ class RuntimeEntityDataAccess:
                         distance=None,
                     )
                     relations[relation.link_key] = relation
-        # log.debug(f"            structural_roles_to_relations relations: {relations}")
+        log.debug(f"            structural_roles_to_relations relations: {relations}")
         return relations
 
     @staticmethod
@@ -142,27 +140,19 @@ class RuntimeEntityDataAccess:
     ) -> int | None:
         cache = CacheManager.get_cache()
 
-        entity_key_str = (
-            f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-        )
+        entity_key_str = f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
 
         id_: int | None = cache.get(entity_key_str)
         if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
             return None
 
-        # if entity_id is not None:
-        #     log.debug(f"cache hit for {key_str}")
         if id_ is None:
-            # log.debug(f"not cached, try db")
             try:
-                internal_id = (
-                    await entity_repository.get_id_by_entity_type_and_entity_name(
-                        entity_type, entity_name
-                    )
+                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
+                    entity_type, entity_name
                 )
                 # Store the internal id, not entity_id
                 cache.set(entity_key_str, internal_id)
-                # log.debug(f"cache set for {key_str} -> {int_id}")
                 id_ = internal_id
 
             except NotFoundError:
@@ -176,6 +166,31 @@ class RuntimeEntityDataAccess:
         return id_
 
     @staticmethod
+    async def get_entity_name_by_id(
+        entity_repository: RuntimeEntityRepository, id_: int
+    ) -> str | None:
+        cache = CacheManager.get_cache()
+
+        entity_key_str = f"{id_}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}NAME"
+
+        name: str | None = cache.get(entity_key_str)
+        if name == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
+            return None
+
+        if name is None:
+            try:
+                name = await entity_repository.get_entity_name_by_id(id_)
+                cache.set(entity_key_str, name)
+
+            except NotFoundError:
+                if LOGGING_TRACE:
+                    log.debug(f"get_entity_name_by_id id not found: {id_}")
+                name = None
+                cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
+
+        return name
+
+    @staticmethod
     def get_runtime_entity_dicts_from_entities(entity_list: list[Entity]) -> list[dict[str, Any]]:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -185,7 +200,9 @@ class RuntimeEntityDataAccess:
         runtime_entity_dict_list: list[dict[str, Any]] = []
 
         for entity in entity_list:
-            runtime_entity_dict = to_runtime_entity_dict(RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity)
+            runtime_entity_dict = to_runtime_entity_dict(
+                RuntimeDatabaseManager.runtime_database_helper.entity_details_index, entity
+            )
             runtime_entity_dict_list.append(runtime_entity_dict)
 
         return runtime_entity_dict_list

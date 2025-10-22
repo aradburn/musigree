@@ -131,48 +131,45 @@ class TestGetYear:
 class TestGetRoles:
     """Test cases for the get_roles function."""
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_none_returns_default(self, mock_role_cache: Mock) -> None:
         """Test that None input returns default roles."""
         mock_role_cache.role_category_to_role_name_lookup = {}
         mock_role_cache.role_name_to_role_id_lookup = {}
-        
+
         result = get_roles(None)
         assert result == sorted(UI_DEFAULT_ROLES)
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_empty_string_returns_default(self, mock_role_cache: Mock) -> None:
         """Test that empty string returns default roles."""
         mock_role_cache.role_category_to_role_name_lookup = {}
         mock_role_cache.role_name_to_role_id_lookup = {}
-        
+
         result = get_roles("")
         assert result == sorted(UI_DEFAULT_ROLES)
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_direct_role_name_lookup(self, mock_role_cache: Mock) -> None:
         """Test that direct role name is found in lookup."""
         mock_role_cache.role_category_to_role_name_lookup = {}
         mock_role_cache.role_name_to_role_id_lookup = {"Producer": 1}
-        
+
         result = get_roles("Producer")
         assert result == ["Producer"]
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_valid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup works with valid role entries."""
         mock_role_cache.role_category_to_role_name_lookup = {
             "Production": ["Producer", "Co-Producer"]
         }
-        mock_role_cache.role_name_to_role_id_lookup = {
-            "Producer": 1,
-            "Co-Producer": 2
-        }
-        
+        mock_role_cache.role_name_to_role_id_lookup = {"Producer": 1, "Co-Producer": 2}
+
         result = get_roles("Production")
         assert sorted(result) == ["Co-Producer", "Producer"]
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_invalid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup skips invalid role entries."""
         mock_role_cache.role_category_to_role_name_lookup = {
@@ -182,40 +179,34 @@ class TestGetRoles:
             "Producer": 1
             # InvalidRole is not in role_name_to_role_id_lookup
         }
-        
+
         result = get_roles("Production")
         assert result == ["Producer"]
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_comma_separated_roles(self, mock_role_cache: Mock) -> None:
         """Test that comma-separated roles are properly parsed."""
         mock_role_cache.role_category_to_role_name_lookup = {}
-        mock_role_cache.role_name_to_role_id_lookup = {
-            "Producer": 1,
-            "Director": 2
-        }
-        
+        mock_role_cache.role_name_to_role_id_lookup = {"Producer": 1, "Director": 2}
+
         result = get_roles("Producer,Director")
         assert sorted(result) == ["Director", "Producer"]
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_escaped_commas(self, mock_role_cache: Mock) -> None:
         """Test that escaped commas in role names are handled correctly."""
         mock_role_cache.role_category_to_role_name_lookup = {}
-        mock_role_cache.role_name_to_role_id_lookup = {
-            "A&R, Producer": 1,
-            "Director": 2
-        }
-        
+        mock_role_cache.role_name_to_role_id_lookup = {"A&R, Producer": 1, "Director": 2}
+
         result = get_roles("A&R\\, Producer,Director")
         assert sorted(result) == ["A&R, Producer", "Director"]
 
-    @patch('musigree.library.cache.role_cache.RoleCache')
+    @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_not_found_returns_default(self, mock_role_cache: Mock) -> None:
         """Test that roles not found in lookup return default roles."""
         mock_role_cache.role_category_to_role_name_lookup = {}
         mock_role_cache.role_name_to_role_id_lookup = {}
-        
+
         result = get_roles("NonExistentRole")
         assert result == sorted(UI_DEFAULT_ROLES)
 
@@ -223,15 +214,15 @@ class TestGetRoles:
 class TestGetRedisClient:
     """Test cases for the get_redis_client function."""
 
-    @patch('musigree.app.fastapi_dependencies._redis_client', None)
+    @patch("musigree.app.fastapi_dependencies._redis_client", None)
     def test_get_redis_client_initializes_fake_redis(self) -> None:
         """Test that get_redis_client initializes FakeRedis client."""
-        with patch('musigree.app.fastapi_dependencies.fakeredis.FakeStrictRedis') as mock_redis:
+        with patch("musigree.app.fastapi_dependencies.fakeredis.FakeStrictRedis") as mock_redis:
             mock_instance = MagicMock()
             mock_redis.return_value = mock_instance
-            
+
             result = get_redis_client()
-            
+
             mock_redis.assert_called_once_with(
                 decode_responses=True,
                 socket_connect_timeout=5,
@@ -240,18 +231,18 @@ class TestGetRedisClient:
             )
             assert result == mock_instance
 
-    @patch('musigree.app.fastapi_dependencies._redis_client', None)
+    @patch("musigree.app.fastapi_dependencies._redis_client", None)
     def test_get_redis_client_reuses_existing_client(self) -> None:
         """Test that get_redis_client reuses existing client."""
-        with patch('musigree.app.fastapi_dependencies.fakeredis.FakeStrictRedis') as mock_redis:
+        with patch("musigree.app.fastapi_dependencies.fakeredis.FakeStrictRedis") as mock_redis:
             mock_instance = MagicMock()
             mock_redis.return_value = mock_instance
-            
+
             # First call initializes
             client1 = get_redis_client()
             # Second call should reuse
             client2 = get_redis_client()
-            
+
             assert client1 == client2
             assert mock_redis.call_count == 1
 
@@ -275,13 +266,10 @@ class TestRateLimiter:
         response.headers = {}
         return response
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_allows_request_within_limit(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter allows request within limit."""
         mock_redis = MagicMock()
@@ -290,27 +278,24 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         # Should not raise an exception
         await limiter(mock_request, mock_response)
-        
+
         # Verify Redis operations
         mock_redis.get.assert_called_once()
         mock_redis.incr.assert_called_once()
         mock_redis.expire.assert_not_called()  # Not called since current_requests > 0
-        
+
         # Verify response headers
         assert mock_response.headers["X-RateLimit-Limit"] == "10"
         assert mock_response.headers["X-RateLimit-Remaining"] == "4"  # 10 - 5 - 1
         assert "X-RateLimit-Reset" in mock_response.headers
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_raises_error_when_limit_exceeded(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter raises RateLimitError when limit exceeded."""
         mock_redis = MagicMock()
@@ -319,20 +304,17 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         with pytest.raises(RateLimitError):
             await limiter(mock_request, mock_response)
-        
+
         # Should not increment when limit exceeded
         mock_redis.incr.assert_not_called()
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_none_redis_value(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles None value from Redis."""
         mock_redis = MagicMock()
@@ -341,22 +323,17 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         # Should set expiration for new key
-        mock_redis.expire.assert_called_once_with(
-            "ratelimit:/test/endpoint:127.0.0.1", 60
-        )
+        mock_redis.expire.assert_called_once_with("ratelimit:/test/endpoint:127.0.0.1", 60)
         assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_bytes_redis_value(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles bytes value from Redis."""
         mock_redis = MagicMock()
@@ -365,18 +342,15 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         assert mock_response.headers["X-RateLimit-Remaining"] == "6"  # 10 - 3 - 1
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_invalid_redis_value_types(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles invalid Redis value types gracefully."""
         mock_redis = MagicMock()
@@ -386,19 +360,16 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         # Should default to 0 current requests
         assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_redis_get_exception(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles Redis get exception gracefully."""
         mock_redis = MagicMock()
@@ -407,19 +378,16 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         # Should not raise exception, fallback to allowing request
         await limiter(mock_request, mock_response)
-        
+
         assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # Fallback values
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_redis_ttl_exception(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles Redis TTL exception gracefully."""
         mock_redis = MagicMock()
@@ -428,21 +396,18 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         # Should use period as fallback TTL
         reset_time = int(mock_response.headers["X-RateLimit-Reset"])
         expected_reset = int(time.time()) + 60
         assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_handles_redis_incr_exception(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter handles Redis incr exception gracefully."""
         mock_redis = MagicMock()
@@ -452,42 +417,36 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         # Should not raise exception, continue with graceful degradation
         await limiter(mock_request, mock_response)
-        
+
         assert mock_response.headers["X-RateLimit-Remaining"] == "8"  # 10 - 1 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_missing_client_info(
-        self,
-        mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_missing_client_info(self, mock_response: Mock) -> None:
         """Test that rate limiter handles missing client information."""
         # Create request without client
         mock_request = Mock(spec=Request)
         mock_request.url.path = "/test/endpoint"
         mock_request.client = None
 
-        with patch('musigree.app.fastapi_dependencies.get_redis_client') as mock_get_redis:
+        with patch("musigree.app.fastapi_dependencies.get_redis_client") as mock_get_redis:
             mock_redis = MagicMock()
             mock_redis.get.return_value = None
             mock_redis.ttl.return_value = 60
             mock_get_redis.return_value = mock_redis
 
             limiter = rate_limiter(max_requests=10, period=60)
-            
+
             await limiter(mock_request, mock_response)
-            
+
             # Should use "unknown" as client host
             expected_key = "ratelimit:/test/endpoint:unknown"
             mock_redis.get.assert_called_with(expected_key)
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_client_without_host(
-        self,
-        mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_client_without_host(self, mock_response: Mock) -> None:
         """Test that rate limiter handles client without host attribute."""
         # Create request with client but no host attribute
         mock_request = Mock(spec=Request)
@@ -496,27 +455,24 @@ class TestRateLimiter:
         # Simulate client without host attribute
         del mock_request.client.host
 
-        with patch('musigree.app.fastapi_dependencies.get_redis_client') as mock_get_redis:
+        with patch("musigree.app.fastapi_dependencies.get_redis_client") as mock_get_redis:
             mock_redis = MagicMock()
             mock_redis.get.return_value = None
             mock_redis.ttl.return_value = 60
             mock_get_redis.return_value = mock_redis
 
             limiter = rate_limiter(max_requests=10, period=60)
-            
+
             await limiter(mock_request, mock_response)
-            
+
             # Should use "unknown" as client host
             expected_key = "ratelimit:/test/endpoint:unknown"
             mock_redis.get.assert_called_with(expected_key)
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_uses_valid_ttl_from_redis(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter uses valid TTL from Redis."""
         mock_redis = MagicMock()
@@ -525,21 +481,18 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         # Should use TTL from Redis (45) instead of period (60)
         reset_time = int(mock_response.headers["X-RateLimit-Reset"])
         expected_reset = int(time.time()) + 45
         assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
-    @patch('musigree.app.fastapi_dependencies.get_redis_client')
+    @patch("musigree.app.fastapi_dependencies.get_redis_client")
     @pytest.mark.asyncio
     async def test_rate_limiter_uses_period_for_invalid_ttl(
-        self, 
-        mock_get_redis: Mock,
-        mock_request: Mock,
-        mock_response: Mock
+        self, mock_get_redis: Mock, mock_request: Mock, mock_response: Mock
     ) -> None:
         """Test that rate limiter uses period for invalid TTL values."""
         mock_redis = MagicMock()
@@ -548,9 +501,9 @@ class TestRateLimiter:
         mock_get_redis.return_value = mock_redis
 
         limiter = rate_limiter(max_requests=10, period=60)
-        
+
         await limiter(mock_request, mock_response)
-        
+
         # Should use period (60) instead of invalid TTL (-1)
         reset_time = int(mock_response.headers["X-RateLimit-Reset"])
         expected_reset = int(time.time()) + 60

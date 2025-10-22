@@ -21,9 +21,7 @@ class TestLoaderRole(AbstractDatabaseTest):
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
         # WHEN
-        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
-            instruments_directory
-        )
+        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(instruments_directory)
 
         # THEN
         expected = 2186
@@ -97,9 +95,7 @@ class TestLoaderRole(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
-        hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments(
-            instruments_directory
-        )
+        hornbostel_sachs_roles = LoaderRole.load_hornbostel_sachs_instruments(instruments_directory)
 
         # WHEN
         await LoaderRole.save_roles(hornbostel_sachs_roles)
@@ -123,9 +119,7 @@ class TestLoaderRole(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
-        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(
-            instruments_directory
-        )
+        wikipedia_instruments = LoaderRole.load_wikipedia_instruments(instruments_directory)
 
         # WHEN
         await LoaderRole.save_roles(wikipedia_instruments)

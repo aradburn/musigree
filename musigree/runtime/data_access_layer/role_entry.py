@@ -194,9 +194,7 @@ class RoleEntry:
             collections.OrderedDict: An ordered dictionary mapping role categories to
                 lists of role names.
         """
-        mapping: collections.OrderedDict[RoleType.Category, list[str]] = (
-            collections.OrderedDict()
-        )
+        mapping: collections.OrderedDict[RoleType.Category, list[str]] = collections.OrderedDict()
         """Ordered dictionary to store the mapping."""
         for role_name in sorted(RoleCache.role_name_to_role_id_lookup.keys()):
             """Iterate over all role names."""

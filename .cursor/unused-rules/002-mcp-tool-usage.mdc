@@ -1,6 +1,6 @@
 ---
 description: Enforces specific rules for using MCP tools to maintain consistency and avoid common errors.
-globs: 
+globs:
 alwaysApply: true
 ---
 

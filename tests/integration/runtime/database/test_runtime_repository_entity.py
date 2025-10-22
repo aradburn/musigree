@@ -27,9 +27,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
         """Test creating a runtime entity."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "artist", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
 
@@ -60,9 +58,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
         """Test retrieving a runtime entity by ID and type."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "label", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "label", "testinsert")
         entity_element = next(iterator)
         entity = ParserEntity().from_element(entity_element)
         countries = "US"
@@ -99,9 +95,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
         """Test creating a more complex runtime entity with members."""
         # GIVEN
         discogs_data_directory = runtime_config.DATA_DIR / DISCOGS_DATA
-        iterator = LoaderUtils.get_iterator(
-            discogs_data_directory, "artist", "testinsert"
-        )
+        iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         # Skip to the 9th element
         for _ in range(8):
             next(iterator)

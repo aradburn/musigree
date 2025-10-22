@@ -49,9 +49,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
             log.info("Check Sqlite offline database connection...")
 
             async with engine.connect() as connection:
-                version = await connection.execute(
-                    text("SELECT sqlite_version() AS version;")
-                )
+                version = await connection.execute(text("SELECT sqlite_version() AS version;"))
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
 
             # Reset Sqlite if already exists

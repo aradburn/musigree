@@ -13,6 +13,7 @@ The loader is responsible for:
     - Registering cleanup functions to be run when the application exits.
     - Running the loader process between specified dates.
 """
+
 import asyncio
 import atexit
 import datetime
@@ -68,9 +69,7 @@ async def load_runtime_tables(data_directory: Path, date: str | None) -> None:
     log.info("Load runtime tables done.")
 
 
-async def load_runtime_table_stage(
-    data_directory: Path, date: str | None, stage: int
-) -> None:
+async def load_runtime_table_stage(data_directory: Path, date: str | None, stage: int) -> None:
     """
     Loads a specific stage of the runtime data loading process.
 
@@ -84,7 +83,9 @@ async def load_runtime_table_stage(
     await stages[stage]()
 
 
-def get_load_runtime_table_stages(data_directory: Path, _date: str | None) -> list[partial[Coroutine[Any, Any, None]]]:
+def get_load_runtime_table_stages(
+    data_directory: Path, _date: str | None
+) -> list[partial[Coroutine[Any, Any, None]]]:
     """
     Gets the list of stages for loading data into the tables.
 
@@ -98,9 +99,7 @@ def get_load_runtime_table_stages(data_directory: Path, _date: str | None) -> li
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_load_runtime_table_stages()"
     )
-    assert (
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
-    ), (
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
         "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_load_runtime_table_stages()"
     )
 
@@ -195,9 +194,21 @@ def runtime_loader_main() -> None:
         "runtime_database_helper must be initialized before calling initialize()"
     )
     with asyncio.Runner() as runner:
-        runner.run(OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES))
-        runner.run(RuntimeDatabaseManager.runtime_database_helper.drop_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES))
-        runner.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(ALL_RUNTIME_DATABASE_TABLE_NAMES))
+        runner.run(
+            OfflineDatabaseManager.offline_database_helper.create_tables(
+                ALL_OFFLINE_DATABASE_TABLE_NAMES
+            )
+        )
+        runner.run(
+            RuntimeDatabaseManager.runtime_database_helper.drop_tables(
+                ALL_RUNTIME_DATABASE_TABLE_NAMES
+            )
+        )
+        runner.run(
+            RuntimeDatabaseManager.runtime_database_helper.create_tables(
+                ALL_RUNTIME_DATABASE_TABLE_NAMES
+            )
+        )
         # Load roles, may be empty if no roles in database yet
         runner.run(RoleDataAccess.load_all_roles_into_cache())
         runner.close()
@@ -209,7 +220,9 @@ def runtime_loader_main() -> None:
     # end_date = datetime.datetime.now()
     runtime_data_directory: str = str(runtime_config.DATA_DIR)
     tasks = [
-        RuntimeLoaderSetupTask(data_directory=runtime_data_directory, start_date=start_date, end_date=end_date),
+        RuntimeLoaderSetupTask(
+            data_directory=runtime_data_directory, start_date=start_date, end_date=end_date
+        ),
     ]
     luigi_run_result = luigi.build(
         tasks,

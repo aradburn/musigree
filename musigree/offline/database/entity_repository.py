@@ -57,9 +57,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         entity_db = Entity.model_validate(instance)
         return entity_db.to_domain()
 
-    async def _get_all_by_query(
-        self, query: Select[tuple[EntityTable]]
-    ) -> list[Entity]:
+    async def _get_all_by_query(self, query: Select[tuple[EntityTable]]) -> list[Entity]:
         """
         Executes a query that should return multiple Entities.
 
@@ -98,10 +96,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
         if not isinstance(value, int):
             raise UnprocessableError(
-                message=(
-                    "For some reason count function returned not an integer."
-                    f"Value: {value}"
-                ),
+                message=f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value
@@ -172,8 +167,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             NotFoundError: If no entity is found with the given external ID and type.
         """
         query = select(EntityTable).where(
-            (EntityTable.entity_id == entity_id)
-            & (EntityTable.entity_type == entity_type)
+            (EntityTable.entity_id == entity_id) & (EntityTable.entity_type == entity_type)
         )
         return await self._get_one_by_query(query)
 
@@ -233,7 +227,9 @@ class EntityRepository(BaseRepository[EntityTable]):
             (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
         result = await self._session.execute(query)
-        return result.scalar_one_or_none()
+        # Note: There can be more than one row here, we just pick the first
+        one = result.scalar()
+        return one
 
     async def get_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
@@ -252,7 +248,9 @@ class EntityRepository(BaseRepository[EntityTable]):
             (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
         result = await self._session.execute(query)
-        return result.scalar_one_or_none()
+        # Note: There can be more than one row here, we just pick the first
+        one = result.scalar()
+        return one
 
     async def get_id_by_entity_type_and_entity_id(
         self, entity_type: EntityType, entity_id: int
@@ -296,9 +294,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             List[Entity]: A list of entities matching the search string.
         """
-        query = select(EntityTable).where(
-            EntityTable.search_content.match(search_string)
-        )
+        query = select(EntityTable).where(EntityTable.search_content.match(search_string))
         return await self._get_all_by_query(query)
 
     async def create(self, entity: Entity) -> Entity:
@@ -314,9 +310,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         instance: EntityTable = await self._save(entity.model_dump())
         return Entity.model_validate(instance)
 
-    async def get_by_type_and_name(
-        self, entity_type: EntityType, entity_name: str
-    ) -> Entity:
+    async def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> Entity:
         """
         Retrieves an entity by its type and name.
 
@@ -333,8 +327,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         query = (
             select(EntityTable)
             .where(
-                (EntityTable.entity_type == entity_type)
-                & (EntityTable.entity_name == entity_name)
+                (EntityTable.entity_type == entity_type) & (EntityTable.entity_name == entity_name)
             )
             .limit(1)
         )
@@ -373,9 +366,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         await self.execute(query)
         await self._session.flush()
 
-    async def search_multi(
-        self, entity_keys: list[tuple[int, EntityType]]
-    ) -> list[Entity]:
+    async def search_multi(self, entity_keys: list[tuple[int, EntityType]]) -> list[Entity]:
         """
         Searches for multiple entities by their entity keys (entity ID and type).
 

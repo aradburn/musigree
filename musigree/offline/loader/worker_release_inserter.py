@@ -34,6 +34,7 @@ The `insert_releases_worker` function interacts with the following components:
 The module utilizes `logging` for logging operations and `sqlalchemy.exc.DatabaseError`
 for database related exceptions.
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -50,9 +51,9 @@ The logger for the worker release inserter module.
 """
 
 
-async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]],
-                                       inserted_count: int,
-                                       _total_count: int) -> None:
+async def insert_releases_worker_async(
+    bulk_inserts: list[dict[str, Any]], inserted_count: int, _total_count: int
+) -> None:
     """
     Worker function for inserting release records into the database.
 
@@ -93,7 +94,9 @@ async def insert_releases_worker_async(bulk_inserts: list[dict[str, Any]],
     """Log the number of releases inserted."""
 
 
-def insert_releases_worker(bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int) -> None:
+def insert_releases_worker(
+    bulk_inserts: list[dict[str, Any]], current_total: int, total_count: int
+) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

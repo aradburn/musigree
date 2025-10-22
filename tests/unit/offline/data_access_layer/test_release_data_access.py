@@ -300,15 +300,17 @@ class TestCreateEntityDetailsIndex:
         mock_repository.all.return_value = async_batch_iterator(mock_releases)
 
         mock_index = Mock(spec=EntityDetailsIndex)
+        # Ensure all methods are properly mocked to avoid coroutine issues
+        mock_index.index_country = Mock()
+        mock_index.index_genre = Mock()
+        mock_index.index_style = Mock()
+        mock_index.print_details = Mock()
+        mock_index.print_sizes = Mock()
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        with patch(
-            "musigree.offline.data_access_layer.release_data_access.log"
-        ) as mock_log:
-            result = await ReleaseDataAccess.create_entity_details_index(
-                mock_repository
-            )
+        with patch("musigree.offline.data_access_layer.release_data_access.log") as mock_log:
+            result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()

@@ -54,7 +54,7 @@ Example:
     ```python
     from typing import Type
     from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
-    
+
     def create_table(table_class: Type[RuntimeConcreteTable]):
         # use table_class to interact with the database
         pass

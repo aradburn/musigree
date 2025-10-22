@@ -57,7 +57,7 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
         """
         query = select(CountryTable).where(CountryTable.id == id_)
 
-        result: Result = await self.execute(query)
+        result: Result[tuple[int]] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -78,7 +78,7 @@ class CountryRepository(RuntimeBaseRepository[CountryTable]):
             NotFoundError: If no country is found with the given name.
         """
         query = select(CountryTable).where(CountryTable.country_name == name)
-        result: Result = await self.execute(query)
+        result: Result[tuple[Country]] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError

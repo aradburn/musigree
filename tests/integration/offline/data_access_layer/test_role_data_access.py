@@ -10,9 +10,7 @@ TEST_DATA_ROLES_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles.tsv")
 TEST_DATA_ROLES_NORMALISED_PATH = os.path.join(
     TEST_DATA_ROLES_DIR, "test_data_roles_normalised.tsv"
 )
-TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(
-    TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv"
-)
+TEST_DATA_ROLES_OUTPUT_PATH = os.path.join(TEST_DATA_ROLES_DIR, "test_data_roles_output.tsv")
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")

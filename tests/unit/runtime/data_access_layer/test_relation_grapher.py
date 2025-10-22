@@ -34,9 +34,7 @@ class TestRelationGrapher:
     @pytest.fixture
     def mock_role_cache(self) -> Generator[MagicMock | AsyncMock, Any, None]:
         """Mock the RoleCache for testing."""
-        with patch(
-            "musigree.runtime.data_access_layer.relation_grapher.RoleCache"
-        ) as mock:
+        with patch("musigree.runtime.data_access_layer.relation_grapher.RoleCache") as mock:
             mock.role_name_to_role_id_lookup = {
                 "Artist": 1,
                 "Album": 2,
@@ -441,9 +439,7 @@ class TestRelationGrapher:
         assert "Sublabel Of" not in provisional_role_names
         assert "Artist" in provisional_role_names
 
-    def test_find_clusters(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
+    def test_find_clusters(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
         """Test find_clusters method."""
         # Given
         with patch(
@@ -498,9 +494,7 @@ class TestRelationGrapher:
         assert node1.cluster > 0
         # The clustering algorithm may not cluster entity2 if it doesn't have the right alias setup
 
-    def test_clear_method(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
+    def test_clear_method(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
         """Test clear method resets all collections."""
         # Given
         with patch(
@@ -643,9 +637,7 @@ class TestRelationGrapher:
                     mock_relation_access.search_multi = AsyncMock(return_value=[])
 
                     # When
-                    result = await grapher.get_relation_graph(
-                        mock_entity_repo, mock_relation_repo
-                    )
+                    result = await grapher.get_relation_graph(mock_entity_repo, mock_relation_repo)
 
         # Then
         assert "center" in result
@@ -696,9 +688,7 @@ class TestRelationGrapher:
             ) as mock_relation_access:
                 mock_entity_access.roles_to_relation_count.return_value = 5
                 # Make search_multi return an awaitable
-                mock_relation_access.search_multi = AsyncMock(
-                    return_value=mock_relations
-                )
+                mock_relation_access.search_multi = AsyncMock(return_value=mock_relations)
 
                 relation_links: dict[str, RuntimeRelationResult] = {}
 
@@ -792,9 +782,7 @@ class TestRelationGrapher:
         # Then
         assert len(relation_links) == 0  # Should do nothing
 
-    def test_build_trellis(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
+    def test_build_trellis(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
         """Test build_trellis method."""
         # Given
         with patch(
@@ -889,9 +877,7 @@ class TestRelationGrapher:
 
         # Test test_loop_two - should break when too many relations
         # max_links = max_nodes * link_ratio = 10 * 2 = 20
-        many_relations = {
-            f"link_{i}": Mock() for i in range(25)
-        }  # More than max_links (20)
+        many_relations = {f"link_{i}": Mock() for i in range(25)}  # More than max_links (20)
         grapher.test_loop_two(
             distance=2, relations=many_relations
         )  # Use distance > 1 to trigger the condition

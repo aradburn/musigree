@@ -25,6 +25,8 @@ from sqlalchemy.orm import DeclarativeBase
 from toolz import count  # type: ignore
 from unidecode import unidecode
 
+from musigree.constants import VERSION
+
 
 class SupportsWrite(Protocol):
     """Protocol for objects that support writing."""
@@ -102,11 +104,13 @@ def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], N
         while batch := list(itertools.islice(iterable, n)):
             yield batch
 
+
 def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
     return batched(iter(seq), math.ceil(num_items / num_chunks))
+
 
 def normalize(argument: str, indent: int | str | None = None) -> str:
     _string = argument.replace("\t", "    ")
@@ -147,11 +151,7 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
 
     def list_public_attributes(input_var: dict[str, Any]) -> dict[str, Any]:
         return {
-            k: (
-                list_public_attributes(preprocessor.filter(v))
-                if isinstance(v, Mapping)
-                else v
-            )
+            k: (list_public_attributes(preprocessor.filter(v)) if isinstance(v, Mapping) else v)
             for k, v in input_var.items()
             if not (k.startswith("_") or callable(v))
         }
@@ -197,7 +197,7 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
         """Create a sortable key from a dictionary by converting it to a normalized JSON string."""
         try:
             # Create a normalized version for sorting by converting to JSON with sorted keys
-            return json.dumps(obj, sort_keys=True, separators=(',', ':'), default=str)
+            return json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
         except (TypeError, ValueError):
             # Fallback: convert the entire dict to string if JSON serialization fails
             return str(sorted(obj.items()))
@@ -211,14 +211,14 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
     return (
         "[\n"
         + ",\n".join(
-        textwrap.indent(
-            strip_trailing_newline(
-                normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
-            ),
-            "    ",
+            textwrap.indent(
+                strip_trailing_newline(
+                    normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
+                ),
+                "    ",
+            )
+            for _ in sorted_list_obj
         )
-        for _ in sorted_list_obj
-    )
         + "\n]\n"
     )
 
@@ -298,9 +298,7 @@ def sleep_with_backoff(multiplier: int) -> None:
     time.sleep(time_in_secs)
 
 
-def download_file(
-    input_url: str, output_file: SupportsWrite | BufferedWriter
-) -> None:
+def download_file(input_url: str, output_file: SupportsWrite | BufferedWriter) -> None:
     """Download a file from a URL and write it to the provided output file-like object.
     Args:
         input_url (str): The URL of the file to download.
@@ -326,9 +324,7 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
 
     year = dump_date.year
     base = DISCOGS_BASE_URL.format(year=year)
-    path = DISCOGS_FILE_TEMPLATE.format(
-        date=dump_date.strftime("%Y%m%d"), type=dump_type
-    )
+    path = DISCOGS_FILE_TEMPLATE.format(date=dump_date.strftime("%Y%m%d"), type=dump_type)
     return base + path
 
 
@@ -507,4 +503,6 @@ def log_banner() -> None:
     log.info("##     ## ##     ## ##    ##  ##  ##    ##  ##    ##  ##       ##      ")
     log.info("##     ##  #######   ######  ####  ######   ##     ## ######## ########")
     log.info("")
+    log.info("")
+    log.info(f"Version: {VERSION}")
     log.info("")

@@ -61,12 +61,8 @@ class TestRepositoryRelation(AbstractDatabaseTest):
             created_entity_1 = await repository.create(entity_1)
             created_entity_2 = await repository.create(entity_2)
 
-        id_1 = to_entity_internal_id(
-            created_entity_1.entity_id, created_entity_1.entity_type
-        )
-        id_2 = to_entity_internal_id(
-            created_entity_2.entity_id, created_entity_2.entity_type
-        )
+        id_1 = to_entity_internal_id(created_entity_1.entity_id, created_entity_1.entity_type)
+        id_2 = to_entity_internal_id(created_entity_2.entity_id, created_entity_2.entity_type)
         relation = RelationInternal(
             id=1,
             subject=id_1,
@@ -88,11 +84,11 @@ class TestRepositoryRelation(AbstractDatabaseTest):
             async for created_relation_db_list in relation_repository.all():
                 for created_relation_db in created_relation_db_list:
                     """Retrieve all created relations."""
-                    assert created_relation_db is not None, (
-                        "Created relation db should not be None"
-                    )
+                    assert created_relation_db is not None, "Created relation db should not be None"
                     created_relation_internal = created_relation_db.to_domain()
-                    assert created_relation_internal is not None, "Created relation should not be None"
+                    assert created_relation_internal is not None, (
+                        "Created relation should not be None"
+                    )
                     created_relation_internals.append(created_relation_internal)
             created_relation = Relation.from_relation_internals(created_relation_internals)
             actual = utils.normalize_dict(created_relation.model_dump())

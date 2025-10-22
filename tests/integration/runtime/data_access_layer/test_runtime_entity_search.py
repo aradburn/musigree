@@ -8,6 +8,9 @@ from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,
 )
+from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
+from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
+from musigree.runtime.runtime_database.token_repository import TokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from tests.conftest import AbstractDatabaseTest
 
@@ -15,22 +18,27 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeEntitySearch(AbstractDatabaseTest):
-    def test_text_search_lookup_1(
+    @pytest.mark.asyncio
+    async def test_text_search_lookup_1(
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         """Test text search functionality for 'Wax' query."""
-        text_search_path = (
-            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-        )
+        text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
-        results = RuntimeEntitySearch.search_entities("Wax")
+        async with runtime_transaction():
+            runtime_entity_repository = RuntimeEntityRepository()
+            token_repository = TokenRepository()
+
+            results = await RuntimeEntitySearch.search_entities(
+                runtime_entity_repository, token_repository, "Wax"
+            )
 
         # THEN
         expected = [
@@ -52,22 +60,27 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         assert 14 == len(results["results"])
         assert expected == list(results["results"])
 
-    def test_text_search_lookup_2(
+    @pytest.mark.asyncio
+    async def test_text_search_lookup_2(
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
     ) -> None:
         """Test text search functionality for 'Joker' query."""
-        text_search_path = (
-            runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
-        )
+        text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
         assert RuntimeDatabaseManager.runtime_database_helper is not None
 
         RuntimeDatabaseManager.runtime_database_helper.text_search_index = (
             TextSearchIndex.load_text_search_index_from_file(text_search_path)
         )
-        results = RuntimeEntitySearch.search_entities("Joker")
+        async with runtime_transaction():
+            runtime_entity_repository = RuntimeEntityRepository()
+            token_repository = TokenRepository()
+
+            results = await RuntimeEntitySearch.search_entities(
+                runtime_entity_repository, token_repository, "Joker"
+            )
 
         # THEN
         expected = [

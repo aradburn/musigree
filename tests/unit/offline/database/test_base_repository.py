@@ -105,7 +105,10 @@ class TestBaseRepository:
             schema_class = MockTable
 
         # Mock session and schema creation
-        mock_session = AsyncMock()
+        mock_session = Mock()
+        mock_session.add = Mock()
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
         mock_table_instance = Mock()
 
         with patch.object(
@@ -150,9 +153,7 @@ class TestBaseRepository:
             with patch.object(
                 repo,
                 "schema_class",
-                side_effect=IntegrityError(
-                    "Integrity error", None, Exception("Original error")
-                ),
+                side_effect=IntegrityError("Integrity error", None, Exception("Original error")),
             ):
                 # Execute & Verify
                 with pytest.raises(DatabaseError):
@@ -271,9 +272,7 @@ class TestBaseRepository:
             mock_session.rollback.assert_called_once()
 
     @patch("musigree.offline.database.base_repository.BaseRepository.execute")
-    async def test_update_integrity_error_during_execute(
-        self, mock_execute: AsyncMock
-    ) -> None:
+    async def test_update_integrity_error_during_execute(self, mock_execute: AsyncMock) -> None:
         """Test update operation with IntegrityError during execution."""
 
         # Setup

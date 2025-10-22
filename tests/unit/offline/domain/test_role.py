@@ -4,10 +4,12 @@ Unit tests for the offline.domain.role module.
 This module contains comprehensive unit tests for the role domain objects,
 including RoleUncommitted and Role classes.
 """
+
 import pytest
 from pydantic import ValidationError
 
 from musigree.library.fields.role_type import RoleType
+
 # noinspection PyProtectedMember
 from musigree.offline.domain.role import (
     _RoleBase,
@@ -26,9 +28,9 @@ class TestRoleBase:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
-            role_subcategory_name="None"
+            role_subcategory_name="None",
         )
-        
+
         assert role_base.role_name == "Producer"
         assert role_base.role_category == RoleType.Category.PRODUCTION
         assert role_base.role_subcategory == RoleType.Subcategory.NONE
@@ -48,7 +50,7 @@ class TestRoleBase:
                 role_category=RoleType.Category.PRODUCTION,
                 role_subcategory=RoleType.Subcategory.NONE,
                 role_category_name="Production",
-                role_subcategory_name="None"
+                role_subcategory_name="None",
             )
 
     def test_role_base_string_fields(self) -> None:
@@ -58,9 +60,9 @@ class TestRoleBase:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="",
-            role_subcategory_name=""
+            role_subcategory_name="",
         )
-        
+
         assert role_base.role_name == ""
         assert role_base.role_category_name == ""
         assert role_base.role_subcategory_name == ""
@@ -76,9 +78,9 @@ class TestRoleUncommitted:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
-            role_subcategory_name="Production"
+            role_subcategory_name="Production",
         )
-        
+
         assert role.role_name == "Engineer"
         assert role.role_category == RoleType.Category.PRODUCTION
         assert role.role_subcategory == RoleType.Subcategory.NONE
@@ -96,13 +98,13 @@ class TestRoleUncommitted:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.TECHNICAL_MUSICAL,
             role_category_name="Production",
-            role_subcategory_name="Technical Musical"
+            role_subcategory_name="Technical Musical",
         )
-        
+
         # Should have base fields
         assert hasattr(role, "role_name")
         assert hasattr(role, "role_category")
-        
+
         # Should not have database-specific fields
         assert not hasattr(role, "id")
 
@@ -121,11 +123,11 @@ class TestRoleUncommitted:
             role_category=RoleType.Category.VOCAL,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Vocal",
-            role_subcategory_name="None"
+            role_subcategory_name="None",
         )
-        
+
         dumped = role.model_dump()
-        
+
         assert dumped["role_name"] == "Vocalist"
         assert dumped["role_category"] == RoleType.Category.VOCAL
         assert dumped["role_subcategory"] == RoleType.Subcategory.NONE
@@ -139,11 +141,11 @@ class TestRoleUncommitted:
             "role_category": RoleType.Category.VOCAL,
             "role_subcategory": RoleType.Subcategory.STRINGED_INSTRUMENTS,
             "role_category_name": "Vocal",
-            "role_subcategory_name": "String Instruments"
+            "role_subcategory_name": "String Instruments",
         }
-        
+
         role = RoleUncommitted.model_validate(data)
-        
+
         assert role.role_name == "Guitarist"
         assert role.role_category == RoleType.Category.VOCAL
         assert role.role_subcategory == RoleType.Subcategory.STRINGED_INSTRUMENTS
@@ -162,9 +164,9 @@ class TestRole:
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
             role_subcategory_name="Production",
-            id=1
+            id=1,
         )
-        
+
         assert role.role_name == "Director"
         assert role.role_category == RoleType.Category.PRODUCTION
         assert role.role_subcategory == RoleType.Subcategory.NONE
@@ -184,7 +186,7 @@ class TestRole:
                 role_category=RoleType.Category.PRODUCTION,
                 role_subcategory=RoleType.Subcategory.NONE,
                 role_category_name="Production",
-                role_subcategory_name="None"
+                role_subcategory_name="None",
                 # id is missing
             )  # type: ignore
 
@@ -197,7 +199,7 @@ class TestRole:
                 role_subcategory=RoleType.Subcategory.NONE,
                 role_category_name="Production",
                 role_subcategory_name="Production",
-                id="not_an_int"  # type: ignore
+                id="not_an_int",  # type: ignore
             )
 
     def test_role_json_serialization(self) -> None:
@@ -208,11 +210,11 @@ class TestRole:
             role_subcategory=RoleType.Subcategory.STRINGED_INSTRUMENTS,
             role_category_name="Vocal",
             role_subcategory_name="String Instruments",
-            id=42
+            id=42,
         )
-        
+
         dumped = role.model_dump()
-        
+
         assert dumped["role_name"] == "Bassist"
         assert dumped["role_category"] == RoleType.Category.VOCAL
         assert dumped["role_subcategory"] == RoleType.Subcategory.STRINGED_INSTRUMENTS
@@ -228,11 +230,11 @@ class TestRole:
             "role_subcategory": RoleType.Subcategory.STRINGED_INSTRUMENTS,
             "role_category_name": "Vocal",
             "role_subcategory_name": "String Instruments",
-            "id": 100
+            "id": 100,
         }
-        
+
         role = Role.model_validate(data)
-        
+
         assert role.role_name == "Drummer"
         assert role.role_category == RoleType.Category.VOCAL
         assert role.role_subcategory == RoleType.Subcategory.STRINGED_INSTRUMENTS
@@ -251,25 +253,25 @@ class TestRoleComparison:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
-            role_subcategory_name="Production"
+            role_subcategory_name="Production",
         )
-        
+
         committed = Role(
             role_name="Test Role",
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
             role_subcategory_name="Production",
-            id=1
+            id=1,
         )
-        
+
         # Both should have base fields
         assert uncommitted.role_name == committed.role_name
         assert uncommitted.role_category == committed.role_category
         assert uncommitted.role_subcategory == committed.role_subcategory
         assert uncommitted.role_category_name == committed.role_category_name
         assert uncommitted.role_subcategory_name == committed.role_subcategory_name
-        
+
         # Only committed should have ID field
         assert hasattr(committed, "id")
         assert not hasattr(uncommitted, "id")
@@ -282,9 +284,9 @@ class TestRoleComparison:
             role_category=RoleType.Category.PRODUCTION,
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
-            role_subcategory_name="Production"
+            role_subcategory_name="Production",
         )
-        
+
         # Simulate saving to database (would add ID)
         committed = Role(
             role_name=uncommitted.role_name,
@@ -292,9 +294,9 @@ class TestRoleComparison:
             role_subcategory=uncommitted.role_subcategory,
             role_category_name=uncommitted.role_category_name,
             role_subcategory_name=uncommitted.role_subcategory_name,
-            id=123
+            id=123,
         )
-        
+
         assert committed.role_name == "Audio Engineer"
         assert committed.role_category == RoleType.Category.PRODUCTION
         assert committed.role_subcategory == RoleType.Subcategory.NONE
@@ -310,18 +312,18 @@ class TestRoleComparison:
             role_subcategory=RoleType.Subcategory.NONE,
             role_category_name="Production",
             role_subcategory_name="None",
-            id=1
+            id=1,
         )
-        
+
         performance_role = Role(
             role_name="Singer",
             role_category=RoleType.Category.VOCAL,
             role_subcategory=RoleType.Subcategory.DRUMS_AND_PERCUSSION,
             role_category_name="Vocal",
             role_subcategory_name="Drums & Percussion",
-            id=2
+            id=2,
         )
-        
+
         assert production_role.role_category != performance_role.role_category
         assert production_role.role_subcategory != performance_role.role_subcategory
         assert production_role.role_category_name != performance_role.role_category_name
@@ -335,13 +337,13 @@ class TestRoleComparison:
             role_subcategory=RoleType.Subcategory.TECHNICAL_MUSICAL,
             role_category_name="Production",
             role_subcategory_name="Technical Musical",
-            id=1
+            id=1,
         )
-        
+
         # Verify enum types
         assert isinstance(role.role_category, RoleType.Category)
         assert isinstance(role.role_subcategory, RoleType.Subcategory)
-        
+
         # Verify enum values
         assert role.role_category.name == "PRODUCTION"
         assert role.role_subcategory.name == "TECHNICAL_MUSICAL"

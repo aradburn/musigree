@@ -29,9 +29,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_01(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_01(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -144,9 +142,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_02(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_02(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_one_id = 49
         entity_one_type = EntityType.ARTIST
@@ -189,9 +185,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_03(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_03(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_one_id = 300407
         entity_one_type = EntityType.ARTIST
@@ -303,9 +297,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_04(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_04(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         entity_one_id = 586589
         entity_one_type = EntityType.ARTIST
@@ -354,9 +346,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_05(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_05(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         key = dict(
             subject=661,
@@ -395,9 +385,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_06(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_06(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         key = dict(
             subject=21209,
@@ -434,9 +422,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_07(
-        self, offline_database_setup: AsyncGenerator[None, None]
-    ) -> None:
+    async def test_relation_07(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
         # GIVEN
         key = dict(
             subject=335173,

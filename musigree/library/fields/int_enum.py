@@ -59,9 +59,7 @@ class IntEnum(TypeDecorator):
         self._enumtype = enumtype
 
     # noinspection PyUnreachableCode
-    def process_bind_param(
-        self, value: int | enum.Enum | None, dialect: Any
-    ) -> int | str | None:
+    def process_bind_param(self, value: int | enum.Enum | None, dialect: Any) -> int | str | None:
         """
         Converts a Python value to a bind parameter for a SQL query.
 
@@ -83,9 +81,7 @@ class IntEnum(TypeDecorator):
         # noinspection PyUnresolvedReferences
         return value.value  # type: ignore
 
-    def process_result_value(
-        self, value: int | str | None, dialect: Any
-    ) -> enum.Enum | None:
+    def process_result_value(self, value: int | str | None, dialect: Any) -> enum.Enum | None:
         """
         Converts a result value from the database to a Python value.
 
