@@ -103,7 +103,38 @@ Network query time: 0.6372168064117432
 Development
 -----------
 
-### Run Frontend
+#### Prerequisites
+
+- Python 3.13 (for backendend development)
+- Node.js 22 (for frontend development)
+- PostgreSQL (for full database) and/or SQLite (for development and runtime)
+- Redis (optional, for caching)
+
+### Setting Up the Development Environment
+
+#### Backend Setup
+
+1. Create a virtual environment:
+
+   The project uses `uv` to install and run the Python environment. See the documentation
+   here: https://docs.astral.sh/uv/getting-started/
+
+2. Install dependencies:
+
+    ```
+    uv sync
+    ```
+
+#### Frontend Setup
+
+Navigate to the frontend directory and install dependencies:
+
+```
+cd frontend
+npm install
+```
+
+### Run Development Frontend
 
 ```
 cd frontend
@@ -113,7 +144,9 @@ npm run dev
 
 This runs a dev server on localhost:5173/assets/ that serves up raw typescript files.
 
-### Run Backend
+### Run Development Backend
+
+The project uses `uv` and `venv` to manage the backend Python environment and dependencies.
 
 run `musigree/app/fastapi_dev_app.py` in an IDE or
 

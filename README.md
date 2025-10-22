@@ -5,16 +5,17 @@ Musigree
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https://raw.githubusercontent.com/aradburn/musigree/main/pyproject.toml)
 ![GitHub Tag](https://img.shields.io/github/v/tag/aradburn/musigree)
 
-Interactive visualization of the Discogs Database
+Interactive visualization of the **Discogs** database
 
 What is Musigree?
 -----------------
 
-Musigree is an interactive visualization tool that maps the complex network of relationships between musicians, bands,
+**Musigree** is an interactive visualization tool that maps the complex network of relationships between musicians,
+bands,
 and record labels. It provides a visual representation of the connections within the music industry, helping users
 discover new music and understand how artists and labels are interconnected.
 
-All of Musigree's data is derived from the [Discogs](http://www.discogs.com) musigreey database, containing:
+All of **Musigree**'s data is derived from the [Discogs](http://www.discogs.com) database, containing:
 
 - 9 million artists
 - 2 million labels
@@ -23,26 +24,27 @@ All of Musigree's data is derived from the [Discogs](http://www.discogs.com) mus
 
 ### Live Demo
 
-Visit the live site at https://musigree.azurewebsites.net.
+Visit the live site at https://musigree.net.
 
 ### How to Use
 
-1. Visit the website
+1. Visit the https://musigree.net website
 2. Type an artist, band, or label name into the search box
 3. Explore the connections in the interactive visualization
 4. Click on nodes to see more information
 5. Double-click on any circle containing a plus-sign to reveal more connections
+6. Zoom in and out using the mouse wheel
 
 ### Visualization Legend
 
 - Small circles represent artists
 - Large circles represent bands
-- Solid lines show artist/band membership and sublabel/parent-label relationships
-- Dashed lines show pseudonyms between artists (_AKA_)
+- Solid lines show artist / band membership and sub-label / parent-label relationships
+- Dashed lines show pseudonyms between artists ("also known as" or "AKA" for short)
 - Dotted lines show all kinds of other relationships (e.g., "artist X played guitar for artist Y")
 
-The graph shows at most 100 entities at a time for performance reasons. Double-click on nodes with plus-signs to expand
-and see more connections.
+The graph shows approximately 100 items at a time for performance reasons. Double-click on nodes with plus-signs
+to expand and see more connections.
 
 ### Target Audience
 
@@ -58,7 +60,7 @@ and see more connections.
 - Filtering options for different types of relationships
 - Expandable nodes to reveal more connections
 - Responsive design for desktop and mobile devices
-- Detailed information about entities and their relationships
+- Detailed information about artists, bands and their relationships
 
 ### Technology Stack
 
@@ -80,82 +82,17 @@ and see more connections.
 - [SQLite](https://www.sqlite.org/): For a smaller runtime database
 - [Redis](https://redis.io/): For caching and rate limiting
 
-### Development
-
-The project uses `uv` and `venv` to manage the Python environment and dependencies.
-
-#### Prerequisites
-
-- Python 3.13
-- Node.js 22 (for frontend development)
-- PostgreSQL (for full database) and/or SQLite (for development and runtime)
-- Redis (optional, for caching)
-
-#### Setting Up the Development Environment
-
-#### Backend Setup
-
-1. Create a virtual environment:
-
-   The project uses `uv` to install and run the Python environment. See the documentation
-   here: https://docs.astral.sh/uv/getting-started/
-
-2. Install dependencies:
-
-    ```
-    uv sync
-    ```
-
-#### Frontend Setup
-
-Navigate to the frontend directory and install dependencies:
-
-```
-cd frontend
-npm install
-```
-
-### Running the Development Application
-
-1. Start the backend server:
-
-    ```
-    uv run wsgi.py
-    ```
-
-2. Start the frontend development server:
-
-    ```
-    cd frontend
-    npm run dev
-    ```
-
-3. Visit `http://localhost:5000` in your browser.
-
-### Running the Production Application
-
-1. Build the front end:
-   ```
-   cd frontend
-   npm run build
-   ```
-2. Start the backend server:
-
-    ```
-    uv run wsgi.py
-    ```
-
 For more details on the database structure and implementation, see the [technical documentation](docs/ABOUT.md).
 
 Contributing
 ------------
 
 If you notice any omissions or errors in the data, please consider contributing to
-the [Discogs database](https://www.discogs.com/) directly, as all our data is sourced from there.
+the [Discogs database](https://www.discogs.com/) directly, as all the underlying data is sourced from there.
 
 For code contributions:
 
-1. Fork the repository
+1. Fork this Github code repository
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
