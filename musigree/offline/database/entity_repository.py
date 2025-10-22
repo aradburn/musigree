@@ -227,7 +227,9 @@ class EntityRepository(BaseRepository[EntityTable]):
             (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
         result = await self._session.execute(query)
-        return result.scalar_one_or_none()
+        # Note: There can be more than one row here, we just pick the first
+        one = result.scalar()
+        return one
 
     async def get_id_by_entity_type_and_entity_name(
         self, entity_type: EntityType, entity_name: str
@@ -246,7 +248,9 @@ class EntityRepository(BaseRepository[EntityTable]):
             (EntityTable.entity_name == entity_name) & (EntityTable.entity_type == entity_type)
         )
         result = await self._session.execute(query)
-        return result.scalar_one_or_none()
+        # Note: There can be more than one row here, we just pick the first
+        one = result.scalar()
+        return one
 
     async def get_id_by_entity_type_and_entity_id(
         self, entity_type: EntityType, entity_id: int

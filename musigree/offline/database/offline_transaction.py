@@ -10,7 +10,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
@@ -64,18 +64,40 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         #       If the DatabseError is handled within domain/application
         #       levels it is possible that `await session.commit()`
         #       would raise an error.
-        log.error(f"Rolling back changes. {error}")
+        log.error(f"DatabaseError: Rolling back changes. {error}")
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
         raise error
-    except (IntegrityError, InvalidRequestError) as error:
+    except IntegrityError as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
-        log.error(f"Rolling back changes. {error}")
+        log.error(f"IntegrityError: Rolling back changes. {error}")
+        log.error(error.orig)
+        log.error(error.statement)
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
+        raise error
+    except MultipleResultsFound as error:
+        # NOTE: Since there is a session commit on this level it should
+        #       be handled because it can raise some errors also
+        log.error(f"MultipleResultsFound: Rolling back changes. {error}")
+        log.error(error.__dict__)
+        """Log the error that happened during the session."""
+        await session.rollback()
+        """Rollback all the change made in this session."""
+        raise error
+    except InvalidRequestError as error:
+        # NOTE: Since there is a session commit on this level it should
+        #       be handled because it can raise some errors also
+        log.error(f"InvalidRequestError: Rolling back changes. {error}")
+        log.error(error.args)
+        log.error(error.code)
+        """Log the error that happened during the session."""
+        await session.rollback()
+        """Rollback all the change made in this session."""
+        raise error
     finally:
         # log.debug("Transaction: close session")
         await session.close()

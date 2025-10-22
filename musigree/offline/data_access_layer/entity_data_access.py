@@ -26,8 +26,10 @@ represent the different types of entities.
 
 import logging
 
+from sqlalchemy.exc import IntegrityError
+
 from musigree.constants import BULK_REPORTING_SIZE
-from musigree.exceptions import NotFoundError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_label_internal_id
 from musigree.library.fields.entity_type import EntityType
@@ -146,7 +148,7 @@ class EntityDataAccess:
             bool: True if any references were resolved, False otherwise.
         """
         changed = False
-        # NOTE: This was removed because it is now done in the runtime section
+        # TODO NOTE: This was removed because it is now done in the runtime section
         # for entry in release.artists:
         #     entity_type = EntityType.ARTIST
         #     entity_id = entry["id"]
@@ -277,7 +279,18 @@ class EntityDataAccess:
                 cache.set(entity_key_str, int_id)
                 """Cache the internal id."""
                 id_ = int_id
-
+            except IntegrityError:
+                """Handle potential database errors."""
+                log.warning(
+                    f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}"
+                )
+                await entity_repository.rollback()
+            except DatabaseError:
+                """Handle potential database errors."""
+                log.warning(
+                    f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}"
+                )
+                await entity_repository.rollback()
             except NotFoundError:
                 if LOGGING_TRACE:
                     log.debug(

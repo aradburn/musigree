@@ -95,14 +95,14 @@ async def process_entity_pass_three_worker_async(
     async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
 
-        for entity_id in ids:
+        for id_ in ids:
             """Iterate over the entity IDs."""
             try:
                 """Attempt to process the entity."""
                 await worker_pass_three_single(
                     entity_repository,
                     relation_repository,
-                    entity_id,
+                    id_,
                 )
                 """Process the entity."""
                 count += 1
@@ -111,7 +111,7 @@ async def process_entity_pass_three_worker_async(
             except DatabaseError as e:
                 """Handle potential database errors."""
                 log.exception(
-                    f"Database Error for entity id: {entity_id} in process {proc_name}",
+                    f"Database Error for entity id: {id_} in process {proc_name}",
                     exc_info=True,
                 )
                 raise e
