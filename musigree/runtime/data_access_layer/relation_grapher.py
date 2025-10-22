@@ -134,7 +134,7 @@ class RelationGrapher:
 
         log.debug(f"Searching around {self.center_entity.entity_name}...")
         log.debug(f"  {len(self._structural_role_names)} structural_role_names")
-        log.debug(f"  {len(self._relational_role_names)}relational_role_names")
+        log.debug(f"  {len(self._relational_role_names)} relational_role_names")
         provisional_role_names = self._relational_role_names
         # provisional_roles = list(self.relational_role_names)
         self.report_search_start()
@@ -379,19 +379,23 @@ class RelationGrapher:
                     provisional_role_names.remove("Sublabel Of")
 
     def process_entities(self, distance: int, entities: list[RuntimeEntity]) -> None:
+        log.debug(f"    process {len(entities)} entities")
         for entity in sorted(entities, key=lambda x: x.entity_key):
             if not all([entity.entity_id, entity.entity_name]):
+                log.debug(f"      removing {entity.entity_key}")
                 self.entity_keys_to_visit.remove(entity.entity_key)
                 continue
             if entity.entity_name in self.entities_to_prune:
+                log.debug(f"      pruning {entity.entity_key}")
                 self.entity_keys_to_visit.remove(entity.entity_key)
                 continue
             if entity.entity_name.startswith("Various Artists"):
+                log.debug(f"      removing VA {entity.entity_key}")
                 self.entity_keys_to_visit.remove(entity.entity_key)
                 continue
             entity_key = entity.entity_key
             if entity_key not in self.nodes:
-                # log.debug(f"        add TrellisNode for entity: {entity_key}")
+                log.debug(f"        add TrellisNode for entity: {entity_key}")
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def process_relations(self, relation_links: dict[str, RuntimeRelationResult]) -> None:
@@ -401,7 +405,7 @@ class RelationGrapher:
             # log.debug(f"        relation: {relation}")
 
             if not relation.entity_one_id or not relation.entity_two_id:
-                # log.debug(f"        skip: {relation}")
+                log.debug(f"        skip: {relation}")
                 continue
             entity_one_key = relation.entity_one_key
             entity_two_key = relation.entity_two_key
@@ -450,7 +454,7 @@ class RelationGrapher:
             node = self.nodes.get(entity_key)
             # log.debug(f"            node: {node}")
             if not node:
-                # log.debug(f"            ...skipped")
+                log.debug(f"            ...skipped - node {entity_key} not found")
                 continue
             entity = node.entity
             # log.debug(f"            entity: {entity}")
@@ -469,6 +473,7 @@ class RelationGrapher:
 
     def test_loop_two(self, distance: int, relations: dict) -> None:
         if not relations:
+            log.debug("        No relations: exiting next search loop.")
             self.should_break_loop = True
         if len(relations) >= self.max_links * 3:
             log.debug("        Max links: exiting next search loop.")
