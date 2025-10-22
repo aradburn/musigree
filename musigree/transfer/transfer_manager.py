@@ -116,13 +116,6 @@ class TransferManager:
                 )
                 inserted_count += len(relation_dbs)
 
-            # chunked_runtime_relation_dicts = async_chunks(runtime_relation_dicts, BULK_INSERT_BATCH_SIZE)
-            #
-            # async_worker_coroutines = await utils.async_worker_generator(
-            #     transfer_worker_relation_inserter, chunked_runtime_relation_dicts, total_count
-            # )
-            # await utils.queue_worker_functions(RuntimeDatabaseManager.get_concurrency_count(), async_worker_coroutines)
-
         async with runtime_transaction():
             repository_count = await runtime_relation_repository.count()
         log.debug(f"runtime relation repository count: {repository_count}")
