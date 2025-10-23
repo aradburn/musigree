@@ -52,6 +52,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Stage 3: ----- Build the final image -----
 FROM ghcr.io/astral-sh/uv:bookworm-slim AS final
 
+# Install packages needed for deployment
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y curl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
 # Setup a non-root user
 RUN groupadd --system --gid 1000 nonroot \
  && useradd --system --gid 1000 --uid 1000 --create-home nonroot
