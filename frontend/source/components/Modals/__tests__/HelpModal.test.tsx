@@ -10,7 +10,7 @@ describe("HelpModal Component", () => {
         render(<HelpModal show={true} onHide={handleHide} />);
 
         // Check for modal title specifically in the modal header
-        const modalTitle = screen.getByText("Musigree v2", {
+        const modalTitle = screen.getByText("Musigree", {
             selector: ".modal-title",
         });
         expect(modalTitle).toBeInTheDocument();
