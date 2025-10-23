@@ -77,5 +77,5 @@ ENTRYPOINT []
 # Use the non-root user to run our application
 USER nonroot
 
-EXPOSE 8080
-CMD ["uvicorn", "musigree.app.fastapi_prod_app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--no-access-log", "--log-level", "debug"]
+EXPOSE 5000
+CMD ["uvicorn", "musigree.app.fastapi_prod_app:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "1", "--no-access-log", "--log-level", "debug"]
