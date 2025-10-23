@@ -28,13 +28,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({
             </Modal.Header>
             <Modal.Body>
                 <p>
-                    <strong>Musigree</strong> is an interactive visualization
-                    of the relationships between musicians, bands and labels.
+                    <strong>Musigree</strong> is an interactive visualization of
+                    the relationships between musicians, bands and labels.
                 </p>
 
                 <p>
-                    All of <strong>Musigree</strong>'s data is derived from
-                    the{" "}
+                    All of <strong>Musigree</strong>'s data is derived from the{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"
@@ -42,9 +41,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     >
                         Discogs.com
                     </a>{" "}
-                    database: nearly 9 million artists, 2 million
-                    labels, and 17 million releases creating a network of nearly
-                    100 million different relationships.
+                    database: nearly 9 million artists, 2 million labels, and 17
+                    million releases creating a network of nearly 100 million
+                    different relationships.
                 </p>
 
                 <p>What do all of these symbols mean?</p>
@@ -65,8 +64,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 </p>
 
                 <p>
-                    <strong>Musigree</strong> would also be impossible
-                    without the generous public data dump that{" "}
+                    <strong>Musigree</strong> would also be impossible without
+                    the generous public data dump that{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"

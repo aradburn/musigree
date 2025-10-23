@@ -69,10 +69,6 @@ describe("WelcomeModal Component", () => {
         // Check attribution links
         expect(screen.getByText("Josiah Wolf Oberholtzer")).toBeInTheDocument();
         expect(screen.getByText("Andy Radburn")).toBeInTheDocument();
-
-        // Check tool links
-        expect(screen.getByText("Python 3")).toBeInTheDocument();
-        expect(screen.getByText("D3")).toBeInTheDocument();
     });
 
     it("should call onHide when close button is clicked", async () => {

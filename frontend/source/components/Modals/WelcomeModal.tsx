@@ -60,12 +60,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     connected nodes and links.
                 </p>
                 <p>
-                    When the graph appears, click and drag the
-                    nodes around. Double-click on any node with a plus-sign to
-                    re-centre the graph on that node.
-                    The mouse wheel zooms the network in and out.
-                    Use the <em>roles</em> selector in the right hand side panel
-                    to show new types of connections.
+                    When the graph appears, click and drag the nodes around.
+                    Double-click on any node with a plus-sign to re-centre the
+                    graph on that node. The mouse wheel zooms the network in and
+                    out. Use the <em>roles</em> selector in the right hand side
+                    panel to show new types of connections.
                 </p>
                 <p>
                     Originally made in 2015 by{" "}
@@ -89,7 +88,6 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     </a>
                     .
                 </p>
-
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="primary" onClick={handleClose}>
