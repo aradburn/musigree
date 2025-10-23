@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import removeConsole from "vite-plugin-remove-console";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +17,7 @@ export default defineConfig({
         },
         extensions: [".js", ".jsx", ".ts", ".tsx", ".json", ".woff", ".woff2"],
     },
-    plugins: [react()],
+    plugins: [react(), removeConsole()],
     build: {
         cssCodeSplit: false,
         sourcemap: true,

@@ -24,27 +24,26 @@ export const HelpModal: React.FC<HelpModalProps> = ({
     return (
         <Modal show={show} onHide={handleClose} size="lg">
             <Modal.Header closeButton>
-                <Modal.Title>Musigree v2</Modal.Title>
+                <Modal.Title>Musigree</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <p>
-                    <strong>Musigree v2</strong> is an interactive visualization
-                    of the relationships between musicians, bands and labels.
+                    <strong>Musigree</strong> is an interactive visualization of
+                    the relationships between musicians, bands and labels.
                 </p>
 
                 <p>
-                    All of <strong>Musigree v2</strong>'s data is derived from
-                    the{" "}
+                    All of <strong>Musigree</strong>'s data is derived from the{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
                         Discogs.com
-                    </a>
-                    musigreey database: nearly 9 million artists, 2 million
-                    labels, and 17 million releases creating a network of nearly
-                    100 million different relationships.
+                    </a>{" "}
+                    database: nearly 9 million artists, 2 million labels, and 17
+                    million releases creating a network of nearly 100 million
+                    different relationships.
                 </p>
 
                 <p>What do all of these symbols mean?</p>
@@ -65,8 +64,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 </p>
 
                 <p>
-                    <strong>Musigree v2</strong> would also be impossible
-                    without the generous public data dump that{" "}
+                    <strong>Musigree</strong> would also be impossible without
+                    the generous public data dump that{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"
@@ -105,7 +104,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
 
                 <p>
                     If you are interested in developing{" "}
-                    <strong>Musigree v2</strong>, you can access the code
+                    <strong>Musigree</strong>, you can access the code
                     repository on Github at{" "}
                     <a
                         href="https://github.com/aradburn/musigree"
