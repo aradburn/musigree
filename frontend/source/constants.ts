@@ -30,7 +30,7 @@ export const SVG_IDS = {
 // Constants for viewport and SVG scaling
 export const SVG = {
     VIEWPORT_SIZE_MULTIPLIER: 3.0,
-    SCALING_MULTIPLIER: 0.5,
+    SCALING_MULTIPLIER: 0.6,
 };
 
 // SVG Marker Constants
