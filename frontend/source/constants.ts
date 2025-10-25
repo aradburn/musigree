@@ -214,7 +214,7 @@ export const FORCE = {
     DISTANCE: {
         MAX: 2000, // Maximum distance for force calculations
         LINK: 60, // Default link distance
-        LINK_ALIAS: 20, // Distance for alias relationships (LINK_DISTANCE / 3)
+        LINK_ALIAS: -100, // Distance for alias relationships
         LINK_RELEASED_ON: 180, // Distance for "Released On" relationships (LINK_DISTANCE * 3)
     },
     COLLIDE: {
