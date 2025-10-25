@@ -184,6 +184,10 @@ input[type="range"]::slider-thumb {
     }
 }
 
+#svg:active, #svg:focus {
+    cursor: move;
+}
+
 a {
     &:hover {
         color: #cc8548;
@@ -319,12 +323,14 @@ a {
     }
 
     .hull {
-        fill: #343d46;
-        opacity: 0.1;
-        stroke: #000;
-        stroke-width: 32;
+        fill: #a3beb2;
+        stroke: #88a698;
+        stroke-width: 36;
         stroke-linecap: round;
         stroke-linejoin: round;
+        fill-opacity: 1.0;
+        stroke-opacity: 0.8;
+        opacity: 0.5;
     }
 
     .node {
