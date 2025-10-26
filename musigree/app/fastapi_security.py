@@ -77,7 +77,7 @@ class SecurityHeadersMiddleware:
                     # Content Security Policy for production
                     security_headers[b"content-security-policy"] = (
                         b"default-src 'self' data:; "
-                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://umami.musigree.com; "
                         b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
                         b"font-src 'self'; "
                         b"img-src 'self' data: https:; "
