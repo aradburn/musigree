@@ -474,7 +474,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         // Update the network data
         document.title = "Musigree: " + networkData.center.name;
-//         document.body.setAttribute("id", networkData.center.key);
+        //         document.body.setAttribute("id", networkData.center.key);
 
         if (pushHistory) {
             this.pushState(networkData.center.key, params);

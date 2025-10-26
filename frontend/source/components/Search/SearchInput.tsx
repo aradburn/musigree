@@ -180,7 +180,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 placement="bottom"
                 container={document.body}
                 rootClose
-//                 onHide={() => setShowResults(false)}
+                //                 onHide={() => setShowResults(false)}
             >
                 <Popover
                     id="search-results"
