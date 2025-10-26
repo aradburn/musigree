@@ -42,11 +42,11 @@ export const NetworkProvider = ({
             console.error("forceLayout not setup yet");
             return;
         }
-        console.log("setupChargeForce:", nodeStrength);
 
         const nodeStrengthMultiplier =
             nodeStrength / FORCE.MULTIPLIER.NODE_STRENGTH_SCALE +
             FORCE.MULTIPLIER.NODE_STRENGTH_BASE;
+        console.log("setupChargeForce nodeStrengthMultiplier:", nodeStrengthMultiplier);
 
         networkManager.forceLayout.force(
             "charge",
@@ -65,7 +65,15 @@ export const NetworkProvider = ({
                   ? FORCE.NODE.STRENGTH_CLUSTER
                   : FORCE.NODE.STRENGTH;
 
-            return baseStrength * nodeStrengthMultiplier;
+            const isLevelOne = d.distance == 1;
+            const levelOneBoost = isLevelOne ? 0.01 * d.radius * d.radius * d.radius * d.radius : 0;
+            const intermediateMultiplier = d.isIntermediate ? 0.05 : 0.1;
+            const strength = baseStrength * nodeStrengthMultiplier -
+                             d.radius * d.radius * d.radius * intermediateMultiplier * nodeStrengthMultiplier -
+                             levelOneBoost;
+//             console.log("setupChargeForce radius:", d.radius);
+//             console.log("setupChargeForce strength:", strength);
+            return strength;
         }
     }, []);
 
@@ -89,7 +97,9 @@ export const NetworkProvider = ({
         // Helper function for link distance calculation
         function calculateLinkDistance(d: SimLink): number {
             let distance = FORCE.DISTANCE.LINK;
-
+//             const isInner = Math.min(d.source.distance, d.target.distance) == 0;
+            const isInner = d.distance == 0;
+            const innerDistance = isInner ? 0 : 0;
             if (d.role === FORCE.LINK.ROLES.ALIAS) {
                 distance = FORCE.DISTANCE.LINK_ALIAS;
             } else if (d.role === FORCE.LINK.ROLES.RELEASED_ON) {
@@ -101,7 +111,13 @@ export const NetworkProvider = ({
                         : FORCE.DISTANCE.LINK / 10;
             }
 
-            return distance * linkStrengthMultiplier;
+            const minRadius = Math.min(d.source.radius, d.target.radius);
+            const maxRadius = Math.max(d.source.radius, d.target.radius);
+            const combinedRadius = d.source.radius + d.target.radius;
+            const strength =  distance * linkStrengthMultiplier +
+                              minRadius * 10.0 * linkStrengthMultiplier +
+                              innerDistance;
+            return strength * 0.7;
         }
     }, []);
 
@@ -167,7 +183,7 @@ export const NetworkProvider = ({
             //                     )) /
             //                 maxDimension;
             var result =
-                scaledRadialDistance * scaling * gravStrengthMultiplier;
+                scaledRadialDistance * scaling * gravStrengthMultiplier * 0.5;
             // console.log(d.x, d.y);
             // console.log(result);
             return result;

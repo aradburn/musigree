@@ -29,7 +29,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="lg">
+        <Modal id="welcome-modal" show={show} onHide={handleClose} size="lg">
             <Modal.Header closeButton>
                 <Modal.Title>Hello music lovers!</Modal.Title>
             </Modal.Header>

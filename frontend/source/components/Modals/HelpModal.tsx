@@ -22,7 +22,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="lg">
+        <Modal id="help-modal" show={show} onHide={handleClose} size="lg">
             <Modal.Header closeButton>
                 <Modal.Title>Musigree</Modal.Title>
             </Modal.Header>

@@ -1,21 +1,22 @@
-$dg-primary-color: #c0d111;
-$dg-secondary-color: #4d8c6f;
-$dg-background-color: #1c5a51;
-$dg-text-inner-color: #000;
-$dg-text-outer-color: #fff;
+$mg-primary-color: rgba(70, 115, 94, 0.7333333333);
+$mg-secondary-color: #4d8c6f;
+$mg-background-color: #1c5a51;
+$mg-text-inner-color: #000;
+$mg-text-outer-color: #fff;
 
-$dg-svg-background-color: #eee;
+$mg-svg-background-color: #eee;
+$mg-modal-background-color: #ffc;
 
-$dg-tooltip-color: #111;
-$dg-tooltip-background-color: #ffffcc;
+$mg-tooltip-color: #111;
+$mg-tooltip-background-color: #ffffcc;
 
-$dg-node-tooltip-color: #111;
-$dg-node-tooltip-background-color: #ffffcc;
-$dg-node-tooltip-border-color: #800026;
+$mg-node-tooltip-color: #111;
+$mg-node-tooltip-background-color: #ffffcc;
+$mg-node-tooltip-border-color: #800026;
 
-$dg-link-tooltip-color: #111;
-$dg-link-tooltip-background-color: #ffeda0;
-$dg-link-tooltip-border-color: #800026;
+$mg-link-tooltip-color: #111;
+$mg-link-tooltip-background-color: #ffeda0;
+$mg-link-tooltip-border-color: #800026;
 
 $bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
 $bootstrap-icons-font-src:
@@ -37,12 +38,16 @@ body {
 }
 
 .custom-tooltip {
-    --bs-tooltip-bg: $dg-tooltip-background-color;
-    --bs-tooltip-color: $dg-tooltip-color;
+    --bs-tooltip-bg: $mg-tooltip-background-color;
+    --bs-tooltip-color: $mg-tooltip-color;
 }
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+#search-results {
+    border-width: 2px;
 }
 
 .search-result {
@@ -54,7 +59,7 @@ body {
 
 .navbar {
     background-image: linear-gradient(
-        #{$dg-secondary-color}55 0%,
+        #{$mg-secondary-color}55 0%,
         #46735ebb 100%
     );
     /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
@@ -62,14 +67,14 @@ body {
 }
 
 .sidebar {
-    background-color: $dg-background-color !important;
+    background-color: $mg-background-color !important;
     /* background-color: #1C575A !important;*/
 }
 
 // Side menu content container
 .side-menu-content {
-    background-color: rgba($dg-background-color, 0.95);
-    color: $dg-text-outer-color;
+    background-color: rgba($mg-background-color, 0.95);
+    color: $mg-text-outer-color;
     overflow-y: auto;
     transition:
         transform 0.3s ease-in-out,
@@ -80,7 +85,7 @@ body {
     width: min(300px, 25vw); // Responsive width, maximum 300px
     z-index: 1000;
     box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
-    border-right: 1px solid lighten($dg-background-color, 10%);
+    border-right: 1px solid lighten($mg-background-color, 10%);
     padding: 1rem;
     transform: translateX(-100%); // Start off-screen to the left
     opacity: 0;
@@ -106,7 +111,7 @@ body {
 
     #entity-details-panel {
         a {
-            color: $dg-primary-color;
+            color: $mg-primary-color;
             text-decoration: none;
 
             &:hover {
@@ -131,7 +136,7 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none; /* Override default look */
     appearance: none;
     margin-top: -12px; /* Centers thumb on the track */
-    background-color: $dg-secondary-color;
+    background-color: $mg-secondary-color;
     height: 1.6rem;
     width: 0.8rem;
 }
@@ -139,7 +144,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
     border: none; /*Removes extra border that FF applies*/
     border-radius: 0; /*Removes default border-radius that FF applies*/
-    background-color: $dg-secondary-color;
+    background-color: $mg-secondary-color;
     height: 1.6rem;
     width: 0.8rem;
 }
@@ -147,7 +152,7 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-moz-range-thumb,
 input[type="range"]::-webkit-slider-thumb,
 input[type="range"]::slider-thumb {
-    background-color: $dg-background-color !important;
+    background-color: $mg-background-color !important;
 }
 
 // #nav-bottom {
@@ -165,6 +170,17 @@ input[type="range"]::slider-thumb {
     line-height: 20px;
 }
 
+.modal-dialog {
+    margin-top: 50px;
+}
+
+#help-modal .modal-content, #welcome-modal .modal-content {
+    background-color: $mg-modal-background-color;
+    border-color: $mg-primary-color;
+    border-width: 4px;
+}
+
+
 .tt-menu {
     width: 100%;
     max-height: 70vh;
@@ -174,7 +190,7 @@ input[type="range"]::slider-thumb {
 
 #svg {
     pointer-events: visible;
-    background-color: $dg-svg-background-color;
+    background-color: $mg-svg-background-color;
 
     text {
         font-variant-ligatures: none;
@@ -182,6 +198,10 @@ input[type="range"]::slider-thumb {
         text-rendering: optimizeSpeed;
         font-family: "Open Sans", sans-serif;
     }
+}
+
+#svg:active, #svg:focus {
+    cursor: move;
 }
 
 a {
@@ -257,12 +277,12 @@ a {
                 sans-serif;
 
             &.inner {
-                fill: $dg-text-inner-color;
+                fill: $mg-text-inner-color;
                 stroke: none;
             }
 
             &.outer {
-                stroke: $dg-text-outer-color;
+                stroke: $mg-text-outer-color;
                 stroke-width: 3px;
                 fill: none;
             }
@@ -319,12 +339,14 @@ a {
     }
 
     .hull {
-        fill: #343d46;
-        opacity: 0.1;
-        stroke: #000;
-        stroke-width: 32;
+        fill: #a3beb2;
+        stroke: #88a698;
+        stroke-width: 36;
         stroke-linecap: round;
         stroke-linejoin: round;
+        fill-opacity: 1.0;
+        stroke-opacity: 0.8;
+        opacity: 0.5;
     }
 
     .node {
@@ -345,7 +367,7 @@ a {
                 font:
                     1.2rem "Open Sans",
                     sans-serif;
-                fill: $dg-text-inner-color;
+                fill: $mg-text-inner-color;
                 stroke: none;
                 dominant-baseline: middle;
                 text-anchor: middle;
@@ -458,12 +480,12 @@ a {
         font-weight: bold;
 
         &.inner {
-            fill: $dg-text-inner-color;
+            fill: $mg-text-inner-color;
             stroke: none;
         }
 
         &.outer {
-            stroke: $dg-text-outer-color;
+            stroke: $mg-text-outer-color;
             stroke-width: 3px;
             fill: none;
         }
@@ -529,10 +551,10 @@ a {
     line-height: 0.8rem;
     font-size: 1rem;
     padding: 2px 4px;
-    background-color: $dg-node-tooltip-background-color;
-    color: $dg-node-tooltip-color;
+    background-color: $mg-node-tooltip-background-color;
+    color: $mg-node-tooltip-color;
     border-radius: 6px;
-    border: 2px solid $dg-node-tooltip-border-color;
+    border: 2px solid $mg-node-tooltip-border-color;
     pointer-events: none !important;
     text-align: center;
     box-shadow:
@@ -555,11 +577,11 @@ a {
     line-height: 0.8rem;
     font-size: 1rem;
     padding: 0px;
-    background-color: $dg-link-tooltip-background-color !important;
-    color: $dg-link-tooltip-color !important;
+    background-color: $mg-link-tooltip-background-color !important;
+    color: $mg-link-tooltip-color !important;
     opacity: 1;
     border-radius: 6px;
-    border: 2px solid $dg-link-tooltip-border-color;
+    border: 2px solid $mg-link-tooltip-border-color;
     pointer-events: none !important;
     text-align: center;
     box-shadow:
@@ -574,7 +596,7 @@ a {
         padding: 0px 4px;
         margin: 2px;
         display: inline-block;
-        background-color: $dg-link-tooltip-background-color;
+        background-color: $mg-link-tooltip-background-color;
 
         &:first-child {
             font-size: 1.4rem;
