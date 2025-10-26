@@ -473,8 +473,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         const params = { roles: Array.isArray(filterValue) ? filterValue : [] };
 
         // Update the network data
-        document.title = "Musigree2: " + networkData.center.name;
-        document.body.setAttribute("id", networkData.center.key);
+        document.title = "Musigree: " + networkData.center.name;
+//         document.body.setAttribute("id", networkData.center.key);
 
         if (pushHistory) {
             this.pushState(networkData.center.key, params);
