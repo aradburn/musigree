@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import saveAs from "file-saver";
-import { DOM_IDS, EXPORT, TIMING } from "./constants";
+import { DOM_IDS, EXPORT, TIMING, MESSAGE } from "./constants";
 import { musigreeManager, networkManager } from "./core";
 import { showMessage, clearMessages } from "./messages";
 
@@ -10,7 +10,7 @@ import { showMessage, clearMessages } from "./messages";
  * @param height - The desired height of the output image
  */
 export const printSvg = (width: number, height: number): void => {
-    showMessage("Saving image to disk, please wait...", "info");
+    showMessage("Saving image to disk, please wait...", MESSAGE.TYPES.DARK);
     const svgNode = d3.select(DOM_IDS.SVG_ID).node() as SVGElement | null;
 
     if (!svgNode) {
@@ -63,7 +63,7 @@ function saveBlob(dataBlob: Blob, _filesize: number): void {
     saveAs(dataBlob, filename);
 
     clearMessages(TIMING.QUICK_MESSAGE_CLEAR);
-    showMessage("Saving image complete", "success");
+    showMessage("Saving image complete", MESSAGE.TYPES.SUCCESS);
     clearMessages(TIMING.LONG_MESSAGE_CLEAR);
 }
 

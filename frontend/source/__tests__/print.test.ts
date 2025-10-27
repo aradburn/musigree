@@ -192,7 +192,7 @@ describe("Print SVG", () => {
 
         expect(showMessage).toHaveBeenCalledWith(
             "Saving image to disk, please wait...",
-            "info",
+            "dark",
         );
     });
 });
