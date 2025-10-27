@@ -2,10 +2,11 @@
 import React, { createContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { debounce } from "../utils";
-import { INIT, SVG } from "../constants";
+import { DOM_IDS, INIT, SVG } from "../constants";
 import { musigreeManager } from "../core";
 import { ResizeEvent } from "../network/events";
 import { resetNetworkTransform } from "../network/init";
+import { setSvgSize } from "@/svg";
 
 // Define the state interface
 interface WindowState {
@@ -82,8 +83,9 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             // Update dimensions state
             setState(calculateDimensions());
 
-            // Reset SVG and network visualization
-            //             initSvg();
+            // Setup window dimensions on SVG element
+            setSvgSize(DOM_IDS.SVG_ID);
+            // Reset network visualization
             resetNetworkTransform();
 
             // Dispatch resize event

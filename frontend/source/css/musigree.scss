@@ -1,3 +1,8 @@
+/*!
+ * Musigree SCSS
+ * Copyright 2023-2025 Andrew Radburn
+ * Licensed under MIT (https://github.com/aradburn/musigree/blob/main/LICENSE)
+ */
 $mg-primary-color: rgba(70, 115, 94, 0.7333333333);
 $mg-secondary-color: #4d8c6f;
 $mg-background-color: #1c5a51;
@@ -18,13 +23,6 @@ $mg-link-tooltip-color: #111;
 $mg-link-tooltip-background-color: #ffeda0;
 $mg-link-tooltip-border-color: #800026;
 
-$bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
-$bootstrap-icons-font-src:
-    url("/public/fonts/bootstrap-icons.woff2") format("woff2"),
-    url("/public/fonts/bootstrap-icons.woff") format("woff");
-//     url("~bootstrap-icons/bootstrap-icons.woff2") format("woff2"),
-//     url("~bootstrap-icons/bootstrap-icons.woff") format("woff");
-@import "bootstrap-icons/font/bootstrap-icons";
 
 html,
 body {

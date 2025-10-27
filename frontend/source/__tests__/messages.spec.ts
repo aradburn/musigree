@@ -8,7 +8,7 @@ describe("Messages Module", () => {
     beforeEach(() => {
         // Create a fresh messages container before each test
         messagesContainer = document.createElement("div");
-        messagesContainer.id = "messages";
+        messagesContainer.id = "message-container";
         document.body.appendChild(messagesContainer);
     });
 

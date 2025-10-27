@@ -184,12 +184,17 @@ export const API = {
 
 // Message Constants
 export const MESSAGE = {
-    CONTAINER_ID: "messages",
+    CONTAINER_ID: "message-container",
     TYPES: {
-        INFO: "info",
-        ERROR: "error",
-        WARNING: "warning",
+        PRIMARY: "primary",
+        SECONDARY: "secondary",
         SUCCESS: "success",
+        INFO: "info",
+        WARNING: "warning",
+        ERROR: "danger",
+        DANGER: "danger",
+        LIGHT: "light",
+        DARK: "dark",
     },
     ALERT_CLASS: {
         BASE: "alert",

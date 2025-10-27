@@ -76,6 +76,15 @@
 <!-- This div will be the mount point for the React application -->
 <div id="react-app-container" class="h-100"></div>
 
+<!-- This div will be the message display area -->
+<div class="container-fluid">
+    <div id="message-container" aria-live="polite" aria-atomic="true"
+         class="fixed-bottom mx-auto
+                d-flex flex-column
+                justify-content-center align-items-center w-50">
+    </div>
+</div>
+
 {% if initial_json %}
 <script>{{ initial_json|safe }}</script>
 {% endif %}
