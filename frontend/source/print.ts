@@ -10,7 +10,7 @@ import { showMessage, clearMessages } from "./messages";
  * @param height - The desired height of the output image
  */
 export const printSvg = (width: number, height: number): void => {
-    showMessage("info", "Saving image to disk, please wait...");
+    showMessage("Saving image to disk, please wait...", "info");
     const svgNode = d3.select(DOM_IDS.SVG_ID).node() as SVGElement | null;
 
     if (!svgNode) {
@@ -63,7 +63,7 @@ function saveBlob(dataBlob: Blob, _filesize: number): void {
     saveAs(dataBlob, filename);
 
     clearMessages(TIMING.QUICK_MESSAGE_CLEAR);
-    showMessage("success", "Saving image complete");
+    showMessage("Saving image complete", "success");
     clearMessages(TIMING.LONG_MESSAGE_CLEAR);
 }
 

@@ -184,7 +184,7 @@ export const API = {
 
 // Message Constants
 export const MESSAGE = {
-    CONTAINER_ID: "messages",
+    CONTAINER_ID: "message-container",
     TYPES: {
         INFO: "info",
         ERROR: "error",

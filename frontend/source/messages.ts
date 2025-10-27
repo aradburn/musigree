@@ -8,7 +8,10 @@ export const showMessage = (
     type: string = MESSAGE.TYPES.INFO,
 ): void => {
     const container = document.querySelector(`#${MESSAGE.CONTAINER_ID}`);
-    if (!container) return;
+    if (!container) {
+        console.error("Message container not found");
+        return;
+    }
 
     const messageElement = document.createElement("div");
     messageElement.className = `${MESSAGE.ALERT_CLASS.BASE} alert-${type} ${MESSAGE.ALERT_CLASS.DISMISSIBLE} ${MESSAGE.ALERT_CLASS.FADE} ${MESSAGE.ALERT_CLASS.SHOW}`;
