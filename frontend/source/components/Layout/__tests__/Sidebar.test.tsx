@@ -5,7 +5,7 @@ import "@testing-library/jest-dom";
 import { Sidebar } from "../Sidebar";
 
 // Mock dependencies
-vi.mock("../../../svg", () => ({
+vi.mock("../../../print", () => ({
     printSvg: vi.fn(),
 }));
 
@@ -25,7 +25,7 @@ vi.mock("../../Visualization/ForceControls", () => ({
 }));
 
 // Import after mocking
-import { printSvg } from "../../../svg";
+import { printSvg } from "../../../print";
 import { musigreeManager } from "../../../core";
 
 describe("Sidebar Component", () => {
