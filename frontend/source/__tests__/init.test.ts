@@ -93,7 +93,6 @@ vi.mock("../roles", () => ({
 
 vi.mock("../svg", () => ({
     initSvg: vi.fn(),
-    printSvg: vi.fn(),
 }));
 
 vi.mock("../fsm", () => ({
@@ -142,7 +141,6 @@ interface MockedInitModule {
 
 interface MockedSvg {
     initSvg: typeof svg.initSvg;
-    printSvg: typeof svg.printSvg;
 }
 
 interface MockedNetworkInit {

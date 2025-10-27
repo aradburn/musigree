@@ -22,7 +22,7 @@ import { pruneSimData } from "../network/pruning";
 import type { RelationsData } from "../relations";
 import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../api";
 import { resetNetworkTransform } from "../network/init";
-import { FORCE } from "../constants";
+import { FORCE, MESSAGE } from "../constants";
 import { FSM, INIT } from "../constants";
 import type { SimNode, SimLink } from "../network/data";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
@@ -333,9 +333,9 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     handleError(error: unknown): void {
         if (error instanceof Error) {
-            showMessage(error.message, "error");
+            showMessage(error.message, MESSAGE.TYPES.ERROR);
         } else {
-            showMessage("An unknown error occurred", "error");
+            showMessage("An unknown error occurred", MESSAGE.TYPES.ERROR);
         }
 
         this.transition("state-viewing-network");
