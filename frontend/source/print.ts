@@ -161,7 +161,7 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
         });
     });
 
-    const root = document.querySelector(':root');
+    const root = document.querySelector(":root");
     const rootStyles = getComputedStyle(root);
     const varRegex = /(var\(--.*\))/;
     const dashRegex = /(\()(--.*)(\))/;
@@ -170,26 +170,29 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
     let extractedCSSText = "";
     for (const sheet of document.styleSheets) {
         if (sheet.ownerNode.textContent.includes("Musigree")) {
-
             try {
                 const cssRules = sheet.cssRules;
                 if (!cssRules) continue;
 
                 for (const rule of cssRules) {
-                    if (!rule.selectorText)
+                    if (!(rule instanceof CSSStyleRule) || !rule.selectorText)
                         continue;
 
-                    let networkSelectorText = rule.selectorText.includes("#networkLayer ") ? rule.selectorText.replace("#networkLayer ", "") : rule.selectorText;
-                    if (
-                        rule instanceof CSSStyleRule &&
-                        selectorTextArr.has(networkSelectorText)
-                    ) {
-                        let varFound = rule.cssText.match(varRegex);
+                    const networkSelectorText = rule.selectorText.includes(
+                        "#networkLayer ",
+                    )
+                        ? rule.selectorText.replace("#networkLayer ", "")
+                        : rule.selectorText;
+                    if (selectorTextArr.has(networkSelectorText)) {
+                        const varFound = rule.cssText.match(varRegex);
                         if (varFound) {
-                            let dashFound = rule.cssText.match(dashRegex);
-                            let dash = dashFound[2];
-                            let prop = rootStyles.getPropertyValue(dash);
-                            let newCssText = rule.cssText.replace(varRegex, prop);
+                            const dashFound = rule.cssText.match(dashRegex);
+                            const dash = dashFound[2];
+                            const prop = rootStyles.getPropertyValue(dash);
+                            const newCssText = rule.cssText.replace(
+                                varRegex,
+                                prop,
+                            );
                             extractedCSSText += newCssText + "\n";
                         } else {
                             extractedCSSText += rule.cssText + "\n";
