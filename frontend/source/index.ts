@@ -7,6 +7,7 @@
 import "~bootstrap/dist/css/bootstrap.min.css";
 
 // Import our custom CSS
+import "./css/bootstrap-icons.scss";
 import "./css/musigree.scss";
 
 // Import all of Bootstrap's JS
