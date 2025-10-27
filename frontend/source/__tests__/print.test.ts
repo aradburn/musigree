@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as d3 from "d3";
 import { saveAs } from "file-saver";
 import * as printModule from "../print";
-import { printSvg, getSvgString, getCSSStyles, appendCSS, svgString2Image } from "../print";
+import {
+    printSvg,
+    getSvgString,
+    getCSSStyles,
+    appendCSS,
+    svgString2Image,
+} from "../print";
 import { musigreeManager, networkManager } from "../core";
 import { showMessage, clearMessages } from "../messages";
 import { DOM_IDS, SVG_IDS, SVG } from "../constants";
@@ -185,8 +191,8 @@ describe("Print SVG", () => {
         printSvg(width, height);
 
         expect(showMessage).toHaveBeenCalledWith(
-            "info",
             "Saving image to disk, please wait...",
+            "info",
         );
     });
 });
@@ -219,9 +225,22 @@ describe("SVG String Processing", () => {
             serializeToString: mockSerializeToString,
         }));
 
+        // Mock document.styleSheets to avoid the ownerNode issue
+        const originalStyleSheets = document.styleSheets;
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [],
+            configurable: true,
+        });
+
         const result = printModule.getSvgString(svgElement);
         expect(result).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
         expect(result).not.toMatch(/NS\d+:href/);
+
+        // Restore original
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
     });
 
     it("should extract CSS styles correctly", () => {
@@ -243,7 +262,7 @@ describe("SVG String Processing", () => {
 
         // Add a style element with some CSS rules
         const styleElement = document.createElement("style");
-        styleElement.textContent = `
+        styleElement.textContent = `Musigree
             #svg { fill: none; }
             .test-class { stroke: black; }
             .container-class { opacity: 0.8; }
@@ -254,25 +273,87 @@ describe("SVG String Processing", () => {
         `;
         document.head.appendChild(styleElement);
 
+        // Mock document.styleSheets to include our style element
+        const originalStyleSheets = document.styleSheets;
+
+        // Create mock CSSStyleRule instances
+        const createMockCSSStyleRule = (
+            selectorText: string,
+            cssText: string,
+        ) => {
+            const mockRule = {
+                selectorText,
+                cssText,
+            };
+            // Make it pass instanceof CSSStyleRule check
+            Object.setPrototypeOf(mockRule, CSSStyleRule.prototype);
+            return mockRule as CSSStyleRule;
+        };
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: styleElement,
+                    get cssRules() {
+                        return [
+                            createMockCSSStyleRule(
+                                "#svg",
+                                "#svg { fill: none; }",
+                            ),
+                            createMockCSSStyleRule(
+                                ".test-class",
+                                ".test-class { stroke: black; }",
+                            ),
+                            createMockCSSStyleRule(
+                                ".container-class",
+                                ".container-class { opacity: 0.8; }",
+                            ),
+                            createMockCSSStyleRule(
+                                ".circle-class",
+                                ".circle-class { fill: red; }",
+                            ),
+                            createMockCSSStyleRule(
+                                "#container .circle-class",
+                                "#container .circle-class { stroke: blue; }",
+                            ),
+                            createMockCSSStyleRule(
+                                ".container-class .circle-class",
+                                ".container-class .circle-class { stroke-width: 2; }",
+                            ),
+                            createMockCSSStyleRule(
+                                "#svg .container-class .circle-class",
+                                "#svg .container-class .circle-class { stroke-dasharray: 5,5; }",
+                            ),
+                        ];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
         const styles = printModule.getCSSStyles(svgElement);
 
         // Test basic selectors
-        expect(styles).toContain("#svg {fill: none;}");
-        expect(styles).toContain(".test-class {stroke: black;}");
-        expect(styles).toContain(".container-class {opacity: 0.8;}");
-        expect(styles).toContain(".circle-class {fill: red;}");
+        expect(styles).toContain("#svg { fill: none; }");
+        expect(styles).toContain(".test-class { stroke: black; }");
+        expect(styles).toContain(".container-class { opacity: 0.8; }");
+        expect(styles).toContain(".circle-class { fill: red; }");
 
         // Test parent-child relationships
-        expect(styles).toContain("#container .circle-class {stroke: blue;}");
+        expect(styles).toContain("#container .circle-class { stroke: blue; }");
         expect(styles).toContain(
-            ".container-class .circle-class {stroke-width: 2;}",
+            ".container-class .circle-class { stroke-width: 2; }",
         );
         expect(styles).toContain(
-            "#svg .container-class .circle-class {stroke-dasharray: 5,5;}",
+            "#svg .container-class .circle-class { stroke-dasharray: 5,5; }",
         );
 
         // Cleanup
         document.head.removeChild(styleElement);
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
     });
 
     it("should handle SecurityError when accessing cross-origin stylesheets", () => {
@@ -283,6 +364,7 @@ describe("SVG String Processing", () => {
         Object.defineProperty(document, "styleSheets", {
             get: () => [
                 {
+                    ownerNode: { textContent: "Musigree" },
                     get cssRules() {
                         const error = new Error("Security Error");
                         error.name = "SecurityError";
@@ -311,6 +393,7 @@ describe("SVG String Processing", () => {
         Object.defineProperty(document, "styleSheets", {
             get: () => [
                 {
+                    ownerNode: { textContent: "Musigree" },
                     get cssRules() {
                         throw new Error("Different Error");
                     },
