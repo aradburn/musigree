@@ -35,6 +35,8 @@ describe("useSearchApi", () => {
     // Setup and teardown
     beforeEach(() => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
+        // Suppress console.error for expected error tests
+        vi.spyOn(console, "error").mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -79,9 +81,11 @@ describe("useSearchApi", () => {
         expect(result.current.loading).toBe(true);
 
         // Fast-forward timers to trigger the debounced function
-        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-        await Promise.resolve();
-        await Promise.resolve();
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
 
         // Wait for the hook to update with the fetched results
         await waitFor(() => {
@@ -100,9 +104,11 @@ describe("useSearchApi", () => {
 
         const { result } = renderHook(() => useSearchApi("error test"));
 
-        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-        await Promise.resolve();
-        await Promise.resolve();
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
 
         await waitFor(() => {
             expect(result.current.results).toEqual([]);
@@ -119,9 +125,11 @@ describe("useSearchApi", () => {
 
         const { result } = renderHook(() => useSearchApi("network test"));
 
-        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
-        await Promise.resolve();
-        await Promise.resolve();
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
 
         await waitFor(() => {
             expect(result.current.results).toEqual([]);
@@ -141,18 +149,26 @@ describe("useSearchApi", () => {
         });
 
         // Change the query multiple times in quick succession
-        rerender({ query: "test1" });
-        rerender({ query: "test2" });
-        rerender({ query: "test3" });
+        act(() => {
+            rerender({ query: "test1" });
+            rerender({ query: "test2" });
+            rerender({ query: "test3" });
+        });
 
         // Advance time by less than debounce time - no fetch should happen yet
-        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE - 50);
+        act(() => {
+            vi.advanceTimersByTime(
+                MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE - 50,
+            );
+        });
         expect(fetchSpy).not.toHaveBeenCalled();
 
         // Advance time to trigger the debounced function
-        vi.advanceTimersByTime(100); // This should exceed the debounce time
-        await Promise.resolve();
-        await Promise.resolve();
+        await act(async () => {
+            vi.advanceTimersByTime(100); // This should exceed the debounce time
+            await Promise.resolve();
+            await Promise.resolve();
+        });
 
         // Should only be called once with the latest query
         await waitFor(() => {
@@ -171,30 +187,179 @@ describe("useSearchApi", () => {
         renderHook(() => useSearchApi("custom", customDebounceTime));
 
         // Advance time by the default debounce time - fetch should not occur yet
-        vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        act(() => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        });
 
         expect(fetchSpy).not.toHaveBeenCalled();
 
         // Advance time to hit the custom debounce time
-        vi.advanceTimersByTime(
-            customDebounceTime - MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE,
-        );
-
-        // Make sure the fetch promise resolves
-        await Promise.resolve();
+        await act(async () => {
+            vi.advanceTimersByTime(
+                customDebounceTime - MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE,
+            );
+            // Make sure the fetch promise resolves
+            await Promise.resolve();
+        });
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    /**
-     * Note: Several tests in this file are skipped because they require complex setup with async
-     * React state updates that are difficult to test reliably. In a real-world scenario, these tests
-     * would benefit from using a tool like MSW (Mock Service Worker) to intercept and mock fetch requests
-     * more effectively, or from integration tests that test the hook in the context of a real component.
-     *
-     * The remaining tests still provide good coverage of the basic functionality, ensuring:
-     * 1. Queries below the minimum length return empty results
-     * 2. Empty queries return empty results
-     * 3. Custom debounce timing is respected
-     */
+    // Test for query exactly at minimum length
+    it("should search when query is exactly minimum length", async () => {
+        const mockResults: SearchResult[] = [{ name: "Result 1", key: "r1" }];
+
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValueOnce(
+                createFetchResponse({ results: mockResults }),
+            );
+
+        const { result } = renderHook(() => useSearchApi("test")); // 4 characters
+
+        expect(result.current.loading).toBe(true);
+
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test");
+            expect(result.current.results).toEqual(mockResults);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBeNull();
+        });
+    });
+
+    // Test for query with special characters
+    it("should properly encode query with special characters", async () => {
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValue(createFetchResponse({ results: [] }));
+
+        const { result } = renderHook(() =>
+            useSearchApi("test & query + special"),
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledWith(
+                "/api/search/test%20%26%20query%20%2B%20special",
+            );
+            expect(result.current.loading).toBe(false);
+        });
+    });
+
+    // Test for API response with no results property
+    it("should handle API response with missing results property", async () => {
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValueOnce(createFetchResponse({})); // No results property
+
+        const { result } = renderHook(() => useSearchApi("test"));
+
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test");
+            expect(result.current.results).toEqual([]);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBeNull();
+        });
+    });
+
+    // Test for non-Error exception
+    it("should handle non-Error exceptions", async () => {
+        vi.spyOn(global, "fetch").mockRejectedValueOnce("String error");
+
+        const { result } = renderHook(() => useSearchApi("test"));
+
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(result.current.results).toEqual([]);
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe("Unknown error");
+        });
+    });
+
+    // Test for cleanup on unmount
+    it("should cleanup timer on unmount", () => {
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValue(createFetchResponse({ results: [] }));
+
+        const { unmount } = renderHook(() => useSearchApi("test"));
+
+        // Unmount before debounce time
+        unmount();
+
+        // Advance time past debounce - should not call fetch
+        act(() => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+        });
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    // Test for query change resets debounce timer
+    it("should reset debounce timer when query changes", async () => {
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValue(createFetchResponse({ results: [] }));
+
+        const { rerender } = renderHook((props) => useSearchApi(props.query), {
+            initialProps: { query: "first" },
+        });
+
+        // Advance time by less than debounce time
+        act(() => {
+            vi.advanceTimersByTime(
+                MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE - 100,
+            );
+        });
+
+        // Change query - this should reset the timer
+        act(() => {
+            rerender({ query: "second" });
+        });
+
+        // Advance time by less than full debounce time again
+        act(() => {
+            vi.advanceTimersByTime(
+                MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE - 100,
+            );
+        });
+
+        // Should not have been called yet
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        // Now advance the remaining time to trigger the request
+        await act(async () => {
+            vi.advanceTimersByTime(100);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        // Should have been called once with the latest query
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledWith("/api/search/second");
+        });
+    });
 });
