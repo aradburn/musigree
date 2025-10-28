@@ -10,7 +10,7 @@ $mg-text-inner-color: #000;
 $mg-text-outer-color: #fff;
 
 $mg-svg-background-color: #eee;
-$mg-modal-background-color: #ffc;
+$mg-modal-background-color: #ffffe6;
 
 $mg-tooltip-color: #111;
 $mg-tooltip-background-color: #ffffcc;
@@ -119,6 +119,20 @@ body {
     }
 }
 
+.modal-dialog {
+    margin-top: 50px;
+}
+
+#help-modal .modal-content, #welcome-modal .modal-content, #who-modal .modal-content {
+    background-color: $mg-modal-background-color;
+    border-color: $mg-primary-color;
+    border-width: 4px;
+}
+
+.modal-header .btn-close {
+    margin-right: calc(-.5 * var(--bs-modal-header-padding-x) + 0.8rem);
+}
+
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -168,15 +182,7 @@ input[type="range"]::slider-thumb {
     line-height: 20px;
 }
 
-.modal-dialog {
-    margin-top: 50px;
-}
 
-#help-modal .modal-content, #welcome-modal .modal-content {
-    background-color: $mg-modal-background-color;
-    border-color: $mg-primary-color;
-    border-width: 4px;
-}
 
 
 .tt-menu {

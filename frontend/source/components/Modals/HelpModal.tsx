@@ -22,9 +22,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
     };
 
     return (
-        <Modal id="help-modal" show={show} onHide={handleClose} size="lg">
+        <Modal id="help-modal" show={show} onHide={handleClose} size="lg" contentClassName="rounded-4 shadow">
             <Modal.Header closeButton>
-                <Modal.Title>Musigree</Modal.Title>
+                <Modal.Title as="h3">Musigree</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <p>

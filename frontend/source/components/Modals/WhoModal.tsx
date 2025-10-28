@@ -22,15 +22,15 @@ export const WhoModal: React.FC<WhoModalProps> = ({
     };
 
     return (
-        <Modal show={show} onHide={handleClose}>
+        <Modal id="who-modal" show={show} onHide={handleClose} size="lg" contentClassName="rounded-4 shadow">
             <Modal.Header closeButton>
-                <Modal.Title>Who made this?</Modal.Title>
+                <Modal.Title as="h3">Who made this?</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <p>
                     Originally made in 2015 by{" "}
                     <a
-                        href="https://github.com/josiah-wolf-oberholtzer/musigree"
+                        href="https://github.com/josiah-wolf-oberholtzer/discograph"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
@@ -41,7 +41,7 @@ export const WhoModal: React.FC<WhoModalProps> = ({
                 <p>
                     Updated 2023 by{" "}
                     <a
-                        href="http://andyradburn.co.uk"
+                        href="http://github.com/aradburn/musigree"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
@@ -65,15 +65,7 @@ export const WhoModal: React.FC<WhoModalProps> = ({
                             Python 3
                         </a>
                     </li>
-                    <li>
-                        <a
-                            href="http://peewee.readthedocs.org"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Peewee
-                        </a>
-                    </li>
+
                     <li>
                         <a
                             href="http://d3js.org/"
@@ -91,45 +83,12 @@ export const WhoModal: React.FC<WhoModalProps> = ({
                             Bootstrap CSS
                         </a>
                     </li>
-                    <li>
-                        <a
-                            href="http://machina-js.org/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Machina-JS
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="http://flask.pocoo.org"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Flask
-                        </a>
-                        ,
-                        <a
-                            href="http://gunicorn.org/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Gunicorn
-                        </a>{" "}
-                        and
-                        <a
-                            href="http://supervisord.org/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            supervisor.d
-                        </a>
-                    </li>
+
                 </ul>
 
                 <p>
                     <strong>Musigree</strong> would also be impossible without
-                    the generous public data dump that{" "}
+                    the generous public data that{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"
@@ -167,7 +126,9 @@ export const WhoModal: React.FC<WhoModalProps> = ({
                 </p>
 
                 <p>
-                    You can fork <strong>Musigree</strong> on{" "}
+                    If you are interested in developing{" "}
+                    <strong>Musigree</strong>, you can access the code
+                    repository on Github at{" "}
                     <a
                         href="https://github.com/aradburn/musigree"
                         target="_blank"
