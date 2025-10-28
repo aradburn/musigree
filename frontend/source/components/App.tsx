@@ -147,10 +147,11 @@ const App: React.FC = (): React.ReactElement => {
 
                         <Row className="flex-grow-1" style={{ minHeight: 0 }}>
                             <Col
-                                xs={12}
                                 sm={2}
-                                xl={1}
-                                className="h-100 p-0 d-flex flex-column"
+                                md={2}
+                                xl={2}
+                                xxl={1}
+                                className="h-100 p-0 d-sm-flex flex-column d-none"
                             >
                                 <Sidebar />
                             </Col>
@@ -158,7 +159,9 @@ const App: React.FC = (): React.ReactElement => {
                             <Col
                                 xs={12}
                                 sm={10}
-                                xl={11}
+                                md={10}
+                                xl={10}
+                                xxl={11}
                                 className="h-100 px-0 d-flex flex-column flex-grow-1 flex-shrink-1"
                             >
                                 <NetworkView />

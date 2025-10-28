@@ -24,9 +24,6 @@ export const initReactApp = (): void => {
         reactContainer.style.height = "100%";
         reactContainer.style.zIndex = "1000";
         reactContainer.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
-        //         reactContainer.style.padding = "10px";
-        //         reactContainer.style.borderRadius = "0 0 0 10px";
-        //         reactContainer.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.2)";
         reactContainer.style.display = "block"; // Show React app by default
         document.body.appendChild(reactContainer);
     }

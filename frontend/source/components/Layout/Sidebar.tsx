@@ -27,7 +27,13 @@ export const Sidebar: React.FC = () => {
     };
 
     return (
-        <div className="sidebar d-flex h-100 flex-sm-column flex-xl-column justify-content-evenly justify-content-sm-start justify-content-xl-start align-items-start align-items-sm-start align-items-xl-start bg-secondary-subtle p-2 text-light">
+        <div className="sidebar d-flex p-2 h-100
+                        flex-sm-column flex-xl-column
+                        justify-content-evenly
+                        justify-content-sm-start justify-content-xl-start
+                        align-items-start
+                        align-items-sm-start align-items-xl-start
+                        bg-secondary-subtle text-light">
             {/* Details button */}
             <div
                 className="navbar-text px-sm-0 px-2"
