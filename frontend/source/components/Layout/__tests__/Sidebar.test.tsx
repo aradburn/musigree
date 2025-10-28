@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
-import { Sidebar } from "../Sidebar";
+import { SidebarLeft } from "../SidebarLeft";
 
 // Mock dependencies
 vi.mock("../../../print", () => ({
@@ -28,7 +28,7 @@ vi.mock("../../Visualization/ForceControls", () => ({
 import { printSvg } from "../../../print";
 import { musigreeManager } from "../../../core";
 
-describe("Sidebar Component", () => {
+describe("SidebarLeft Component", () => {
     beforeEach(() => {
         // Clear all mocks before each test
         vi.clearAllMocks();
@@ -43,13 +43,13 @@ describe("Sidebar Component", () => {
     });
 
     it("renders correctly with all expected elements", () => {
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Check if the sidebar container is rendered
-        const sidebar = screen
+        const sidebarLeft = screen
             .getByRole("button", { name: /details/i })
             .closest(".sidebar");
-        expect(sidebar).toBeInTheDocument();
+        expect(sidebarLeft).toBeInTheDocument();
 
         // Check if all buttons are rendered with correct text
         expect(
@@ -68,7 +68,7 @@ describe("Sidebar Component", () => {
 
     it("dispatches custom event when Details button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Click the Details button
         await user.click(screen.getByRole("button", { name: /details/i }));
@@ -87,7 +87,7 @@ describe("Sidebar Component", () => {
 
     it("dispatches custom event when Roles button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Click the Roles button
         await user.click(screen.getByRole("button", { name: /roles/i }));
@@ -104,7 +104,7 @@ describe("Sidebar Component", () => {
 
     it("calls printSvg function when Print button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Click the Print button
         await user.click(screen.getByRole("button", { name: /print/i }));
@@ -118,16 +118,16 @@ describe("Sidebar Component", () => {
     });
 
     it("renders with appropriate Bootstrap classes for responsive layout", () => {
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Check if the sidebar has the expected Bootstrap classes
-        const sidebar = screen
+        const sidebarLeft = screen
             .getByRole("button", { name: /details/i })
             .closest(".sidebar");
-        expect(sidebar).toHaveClass("d-flex");
-        expect(sidebar).toHaveClass("h-100");
-        expect(sidebar).toHaveClass("flex-sm-column");
-        expect(sidebar).toHaveClass("bg-secondary-subtle");
+        expect(sidebarLeft).toHaveClass("d-flex");
+        expect(sidebarLeft).toHaveClass("h-100");
+        expect(sidebarLeft).toHaveClass("flex-sm-column");
+        expect(sidebarLeft).toHaveClass("bg-secondary-subtle");
 
         // Check if the buttons have responsive text classes
         const detailsButton = screen.getByRole("button", { name: /details/i });

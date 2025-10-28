@@ -4,7 +4,7 @@ import { Container, Row, Col } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
-import { Sidebar } from "./Layout/Sidebar";
+import { SidebarLeft } from "./Layout/SidebarLeft";
 import { HelpModal, WelcomeModal, WhoModal } from "./Modals/index";
 import { NetworkView } from "./Visualization/NetworkView";
 import { LoadingAnimation } from "./Visualization";
@@ -151,9 +151,10 @@ const App: React.FC = (): React.ReactElement => {
                                 md={2}
                                 xl={2}
                                 xxl={1}
-                                className="h-100 p-0 d-sm-flex flex-column d-none"
+                                className="h-100 p-0 flex-column
+                                           d-sm-flex d-none"
                             >
-                                <Sidebar />
+                                <SidebarLeft />
                             </Col>
 
                             <Col
@@ -162,7 +163,8 @@ const App: React.FC = (): React.ReactElement => {
                                 md={10}
                                 xl={10}
                                 xxl={11}
-                                className="h-100 px-0 d-flex flex-column flex-grow-1 flex-shrink-1"
+                                className="h-100 px-0 d-flex flex-column
+                                           flex-grow-1 flex-shrink-1"
                             >
                                 <NetworkView />
                                 <LoadingAnimation />
