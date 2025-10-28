@@ -22,7 +22,13 @@ export const WhoModal: React.FC<WhoModalProps> = ({
     };
 
     return (
-        <Modal id="who-modal" show={show} onHide={handleClose} size="lg" contentClassName="rounded-4 shadow">
+        <Modal
+            id="who-modal"
+            show={show}
+            onHide={handleClose}
+            size="lg"
+            contentClassName="rounded-4 shadow"
+        >
             <Modal.Header closeButton>
                 <Modal.Title as="h3">Who made this?</Modal.Title>
             </Modal.Header>
@@ -83,7 +89,6 @@ export const WhoModal: React.FC<WhoModalProps> = ({
                             Bootstrap CSS
                         </a>
                     </li>
-
                 </ul>
 
                 <p>

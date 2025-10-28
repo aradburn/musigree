@@ -29,15 +29,21 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     };
 
     return (
-        <Modal id="welcome-modal" show={show} onHide={handleClose} size="lg" contentClassName="rounded-4 shadow">
+        <Modal
+            id="welcome-modal"
+            show={show}
+            onHide={handleClose}
+            size="lg"
+            contentClassName="rounded-4 shadow"
+        >
             <Modal.Header closeButton>
                 <Modal.Title as="h3">Welcome music lovers!</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <p>
-                    <strong>Musigree</strong> is an interactive
-                    visualization of relationships between artists, bands and
-                    labels, based on data from the{" "}
+                    <strong>Musigree</strong> is an interactive visualization of
+                    relationships between artists, bands and labels, based on
+                    data from the{" "}
                     <a
                         href="http://discogs.com"
                         target="_blank"
@@ -52,8 +58,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     artist or label.
                 </p>
                 <p>
-                    Click on the <strong>Random</strong> link
-                    to find a random artist.
+                    Click on the <strong>Random</strong> link to find a random
+                    artist.
                 </p>
                 <p>
                     The artists, bands and labels are shown as a graph of
