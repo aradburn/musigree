@@ -1,5 +1,6 @@
 import type { NodeKey, LinkKey } from "./network/data";
 import type { NetworkCenter } from "./network/data";
+import type { EntityData } from "./entities";
 import type { RelationsData } from "./relations";
 import type { NodeType } from "./network/data";
 import { API } from "./constants";
@@ -42,16 +43,22 @@ const getNetworkURL = (entityKey: NodeKey, roles: string[]): string => {
 };
 
 const getRandomURL = (roles: string[]): string => {
-    let url = `${API.ENDPOINTS.RANDOM}?r=${Math.floor(Math.random() * API.RANDOM_MAX)}`;
+    const baseUrl = API.ENDPOINTS.RANDOM();
+    let url = `${baseUrl}?r=${Math.floor(Math.random() * API.RANDOM_MAX)}`;
     if (roles.length) {
         url += `&${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
     }
     return url;
 };
 
-const getRadialURL = (entityKey: NodeKey): string => {
+const getEntityRelationsURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
     return API.ENDPOINTS.RELATIONS(entityType, entityId);
+};
+
+const getEntityDetailsURL = (entityKey: NodeKey): string => {
+    const [entityType, entityId] = entityKey.split("-");
+    return API.ENDPOINTS.DETAILS(entityType, entityId);
 };
 
 export const fetchAPINetwork = async (
@@ -78,9 +85,19 @@ export const fetchAPIRandom = async (
 export const fetchAPIRadial = async (
     entityKey: NodeKey,
 ): Promise<RelationsData> => {
-    const url = getRadialURL(entityKey);
+    const url = getEntityRelationsURL(entityKey);
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(response.statusText);
     return (await response.json()) as RelationsData;
+};
+
+export const fetchAPIEntityDetails = async (
+    entityKey: NodeKey,
+): Promise<EntityData> => {
+    const url = getEntityDetailsURL(entityKey);
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(response.statusText);
+    return (await response.json()) as EntityData;
 };
