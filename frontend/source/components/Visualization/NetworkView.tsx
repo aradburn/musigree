@@ -64,7 +64,7 @@ const NetworkView: React.FC = () => {
         <main
             ref={containerRef}
             id={DOM_IDS.SVG_CONTAINER}
-            className="h-100 container-fluid flex-grow-1 flex-shrink-1 px-0"
+            className="h-100 flex-grow-1 flex-shrink-1 px-0"
         ></main>
     );
 };
