@@ -257,17 +257,17 @@ export const svgString2Image = (
         context.drawImage(image, 0, 0, width, height);
 
         const logo = new Image();
-        logo.onload = () => {
-          // context.imageSmoothingEnabled = false;
-          // context.clearRect(0, 0, logo.width, logo.height);
-          context.drawImage(logo, 200, 200);
+        logo.onload = (): void => {
+            // context.imageSmoothingEnabled = false;
+            // context.clearRect(0, 0, logo.width, logo.height);
+            context.drawImage(logo, 200, 200);
 
-          canvas.toBlob((blob) => {
-                      if (!blob) {
-                          throw new Error("Failed to create blob from canvas");
-                      }
-                      callback(blob, blob.size);
-                  }, "image/" + format);
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    throw new Error("Failed to create blob from canvas");
+                }
+                callback(blob, blob.size);
+            }, "image/" + format);
         };
         logo.src = "/public/img/musigree logo with website v3.png";
     };

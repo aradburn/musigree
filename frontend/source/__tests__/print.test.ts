@@ -429,6 +429,8 @@ describe("SVG to Image Conversion", () => {
     let mockContext: MockCanvasRenderingContext2D;
     let mockCanvas: MockHTMLCanvasElement;
     let mockImage: Partial<HTMLImageElement>;
+    let mockLogoImage: Partial<HTMLImageElement>;
+    let imageCreationCount = 0;
 
     beforeEach(() => {
         mockContext = {
@@ -448,20 +450,33 @@ describe("SVG to Image Conversion", () => {
             height: 600,
         };
 
-        // Initialize mockImage
+        // Initialize mock images
         mockImage = {
             onload: null,
             src: "",
         };
 
-        // Mock createElement for canvas
+        mockLogoImage = {
+            onload: null,
+            src: "",
+        };
+
+        imageCreationCount = 0;
+
+        // Mock createElement for canvas and images
         const createElement = vi.spyOn(document, "createElement");
         createElement.mockImplementation((tagName: string): HTMLElement => {
             if (tagName === "canvas") {
                 return mockCanvas as unknown as HTMLCanvasElement;
             }
             if (tagName === "img") {
-                return mockImage as unknown as HTMLImageElement;
+                imageCreationCount++;
+                // First image is the main SVG image, second is the logo
+                if (imageCreationCount === 1) {
+                    return mockImage as unknown as HTMLImageElement;
+                } else {
+                    return mockLogoImage as unknown as HTMLImageElement;
+                }
             }
             // Create a simple element directly instead of calling the original method
             const element = document.createElementNS(
@@ -476,7 +491,7 @@ describe("SVG to Image Conversion", () => {
         vi.restoreAllMocks();
     });
 
-    it("should convert SVG string to image with correct dimensions", () => {
+    it("should convert SVG string to image with correct dimensions", async () => {
         const width = 800;
         const height = 600;
         const svgString = "<svg></svg>";
@@ -488,13 +503,25 @@ describe("SVG to Image Conversion", () => {
         expect(mockCanvas.width).toBe(width);
         expect(mockCanvas.height).toBe(height);
 
-        // Check if image source was set correctly
+        // Check if main image source was set correctly
         expect(mockImage.src).toContain("data:image/svg+xml;base64,");
 
-        // Simulate image load
-        const onload = mockImage.onload;
-        if (typeof onload === "function") {
-            onload.call(mockImage);
+        // Simulate main image load first
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        // After main image loads, the logo image should be created and its src set
+        // Check if logo image source was set correctly
+        expect(mockLogoImage.src).toBe(
+            "/public/img/musigree logo with website v3.png",
+        );
+
+        // Simulate logo image load after main image loads
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            logoImageOnload.call(mockLogoImage);
         }
 
         // Verify canvas operations
