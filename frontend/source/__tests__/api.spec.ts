@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
     fetchAPINetwork,
     fetchAPIRandom,
-    fetchAPIRadial,
-    fetchAPIEntityDetails,
+    fetchAPIRelations,
+    fetchAPIEntity,
 } from "../api";
 import { getSelectedRoles } from "../roles";
 import type { Mock } from "vitest";
@@ -248,8 +248,8 @@ describe("API Functions", () => {
         });
     });
 
-    describe("fetchAPIRadial", () => {
-        it("should fetch radial data with correct URL", async () => {
+    describe("fetchAPIRelations", () => {
+        it("should fetch relations data with correct URL", async () => {
             // Arrange
             const mockResponse: RelationsData = {
                 /* mock RelationsData structure */
@@ -260,7 +260,7 @@ describe("API Functions", () => {
             });
 
             // Act
-            const result = await fetchAPIRadial("artist-1");
+            const result = await fetchAPIRelations("artist-1");
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith("/api/artist/relations/1");
@@ -275,7 +275,7 @@ describe("API Functions", () => {
             });
 
             // Act & Assert
-            await expect(fetchAPIRadial("artist-1")).rejects.toThrow(
+            await expect(fetchAPIRelations("artist-1")).rejects.toThrow(
                 "Bad Request",
             );
         });
@@ -289,14 +289,14 @@ describe("API Functions", () => {
             });
 
             // Act
-            await fetchAPIRadial("label-123");
+            await fetchAPIRelations("label-123");
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith("/api/label/relations/123");
         });
     });
 
-    describe("fetchAPIEntityDetails", () => {
+    describe("fetchAPIEntity", () => {
         it("should fetch entity details with correct URL", async () => {
             // Arrange
             const mockResponse: EntityData = {
@@ -316,7 +316,7 @@ describe("API Functions", () => {
             });
 
             // Act
-            const result = await fetchAPIEntityDetails("artist-1");
+            const result = await fetchAPIEntity("artist-1");
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith("/api/artist/details/1");
@@ -342,7 +342,7 @@ describe("API Functions", () => {
             });
 
             // Act
-            const result = await fetchAPIEntityDetails("label-456");
+            const result = await fetchAPIEntity("label-456");
 
             // Assert
             expect(mockFetch).toHaveBeenCalledWith("/api/label/details/456");
@@ -357,7 +357,7 @@ describe("API Functions", () => {
             });
 
             // Act & Assert
-            await expect(fetchAPIEntityDetails("artist-999")).rejects.toThrow(
+            await expect(fetchAPIEntity("artist-999")).rejects.toThrow(
                 "Not Found",
             );
         });
@@ -367,7 +367,7 @@ describe("API Functions", () => {
             mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
             // Act & Assert
-            await expect(fetchAPIEntityDetails("artist-1")).rejects.toThrow(
+            await expect(fetchAPIEntity("artist-1")).rejects.toThrow(
                 "Network error",
             );
         });
@@ -466,7 +466,7 @@ describe("API Functions", () => {
                 status: 403,
             });
 
-            await expect(fetchAPIRadial("artist-1")).rejects.toThrow(
+            await expect(fetchAPIRelations("artist-1")).rejects.toThrow(
                 "Forbidden",
             );
         });

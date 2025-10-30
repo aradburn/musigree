@@ -51,14 +51,14 @@ const getRandomURL = (roles: string[]): string => {
     return url;
 };
 
-const getEntityRelationsURL = (entityKey: NodeKey): string => {
+const getRelationsURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
     return API.ENDPOINTS.RELATIONS(entityType, entityId);
 };
 
-const getEntityDetailsURL = (entityKey: NodeKey): string => {
+const getEntityURL = (entityKey: NodeKey): string => {
     const [entityType, entityId] = entityKey.split("-");
-    return API.ENDPOINTS.DETAILS(entityType, entityId);
+    return API.ENDPOINTS.ENTITY(entityType, entityId);
 };
 
 export const fetchAPINetwork = async (
@@ -82,20 +82,20 @@ export const fetchAPIRandom = async (
     return (await response.json()) as NetworkCenter;
 };
 
-export const fetchAPIRadial = async (
+export const fetchAPIRelations = async (
     entityKey: NodeKey,
 ): Promise<RelationsData> => {
-    const url = getEntityRelationsURL(entityKey);
+    const url = getRelationsURL(entityKey);
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(response.statusText);
     return (await response.json()) as RelationsData;
 };
 
-export const fetchAPIEntityDetails = async (
+export const fetchAPIEntity = async (
     entityKey: NodeKey,
 ): Promise<EntityData> => {
-    const url = getEntityDetailsURL(entityKey);
+    const url = getEntityURL(entityKey);
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(response.statusText);
