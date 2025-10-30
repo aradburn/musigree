@@ -38,6 +38,14 @@ export class ViewingNetworkState extends BaseState {
     }
 
     /**
+     * Handle a request to get entity data
+     */
+    requestEntity(context: StateContext, entityKey: NodeKey): void {
+        console.log("VIEWING-NETWORK request-entity");
+        context.actions.requestEntity(entityKey);
+    }
+
+    /**
      * Handle a request to get a random entity
      */
     requestRandom(context: StateContext): void {

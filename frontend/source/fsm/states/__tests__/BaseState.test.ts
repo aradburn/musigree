@@ -124,7 +124,7 @@ describe("BaseState", () => {
             };
 
             // Act
-            testState.receivedRadial(mockContext, mockData);
+            testState.receivedRelations(mockContext, mockData);
 
             // Assert - should not throw and not call any actions
             expect(mockActions.handleError).not.toHaveBeenCalled();

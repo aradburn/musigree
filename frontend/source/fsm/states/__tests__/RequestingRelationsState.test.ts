@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RequestingRadialState } from "../RequestingRadialState";
+import { RequestingRelationsState } from "../RequestingRelationsState";
 import type { StateContext, Actions } from "../../State";
 import type { RelationsData } from "../../../relations";
 import type { TransitionFunction } from "../../AbstractFSM";
 
-describe("RequestingRadialState", () => {
-    let state: RequestingRadialState;
+describe("RequestingRelationsState", () => {
+    let state: RequestingRelationsState;
     let mockActions: Actions;
     let mockTransition: TransitionFunction;
     let mockContext: StateContext;
@@ -17,7 +17,7 @@ describe("RequestingRadialState", () => {
             loadInlineData: vi.fn(),
             pushState: vi.fn(),
             requestNetwork: vi.fn(),
-            requestRadial: vi.fn(),
+            requestRelations: vi.fn(),
             requestRandom: vi.fn(),
             showNetwork: vi.fn(),
             showRadial: vi.fn(),
@@ -34,12 +34,12 @@ describe("RequestingRadialState", () => {
         };
 
         // Create a new state instance
-        state = new RequestingRadialState();
+        state = new RequestingRelationsState();
     });
 
     describe("Instance creation", () => {
         it("should be able to create an instance", () => {
-            expect(state).toBeInstanceOf(RequestingRadialState);
+            expect(state).toBeInstanceOf(RequestingRelationsState);
         });
     });
 
@@ -61,7 +61,7 @@ describe("RequestingRadialState", () => {
 
             // Assert
             expect(consoleSpy).toHaveBeenCalledWith(
-                "REQUESTING-RADIAL _onEnter",
+                "REQUESTING-RELATIONS _onEnter",
             );
         });
     });
@@ -84,7 +84,7 @@ describe("RequestingRadialState", () => {
 
             // Assert
             expect(consoleSpy).toHaveBeenCalledWith(
-                "REQUESTING-RADIAL _onExit",
+                "REQUESTING-RELATIONS _onExit",
             );
         });
     });
@@ -102,7 +102,7 @@ describe("RequestingRadialState", () => {
         });
     });
 
-    describe("receivedRadial method", () => {
+    describe("receivedRelations method", () => {
         it("should call showRadial with the provided data", () => {
             // Arrange
             const mockData: RelationsData = {
@@ -110,7 +110,7 @@ describe("RequestingRadialState", () => {
             };
 
             // Act
-            state.receivedRadial(mockContext, mockData);
+            state.receivedRelations(mockContext, mockData);
 
             // Assert
             expect(mockActions.showRadial).toHaveBeenCalledWith(mockData);
@@ -124,11 +124,11 @@ describe("RequestingRadialState", () => {
             };
 
             // Act
-            state.receivedRadial(mockContext, mockData);
+            state.receivedRelations(mockContext, mockData);
 
             // Assert
             expect(consoleSpy).toHaveBeenCalledWith(
-                "REQUESTING-RADIAL received-radial",
+                "REQUESTING-RELATIONS received-relations",
             );
         });
     });
