@@ -190,6 +190,7 @@ vi.mock("../../api", () => ({
         },
     }),
     fetchAPIRelations: vi.fn().mockResolvedValue({}),
+    fetchAPIEntity: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("../../messages", () => ({

@@ -113,7 +113,13 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     handle(
         event: string,
-        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+        data:
+            | NetworkData
+            | RelationsData
+            | EntityData
+            | NetworkCenter
+            | NodeKey
+            | null,
         pushHistory: boolean,
         fixed: boolean,
     ): void {
@@ -552,6 +558,11 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     updateEntityDetails(data: EntityData): void {
         console.log("FSM updateEntityDetails", data);
+        const event = new CustomEvent<EntityData>(
+            "musigree:entity-details-updated",
+            { detail: data },
+        );
+        window.dispatchEvent(event);
     }
 
     /**

@@ -54,6 +54,14 @@ export class ViewingNetworkState extends BaseState {
     }
 
     /**
+     * Handle a relations data received event
+     */
+    receivedEntity(context: StateContext, data: EntityData): void {
+        console.log("VIEWING-NETWORK received-entity");
+        context.actions.updateEntityDetails(data);
+    }
+
+    /**
      * Handle a request to show the radial view
      */
     showRadial(context: StateContext): void {

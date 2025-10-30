@@ -24,7 +24,13 @@ export interface FSMInstance {
     state: FSMStateType;
     handle(
         event: string,
-        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+        data:
+            | NetworkData
+            | RelationsData
+            | EntityData
+            | NetworkCenter
+            | NodeKey
+            | null,
         pushHistory: boolean,
         fixed: boolean,
     ): void;
