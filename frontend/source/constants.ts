@@ -178,7 +178,7 @@ export const API = {
         RANDOM: (): string => `/api/random`,
         RELATIONS: (entityType: string, entityId: string): string =>
             `/api/${entityType}/relations/${entityId}`,
-        DETAILS: (entityType: string, entityId: string): string =>
+        ENTITY: (entityType: string, entityId: string): string =>
             `/api/${entityType}/details/${entityId}`,
     },
     RANDOM_MAX: 1000000,
