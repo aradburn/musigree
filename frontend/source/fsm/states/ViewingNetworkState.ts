@@ -5,6 +5,7 @@
 import type { NodeKey } from "../../network/data";
 import type { StateContext } from "../State";
 import { BaseState } from "./BaseState";
+import type { EntityData } from "../../entities";
 
 /**
  * State when the user is viewing the network diagram
