@@ -2,7 +2,8 @@
 import React from "react";
 import type { EntityData } from "../../entities";
 import { capitalCase } from "text-case";
-import { expandCommas } from "../../utils";
+import { expandCommas, expandProfileURLs, sanitizedData } from "../../utils";
+import DOMPurify from "dompurify";
 
 /**
  * Details component provides a panel display for details.
@@ -10,23 +11,37 @@ import { expandCommas } from "../../utils";
 export const Details: React.FC<{ entity?: EntityData | null }> = ({
     entity,
 }) => {
-    const relationCounts = entity?.relation_counts ?? {};
     const hasEntity = Boolean(entity);
     const hasAliases = entity?.entities?.aliases;
     const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : [""];
     const aliasesStr = aliases.join(", ");
-    const hasAltNames = entity?.metadata?.name_variations;
-    const altNames = hasAltNames ? entity?.metadata?.name_variations : [""];
+    const nameVariations = entity?.metadata?.name_variations;
+    const altNames = Array.isArray(nameVariations) ? nameVariations : [""];
     const altNamesStr = altNames.join(", ");
-    const hasRealName = entity?.metadata?.real_name;
-    const realNameStr = hasRealName ? entity?.metadata?.real_name : "";
-    const hasProfile = entity?.metadata?.profile;
-    const profileStr = hasProfile ? entity?.metadata?.profile : "";
-    const hasURLs = entity?.metadata?.urls;
-    const urlListItems = hasURLs ? entity?.metadata?.urls.map((url, i) => <li key={i}>{url}</li>) : "";
+    const realName = entity?.metadata?.real_name;
+    const realNameStr = typeof realName === "string" ? realName : "";
+    const profile = entity?.metadata?.profile;
+    const profileStr = typeof profile === "string" ? expandProfileURLs(profile) : "";
+    const urls = entity?.metadata?.urls;
+    const urlListItems = Array.isArray(urls)
+        ? urls
+              .filter((url): url is string => typeof url === "string")
+              .map((url, i) => (
+                  <li key={i}>
+                      <a href={DOMPurify.sanitize(url)} target="_blank" rel="noopener noreferrer">
+                          {url}
+                      </a>
+                  </li>
+              ))
+        : "";
 
     return (
-        <div className="flex-grow-1 overflow-scroll details-panel mx-auto pe-3 bg-secondary-subtle">
+        <div
+            className="details-panel
+                        flex-grow-1 overflow-scroll
+                        mx-auto pe-3
+                        bg-secondary-subtle"
+        >
             {/* Details panel */}
             <div className="details-title h4">
                 <span>{hasEntity ? entity?.name : "Details"}</span>
@@ -34,19 +49,13 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
             <div className="details-content">
                 <dl className="row">
                     <dt className="col-sm-3">Aliases</dt>
-                    <dd className="col-sm-9">
-                        {hasEntity ? aliasesStr : "-"}
-                    </dd>
+                    <dd className="col-sm-9">{aliasesStr}</dd>
 
                     <dt className="col-sm-3">Real Name</dt>
-                    <dd className="col-sm-9">
-                        {hasEntity ? realNameStr : "-"}
-                    </dd>
+                    <dd className="col-sm-9">{realNameStr}</dd>
 
                     <dt className="col-sm-3">Alternative Names</dt>
-                    <dd className="col-sm-9">
-                        {hasEntity ? altNamesStr : "-"}
-                    </dd>
+                    <dd className="col-sm-9">{altNamesStr}</dd>
 
                     <dt className="col-sm-3">Type</dt>
                     <dd className="col-sm-9">
@@ -62,22 +71,28 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
 
                     <dt className="col-sm-3">Genres</dt>
                     <dd className="col-sm-9">
-                        {hasEntity && entity?.genres ? expandCommas(entity.genres) : "-"}
+                        {hasEntity && entity?.genres
+                            ? expandCommas(entity.genres)
+                            : "-"}
                     </dd>
 
                     <dt className="col-sm-3">Styles</dt>
                     <dd className="col-sm-9">
-                        {hasEntity && entity?.styles ? expandCommas(entity.styles) : "-"}
+                        {hasEntity && entity?.styles
+                            ? expandCommas(entity.styles)
+                            : "-"}
                     </dd>
 
                     <dt className="col-sm-3">Profile</dt>
-                    <dd className="col-sm-9">
-                        {hasEntity ? profileStr : "-"}
-                    </dd>
+                    <dd className="col-sm-9" dangerouslySetInnerHTML={sanitizedData(profileStr)}></dd>
 
-                    <dt className="col-sm-3">URLs</dt>
+                    <dt className="col-sm-3">External Links</dt>
                     <dd className="col-sm-9">
-                        {hasURLs ? <ul className="ps-0">{urlListItems}</ul> : "-"}
+                        {Array.isArray(urls) && urls.length > 0 ? (
+                            <ul className="ps-0">{urlListItems}</ul>
+                        ) : (
+                            "-"
+                        )}
                     </dd>
                 </dl>
             </div>
