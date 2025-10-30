@@ -46,7 +46,8 @@
         "react-arborist": "^3.4.3",
         "react-bootstrap": "^2.10.10",
         "react-dom": "^19.2.0",
-        "text-case": "1.2.9"
+        "text-case": "1.2.9",
+        "dompurify": "3.3.0"
     },
     "devDependencies": {
         "@playwright/test": "^1.56.0",
