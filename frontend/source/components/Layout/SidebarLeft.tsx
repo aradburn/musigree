@@ -28,7 +28,7 @@ export const SidebarLeft: React.FC = () => {
 
     return (
         <div
-            className="sidebar sidebar-left d-flex p-2 h-100
+            className="sidebar sidebar-left col-auto flex-fill d-flex p-2 h-100
                         flex-sm-column flex-xl-column
                         justify-content-evenly
                         justify-content-sm-start justify-content-xl-start

@@ -1,10 +1,11 @@
 /** @jsxImportSource react */
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import { Container, Row } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
 import { SidebarLeft } from "./Layout/SidebarLeft";
+import { SidebarRight } from "./Layout/SidebarRight";
 import { HelpModal, WelcomeModal, WhoModal } from "./Modals/index";
 import { NetworkView } from "./Visualization/NetworkView";
 import { LoadingAnimation } from "./Visualization";
@@ -12,6 +13,7 @@ import { RolesOverlay, EntityDetailsOverlay } from "./Overlays";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
 import { LoadingProvider } from "../contexts/LoadingContext";
+import { EntityProvider } from "../contexts/EntityContext";
 import type { TreeConfig } from "../roles";
 
 // Extending the Window interface is handled in init.ts already
@@ -137,64 +139,59 @@ const App: React.FC = (): React.ReactElement => {
         <WindowProvider>
             <NetworkProvider>
                 <LoadingProvider>
-                    <Container fluid className="h-100 d-flex flex-column">
-                        <Row>
-                            <Header
-                                onShowHelp={handleShowHelp}
-                                onShowWho={handleShowWho}
-                            />
-                        </Row>
+                    <EntityProvider>
+                        <Container fluid className="h-100 d-flex flex-column">
+                            <Row>
+                                <Header
+                                    onShowHelp={handleShowHelp}
+                                    onShowWho={handleShowWho}
+                                />
+                            </Row>
 
-                        <Row className="flex-grow-1" style={{ minHeight: 0 }}>
-                            <Col
-                                sm={2}
-                                md={2}
-                                xl={2}
-                                xxl={1}
-                                className="h-100 p-0 flex-column
-                                           d-sm-flex d-none"
+                            <Row
+                                className="flex-grow-1 flex-nowrap"
+                                style={{ minHeight: 0 }}
                             >
                                 <SidebarLeft />
-                            </Col>
 
-                            <Col
-                                xs={12}
-                                sm={10}
-                                md={10}
-                                xl={10}
-                                xxl={11}
-                                className="h-100 px-0 d-flex flex-column
-                                           flex-grow-1 flex-shrink-1"
-                            >
-                                <NetworkView />
-                                <LoadingAnimation />
-                            </Col>
+                                <div className="h-100 px-0 flex-grow-1 col-auto">
+                                    <NetworkView />
+                                    <LoadingAnimation />
+                                </div>
 
-                            {/* Use the React components for overlays */}
-                            <RolesOverlay
-                                roles={rolesConfig}
-                                show={showRolesOverlay}
-                                onHide={(): void => setShowRolesOverlay(false)}
+                                <SidebarRight />
+
+                                {/* Use the React components for overlays */}
+                                <RolesOverlay
+                                    roles={rolesConfig}
+                                    show={showRolesOverlay}
+                                    onHide={(): void =>
+                                        setShowRolesOverlay(false)
+                                    }
+                                />
+                                <EntityDetailsOverlay
+                                    show={showEntityDetailsOverlay}
+                                    onHide={(): void =>
+                                        setShowEntityDetailsOverlay(false)
+                                    }
+                                />
+                            </Row>
+
+                            <HelpModal
+                                show={showHelpModal}
+                                onHide={handleHideHelp}
                             />
-                            <EntityDetailsOverlay
-                                show={showEntityDetailsOverlay}
-                                onHide={(): void =>
-                                    setShowEntityDetailsOverlay(false)
-                                }
+                            <WhoModal
+                                show={showWhoModal}
+                                onHide={handleHideWho}
                             />
-                        </Row>
-
-                        <HelpModal
-                            show={showHelpModal}
-                            onHide={handleHideHelp}
-                        />
-                        <WhoModal show={showWhoModal} onHide={handleHideWho} />
-                        <WelcomeModal
-                            show={showWelcomeModal}
-                            onHide={handleHideWelcome}
-                            isReturnVisitor={isReturnVisitor}
-                        />
-                    </Container>
+                            <WelcomeModal
+                                show={showWelcomeModal}
+                                onHide={handleHideWelcome}
+                                isReturnVisitor={isReturnVisitor}
+                            />
+                        </Container>
+                    </EntityProvider>
                 </LoadingProvider>
             </NetworkProvider>
         </WindowProvider>
