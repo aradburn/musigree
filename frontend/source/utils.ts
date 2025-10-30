@@ -18,3 +18,8 @@ export const debounce = <T extends (...args: Parameters<T>) => void>(
         timeout = window.setTimeout(() => func(...args), wait);
     };
 };
+
+export const expandCommas = (s: string): string => {
+    const pattern = /(\S),(\S)/g;
+    return s.replace(pattern, "$1, $2");
+};
