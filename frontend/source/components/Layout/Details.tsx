@@ -2,7 +2,12 @@
 import React from "react";
 import type { EntityData } from "../../entities";
 import { capitalCase } from "text-case";
-import { expandCommas, expandProfileURLs, sanitizedData } from "../../utils";
+import {
+    expandCommas,
+    expandProfileURLs,
+    expandProfileReferences,
+    sanitizedData,
+} from "../../utils";
 import DOMPurify from "dompurify";
 
 /**
@@ -13,22 +18,30 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
 }) => {
     const hasEntity = Boolean(entity);
     const hasAliases = entity?.entities?.aliases;
-    const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : [""];
+    const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : ["-"];
     const aliasesStr = aliases.join(", ");
     const nameVariations = entity?.metadata?.name_variations;
-    const altNames = Array.isArray(nameVariations) ? nameVariations : [""];
+    const altNames = Array.isArray(nameVariations) ? nameVariations : ["-"];
     const altNamesStr = altNames.join(", ");
     const realName = entity?.metadata?.real_name;
-    const realNameStr = typeof realName === "string" ? realName : "";
+    const realNameStr = typeof realName === "string" ? realName : "-";
     const profile = entity?.metadata?.profile;
-    const profileStr = typeof profile === "string" ? expandProfileURLs(profile) : "";
+    const profileStr =
+        typeof profile === "string"
+            ? expandProfileURLs(expandProfileReferences(profile))
+            : "";
     const urls = entity?.metadata?.urls;
     const urlListItems = Array.isArray(urls)
         ? urls
               .filter((url): url is string => typeof url === "string")
               .map((url, i) => (
                   <li key={i}>
-                      <a href={DOMPurify.sanitize(url)} target="_blank" rel="noopener noreferrer">
+                      <a
+                          href={DOMPurify.sanitize(url)}
+                          class="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                      >
                           {url}
                       </a>
                   </li>
@@ -54,7 +67,7 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                     <dt className="col-sm-3">Real Name</dt>
                     <dd className="col-sm-9">{realNameStr}</dd>
 
-                    <dt className="col-sm-3">Alternative Names</dt>
+                    <dt className="col-sm-3">Alt Names</dt>
                     <dd className="col-sm-9">{altNamesStr}</dd>
 
                     <dt className="col-sm-3">Type</dt>
@@ -84,7 +97,10 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                     </dd>
 
                     <dt className="col-sm-3">Profile</dt>
-                    <dd className="col-sm-9" dangerouslySetInnerHTML={sanitizedData(profileStr)}></dd>
+                    <dd
+                        className="col-sm-9"
+                        dangerouslySetInnerHTML={sanitizedData(profileStr)}
+                    ></dd>
 
                     <dt className="col-sm-3">External Links</dt>
                     <dd className="col-sm-9">
