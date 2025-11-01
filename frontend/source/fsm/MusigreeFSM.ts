@@ -41,7 +41,7 @@ import { RequestingNetworkState } from "./states/RequestingNetworkState";
 import { RequestingRelationsState } from "./states/RequestingRelationsState";
 import { RequestingRandomState } from "./states/RequestingRandomState";
 import { UninitializedState } from "./states/UninitializedState";
-import { debounce } from "../utils";
+import debounce from "debounce";
 import {
     AbstractFSM,
     type EventData,
@@ -286,7 +286,10 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             }
         }, INIT.DEBOUNCE_DELAY);
 
-        window.addEventListener(FSM.EVENTS.RESIZE, handleResize);
+        window.addEventListener(
+            FSM.EVENTS.RESIZE,
+            handleResize as EventListener,
+        );
 
         // Handle SVG mousedown events
         const svgDocument = document.getElementById("svg");

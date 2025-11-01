@@ -33,9 +33,6 @@ interface CustomEventInit {
     detail?: unknown;
 }
 
-// Define a proper type for the debounce function to avoid the Function type
-type AnyFunction = (...args: any[]) => any;
-
 // Define proper error type
 type ErrorWithMessage = Error & { message: string };
 
@@ -103,11 +100,6 @@ vi.mock("../fsm", () => ({
 vi.mock("../messages", () => ({
     showMessage: vi.fn(),
     clearMessages: vi.fn(),
-}));
-
-// Mock original debounce to execute immediately for testing
-vi.mock("../utils", () => ({
-    debounce: vi.fn().mockImplementation((fn: AnyFunction) => fn),
 }));
 
 // Mock React context

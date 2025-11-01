@@ -197,10 +197,6 @@ vi.mock("../../messages", () => ({
     showMessage: vi.fn(),
 }));
 
-vi.mock("../../utils", () => ({
-    debounce: vi.fn().mockImplementation((fn) => fn as unknown),
-}));
-
 // Define the DocumentMock type to avoid 'global' reference issues
 type DocumentMock = {
     getElementById: ReturnType<typeof vi.fn>;
