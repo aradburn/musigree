@@ -179,9 +179,9 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
                         continue;
 
                     const networkSelectorText = rule.selectorText.includes(
-                        "#networkLayer ",
+                        "#network-layer ",
                     )
-                        ? rule.selectorText.replace("#networkLayer ", "")
+                        ? rule.selectorText.replace("#network-layer ", "")
                         : rule.selectorText;
                     if (selectorTextArr.has(networkSelectorText)) {
                         const varFound = rule.cssText.match(varRegex);

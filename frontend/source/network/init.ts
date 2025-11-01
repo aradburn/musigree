@@ -51,12 +51,12 @@ function getInitialTransform(): d3.ZoomTransform {
 export const initNetwork = (svgSelector: string): void => {
     const svgElement = d3.select(svgSelector);
 
-    const root = svgElement.append("g").attr("id", "networkLayer");
+    const root = svgElement.append("g").attr("id", "network-layer");
     networkManager.layers.root = root;
-    networkManager.layers.halo = root.append("g").attr("id", "haloLayer");
-    networkManager.layers.link = root.append("g").attr("id", "linkLayer");
-    networkManager.layers.node = root.append("g").attr("id", "nodeLayer");
-    networkManager.layers.text = root.append("g").attr("id", "textLayer");
+    networkManager.layers.halo = root.append("g").attr("id", "halo-layer");
+    networkManager.layers.link = root.append("g").attr("id", "link-layer");
+    networkManager.layers.node = root.append("g").attr("id", "node-layer");
+    networkManager.layers.text = root.append("g").attr("id", "text-layer");
 
     const w = musigreeManager.svgDimensions[0];
     const h = musigreeManager.svgDimensions[1];

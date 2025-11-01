@@ -259,7 +259,7 @@ a[href^="https://"]::after
 
 /* NETWORK */
 
-#networkLayer {
+#network-layer {
     .link {
         opacity: 0.7;
 
@@ -483,7 +483,7 @@ a[href^="https://"]::after
 
 /* RADIAL */
 
-#relationsLayer {
+#relations-layer {
     g.segment {
         &.selected {
             path.arc {
@@ -533,7 +533,7 @@ a[href^="https://"]::after
 
 /* LOADING */
 
-#loadingLayer {
+#loading-layer {
     path {
         &.arc {
             opacity: 0.75;
