@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import React, { createContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { debounce } from "../utils";
+import debounce from "debounce";
 import { DOM_IDS, INIT, SVG } from "../constants";
 import { musigreeManager } from "../core";
 import { ResizeEvent } from "../network/events";
@@ -90,8 +90,14 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
 
             // Dispatch resize event
             window.dispatchEvent(new ResizeEvent());
-        } catch (error) {
-            console.error("Error during window resize:", error);
+        } catch (error: unknown) {
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : typeof error === "string"
+                      ? error
+                      : JSON.stringify(error);
+            console.error("Error during window resize:", errorMessage);
         }
     }, INIT.DEBOUNCE_DELAY);
 
@@ -101,11 +107,11 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         setState(calculateDimensions());
 
         // Add resize event listener
-        window.addEventListener("resize", handleResize);
+        window.addEventListener("resize", handleResize as () => void);
 
         // Clean up event listener on unmount
         return (): void => {
-            window.removeEventListener("resize", handleResize);
+            window.removeEventListener("resize", handleResize as () => void);
         };
     }, []);
 

@@ -8,7 +8,7 @@
 import * as d3 from "d3";
 import { symbol, symbolCross, now } from "d3";
 
-import { debounce } from "../utils";
+import debounce from "debounce";
 import { getNodeColorClass } from "../color";
 import { networkManager } from "../core/singletons";
 import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
@@ -329,11 +329,11 @@ export const onNodeExit = (nodeExit: NodeExitSelection): void => {
  * Raises the hovered node to the top of the visualization
  */
 export const onNodeMouseOver = (event: MouseEvent, d: SimNode): void => {
-    const debounceHandler = debounce((_self: unknown, _d: SimNode) => {
+    const debounceHandler = debounce((_d: SimNode) => {
         //console.log("node: ", d);
     }, NODE_DEBOUNCE_TIME);
 
-    debounceHandler(this, d);
+    debounceHandler(d);
 
     // Add a safety check to ensure networkStore.layers.node exists before calling selectAll
     if (networkManager.layers?.node) {
