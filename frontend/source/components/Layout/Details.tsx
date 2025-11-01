@@ -38,7 +38,7 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                   <li key={i}>
                       <a
                           href={DOMPurify.sanitize(url)}
-                          class="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
+                          className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
                           target="_blank"
                           rel="noopener noreferrer"
                       >

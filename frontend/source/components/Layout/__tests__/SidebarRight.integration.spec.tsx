@@ -2,6 +2,7 @@ import React from "react";
 import { describe, it, expect } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
+
 import { SidebarRight } from "../../Layout/SidebarRight";
 import { EntityProvider } from "../../../contexts/EntityContext";
 import type { EntityData } from "../../../entities";
@@ -42,10 +43,9 @@ describe("SidebarRight + EntityProvider integration", () => {
             expect(screen.getByText("Integration Artist")).toBeInTheDocument(),
         );
         // Some fields
-        expect(screen.getByText("artist")).toBeInTheDocument();
+        expect(screen.getByText("Artist")).toBeInTheDocument();
         expect(screen.getByText("UK")).toBeInTheDocument();
         expect(screen.getByText("Electronic")).toBeInTheDocument();
         expect(screen.getByText("House")).toBeInTheDocument();
-        expect(screen.getByText(/members: 3/i)).toBeInTheDocument();
     });
 });

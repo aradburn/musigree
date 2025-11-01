@@ -11,13 +11,10 @@ export const SidebarRight: React.FC = () => {
     const { state } = useEntity();
     return (
         <div
-            className="sidebar sidebar-right col-auto flex-fill ms-auto d-flex p-2 h-100
+            className="sidebar sidebar-right col-auto flex-shrink-0 ms-auto d-flex p-2 h-100
                         gap-2
-                        flex-sm-column flex-xl-column
-                        justify-content-evenly
-                        justify-content-sm-start justify-content-xl-start
-                        align-items-start
-                        align-items-sm-start align-items-xl-start
+                        flex-column
+
                         bg-secondary-subtle text-light"
         >
             {/* Details panel */}

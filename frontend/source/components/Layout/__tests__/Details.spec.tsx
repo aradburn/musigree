@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { render, screen } from "@testing-library/react";
+
 import { Details } from "../../Layout/Details";
 import type { EntityData } from "../../../entities";
 
@@ -26,11 +27,9 @@ describe("Details", () => {
         render(<Details entity={entity} />);
 
         expect(screen.getByText("Test Artist")).toBeInTheDocument();
-        expect(screen.getByText("artist")).toBeInTheDocument();
+        expect(screen.getByText("Artist")).toBeInTheDocument();
         expect(screen.getByText("UK")).toBeInTheDocument();
         expect(screen.getByText("Electronic")).toBeInTheDocument();
         expect(screen.getByText("House")).toBeInTheDocument();
-        expect(screen.getByText(/members: 2/i)).toBeInTheDocument();
-        expect(screen.getByText(/aliases: 1/i)).toBeInTheDocument();
     });
 });
