@@ -301,7 +301,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                     this.handle("show-network", null, false, false);
                 }
                 this.hideRolesOverlay();
-                this.hideEntityDetailsOverlay();
             });
         }
 
@@ -320,29 +319,11 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
     }
 
     /**
-     * Shows the entity details panel overlay
-     */
-    showEntityDetailsOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:show-entity-details-overlay");
-        window.dispatchEvent(event);
-    }
-
-    /**
      * Hides the roles panel overlay
      */
     hideRolesOverlay(): void {
         // Dispatch the event for React to handle
         const event = new CustomEvent("musigree:hide-roles-overlay");
-        window.dispatchEvent(event);
-    }
-
-    /**
-     * Hides the entity details panel overlay
-     */
-    hideEntityDetailsOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:hide-entity-details-overlay");
         window.dispatchEvent(event);
     }
 

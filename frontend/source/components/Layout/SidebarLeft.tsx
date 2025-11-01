@@ -9,11 +9,6 @@ import ForceControls from "../Visualization/ForceControls";
  * It uses the NetworkContext to control the D3.js force layout.
  */
 export const SidebarLeft: React.FC = () => {
-    const handleShowDetails = (): void => {
-        window.dispatchEvent(
-            new CustomEvent("musigree:show-entity-details-overlay"),
-        );
-    };
 
     const handleShowRoles = (): void => {
         window.dispatchEvent(new CustomEvent("musigree:show-roles-overlay"));
@@ -36,16 +31,6 @@ export const SidebarLeft: React.FC = () => {
                         align-items-sm-start align-items-xl-start
                         bg-secondary-subtle text-light"
         >
-            {/* Details button */}
-            <div
-                className="navbar-text px-sm-0 px-2"
-                role="button"
-                onClick={handleShowDetails}
-            >
-                <i className="fs-5 bi-eye"></i>
-                <span className="ms-1 d-none d-sm-inline">DETAILS</span>
-            </div>
-
             {/* Roles button */}
             <div
                 className="navbar-text px-sm-0 px-2"
