@@ -24,39 +24,31 @@ export const clamp = (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
 };
 
-/**
- * Debounces a function call
- */
-export const debounce = <T extends (...args: Parameters<T>) => void>(
-    func: T,
-    wait: number,
-): ((...args: Parameters<T>) => void) => {
-    let timeout: number | null = null;
-    return (...args: Parameters<T>) => {
-        if (timeout) window.clearTimeout(timeout);
-        timeout = window.setTimeout(() => func(...args), wait);
-    };
-};
-
 export const createBadge = (str: string): string => {
-    return "<span class=\"badge px-1 py-0 text-black bg-success-subtle bg-opacity-40 bg-gradient\">" + str + "</span>";
+    return (
+        '<span class="badge px-1 py-0 text-black bg-success-subtle bg-opacity-40 bg-gradient">' +
+        str +
+        "</span>"
+    );
 };
 
 export const expandCommas = (str: string): string => {
-    const pattern = /(\S),(\S)/g;
-    return str.replace(pattern, "$1, $2");
+    // Replace commas that are not already followed by a space
+    // Match comma followed by non-whitespace character
+    return str.replace(/,(\S)/g, ", $1");
 };
 
 export const expandItalics = (str: string): string => {
-    const pattern = /\[i](.*?)\[\/i]/g;
-    return str.replace(pattern, "<b><i>\"$1\"</i></b>");
+    const pattern = /\[[iI](.*?)\[\/[iI]/g;
+    return str.replace(pattern, '<b><i>"$1"</i></b>');
 };
 
 export const expandProfileURLs = (str: string): string => {
     // Converts a text url in square brackets into a sanitized version
     // eg. [url=http://www.discogs.com/artist/Acid+Mothers+Temple]Acid Mothers Temple[/url]
     // <a href=$1 target="_blank" rel="noopener noreferrer">$2</a>
-    const pattern = /\[url=(.*)](.*)\[\/url]/g;
+    // Use non-greedy matching to handle multiple URLs correctly
+    const pattern = /\[url=(.*?)](.*?)\[\/url]/g;
     return str.replace(
         pattern,
         '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>',
@@ -65,62 +57,60 @@ export const expandProfileURLs = (str: string): string => {
 
 export const expandArtistLinkReferences = (str: string): string => {
     // Converts a text ref [a12345] into the referred to artist name
-    const regexp = /\[a\d+]/g;
-    let match;
+    const regexp = /\[[aA]\d+]/g;
+    const matches = Array.from(str.matchAll(regexp));
     let expanded = String(str);
-    while ((match = regexp.exec(str)) !== null) {
-        console.log("Found Artist: ", match[0]);
-        const entity_key = "artist-" + match[0].slice(2, -1);
-        console.log("entity_key: ", entity_key);
-        const value = networkManager.data.nodeMap.get(entity_key);
-        console.log("value: ", value);
-        console.log("name: ", value?.name);
-        expanded = expanded.replace(match[0], value?.name);
+    for (const match of matches) {
+        if (match[0]) {
+            const entity_key = "artist-" + match[0].slice(2, -1);
+            const value = networkManager.data.nodeMap.get(entity_key);
+            const replacement = value?.name ?? match[0];
+            expanded = expanded.replace(match[0], replacement);
+        }
     }
     return expanded;
 };
 
 export const expandLabelLinkReferences = (str: string): string => {
     // Converts a text ref [l12345] into the referred to label name
-    const regexp = /\[l\d+]/g;
-    let match;
+    const regexp = /\[[lL]\d+]/g;
+    const matches = Array.from(str.matchAll(regexp));
     let expanded = String(str);
-    while ((match = regexp.exec(str)) !== null) {
-        console.log("Found Label: ", match[0]);
-        const entity_key = "label-" + match[0].slice(2, -1);
-        console.log("entity_key: ", entity_key);
-        const value = networkManager.data.nodeMap.get(entity_key);
-        console.log("value: ", value);
-        console.log("name: ", value?.name);
-        expanded = expanded.replace(match[0], value?.name);
+    for (const match of matches) {
+        if (match[0]) {
+            const entity_key = "label-" + match[0].slice(2, -1);
+            const value = networkManager.data.nodeMap.get(entity_key);
+            const replacement = value?.name ?? match[0];
+            expanded = expanded.replace(match[0], replacement);
+        }
     }
     return expanded;
 };
 
 export const expandArtistTextReferences = (str: string): string => {
-    // Converts an artist reference [a=Some Artist Name Here] into a plain name
-    const pattern = /\[a=(.*?)]/g;
-    const replacement = createBadge("$1")
-    return str.replace(pattern, replacement);
+    // Converts an artist reference [a=Some Artist Name Here] into a badge
+    const pattern = /\[[aA]=(.*?)]/g;
+    return str.replace(pattern, (_match, name: string) => createBadge(name));
 };
 
 export const expandLabelTextReferences = (str: string): string => {
-    // Converts an label reference [l=Some Label Name Here] into a plain name
-    const pattern = /\[l=(.*?)]/g;
-    const replacement = createBadge("$1")
-    return str.replace(pattern, replacement);
+    // Converts a label reference [l=Some Label Name Here] into a badge
+    const pattern = /\[[lL]=(.*?)]/g;
+    return str.replace(pattern, (_match, name: string) => createBadge(name));
 };
 
 export const expandProfileReferences = (str: string): string => {
-    // Performs multiple comversions
-    const str2 = expandArtistLinkReferences(str);
-    const str3 = expandLabelLinkReferences(str2);
-    const str4 = expandArtistTextReferences(str3);
-    const str5 = expandLabelTextReferences(str4);
-    const str6 = expandItalics(str5);
-    return str6;
+    // Performs multiple conversions in sequence
+    const str1 = expandCommas(str);
+    const str2 = expandProfileURLs(str1);
+    const str3 = expandArtistLinkReferences(str2);
+    const str4 = expandLabelLinkReferences(str3);
+    const str5 = expandArtistTextReferences(str4);
+    const str6 = expandLabelTextReferences(str5);
+    const str7 = expandItalics(str6);
+    return str7;
 };
 
-export const sanitizedData = (s) => ({
+export const sanitizedData = (s: string): { __html: string } => ({
     __html: DOMPurify.sanitize(s),
 });
