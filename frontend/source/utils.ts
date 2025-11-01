@@ -39,7 +39,7 @@ export const expandCommas = (str: string): string => {
 };
 
 export const expandItalics = (str: string): string => {
-    const pattern = /\[[iI](.*?)\[\/[iI]/g;
+    const pattern = /\[[iI]](.*?)\[\/[iI]]/g;
     return str.replace(pattern, '<b><i>"$1"</i></b>');
 };
 
