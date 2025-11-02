@@ -83,4 +83,6 @@ ENTRYPOINT []
 USER nonroot
 
 EXPOSE 5000
-CMD ["uvicorn", "musigree.app.fastapi_prod_app:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "1", "--no-access-log", "--log-level", "debug"]
+CMD ["gunicorn", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker",
+     "--bind", "0.0.0.0:5000", "--worker-connections", "1000", "musigree.app.fastapi_prod_app:app"]
+#CMD ["uvicorn", "musigree.app.fastapi_prod_app:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "1", "--no-access-log", "--log-level", "debug"]
