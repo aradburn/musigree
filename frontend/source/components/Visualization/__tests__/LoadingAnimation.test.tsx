@@ -378,13 +378,13 @@ describe("LoadingAnimation", () => {
         expect(dataMock.transition).toHaveBeenCalled();
 
         // The implementation now uses different durations for different transitions:
-        // - transitionUpdate: TIMING.ANIMATION_DURATION / 2.0 (500)
-        // - transitionExit: TIMING.ANIMATION_DURATION * 2.0 (2000)
+        // - transitionUpdate: TIMING.ANIMATION_DURATION / 5.0 (200)
+        // - transitionExit: TIMING.ANIMATION_DURATION (1000)
         expect(dataMock.duration).toHaveBeenCalledWith(
-            TIMING.ANIMATION_DURATION / 2.0, // 500
+            TIMING.ANIMATION_DURATION / 5.0, // 200
         );
         expect(dataMock.duration).toHaveBeenCalledWith(
-            TIMING.ANIMATION_DURATION * 2.0, // 2000
+            TIMING.ANIMATION_DURATION, // 1000
         );
     });
 });

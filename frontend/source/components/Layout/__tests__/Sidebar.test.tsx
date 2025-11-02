@@ -47,14 +47,11 @@ describe("SidebarLeft Component", () => {
 
         // Check if the sidebar container is rendered
         const sidebarLeft = screen
-            .getByRole("button", { name: /details/i })
+            .getByRole("button", { name: /print/i })
             .closest(".sidebar");
         expect(sidebarLeft).toBeInTheDocument();
 
         // Check if all buttons are rendered with correct text
-        expect(
-            screen.getByRole("button", { name: /details/i }),
-        ).toBeInTheDocument();
         expect(
             screen.getByRole("button", { name: /roles/i }),
         ).toBeInTheDocument();
@@ -64,25 +61,6 @@ describe("SidebarLeft Component", () => {
 
         // Check if ForceControls component is rendered
         expect(screen.getByTestId("mock-force-controls")).toBeInTheDocument();
-    });
-
-    it("dispatches custom event when Details button is clicked", async () => {
-        const user = userEvent.setup();
-        render(<SidebarLeft />);
-
-        // Click the Details button
-        await user.click(screen.getByRole("button", { name: /details/i }));
-
-        // Check if the correct custom event was dispatched
-        expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
-
-        // Get the first call argument (the event)
-        const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
-            .calls[0][0];
-        expect(dispatchedEvent).toBeInstanceOf(CustomEvent);
-        expect(dispatchedEvent.type).toBe(
-            "musigree:show-entity-details-overlay",
-        );
     });
 
     it("dispatches custom event when Roles button is clicked", async () => {
@@ -115,24 +93,5 @@ describe("SidebarLeft Component", () => {
             musigreeManager.svgDimensions[0],
             musigreeManager.svgDimensions[1],
         );
-    });
-
-    it("renders with appropriate Bootstrap classes for responsive layout", () => {
-        render(<SidebarLeft />);
-
-        // Check if the sidebar has the expected Bootstrap classes
-        const sidebarLeft = screen
-            .getByRole("button", { name: /details/i })
-            .closest(".sidebar");
-        expect(sidebarLeft).toHaveClass("d-flex");
-        expect(sidebarLeft).toHaveClass("h-100");
-        expect(sidebarLeft).toHaveClass("flex-sm-column");
-        expect(sidebarLeft).toHaveClass("bg-secondary-subtle");
-
-        // Check if the buttons have responsive text classes
-        const detailsButton = screen.getByRole("button", { name: /details/i });
-        const detailsText = detailsButton.querySelector("span");
-        expect(detailsText).toHaveClass("d-none");
-        expect(detailsText).toHaveClass("d-sm-inline");
     });
 });

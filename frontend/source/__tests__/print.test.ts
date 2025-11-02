@@ -221,9 +221,9 @@ describe("SVG String Processing", () => {
             .mockReturnValue(
                 '<svg xmlns:xlink="http://www.w3.org/1999/xlink" NS1:href="test"></svg>',
             );
-        global.XMLSerializer = vi.fn().mockImplementation(() => ({
-            serializeToString: mockSerializeToString,
-        }));
+        global.XMLSerializer = class MockXMLSerializer {
+            serializeToString = mockSerializeToString;
+        } as unknown as typeof XMLSerializer;
 
         // Mock document.styleSheets to avoid the ownerNode issue
         const originalStyleSheets = document.styleSheets;

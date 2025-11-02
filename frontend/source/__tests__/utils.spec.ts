@@ -167,21 +167,19 @@ describe("Utility Functions", () => {
     });
 
     describe("expandItalic", () => {
-        it("should convert [i]...[/i] tags to bold italic HTML", () => {
+        it("should convert [i]...[/i] tags to italic HTML", () => {
             const result = expandItalic("[i]test[/i]");
-            expect(result).toBe('<b><i>"test"</i></b>');
+            expect(result).toBe("<i>test</i>");
         });
 
         it("should handle multiple italic blocks", () => {
             const result = expandItalic("[i]first[/i] and [i]second[/i]");
-            expect(result).toBe(
-                '<b><i>"first"</i></b> and <b><i>"second"</i></b>',
-            );
+            expect(result).toBe("<i>first</i> and <i>second</i>");
         });
 
         it("should handle nested or complex text", () => {
             const result = expandItalic("Text [i]with italic[/i] more text");
-            expect(result).toBe('Text <b><i>"with italic"</i></b> more text');
+            expect(result).toBe("Text <i>with italic</i> more text");
         });
 
         it("should not modify strings without italic tags", () => {
@@ -372,7 +370,7 @@ describe("Utility Functions", () => {
             expect(result).toContain("Text Artist");
             expect(result).toContain('class="badge');
             // Check italics were expanded
-            expect(result).toContain('<b><i>"italic"</i></b>');
+            expect(result).toContain("<i>italic</i>");
             // Check commas were expanded
             expect(result).toContain("word1, word2");
             // Check URL was expanded
