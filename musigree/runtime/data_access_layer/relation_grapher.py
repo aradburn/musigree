@@ -449,6 +449,13 @@ class RelationGrapher:
         if not self._structural_role_names:
             return
         log.debug("        Retrieving structural relations")
+        filtered_structural_role_names = (
+            self._structural_role_names
+            if distance < 3
+            else [x for x in self._structural_role_names if x != "Alias"]
+        )
+        # Don't get aliases after level 3
+
         for entity_key in sorted(self.entity_keys_to_visit):
             # log.debug(f"            entity_key: {entity_key}")
             node = self.nodes.get(entity_key)
@@ -461,7 +468,7 @@ class RelationGrapher:
             # log.debug(f"            relations: {relations}")
             relation_links.update(
                 RuntimeEntityDataAccess.structural_roles_to_relations(
-                    entity, self._structural_role_names
+                    entity, filtered_structural_role_names
                 )
             )
 
