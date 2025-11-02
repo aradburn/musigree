@@ -32,15 +32,151 @@ export const createBadge = (str: string): string => {
     );
 };
 
+export const createURLBadgeClass = (_str: string): string => {
+    return (
+        "badge rounded-pill px-2 py-1 me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient"
+    );
+};
+
+export const createExternalLinkBadgeClass = (str: string): string => {
+    if (/discogs.com/.test(str)) {
+        return createURLBadgeClass("Discogs") + str;
+    } else if (/facebook.com/.test(str)) {
+        return createURLBadgeClass("Facebook") + str;
+    } else if (/bandcamp.com/.test(str)) {
+        return createURLBadgeClass("Bandcamp") + str;
+    } else if (/soundcloud.com/.test(str)) {
+        return createURLBadgeClass("Soundcloud") + str;
+    } else if (/youtube.com/.test(str)) {
+        return createURLBadgeClass("YouTube") + str;
+    } else if (/musicbrainz.org/.test(str)) {
+        return createURLBadgeClass("MusicBrainz") + str;
+    } else if (/spotify.com/.test(str)) {
+        return createURLBadgeClass("Spotify") + str;
+    } else if (/instagram.com/.test(str)) {
+        return createURLBadgeClass("Instagram");
+    } else if (/linkedin.com/.test(str)) {
+        return createURLBadgeClass("LinkedIn");
+    } else if (/wikipedia.org/.test(str)) {
+        return createURLBadgeClass("Wikipedia");
+    } else if (/twitter.com/.test(str)) {
+        return createURLBadgeClass("Twitter");
+    } else if (/myspace.com/.test(str)) {
+        return createURLBadgeClass("MySpace");
+    } else if (/last.fm/.test(str)) {
+        return createURLBadgeClass("LastFM");
+    } else if (/web.archive.org/.test(str)) {
+        return createURLBadgeClass("Web Archive");
+    } else {
+        return "";
+    }
+};
+
+export const createExternalLinkBadgeText = (str: string): string => {
+    if (/discogs.com/.test(str)) {
+        return "Discogs";
+    } else if (/facebook.com/.test(str)) {
+        return "Facebook";
+    } else if (/bandcamp.com/.test(str)) {
+        return "Bandcamp";
+    } else if (/soundcloud.com/.test(str)) {
+        return "Soundcloud";
+    } else if (/youtube.com/.test(str)) {
+        return "YouTube";
+    } else if (/musicbrainz.org/.test(str)) {
+        return "MusicBrainz";
+    } else if (/spotify.com/.test(str)) {
+        return "Spotify";
+    } else if (/instagram.com/.test(str)) {
+        return "Instagram";
+    } else if (/linkedin.com/.test(str)) {
+        return "LinkedIn";
+    } else if (/wikipedia.org/.test(str)) {
+        return "Wikipedia";
+    } else if (/twitter.com/.test(str)) {
+        return "Twitter";
+    } else if (/myspace.com/.test(str)) {
+        return "MySpace";
+    } else if (/last.fm/.test(str)) {
+        return "LastFM";
+    } else if (/web.archive.org/.test(str)) {
+        return "Web Archive";
+    } else {
+        return "";
+    }
+};
+
+export const removeURLProtocol = (str: string): string => {
+    // Remove the protocol from a URL
+    return str.replace(/^https?:\/\//, "");
+};
+
 export const expandCommas = (str: string): string => {
     // Replace commas that are not already followed by a space
     // Match comma followed by non-whitespace character
     return str.replace(/,(\S)/g, ", $1");
 };
 
-export const expandItalics = (str: string): string => {
+
+
+export const expandBold = (str: string): string => {
+    const pattern = /\[[bB]](.*?)\[\/[bB]]/g;
+    return str.replace(pattern, '<b>$1</b>');
+};
+
+export const expandStrong = (str: string): string => {
+    const pattern = /\[strong](.*?)\[\/strong]/ig;
+    return str.replace(pattern, '<strong>$1</strong>');
+};
+
+export const expandItalic = (str: string): string => {
     const pattern = /\[[iI]](.*?)\[\/[iI]]/g;
-    return str.replace(pattern, '<b><i>"$1"</i></b>');
+    return str.replace(pattern, '<i>$1</i>');
+};
+
+export const expandEm = (str: string): string => {
+    const pattern = /\[em](.*?)\[\/em]/ig;
+    return str.replace(pattern, '<em>$1</em>');
+};
+
+export const expandMark = (str: string): string => {
+    const pattern = /\[mark](.*?)\[\/mark]/ig;
+    return str.replace(pattern, '<mark>$1</mark>');
+};
+
+export const expandSmall = (str: string): string => {
+    const pattern = /\[small](.*?)\[\/small]/ig;
+    return str.replace(pattern, '<small>$1</small>');
+};
+
+export const expandDel = (str: string): string => {
+    const pattern = /\[del](.*?)\[\/del]/ig;
+    return str.replace(pattern, '<del>$1</del>');
+};
+
+export const expandIns = (str: string): string => {
+    const pattern = /\[ins](.*?)\[\/ins]/ig;
+    return str.replace(pattern, '<ins>$1</ins>');
+};
+
+export const expandSub = (str: string): string => {
+    const pattern = /\[sub](.*?)\[\/sub]/ig;
+    return str.replace(pattern, '<sub>$1</sub>');
+};
+
+export const expandSup = (str: string): string => {
+    const pattern = /\[sup](.*?)\[\/sup]/ig;
+    return str.replace(pattern, '<sup>$1</sup>');
+};
+
+export const expandUnderline = (str: string): string => {
+    const pattern = /\[[uU]](.*?)\[\/[uU]]/g;
+    return str.replace(pattern, '<u>$1</u>');
+};
+
+export const expandLineBreaks = (str: string): string => {
+    const pattern = /\r\n/g;
+    return str.replace(pattern, '<br/>');
 };
 
 export const expandProfileURLs = (str: string): string => {
@@ -101,14 +237,25 @@ export const expandLabelTextReferences = (str: string): string => {
 
 export const expandProfileReferences = (str: string): string => {
     // Performs multiple conversions in sequence
-    const str1 = expandCommas(str);
-    const str2 = expandProfileURLs(str1);
-    const str3 = expandArtistLinkReferences(str2);
-    const str4 = expandLabelLinkReferences(str3);
-    const str5 = expandArtistTextReferences(str4);
-    const str6 = expandLabelTextReferences(str5);
-    const str7 = expandItalics(str6);
-    return str7;
+    str = expandCommas(str);
+    str = expandProfileURLs(str);
+    str = expandArtistLinkReferences(str);
+    str = expandLabelLinkReferences(str);
+    str = expandArtistTextReferences(str);
+    str = expandLabelTextReferences(str);
+    str = expandBold(str);
+    str = expandStrong(str);
+    str = expandItalic(str);
+    str = expandEm(str);
+    str = expandMark(str);
+    str = expandSmall(str);
+    str = expandDel(str);
+    str = expandIns(str);
+    str = expandSub(str);
+    str = expandSup(str);
+    str = expandUnderline(str);
+    str = expandLineBreaks(str);
+    return str;
 };
 
 export const sanitizedData = (s: string): { __html: string } => ({
