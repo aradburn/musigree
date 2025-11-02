@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type MockInstance,
+} from "vitest";
 import { AbstractFSM, type EventData } from "../AbstractFSM";
 import type { State } from "../State";
 import type { FSMStateType } from "../types";
@@ -74,9 +82,9 @@ class BrokenFallbackFSM extends AbstractFSM {
 
 // Define an interface for console spies
 interface ConsoleSpy {
-    log: ReturnType<typeof vi.spyOn>;
-    warn: ReturnType<typeof vi.spyOn>;
-    error: ReturnType<typeof vi.spyOn>;
+    log: MockInstance<typeof console.log>;
+    warn: MockInstance<typeof console.warn>;
+    error: MockInstance<typeof console.error>;
 }
 
 describe("AbstractFSM", () => {
