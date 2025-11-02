@@ -1,11 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html dir="ltr" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        content="width=device-width,
+                 initial-scale=1, maximum-scale=1, user-scalable=no"
     />
+    <meta name="application-name" content="Patchwork"/>
+
     <title>{{ title }}</title>
 
     {%- if not is_production %}
@@ -18,13 +21,6 @@
         window.__vite_plugin_react_preamble_installed__ = true;
     </script>
     {%- endif %}
-
-    <!--    <link rel="preconnect" href="https://fonts.googleapis.com"/>-->
-    <!--    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>-->
-    <!--    <link-->
-    <!--        rel="stylesheet"-->
-    <!--        href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"-->
-    <!--    />-->
 
     <!-- Musigree -->
     <meta
