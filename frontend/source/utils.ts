@@ -33,9 +33,7 @@ export const createBadge = (str: string): string => {
 };
 
 export const createURLBadgeClass = (_str: string): string => {
-    return (
-        "badge rounded-pill px-2 py-1 me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient"
-    );
+    return "badge rounded-pill px-2 py-1 me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient";
 };
 
 export const createExternalLinkBadgeClass = (str: string): string => {
@@ -117,66 +115,64 @@ export const expandCommas = (str: string): string => {
     return str.replace(/,(\S)/g, ", $1");
 };
 
-
-
 export const expandBold = (str: string): string => {
     const pattern = /\[[bB]](.*?)\[\/[bB]]/g;
-    return str.replace(pattern, '<b>$1</b>');
+    return str.replace(pattern, "<b>$1</b>");
 };
 
 export const expandStrong = (str: string): string => {
-    const pattern = /\[strong](.*?)\[\/strong]/ig;
-    return str.replace(pattern, '<strong>$1</strong>');
+    const pattern = /\[strong](.*?)\[\/strong]/gi;
+    return str.replace(pattern, "<strong>$1</strong>");
 };
 
 export const expandItalic = (str: string): string => {
     const pattern = /\[[iI]](.*?)\[\/[iI]]/g;
-    return str.replace(pattern, '<i>$1</i>');
+    return str.replace(pattern, "<i>$1</i>");
 };
 
 export const expandEm = (str: string): string => {
-    const pattern = /\[em](.*?)\[\/em]/ig;
-    return str.replace(pattern, '<em>$1</em>');
+    const pattern = /\[em](.*?)\[\/em]/gi;
+    return str.replace(pattern, "<em>$1</em>");
 };
 
 export const expandMark = (str: string): string => {
-    const pattern = /\[mark](.*?)\[\/mark]/ig;
-    return str.replace(pattern, '<mark>$1</mark>');
+    const pattern = /\[mark](.*?)\[\/mark]/gi;
+    return str.replace(pattern, "<mark>$1</mark>");
 };
 
 export const expandSmall = (str: string): string => {
-    const pattern = /\[small](.*?)\[\/small]/ig;
-    return str.replace(pattern, '<small>$1</small>');
+    const pattern = /\[small](.*?)\[\/small]/gi;
+    return str.replace(pattern, "<small>$1</small>");
 };
 
 export const expandDel = (str: string): string => {
-    const pattern = /\[del](.*?)\[\/del]/ig;
-    return str.replace(pattern, '<del>$1</del>');
+    const pattern = /\[del](.*?)\[\/del]/gi;
+    return str.replace(pattern, "<del>$1</del>");
 };
 
 export const expandIns = (str: string): string => {
-    const pattern = /\[ins](.*?)\[\/ins]/ig;
-    return str.replace(pattern, '<ins>$1</ins>');
+    const pattern = /\[ins](.*?)\[\/ins]/gi;
+    return str.replace(pattern, "<ins>$1</ins>");
 };
 
 export const expandSub = (str: string): string => {
-    const pattern = /\[sub](.*?)\[\/sub]/ig;
-    return str.replace(pattern, '<sub>$1</sub>');
+    const pattern = /\[sub](.*?)\[\/sub]/gi;
+    return str.replace(pattern, "<sub>$1</sub>");
 };
 
 export const expandSup = (str: string): string => {
-    const pattern = /\[sup](.*?)\[\/sup]/ig;
-    return str.replace(pattern, '<sup>$1</sup>');
+    const pattern = /\[sup](.*?)\[\/sup]/gi;
+    return str.replace(pattern, "<sup>$1</sup>");
 };
 
 export const expandUnderline = (str: string): string => {
     const pattern = /\[[uU]](.*?)\[\/[uU]]/g;
-    return str.replace(pattern, '<u>$1</u>');
+    return str.replace(pattern, "<u>$1</u>");
 };
 
 export const expandLineBreaks = (str: string): string => {
     const pattern = /\r\n/g;
-    return str.replace(pattern, '<br/>');
+    return str.replace(pattern, "<br/>");
 };
 
 export const expandProfileURLs = (str: string): string => {
