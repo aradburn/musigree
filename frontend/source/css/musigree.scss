@@ -538,12 +538,9 @@ a[href^="https://"]::after
 #loading-layer {
     path {
         &.arc {
-            opacity: 0.75;
+            opacity: 1.0;
             stroke: white;
             stroke-width: 1px;
-            &:hover {
-                fill: red;
-            }
         }
     }
 }
