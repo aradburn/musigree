@@ -116,14 +116,12 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                     <dt className="col-sm-11">External Links</dt>
                     <dd className="col-sm-1"></dd>
                     {Array.isArray(urls) && urls.length > 0 ? (
+                        <React.Fragment>{urlListItems}</React.Fragment>
+                    ) : (
                         <React.Fragment>
-                            {urlListItems}
+                            <dt className="col-sm-3"></dt>
+                            <dd className="col-sm-9">-</dd>
                         </React.Fragment>
-                        ) : (
-                            <React.Fragment>
-                                <dt className="col-sm-3"></dt>
-                                <dd className="col-sm-9">-</dd>
-                            </React.Fragment>
                     )}
                 </dl>
             </div>

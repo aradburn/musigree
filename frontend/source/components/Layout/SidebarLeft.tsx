@@ -9,7 +9,6 @@ import ForceControls from "../Visualization/ForceControls";
  * It uses the NetworkContext to control the D3.js force layout.
  */
 export const SidebarLeft: React.FC = () => {
-
     const handleShowRoles = (): void => {
         window.dispatchEvent(new CustomEvent("musigree:show-roles-overlay"));
     };

@@ -170,11 +170,12 @@ const LoadingAnimation = (): null => {
             .attr("class", "arc")
             .attr("d", (d) => arcRef.current(d))
             .attr("fill", (d, i) =>
-                i == 0 ? "#777777FF" :
-                d3
-                    .color(colorScheme(Math.random() * 0.5 + 0.5))
-                    .copy({ opacity: 0.5 })
-                    .formatHex8(),
+                i == 0
+                    ? "#777777FF"
+                    : d3
+                          .color(colorScheme(Math.random() * 0.5 + 0.5))
+                          .copy({ opacity: 0.5 })
+                          .formatHex8(),
             )
             //             .attr("fill", (_, i) => scale(((i % 9) + 8).toString()))
             .each((d, i) => {
