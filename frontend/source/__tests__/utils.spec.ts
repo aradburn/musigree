@@ -18,7 +18,7 @@ import {
     clamp,
     createBadge,
     expandCommas,
-    expandItalics,
+    expandItalic,
     expandProfileURLs,
     expandArtistLinkReferences,
     expandLabelLinkReferences,
@@ -166,30 +166,30 @@ describe("Utility Functions", () => {
         });
     });
 
-    describe("expandItalics", () => {
+    describe("expandItalic", () => {
         it("should convert [i]...[/i] tags to bold italic HTML", () => {
-            const result = expandItalics("[i]test[/i]");
+            const result = expandItalic("[i]test[/i]");
             expect(result).toBe('<b><i>"test"</i></b>');
         });
 
         it("should handle multiple italic blocks", () => {
-            const result = expandItalics("[i]first[/i] and [i]second[/i]");
+            const result = expandItalic("[i]first[/i] and [i]second[/i]");
             expect(result).toBe(
                 '<b><i>"first"</i></b> and <b><i>"second"</i></b>',
             );
         });
 
         it("should handle nested or complex text", () => {
-            const result = expandItalics("Text [i]with italic[/i] more text");
+            const result = expandItalic("Text [i]with italic[/i] more text");
             expect(result).toBe('Text <b><i>"with italic"</i></b> more text');
         });
 
         it("should not modify strings without italic tags", () => {
-            expect(expandItalics("plain text")).toBe("plain text");
+            expect(expandItalic("plain text")).toBe("plain text");
         });
 
         it("should handle empty string", () => {
-            expect(expandItalics("")).toBe("");
+            expect(expandItalic("")).toBe("");
         });
     });
 

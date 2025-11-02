@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type MockInstance,
+} from "vitest";
 import * as d3 from "d3";
 import * as relationsModule from "../relations";
 import {
@@ -147,14 +155,20 @@ vi.mock("../core", () => {
 });
 
 describe("Relations Module", () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>;
+    let consoleSpy: MockInstance<typeof console.log>;
 
     // Create spies for each function
-    let initRelationsSpy: ReturnType<typeof vi.spyOn>;
-    let setRelationsDataSpy: ReturnType<typeof vi.spyOn>;
-    let createRadialChartSpy: ReturnType<typeof vi.spyOn>;
-    let handleZoomSpy: ReturnType<typeof vi.spyOn>;
-    let clearRelationsLayerSpy: ReturnType<typeof vi.spyOn>;
+    let initRelationsSpy: MockInstance<typeof relationsModule.initRelations>;
+    let setRelationsDataSpy: MockInstance<
+        typeof relationsModule.setRelationsData
+    >;
+    let createRadialChartSpy: MockInstance<
+        typeof relationsModule.createRadialChart
+    >;
+    let handleZoomSpy: MockInstance<typeof relationsModule.handleZoom>;
+    let clearRelationsLayerSpy: MockInstance<
+        typeof relationsModule.clearRelationsLayer
+    >;
 
     beforeEach(() => {
         // We'll use a hybrid approach - spy on the real implementation for simpler functions
