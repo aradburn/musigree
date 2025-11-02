@@ -78,6 +78,15 @@ const LoadingAnimation = (): null => {
         const values: number[] = [];
         const data: ArcData[] = [];
 
+        data.push({
+            active: true,
+            startAngle: 0,
+            endAngle: 2 * Math.PI,
+            rotationRate: 0,
+            targetInnerRadius: 0,
+            targetOuterRadius: 1.0,
+        });
+
         for (let i = 0; i < LOADING.ARC_COUNT; i++) {
             const pair = [
                 Math.random() * 0.1,
@@ -91,7 +100,6 @@ const LoadingAnimation = (): null => {
                 startAngle: startAngle,
                 endAngle: startAngle + Math.PI + Math.PI * Math.random(),
                 rotationRate: LOADING.MAX_ROTATION_RATE,
-                //                 rotationRate: Math.random() * LOADING.MAX_ROTATION_RATE,
                 targetInnerRadius: pair[0],
                 targetOuterRadius: pair[1],
             });
@@ -161,15 +169,16 @@ const LoadingAnimation = (): null => {
             .append("path")
             .attr("class", "arc")
             .attr("d", (d) => arcRef.current(d))
-            .attr("fill", () =>
+            .attr("fill", (d, i) =>
+                i == 0 ? "#777777FF" :
                 d3
                     .color(colorScheme(Math.random() * 0.5 + 0.5))
                     .copy({ opacity: 0.5 })
                     .formatHex8(),
             )
             //             .attr("fill", (_, i) => scale(((i % 9) + 8).toString()))
-            .each((d) => {
-                d.innerRadius = d.targetInnerRadius / 2.0;
+            .each((d, i) => {
+                d.innerRadius = i == 0 ? 0.0 : d.targetInnerRadius / 2.0;
                 d.outerRadius = d.targetOuterRadius / 2.0;
                 d.hasTimer = false;
             });
@@ -182,12 +191,12 @@ const LoadingAnimation = (): null => {
     ): void => {
         selection
             .transition()
-            .duration(TIMING.ANIMATION_DURATION / 2.0)
+            .duration(TIMING.ANIMATION_DURATION / 5.0)
             //             .delay(
             //                 (_, i) =>
             //                     (selection.size() - i) * TIMING.ANIMATION_DELAY_MULTIPLIER,
             //             )
-            .attrTween("d", (d): ((t: number) => string) => {
+            .attrTween("d", (d, i): ((t: number) => string) => {
                 const inner = d3.interpolate(
                     d.innerRadius || 0,
                     barScale(d.targetInnerRadius),
@@ -197,7 +206,7 @@ const LoadingAnimation = (): null => {
                     barScale(d.targetOuterRadius),
                 );
                 return (t: number): string => {
-                    d.innerRadius = inner(t);
+                    d.innerRadius = i == 0 ? inner(0.0) : inner(t);
                     d.outerRadius = outer(t);
                     return arcRef.current(d);
                 };
@@ -210,12 +219,12 @@ const LoadingAnimation = (): null => {
     ): void => {
         selection
             .transition()
-            .duration(TIMING.ANIMATION_DURATION * 2.0)
-            .attrTween("d", (d): ((t: number) => string) => {
+            .duration(TIMING.ANIMATION_DURATION)
+            .attrTween("d", (d, i): ((t: number) => string) => {
                 const inner = d3.interpolate(d.innerRadius, 0);
                 const outer = d3.interpolate(d.outerRadius, 0);
                 return (t: number): string => {
-                    d.innerRadius = inner(t);
+                    d.innerRadius = i == 0 ? inner(0.0) : inner(t);
                     d.outerRadius = outer(t);
                     return arcRef.current(d);
                 };
