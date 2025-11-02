@@ -67,9 +67,11 @@ export const Advert: React.FC<AdvertProps> = ({ adClient, adSlot }) => {
     }, []);
 
     return (
-        <div className="mx-auto">
-            <hr className="d-none" style={hrStyle} />
-            <h6 className="text-center text-secondary d-none">Advertisment</h6>
+        <div
+            id="advert-panel"
+            className="mx-auto d-none">
+            <hr style={hrStyle} />
+            <h6 className="text-center text-secondary">Advertisment</h6>
             {/* Advert panel */}
             {/* <Image src="/public/img/small-ad.png" rounded /> */}
 

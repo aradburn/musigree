@@ -14,7 +14,7 @@ export const SidebarRight: React.FC = () => {
             className="sidebar sidebar-right col-auto flex-shrink-0 ms-auto d-flex p-2 h-100
                         gap-2
                         flex-column
-
+                        overflow-x-hidden
                         bg-secondary-subtle text-light"
         >
             {/* Details panel */}

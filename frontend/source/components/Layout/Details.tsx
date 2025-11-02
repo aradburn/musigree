@@ -3,9 +3,12 @@ import React from "react";
 import type { EntityData } from "../../entities";
 import { capitalCase } from "text-case";
 import {
+    createExternalLinkBadgeClass,
+    createExternalLinkBadgeText,
     expandCommas,
     expandProfileURLs,
     expandProfileReferences,
+    removeURLProtocol,
     sanitizedData,
 } from "../../utils";
 import DOMPurify from "dompurify";
@@ -35,23 +38,31 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
         ? urls
               .filter((url): url is string => typeof url === "string")
               .map((url, i) => (
-                  <li key={i}>
-                      <a
-                          href={DOMPurify.sanitize(url)}
-                          className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                      >
-                          {url}
-                      </a>
-                  </li>
+                  <React.Fragment key={i}>
+                      <dt className="col-sm-3">
+                          <span className={createExternalLinkBadgeClass(url)}>
+                              {createExternalLinkBadgeText(url)}
+                          </span>
+                      </dt>
+                      <dd className="col-sm-9">
+                          <a
+                              href={DOMPurify.sanitize(url)}
+                              className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                          >
+                              {removeURLProtocol(url)}
+                          </a>
+                      </dd>
+                  </React.Fragment>
               ))
         : "";
 
     return (
         <div
+            id="details-panel"
             className="details-panel
-                        flex-grow-1 overflow-scroll
+                        flex-grow-1 overflow-x-hidden overflow-y-scroll
                         mx-auto pe-3
                         bg-secondary-subtle"
         >
@@ -102,14 +113,18 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                         dangerouslySetInnerHTML={sanitizedData(profileStr)}
                     ></dd>
 
-                    <dt className="col-sm-3">External Links</dt>
-                    <dd className="col-sm-9">
-                        {Array.isArray(urls) && urls.length > 0 ? (
-                            <ul className="ps-0">{urlListItems}</ul>
+                    <dt className="col-sm-11">External Links</dt>
+                    <dd className="col-sm-1"></dd>
+                    {Array.isArray(urls) && urls.length > 0 ? (
+                        <React.Fragment>
+                            {urlListItems}
+                        </React.Fragment>
                         ) : (
-                            "-"
-                        )}
-                    </dd>
+                            <React.Fragment>
+                                <dt className="col-sm-3"></dt>
+                                <dd className="col-sm-9">-</dd>
+                            </React.Fragment>
+                    )}
                 </dl>
             </div>
         </div>
