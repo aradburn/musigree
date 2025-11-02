@@ -36,7 +36,6 @@ export const pruneSimData = (simData: SimData): SimData => {
     }).length;
     if (aliasLinkCount > MAX_ALIAS_LINKS_BEFORE_PRUNING) {
         console.log("alias size  : ", aliasLinkCount);
-
     }
     console.log("pruning final node size  : ", simData.nodeMap.size);
     console.log("pruning final link size  : ", simData.linkMap.size);
