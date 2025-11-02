@@ -22,11 +22,13 @@ $mg-tooltip-background-color: #ffffcc;
 
 $mg-node-tooltip-color: #111;
 $mg-node-tooltip-background-color: #ffffcc;
-$mg-node-tooltip-border-color: #800026;
+$mg-node-tooltip-border-color: #9db8ac;
+// $mg-node-tooltip-border-color: #800026;
 
 $mg-link-tooltip-color: #111;
 $mg-link-tooltip-background-color: #ffeda0;
-$mg-link-tooltip-border-color: #800026;
+$mg-link-tooltip-border-color: #9db8ac;
+// $mg-link-tooltip-border-color: #800026;
 
 .bg-opacity-40 {
   --bs-bg-opacity: 0.4;
@@ -85,8 +87,8 @@ body {
 .sidebar-right {
     background-color: $mg-background-light-color !important;
     /* background-color: #1C575A !important;*/
-    min-width: 320px;
-    max-width: 320px;
+    min-width: 30rem;
+    max-width: 30rem;
 }
 
 // Side menu content container
@@ -141,8 +143,8 @@ body {
 
 .details-panel {
     background-color: $mg-background-light-color !important;
-    min-width: 350px;
-    max-width: 350px;
+    min-width: 29.5rem;
+    max-width: 29.5rem;
 }
 
 .details-title {
