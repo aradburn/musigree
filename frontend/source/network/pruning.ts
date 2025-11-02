@@ -3,6 +3,7 @@ import type { LinkKey, NodeKey, SimData } from "./data";
 // Graph size limits
 const MAX_NODES_BEFORE_PRUNING = 600; // Maximum nodes before pruning is triggered
 const MAX_LINKS_BEFORE_PRUNING = 1800; // Maximum links before pruning is triggered
+const MAX_ALIAS_LINKS_BEFORE_PRUNING = 100; // Maximum links before pruning is triggered
 
 export const pruneSimData = (simData: SimData): SimData => {
     // Get some useful stats
@@ -28,6 +29,15 @@ export const pruneSimData = (simData: SimData): SimData => {
         }
     }
 
+    const aliasLinkCount = Array.from(simData.linkMap.keys()).filter((key) => {
+        const parts = key.split("-");
+        const role = parts.slice(2, 2 + parts.length - 4).join("-");
+        return role == "alias";
+    }).length;
+    if (aliasLinkCount > MAX_ALIAS_LINKS_BEFORE_PRUNING) {
+        console.log("alias size  : ", aliasLinkCount);
+
+    }
     console.log("pruning final node size  : ", simData.nodeMap.size);
     console.log("pruning final link size  : ", simData.linkMap.size);
 
