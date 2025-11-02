@@ -607,40 +607,40 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      * Toggle radial view
      */
     toggleRadial(status: boolean): void {
-//         const entityRelations = document.getElementById("entity-relations");
-//         if (!entityRelations) {
-//             console.warn("entity-relations element not found in DOM");
-//             return;
-//         }
+        //         const entityRelations = document.getElementById("entity-relations");
+        //         if (!entityRelations) {
+        //             console.warn("entity-relations element not found in DOM");
+        //             return;
+        //         }
 
         if (status) {
-//             if (this._showNetworkHandler) {
-//                 entityRelations.removeEventListener(
-//                     "click",
-//                     this._showNetworkHandler,
-//                 );
-//             }
+            //             if (this._showNetworkHandler) {
+            //                 entityRelations.removeEventListener(
+            //                     "click",
+            //                     this._showNetworkHandler,
+            //                 );
+            //             }
 
             this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-network", null, false, false);
                 e.preventDefault();
             };
 
-//             entityRelations.addEventListener("click", this._showNetworkHandler);
+            //             entityRelations.addEventListener("click", this._showNetworkHandler);
         } else {
-//             if (this._showNetworkHandler) {
-//                 entityRelations.removeEventListener(
-//                     "click",
-//                     this._showNetworkHandler,
-//                 );
-//             }
+            //             if (this._showNetworkHandler) {
+            //                 entityRelations.removeEventListener(
+            //                     "click",
+            //                     this._showNetworkHandler,
+            //                 );
+            //             }
 
             this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-radial", null, false, false);
                 e.preventDefault();
             };
 
-//             entityRelations.addEventListener("click", this._showNetworkHandler);
+            //             entityRelations.addEventListener("click", this._showNetworkHandler);
         }
     }
 
