@@ -5,12 +5,19 @@ Unit tests for musigree.app.fastapi_healthcheck module.
 from unittest.mock import patch
 
 import pytest
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from starlette import status
 
 from musigree.app.fastapi_healthcheck import HealthCheck, get_health, router
+
+
+def create_test_app() -> FastAPI:
+    """Create a FastAPI app instance with the healthcheck router for testing."""
+    app = FastAPI()
+    app.include_router(router)
+    return app
 
 
 class TestHealthCheck:
@@ -151,7 +158,8 @@ class TestRouter:
     def test_router_has_health_endpoint(self) -> None:
         """Test that router has the health endpoint configured."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/health")
@@ -163,7 +171,8 @@ class TestRouter:
     def test_router_health_endpoint_metadata(self) -> None:
         """Test that the health endpoint has correct metadata."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/health")
@@ -175,7 +184,8 @@ class TestRouter:
     def test_router_health_endpoint_response_model(self) -> None:
         """Test that the health endpoint returns the correct response model."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/health")
@@ -189,7 +199,8 @@ class TestRouter:
     def test_router_health_endpoint_method(self) -> None:
         """Test that the health endpoint only accepts GET requests."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act & Assert - GET should work
         response = client.get("/health")
@@ -210,10 +221,7 @@ class TestRouter:
     def test_router_health_endpoint_tags(self) -> None:
         """Test that the health endpoint has correct tags for OpenAPI documentation."""
         # Arrange
-        from fastapi import FastAPI
-
-        app = FastAPI()
-        app.include_router(router)
+        app = create_test_app()
         openapi_schema = app.openapi()
 
         # Act & Assert
@@ -227,10 +235,7 @@ class TestRouter:
     def test_router_health_endpoint_summary(self) -> None:
         """Test that the health endpoint has correct summary for OpenAPI documentation."""
         # Arrange
-        from fastapi import FastAPI
-
-        app = FastAPI()
-        app.include_router(router)
+        app = create_test_app()
         openapi_schema = app.openapi()
 
         # Act & Assert
@@ -241,10 +246,7 @@ class TestRouter:
     def test_router_health_endpoint_response_description(self) -> None:
         """Test that the health endpoint has correct response description."""
         # Arrange
-        from fastapi import FastAPI
-
-        app = FastAPI()
-        app.include_router(router)
+        app = create_test_app()
         openapi_schema = app.openapi()
 
         # Act & Assert
@@ -263,7 +265,8 @@ class TestIntegration:
     def test_full_healthcheck_flow(self) -> None:
         """Test the complete healthcheck flow from request to response."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/health")
@@ -284,8 +287,9 @@ class TestIntegration:
     def test_healthcheck_with_different_clients(self) -> None:
         """Test that healthcheck works with different client configurations."""
         # Arrange
-        client1 = TestClient(router)
-        client2 = TestClient(router)
+        app = create_test_app()
+        client1 = TestClient(app)
+        client2 = TestClient(app)
 
         # Act
         response1 = client1.get("/health")
@@ -300,7 +304,8 @@ class TestIntegration:
         import time
 
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         start_time = time.time()
@@ -316,7 +321,8 @@ class TestIntegration:
         import threading
 
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
         results = []
 
         def make_request() -> None:
@@ -345,7 +351,8 @@ class TestErrorHandling:
     def test_healthcheck_with_invalid_path(self) -> None:
         """Test that invalid paths return 404."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/invalid")
@@ -356,7 +363,8 @@ class TestErrorHandling:
     def test_healthcheck_with_query_parameters(self) -> None:
         """Test that healthcheck ignores query parameters."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
 
         # Act
         response = client.get("/health?param=value")
@@ -368,7 +376,8 @@ class TestErrorHandling:
     def test_healthcheck_with_headers(self) -> None:
         """Test that healthcheck works with various headers."""
         # Arrange
-        client = TestClient(router)
+        app = create_test_app()
+        client = TestClient(app)
         headers = {
             "User-Agent": "TestAgent/1.0",
             "Accept": "application/json",
