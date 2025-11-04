@@ -48,8 +48,8 @@ class RuntimeEntityDataAccess:
     def structural_roles_to_relations(
         entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
-        log.debug(f"            structural_roles_to_relations entity: {entity}")
-        log.debug(f"            structural_roles_to_relations entities: {entity.entities}")
+        log.debug(f"            structural_roles_to_relations entity_id: {entity.entity_id}")
+        # log.debug(f"            structural_roles_to_relations entities: {entity.entities}")
         log.debug(f"            structural_roles_to_relations roles: {roles}")
         relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
@@ -129,7 +129,9 @@ class RuntimeEntityDataAccess:
                         distance=None,
                     )
                     relations[relation.link_key] = relation
-        log.debug(f"            structural_roles_to_relations relations: {relations}")
+        log.debug(
+            f"            structural_roles_to_relations relations size: {len(relations.items())}"
+        )
         return relations
 
     @staticmethod

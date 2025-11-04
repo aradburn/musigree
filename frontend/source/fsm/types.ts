@@ -4,16 +4,17 @@
 
 import type { NodeKey, NetworkCenter, NetworkData } from "../network/data";
 import type { RelationsData } from "../relations";
+import type { EntityData } from "../entities";
 
 /**
  * The possible states of the FSM
  */
 export type FSMStateType =
     | "state-viewing-network"
-    | "state-requesting-network"
-    | "state-requesting-radial"
-    | "state-requesting-random"
     | "state-viewing-radial"
+    | "state-requesting-network"
+    | "state-requesting-relations"
+    | "state-requesting-random"
     | "uninitialized";
 
 /**
@@ -23,7 +24,13 @@ export interface FSMInstance {
     state: FSMStateType;
     handle(
         event: string,
-        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+        data:
+            | NetworkData
+            | RelationsData
+            | EntityData
+            | NetworkCenter
+            | NodeKey
+            | null,
         pushHistory: boolean,
         fixed: boolean,
     ): void;
@@ -33,7 +40,8 @@ export interface FSMInstance {
     transition(state: FSMStateType): void;
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void;
     requestRandom(): void;
-    requestRadial(entityKey: NodeKey): void;
+    requestRelations(entityKey: NodeKey): void;
+    requestEntity(entityKey: NodeKey): void;
     selectEntity(entityKey: NodeKey | null, fixed: boolean): void;
     loadInlineData(): void;
     toggleRadial(show: boolean): void;
@@ -45,7 +53,13 @@ export interface FSMInstance {
         event: string,
         handler: (
             event: string,
-            data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+            data:
+                | NetworkData
+                | RelationsData
+                | EntityData
+                | NetworkCenter
+                | NodeKey
+                | null,
         ) => void,
     ): void;
     _showNetworkHandler?: (event: Event) => void;
@@ -62,7 +76,8 @@ export interface FSMState {
         data: NetworkData,
         pushHistory?: boolean,
     ) => void;
-    "received-radial"?: (this: FSMInstance, data: RelationsData) => void;
+    "received-relations"?: (this: FSMInstance, data: RelationsData) => void;
+    "received-entity"?: (this: FSMInstance, data: EntityData) => void;
     "request-network"?: (this: FSMInstance, entityKey: string) => void;
     "request-random"?: (this: FSMInstance) => void;
     "show-radial"?: (this: FSMInstance) => void;
@@ -81,10 +96,10 @@ export interface FSMState {
  */
 export interface FSMStates {
     "state-viewing-network": FSMState;
-    "state-requesting-network": FSMState;
-    "state-requesting-radial": FSMState;
-    "state-requesting-random": FSMState;
     "state-viewing-radial": FSMState;
+    "state-requesting-network": FSMState;
+    "state-requesting-relations": FSMState;
+    "state-requesting-random": FSMState;
     uninitialized: FSMState;
 }
 
@@ -109,7 +124,8 @@ export interface FSMConfig extends FSMState {
         pushHistory?: boolean,
     ) => void;
     requestRandom?: (this: FSMInstance) => void;
-    requestRadial?: (this: FSMInstance, entityKey: NodeKey) => void;
+    requestRelations?: (this: FSMInstance, entityKey: NodeKey) => void;
+    requestEntity?: (this: FSMInstance, entityKey: NodeKey) => void;
     selectEntity?: (
         this: FSMInstance,
         entityKey: string | null,
@@ -121,10 +137,11 @@ export interface FSMConfig extends FSMState {
         pushHistory?: boolean,
     ) => void;
     showRadial?: (this: FSMInstance, data?: RelationsData) => void;
+    updateEntityDetails?: (this: FSMInstance, data?: EntityData) => void;
     handle?: (
         this: FSMInstance,
         event: string,
-        data: NetworkData | RelationsData | NodeKey | null,
+        data: NetworkData | RelationsData | EntityData | NodeKey | null,
         pushHistory: boolean,
         fixed: boolean,
     ) => void;

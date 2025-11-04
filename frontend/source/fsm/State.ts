@@ -4,6 +4,7 @@
 
 import type { NodeKey, NetworkData } from "../network/data";
 import type { RelationsData } from "../relations";
+import type { EntityData } from "../entities";
 import type { TransitionFunction } from "./AbstractFSM";
 
 /**
@@ -14,10 +15,12 @@ export interface Actions {
     loadInlineData(): void;
     pushState(entityKey: NodeKey, params?: Record<string, unknown>): void;
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void;
-    requestRadial(entityKey: NodeKey): void;
+    requestRelations(entityKey: NodeKey): void;
+    requestEntity(entityKey: NodeKey): void;
     requestRandom(): void;
     showNetwork(networkData: NetworkData, pushHistory: boolean): void;
     showRadial(data?: RelationsData): void;
+    updateEntityDetails(data?: EntityData): void;
     toggleFilter(show: boolean): void;
     toggleNetwork(status: boolean): void;
     toggleLoading(status: boolean): void;
@@ -62,9 +65,14 @@ export interface State {
     ): void;
 
     /**
-     * Handle a radial data received event
+     * Handle a relations data received event
      */
-    receivedRadial?(context: StateContext, data: RelationsData): void;
+    receivedRelations?(context: StateContext, data: RelationsData): void;
+
+    /**
+     * Handle a entity data received event
+     */
+    receivedEntity?(context: StateContext, data: EntityData): void;
 
     /**
      * Handle a random entity received event
@@ -82,6 +90,11 @@ export interface State {
     showRadial?(context: StateContext): void;
 
     /**
+     * Handle a request to show the radial view
+     */
+    updateEntityDetails?(context: StateContext): void;
+
+    /**
      * Handle a request to get a network for an entity
      */
     requestNetwork?(context: StateContext, entityKey: NodeKey): void;
@@ -90,6 +103,11 @@ export interface State {
      * Handle a request to get a random entity
      */
     requestRandom?(context: StateContext): void;
+
+    /**
+     * Handle a request to get a network for an entity
+     */
+    requestEntity?(context: StateContext, entityKey: NodeKey): void;
 
     /**
      * Handle a request to select an entity

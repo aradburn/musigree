@@ -142,7 +142,7 @@ class RelationGrapher:
         self.entity_keys_to_visit.add(self.center_entity.entity_key)
         for distance in range(self.degree + 1):
             self.report_search_loop_start(distance)
-            if len(self.entity_keys_to_visit) > self.max_nodes:
+            if len(self.entity_keys_to_visit) > self.max_nodes * 2:
                 break
             log.debug(f"        Search for {len(self.entity_keys_to_visit)} entities")
             entities = await self.search_entities(entity_repository, self.entity_keys_to_visit)
@@ -178,8 +178,8 @@ class RelationGrapher:
                 node.entity, self.all_roles
             )
             node.missing = expected_count - len(node.links)
-        # log.debug(f"self.links: {self.links}")
-        # log.debug(f"self.nodes: {self.nodes}")
+        log.debug(f"number of links: {len(self.links)}")
+        log.debug(f"number of nodes: {len(self.nodes)}")
         json_links = tuple(
             link.as_json() for key, link in sorted(self.links.items(), key=lambda x: x[0])
         )
@@ -395,7 +395,7 @@ class RelationGrapher:
                 continue
             entity_key = entity.entity_key
             if entity_key not in self.nodes:
-                log.debug(f"        add TrellisNode for entity: {entity_key}")
+                # log.debug(f"        add TrellisNode for entity: {entity_key}")
                 self.nodes[entity_key] = TrellisNode(entity, distance)
 
     def process_relations(self, relation_links: dict[str, RuntimeRelationResult]) -> None:
@@ -449,6 +449,13 @@ class RelationGrapher:
         if not self._structural_role_names:
             return
         log.debug("        Retrieving structural relations")
+        filtered_structural_role_names = (
+            self._structural_role_names
+            if distance < 3
+            else [x for x in self._structural_role_names if x != "Alias"]
+        )
+        # Don't get aliases after level 3
+
         for entity_key in sorted(self.entity_keys_to_visit):
             # log.debug(f"            entity_key: {entity_key}")
             node = self.nodes.get(entity_key)
@@ -461,7 +468,7 @@ class RelationGrapher:
             # log.debug(f"            relations: {relations}")
             relation_links.update(
                 RuntimeEntityDataAccess.structural_roles_to_relations(
-                    entity, self._structural_role_names
+                    entity, filtered_structural_role_names
                 )
             )
 

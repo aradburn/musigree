@@ -5,6 +5,7 @@
 
 import type { NodeKey, NetworkData } from "../../network/data";
 import type { RelationsData } from "../../relations";
+import type { EntityData } from "../../entities";
 
 /**
  * Interface defining all actions that can be performed by the FSM
@@ -31,9 +32,14 @@ export interface Actions {
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void;
 
     /**
-     * Request radial data for an entity
+     * Request relations data for an entity
      */
-    requestRadial(entityKey: NodeKey): void;
+    requestRelations(entityKey: NodeKey): void;
+
+    /**
+     * Request entity data
+     */
+    requestEntity(entityKey: NodeKey): void;
 
     /**
      * Request a random entity
@@ -49,6 +55,11 @@ export interface Actions {
      * Display the radial view
      */
     showRadial(data?: RelationsData): void;
+
+    /**
+     * Display the entity details view
+     */
+    updateEntityDetails(data?: EntityData): void;
 
     /**
      * Toggle filter visibility

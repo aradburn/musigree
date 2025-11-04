@@ -1,36 +1,97 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// Mock the manager classes with test properties
-const mockMusigreeManager = {
-    dispose: vi.fn(),
-    someMethod: vi.fn().mockReturnValue("musigree-result"),
-    someProperty: "musigree-property",
-} as any;
+// Store references to created instances for testing
+declare global {
+    var __createdInstances: {
+        MusigreeManager?: any;
+        NetworkManager?: any;
+        RelationsManager?: any;
+    };
+    var __musigreeConstructorSpies: {
+        MusigreeManager?: ReturnType<typeof vi.fn>;
+        NetworkManager?: ReturnType<typeof vi.fn>;
+        RelationsManager?: ReturnType<typeof vi.fn>;
+    };
+}
 
-const mockNetworkManager = {
-    dispose: vi.fn(),
-    someMethod: vi.fn().mockReturnValue("network-result"),
-    someProperty: "network-property",
-} as any;
+vi.mock("../MusigreeManager", () => {
+    const spy = vi.fn().mockImplementation(function MockMusigreeManager(
+        this: any,
+    ) {
+        const instance = {
+            dispose: vi.fn(),
+            someMethod: vi.fn().mockReturnValue("musigree-result"),
+            someProperty: "musigree-property",
+        };
+        Object.assign(this, instance);
+        if (!globalThis.__createdInstances) {
+            globalThis.__createdInstances = {};
+        }
+        globalThis.__createdInstances.MusigreeManager = this;
+        return this;
+    });
+    // Make it work with 'new'
+    Object.setPrototypeOf(spy.prototype, Object.prototype);
+    if (!globalThis.__musigreeConstructorSpies) {
+        globalThis.__musigreeConstructorSpies = {};
+    }
+    globalThis.__musigreeConstructorSpies.MusigreeManager = spy;
+    return {
+        MusigreeManager: spy,
+    };
+});
 
-const mockRelationsManager = {
-    dispose: vi.fn(),
-    someMethod: vi.fn().mockReturnValue("relations-result"),
-    someProperty: "relations-property",
-} as any;
+vi.mock("../NetworkManager", () => {
+    const spy = vi.fn().mockImplementation(function MockNetworkManager(
+        this: any,
+    ) {
+        const instance = {
+            dispose: vi.fn(),
+            someMethod: vi.fn().mockReturnValue("network-result"),
+            someProperty: "network-property",
+        };
+        Object.assign(this, instance);
+        if (!globalThis.__createdInstances) {
+            globalThis.__createdInstances = {};
+        }
+        globalThis.__createdInstances.NetworkManager = this;
+        return this;
+    });
+    Object.setPrototypeOf(spy.prototype, Object.prototype);
+    if (!globalThis.__musigreeConstructorSpies) {
+        globalThis.__musigreeConstructorSpies = {};
+    }
+    globalThis.__musigreeConstructorSpies.NetworkManager = spy;
+    return {
+        NetworkManager: spy,
+    };
+});
 
-// Mock the manager constructors
-vi.mock("../MusigreeManager", () => ({
-    MusigreeManager: vi.fn().mockImplementation(() => mockMusigreeManager),
-}));
-
-vi.mock("../NetworkManager", () => ({
-    NetworkManager: vi.fn().mockImplementation(() => mockNetworkManager),
-}));
-
-vi.mock("../RelationsManager", () => ({
-    RelationsManager: vi.fn().mockImplementation(() => mockRelationsManager),
-}));
+vi.mock("../RelationsManager", () => {
+    const spy = vi.fn().mockImplementation(function MockRelationsManager(
+        this: any,
+    ) {
+        const instance = {
+            dispose: vi.fn(),
+            someMethod: vi.fn().mockReturnValue("relations-result"),
+            someProperty: "relations-property",
+        };
+        Object.assign(this, instance);
+        if (!globalThis.__createdInstances) {
+            globalThis.__createdInstances = {};
+        }
+        globalThis.__createdInstances.RelationsManager = this;
+        return this;
+    });
+    Object.setPrototypeOf(spy.prototype, Object.prototype);
+    if (!globalThis.__musigreeConstructorSpies) {
+        globalThis.__musigreeConstructorSpies = {};
+    }
+    globalThis.__musigreeConstructorSpies.RelationsManager = spy;
+    return {
+        RelationsManager: spy,
+    };
+});
 
 // Import the module under test after mocking
 import {
@@ -44,6 +105,14 @@ import {
 import { MusigreeManager } from "../MusigreeManager";
 import { NetworkManager } from "../NetworkManager";
 import { RelationsManager } from "../RelationsManager";
+
+// Helper to get constructor spies after imports
+const getMusigreeManagerConstructor = () =>
+    globalThis.__musigreeConstructorSpies?.MusigreeManager!;
+const getNetworkManagerConstructor = () =>
+    globalThis.__musigreeConstructorSpies?.NetworkManager!;
+const getRelationsManagerConstructor = () =>
+    globalThis.__musigreeConstructorSpies?.RelationsManager!;
 
 // Type assertions for test properties
 const testMusigreeManager = musigreeManager as any;
@@ -67,7 +136,9 @@ describe("singletons.ts", () => {
             const result = testMusigreeManager.someMethod();
 
             expect(result).toBe("musigree-result");
-            expect(mockMusigreeManager.someMethod).toHaveBeenCalled();
+            expect(
+                globalThis.__createdInstances?.MusigreeManager?.someMethod,
+            ).toHaveBeenCalled();
         });
 
         it("should reuse the same instance on subsequent accesses", () => {
@@ -79,7 +150,7 @@ describe("singletons.ts", () => {
             expect(result1).toBe("musigree-property");
             expect(result2).toBe("musigree-property");
             // Should only create one instance
-            expect(vi.mocked(MusigreeManager)).toHaveBeenCalledTimes(1);
+            expect(getMusigreeManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should properly bind methods to the instance", () => {
@@ -87,7 +158,9 @@ describe("singletons.ts", () => {
 
             expect(typeof boundMethod).toBe("function");
             expect(boundMethod()).toBe("musigree-result");
-            expect(mockMusigreeManager.someMethod).toHaveBeenCalled();
+            expect(
+                globalThis.__createdInstances?.MusigreeManager?.someMethod,
+            ).toHaveBeenCalled();
         });
 
         it("should handle property access through proxy", () => {
@@ -99,7 +172,9 @@ describe("singletons.ts", () => {
         it("should handle property setting through proxy", () => {
             testMusigreeManager.someProperty = "new-value";
 
-            expect(mockMusigreeManager.someProperty).toBe("new-value");
+            expect(
+                globalThis.__createdInstances?.MusigreeManager?.someProperty,
+            ).toBe("new-value");
         });
 
         it("should handle 'in' operator through proxy", () => {
@@ -136,7 +211,7 @@ describe("singletons.ts", () => {
             // Access the manager to trigger initialization
             testMusigreeManager.someProperty;
 
-            expect(vi.mocked(MusigreeManager)).toHaveBeenCalledTimes(1);
+            expect(getMusigreeManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should reuse the same MusigreeManager instance", () => {
@@ -145,7 +220,7 @@ describe("singletons.ts", () => {
             testMusigreeManager.someMethod();
             testMusigreeManager.someProperty;
 
-            expect(vi.mocked(MusigreeManager)).toHaveBeenCalledTimes(1);
+            expect(getMusigreeManagerConstructor()).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -154,7 +229,7 @@ describe("singletons.ts", () => {
             // Access the manager to trigger initialization
             testNetworkManager.someProperty;
 
-            expect(vi.mocked(NetworkManager)).toHaveBeenCalledTimes(1);
+            expect(getNetworkManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should reuse the same NetworkManager instance", () => {
@@ -163,14 +238,16 @@ describe("singletons.ts", () => {
             testNetworkManager.someMethod();
             testNetworkManager.someProperty;
 
-            expect(vi.mocked(NetworkManager)).toHaveBeenCalledTimes(1);
+            expect(getNetworkManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should handle method calls correctly", () => {
             const result = testNetworkManager.someMethod();
 
             expect(result).toBe("network-result");
-            expect(mockNetworkManager.someMethod).toHaveBeenCalled();
+            expect(
+                globalThis.__createdInstances?.NetworkManager?.someMethod,
+            ).toHaveBeenCalled();
         });
     });
 
@@ -179,7 +256,7 @@ describe("singletons.ts", () => {
             // Access the manager to trigger initialization
             testRelationsManager.someProperty;
 
-            expect(vi.mocked(RelationsManager)).toHaveBeenCalledTimes(1);
+            expect(getRelationsManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should reuse the same RelationsManager instance", () => {
@@ -188,23 +265,34 @@ describe("singletons.ts", () => {
             testRelationsManager.someMethod();
             testRelationsManager.someProperty;
 
-            expect(vi.mocked(RelationsManager)).toHaveBeenCalledTimes(1);
+            expect(getRelationsManagerConstructor()).toHaveBeenCalledTimes(1);
         });
 
         it("should handle method calls correctly", () => {
             const result = testRelationsManager.someMethod();
 
             expect(result).toBe("relations-result");
-            expect(mockRelationsManager.someMethod).toHaveBeenCalled();
+            expect(
+                globalThis.__createdInstances?.RelationsManager?.someMethod,
+            ).toHaveBeenCalled();
         });
     });
 
     describe("resetSingletons", () => {
         it("should reset all singleton instances to null", () => {
             // Reset mock properties to original values
-            mockMusigreeManager.someProperty = "musigree-property";
-            mockNetworkManager.someProperty = "network-property";
-            mockRelationsManager.someProperty = "relations-property";
+            if (globalThis.__createdInstances?.MusigreeManager) {
+                globalThis.__createdInstances.MusigreeManager.someProperty =
+                    "musigree-property";
+            }
+            if (globalThis.__createdInstances?.NetworkManager) {
+                globalThis.__createdInstances.NetworkManager.someProperty =
+                    "network-property";
+            }
+            if (globalThis.__createdInstances?.RelationsManager) {
+                globalThis.__createdInstances.RelationsManager.someProperty =
+                    "relations-property";
+            }
 
             // Initialize all managers
             testMusigreeManager.someProperty;
@@ -234,7 +322,9 @@ describe("singletons.ts", () => {
             // Reset singletons - this should call dispose on _networkManager
             resetSingletons();
 
-            expect(mockNetworkManager.dispose).toHaveBeenCalledTimes(1);
+            expect(
+                globalThis.__createdInstances?.NetworkManager?.dispose,
+            ).toHaveBeenCalledTimes(1);
         });
 
         it("should call dispose method on RelationsManager if it exists", () => {
@@ -244,18 +334,28 @@ describe("singletons.ts", () => {
             // Reset singletons - this should call dispose on _relationsManager
             resetSingletons();
 
-            expect(mockRelationsManager.dispose).toHaveBeenCalledTimes(1);
+            expect(
+                globalThis.__createdInstances?.RelationsManager?.dispose,
+            ).toHaveBeenCalledTimes(1);
         });
 
         it("should not call dispose on MusigreeManager (no dispose method)", () => {
             // Initialize musigree manager
             testMusigreeManager.someProperty;
 
+            // Clear any previous dispose calls
+            const musigreeInstance =
+                globalThis.__createdInstances?.MusigreeManager;
+            if (musigreeInstance?.dispose) {
+                musigreeInstance.dispose.mockClear();
+            }
+
             // Reset singletons
             resetSingletons();
 
-            // MusigreeManager doesn't have dispose method, so it shouldn't be called
-            expect(mockMusigreeManager.dispose).not.toHaveBeenCalled();
+            // MusigreeManager's dispose should not be called during reset
+            // since resetSingletons only calls dispose on NetworkManager and RelationsManager
+            expect(musigreeInstance?.dispose).not.toHaveBeenCalled();
         });
 
         it("should handle reset when managers are not initialized", () => {
@@ -270,7 +370,7 @@ describe("singletons.ts", () => {
                 someProperty: "test",
             } as any;
 
-            vi.mocked(NetworkManager).mockImplementationOnce(
+            getNetworkManagerConstructor().mockImplementationOnce(
                 () => mockManagerWithoutDispose,
             );
 
@@ -331,11 +431,14 @@ describe("singletons.ts", () => {
         it("should maintain separate instances for different managers", () => {
             // Get current call counts
             const musigreeCallsBefore =
-                mockMusigreeManager.someMethod.mock.calls.length;
+                globalThis.__createdInstances?.MusigreeManager?.someMethod?.mock
+                    .calls.length;
             const networkCallsBefore =
-                mockNetworkManager.someMethod.mock.calls.length;
+                globalThis.__createdInstances?.NetworkManager?.someMethod?.mock
+                    .calls.length;
             const relationsCallsBefore =
-                mockRelationsManager.someMethod.mock.calls.length;
+                globalThis.__createdInstances?.RelationsManager?.someMethod
+                    ?.mock.calls.length;
 
             const musigreeResult = testMusigreeManager.someMethod();
             const networkResult = testNetworkManager.someMethod();
@@ -346,15 +449,15 @@ describe("singletons.ts", () => {
             expect(relationsResult).toBe("relations-result");
 
             // Each should have been called once more
-            expect(mockMusigreeManager.someMethod).toHaveBeenCalledTimes(
-                musigreeCallsBefore + 1,
-            );
-            expect(mockNetworkManager.someMethod).toHaveBeenCalledTimes(
-                networkCallsBefore + 1,
-            );
-            expect(mockRelationsManager.someMethod).toHaveBeenCalledTimes(
-                relationsCallsBefore + 1,
-            );
+            expect(
+                globalThis.__createdInstances?.MusigreeManager?.someMethod,
+            ).toHaveBeenCalledTimes(musigreeCallsBefore + 1);
+            expect(
+                globalThis.__createdInstances?.NetworkManager?.someMethod,
+            ).toHaveBeenCalledTimes(networkCallsBefore + 1);
+            expect(
+                globalThis.__createdInstances?.RelationsManager?.someMethod,
+            ).toHaveBeenCalledTimes(relationsCallsBefore + 1);
         });
     });
 
@@ -369,7 +472,10 @@ describe("singletons.ts", () => {
 
         it("should handle get trap with non-function values", () => {
             // Reset the mock to ensure clean state
-            mockMusigreeManager.someProperty = "musigree-property";
+            if (globalThis.__createdInstances?.MusigreeManager) {
+                globalThis.__createdInstances.MusigreeManager.someProperty =
+                    "musigree-property";
+            }
             const property = testMusigreeManager.someProperty;
 
             expect(property).toBe("musigree-property");

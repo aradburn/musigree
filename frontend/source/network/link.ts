@@ -5,7 +5,7 @@
  */
 
 import * as d3 from "d3";
-import { debounce } from "../utils";
+import debounce from "debounce";
 import type { SimLink } from "./data";
 import { getLinkColorClass } from "../color";
 import { linkTooltip } from "./tooltips";

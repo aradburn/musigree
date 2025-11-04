@@ -128,7 +128,7 @@ async def process_entity_pass_two_worker_async(
 
 
 async def worker_pass_two_single(
-    entity_repository: EntityRepository, entity: Entity, proc_name: str
+    entity_repository: EntityRepository, entity: Entity, _proc_name: str
 ) -> None:
     """
     Processes a single entity in the second pass.
@@ -140,7 +140,7 @@ async def worker_pass_two_single(
     Args:
         entity_repository (EntityRepository): The repository for entity operations.
         entity (Entity): The entity to process.
-        proc_name (str): The name of the current process.
+        _proc_name (str): The name of the current process.
 
     Raises:
         DatabaseError: If there's an error during database operations.

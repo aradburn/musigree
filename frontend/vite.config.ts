@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import removeConsole from "vite-plugin-remove-console";
 
@@ -25,6 +25,13 @@ export default defineConfig({
         manifest: "manifest.json",
         rollupOptions: {
             input: "source/index.ts",
+            output: {
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name == 'style.css')
+                        return 'assets/musigree-[hash].css';
+                    return assetInfo.name;
+                },
+            },
             external: [ /public/ ],
         },
         emptyOutDir: true,

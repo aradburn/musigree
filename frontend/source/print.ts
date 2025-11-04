@@ -169,7 +169,7 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
     // Extract CSS Rules
     let extractedCSSText = "";
     for (const sheet of document.styleSheets) {
-        if (sheet.ownerNode.textContent.includes("Musigree")) {
+        if (sheet.href.includes("musigree-")) {
             try {
                 const cssRules = sheet.cssRules;
                 if (!cssRules) continue;
@@ -179,9 +179,9 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
                         continue;
 
                     const networkSelectorText = rule.selectorText.includes(
-                        "#networkLayer ",
+                        "#network-layer ",
                     )
-                        ? rule.selectorText.replace("#networkLayer ", "")
+                        ? rule.selectorText.replace("#network-layer ", "")
                         : rule.selectorText;
                     if (selectorTextArr.has(networkSelectorText)) {
                         const varFound = rule.cssText.match(varRegex);
@@ -256,12 +256,20 @@ export const svgString2Image = (
         context.clearRect(0, 0, width, height);
         context.drawImage(image, 0, 0, width, height);
 
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                throw new Error("Failed to create blob from canvas");
-            }
-            callback(blob, blob.size);
-        }, "image/" + format);
+        const logo = new Image();
+        logo.onload = (): void => {
+            // context.imageSmoothingEnabled = false;
+            // context.clearRect(0, 0, logo.width, logo.height);
+            context.drawImage(logo, 200, 200);
+
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    throw new Error("Failed to create blob from canvas");
+                }
+                callback(blob, blob.size);
+            }, "image/" + format);
+        };
+        logo.src = "/public/img/musigree logo with website v3.png";
     };
     image.src = imgsrc;
 };

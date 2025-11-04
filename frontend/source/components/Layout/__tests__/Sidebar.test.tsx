@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
-import { Sidebar } from "../Sidebar";
+import { SidebarLeft } from "../SidebarLeft";
 
 // Mock dependencies
 vi.mock("../../../print", () => ({
@@ -28,7 +28,7 @@ vi.mock("../../Visualization/ForceControls", () => ({
 import { printSvg } from "../../../print";
 import { musigreeManager } from "../../../core";
 
-describe("Sidebar Component", () => {
+describe("SidebarLeft Component", () => {
     beforeEach(() => {
         // Clear all mocks before each test
         vi.clearAllMocks();
@@ -43,18 +43,15 @@ describe("Sidebar Component", () => {
     });
 
     it("renders correctly with all expected elements", () => {
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Check if the sidebar container is rendered
-        const sidebar = screen
-            .getByRole("button", { name: /details/i })
+        const sidebarLeft = screen
+            .getByRole("button", { name: /print/i })
             .closest(".sidebar");
-        expect(sidebar).toBeInTheDocument();
+        expect(sidebarLeft).toBeInTheDocument();
 
         // Check if all buttons are rendered with correct text
-        expect(
-            screen.getByRole("button", { name: /details/i }),
-        ).toBeInTheDocument();
         expect(
             screen.getByRole("button", { name: /roles/i }),
         ).toBeInTheDocument();
@@ -66,28 +63,9 @@ describe("Sidebar Component", () => {
         expect(screen.getByTestId("mock-force-controls")).toBeInTheDocument();
     });
 
-    it("dispatches custom event when Details button is clicked", async () => {
-        const user = userEvent.setup();
-        render(<Sidebar />);
-
-        // Click the Details button
-        await user.click(screen.getByRole("button", { name: /details/i }));
-
-        // Check if the correct custom event was dispatched
-        expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
-
-        // Get the first call argument (the event)
-        const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
-            .calls[0][0];
-        expect(dispatchedEvent).toBeInstanceOf(CustomEvent);
-        expect(dispatchedEvent.type).toBe(
-            "musigree:show-entity-details-overlay",
-        );
-    });
-
     it("dispatches custom event when Roles button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Click the Roles button
         await user.click(screen.getByRole("button", { name: /roles/i }));
@@ -104,7 +82,7 @@ describe("Sidebar Component", () => {
 
     it("calls printSvg function when Print button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Sidebar />);
+        render(<SidebarLeft />);
 
         // Click the Print button
         await user.click(screen.getByRole("button", { name: /print/i }));
@@ -115,24 +93,5 @@ describe("Sidebar Component", () => {
             musigreeManager.svgDimensions[0],
             musigreeManager.svgDimensions[1],
         );
-    });
-
-    it("renders with appropriate Bootstrap classes for responsive layout", () => {
-        render(<Sidebar />);
-
-        // Check if the sidebar has the expected Bootstrap classes
-        const sidebar = screen
-            .getByRole("button", { name: /details/i })
-            .closest(".sidebar");
-        expect(sidebar).toHaveClass("d-flex");
-        expect(sidebar).toHaveClass("h-100");
-        expect(sidebar).toHaveClass("flex-sm-column");
-        expect(sidebar).toHaveClass("bg-secondary-subtle");
-
-        // Check if the buttons have responsive text classes
-        const detailsButton = screen.getByRole("button", { name: /details/i });
-        const detailsText = detailsButton.querySelector("span");
-        expect(detailsText).toHaveClass("d-none");
-        expect(detailsText).toHaveClass("d-sm-inline");
     });
 });

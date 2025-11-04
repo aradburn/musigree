@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FSMInstance } from "../types";
 
-// Create a mock implementation of MusigreeFSM
-const mockMusigreeFSM = vi.fn().mockImplementation(() => ({
+// Create a mock instance of MusigreeFSM
+const createMockFSMInstance = () => ({
     state: "uninitialized",
     handle: vi.fn(),
     handleError: vi.fn(),
@@ -10,8 +10,9 @@ const mockMusigreeFSM = vi.fn().mockImplementation(() => ({
     showRadial: vi.fn(),
     transition: vi.fn(),
     requestNetwork: vi.fn(),
+    requestRelations: vi.fn(),
+    requestEntity: vi.fn(),
     requestRandom: vi.fn(),
-    requestRadial: vi.fn(),
     selectEntity: vi.fn(),
     loadInlineData: vi.fn(),
     toggleRadial: vi.fn(),
@@ -20,11 +21,19 @@ const mockMusigreeFSM = vi.fn().mockImplementation(() => ({
     toggleFilter: vi.fn(),
     pushState: vi.fn(),
     on: vi.fn(),
-}));
+});
+
+// Track constructor calls
+let mockMusigreeFSMCallCount = 0;
 
 // Mock the MusigreeFSM class
 vi.mock("../MusigreeFSM", () => ({
-    MusigreeFSM: mockMusigreeFSM,
+    MusigreeFSM: class {
+        constructor() {
+            mockMusigreeFSMCallCount++;
+            return createMockFSMInstance();
+        }
+    },
 }));
 
 describe("FSM Module", () => {
@@ -46,11 +55,14 @@ describe("FSM Module", () => {
     });
 
     it("should create a MusigreeFSM when initFSM is called", () => {
+        // Reset call count
+        mockMusigreeFSMCallCount = 0;
+
         // Call initFSM
         fsmModule.initFSM();
 
         // Check that MusigreeFSM constructor was called
-        expect(mockMusigreeFSM).toHaveBeenCalledTimes(1);
+        expect(mockMusigreeFSMCallCount).toBe(1);
     });
 
     it("fsm should be defined after initFSM is called", () => {
@@ -79,8 +91,9 @@ describe("FSM Module", () => {
             "showRadial",
             "transition",
             "requestNetwork",
+            "requestRelations",
+            "requestEntity",
             "requestRandom",
-            "requestRadial",
             "selectEntity",
             "loadInlineData",
             "toggleRadial",

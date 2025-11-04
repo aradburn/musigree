@@ -20,7 +20,13 @@ import {
 } from "../network/data";
 import { pruneSimData } from "../network/pruning";
 import type { RelationsData } from "../relations";
-import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../api";
+import type { EntityData } from "../entities";
+import {
+    fetchAPINetwork,
+    fetchAPIRandom,
+    fetchAPIRelations,
+    fetchAPIEntity,
+} from "../api";
 import { resetNetworkTransform } from "../network/init";
 import { FORCE, MESSAGE } from "../constants";
 import { FSM, INIT } from "../constants";
@@ -30,12 +36,12 @@ import { showMessage } from "../messages";
 import type { Actions } from "./actions/Actions";
 import type { State, StateContext } from "./State";
 import { ViewingNetworkState } from "./states/ViewingNetworkState";
-import { RequestingNetworkState } from "./states/RequestingNetworkState";
-import { RequestingRadialState } from "./states/RequestingRadialState";
-import { RequestingRandomState } from "./states/RequestingRandomState";
 import { ViewingRadialState } from "./states/ViewingRadialState";
+import { RequestingNetworkState } from "./states/RequestingNetworkState";
+import { RequestingRelationsState } from "./states/RequestingRelationsState";
+import { RequestingRandomState } from "./states/RequestingRandomState";
 import { UninitializedState } from "./states/UninitializedState";
-import { debounce } from "../utils";
+import debounce from "debounce";
 import {
     AbstractFSM,
     type EventData,
@@ -84,19 +90,19 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         // Register all states
         this.registerState("uninitialized", new UninitializedState());
         this.registerState("state-viewing-network", new ViewingNetworkState());
+        this.registerState("state-viewing-radial", new ViewingRadialState());
         this.registerState(
             "state-requesting-network",
             new RequestingNetworkState(),
         );
         this.registerState(
-            "state-requesting-radial",
-            new RequestingRadialState(),
+            "state-requesting-relations",
+            new RequestingRelationsState(),
         );
         this.registerState(
             "state-requesting-random",
             new RequestingRandomState(),
         );
-        this.registerState("state-viewing-radial", new ViewingRadialState());
 
         // Initialize the FSM
         this.initialize();
@@ -107,7 +113,13 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     handle(
         event: string,
-        data: NetworkData | RelationsData | NetworkCenter | NodeKey | null,
+        data:
+            | NetworkData
+            | RelationsData
+            | EntityData
+            | NetworkCenter
+            | NodeKey
+            | null,
         pushHistory: boolean,
         fixed: boolean,
     ): void {
@@ -130,14 +142,20 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                     pushHistory,
                 );
                 break;
-            case "received-radial":
-                this._state.receivedRadial?.(context, data as RelationsData);
+            case "received-relations":
+                this._state.receivedRelations?.(context, data as RelationsData);
+                break;
+            case "received-entity":
+                this._state.receivedEntity?.(context, data as EntityData);
                 break;
             case "received-random":
                 this._state.receivedRandom?.(context, data as NetworkCenter);
                 break;
             case "request-network":
                 this._state.requestNetwork?.(context, data as NodeKey);
+                break;
+            case "request-entity":
+                this._state.requestEntity?.(context, data as NodeKey);
                 break;
             case "request-random":
                 this._state.requestRandom?.(context);
@@ -268,7 +286,10 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             }
         }, INIT.DEBOUNCE_DELAY);
 
-        window.addEventListener(FSM.EVENTS.RESIZE, handleResize);
+        window.addEventListener(
+            FSM.EVENTS.RESIZE,
+            handleResize as EventListener,
+        );
 
         // Handle SVG mousedown events
         const svgDocument = document.getElementById("svg");
@@ -280,7 +301,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                     this.handle("show-network", null, false, false);
                 }
                 this.hideRolesOverlay();
-                this.hideEntityDetailsOverlay();
             });
         }
 
@@ -299,29 +319,11 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
     }
 
     /**
-     * Shows the entity details panel overlay
-     */
-    showEntityDetailsOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:show-entity-details-overlay");
-        window.dispatchEvent(event);
-    }
-
-    /**
      * Hides the roles panel overlay
      */
     hideRolesOverlay(): void {
         // Dispatch the event for React to handle
         const event = new CustomEvent("musigree:hide-roles-overlay");
-        window.dispatchEvent(event);
-    }
-
-    /**
-     * Hides the entity details panel overlay
-     */
-    hideEntityDetailsOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:hide-entity-details-overlay");
         window.dispatchEvent(event);
     }
 
@@ -394,6 +396,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      * Request network data for an entity
      */
     requestNetwork(entityKey: NodeKey, pushHistory: boolean): void {
+        console.log("FSM requestNetwork entityKey: ", entityKey);
+
         this.transition("state-requesting-network");
 
         const roles = getSelectedRoles() || [];
@@ -419,17 +423,36 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
     }
 
     /**
-     * Request radial data for an entity
+     * Request relations data for an entity
      */
-    requestRadial(entityKey: NodeKey): void {
-        this.transition("state-requesting-radial");
+    requestRelations(entityKey: NodeKey): void {
+        console.log("FSM requestRelations entityKey: ", entityKey);
 
-        fetchAPIRadial(entityKey)
+        this.transition("state-requesting-relations");
+
+        fetchAPIRelations(entityKey)
             .then((relationsData) => {
-                this.handle("received-radial", relationsData, false, false);
+                this.handle("received-relations", relationsData, false, false);
             })
             .catch((error) => {
-                console.error("Error fetching radial data:", error);
+                console.error("Error fetching relations data:", error);
+
+                this.handleError(error);
+            });
+    }
+
+    /**
+     * Request entity data
+     */
+    requestEntity(entityKey: NodeKey): void {
+        console.log("FSM requestEntity entityKey: ", entityKey);
+
+        fetchAPIEntity(entityKey)
+            .then((entityData) => {
+                this.handle("received-entity", entityData, false, false);
+            })
+            .catch((error) => {
+                console.error("Error fetching entity data:", error);
 
                 this.handleError(error);
             });
@@ -439,6 +462,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      * Request a random entity
      */
     requestRandom(): void {
+        console.log("FSM requestRandom");
+
         this.transition("state-requesting-network");
 
         const roles = getSelectedRoles() || [];
@@ -506,8 +531,22 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      * Display the radial view
      */
     showRadial(data?: RelationsData): void {
+        console.log("FSM showRadial relationsData: ", data);
+
         this.transition("state-viewing-radial");
         this.handle("show-radial", data, false, false);
+    }
+
+    /**
+     * Select an entity in the network
+     */
+    updateEntityDetails(data: EntityData): void {
+        console.log("FSM updateEntityDetails", data);
+        const event = new CustomEvent<EntityData>(
+            "musigree:entity-details-updated",
+            { detail: data },
+        );
+        window.dispatchEvent(event);
     }
 
     /**
@@ -568,40 +607,40 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      * Toggle radial view
      */
     toggleRadial(status: boolean): void {
-        const entityRelations = document.getElementById("entity-relations");
-        if (!entityRelations) {
-            console.warn("entity-relations element not found in DOM");
-            return;
-        }
+        //         const entityRelations = document.getElementById("entity-relations");
+        //         if (!entityRelations) {
+        //             console.warn("entity-relations element not found in DOM");
+        //             return;
+        //         }
 
         if (status) {
-            if (this._showNetworkHandler) {
-                entityRelations.removeEventListener(
-                    "click",
-                    this._showNetworkHandler,
-                );
-            }
+            //             if (this._showNetworkHandler) {
+            //                 entityRelations.removeEventListener(
+            //                     "click",
+            //                     this._showNetworkHandler,
+            //                 );
+            //             }
 
             this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-network", null, false, false);
                 e.preventDefault();
             };
 
-            entityRelations.addEventListener("click", this._showNetworkHandler);
+            //             entityRelations.addEventListener("click", this._showNetworkHandler);
         } else {
-            if (this._showNetworkHandler) {
-                entityRelations.removeEventListener(
-                    "click",
-                    this._showNetworkHandler,
-                );
-            }
+            //             if (this._showNetworkHandler) {
+            //                 entityRelations.removeEventListener(
+            //                     "click",
+            //                     this._showNetworkHandler,
+            //                 );
+            //             }
 
             this._showNetworkHandler = (e: Event): void => {
                 this.handle("show-radial", null, false, false);
                 e.preventDefault();
             };
 
-            entityRelations.addEventListener("click", this._showNetworkHandler);
+            //             entityRelations.addEventListener("click", this._showNetworkHandler);
         }
     }
 
@@ -610,6 +649,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     selectEntity(entityKey: NodeKey | null, fixed: boolean): void {
         console.log("FSM selectEntity", entityKey, fixed);
+
         musigreeManager.selectedNodeKey = entityKey;
         let nodeOn: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
         let nodeOff: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>;
@@ -718,5 +758,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             //             console.log("linkOff: ", linkOff);
             linkOff.classed("selected", false);
         }
+
+        // Request entity details
+        this.handle("request-entity", entityKey, false, false);
     }
 }

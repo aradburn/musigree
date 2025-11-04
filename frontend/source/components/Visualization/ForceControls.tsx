@@ -11,7 +11,7 @@ interface ForceControlsProps {
 
 /**
  * Component for force layout controls (sliders).
- * Used in Sidebar.
+ * Used in SidebarLeft.
  */
 export const ForceControls: React.FC<ForceControlsProps> = ({
     className = "",

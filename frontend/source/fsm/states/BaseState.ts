@@ -4,6 +4,7 @@
 
 import type { NodeKey, NetworkData } from "../../network/data";
 import type { RelationsData } from "../../relations";
+import type { EntityData } from "../../entities";
 import type { State, StateContext } from "../State";
 
 /**
@@ -45,9 +46,16 @@ export abstract class BaseState implements State {
     }
 
     /**
-     * Handle a radial data received event
+     * Handle a relations data received event
      */
-    receivedRadial(_context: StateContext, _data: RelationsData): void {
+    receivedRelations(_context: StateContext, _data: RelationsData): void {
+        // Default implementation does nothing
+    }
+
+    /**
+     * Handle a entity data received event
+     */
+    receivedEntity(_context: StateContext, _data: EntityData): void {
         // Default implementation does nothing
     }
 
@@ -69,6 +77,13 @@ export abstract class BaseState implements State {
      * Handle a request to show the radial view
      */
     showRadial(_context: StateContext): void {
+        // Default implementation does nothing
+    }
+
+    /**
+     * Handle a request to update the entity details view
+     */
+    updateEntityDetails(_context: StateContext): void {
         // Default implementation does nothing
     }
 

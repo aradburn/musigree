@@ -116,7 +116,6 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
         Returns:
             str: The URL to the asset.
         """
-        log.debug(f"prod asset: {file_path}")
         return f"/prodassets/{manifest[file_path]['file']}"
 
     asset_func = prod_asset if is_production else dev_asset

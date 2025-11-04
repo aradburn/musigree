@@ -127,9 +127,8 @@ def create_app(config: Configuration) -> FastAPI:
     if config.PRODUCTION:
         # Production: specific origins only
         allowed_origins = [
-            "https://musigree.azurewebsites.net",
             "https://www.musigree.com",  # Add your production domain
-            "http://localhost:8080",
+            "https://musigree.com",  # Add your production domain
         ]
         log.debug("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -137,18 +136,20 @@ def create_app(config: Configuration) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_methods=["GET", "POST", "PUT", "DELETE"],
-            allow_headers=["Content-Type", "Authorization"],
-            allow_credentials=True,
+            allow_methods=["GET"],
+            allow_headers=["Content-Type"],
+            allow_credentials=False,
         )
     else:
         # Development: more permissive for local development
         # noinspection PyTypeChecker
         allowed_origins = [
-            "http://localhost:3000",
+            "http://localhost:5000",
             "http://localhost:5173",
             "http://localhost:8080",
             "http://127.0.0.1:5000",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:8080",
         ]
         log.debug("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")

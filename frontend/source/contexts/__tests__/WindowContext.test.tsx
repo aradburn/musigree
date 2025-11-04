@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { WindowProvider, WindowContext } from "../WindowContext";
 import { INIT, SVG } from "../../constants";
@@ -23,6 +23,10 @@ vi.mock("../../core", () => ({
 
 vi.mock("../../network/init", () => ({
     resetNetworkTransform: vi.fn(),
+}));
+
+vi.mock("../../svg", () => ({
+    setSvgSize: vi.fn(),
 }));
 
 vi.mock("../../network/events", () => ({
@@ -174,7 +178,7 @@ describe("WindowContext", () => {
         );
     });
 
-    it("handleResize updates state and resets network", () => {
+    it("handleResize updates state and resets network", async () => {
         let contextValue;
 
         render(
@@ -199,20 +203,22 @@ describe("WindowContext", () => {
         });
 
         // Call handleResize
-        act(() => {
+        await act(async () => {
             contextValue.handleResize();
         });
 
-        // Check that state was updated
-        expect(contextValue.state).toEqual({
-            width: 800,
-            height: 600,
-            dpr: 2,
-            dimensions: [800, 600],
-            svgDimensions: [
-                800 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
-                600 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
-            ],
+        // Wait for state to update and check that state was updated
+        await waitFor(() => {
+            expect(contextValue.state).toEqual({
+                width: 800,
+                height: 600,
+                dpr: 2,
+                dimensions: [800, 600],
+                svgDimensions: [
+                    800 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
+                    600 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
+                ],
+            });
         });
 
         // Check that network was reset
@@ -250,12 +256,7 @@ describe("WindowContext", () => {
         });
     });
 
-    it("catches and logs errors during resize", () => {
-        // Mock resetNetworkTransform to throw an error
-        vi.mocked(resetNetworkTransform).mockImplementation(() => {
-            throw new Error("Test error");
-        });
-
+    it("catches and logs errors during resize", async () => {
         let contextValue;
 
         render(
@@ -269,15 +270,22 @@ describe("WindowContext", () => {
             </WindowProvider>,
         );
 
+        // Mock resetNetworkTransform to throw an error AFTER component is rendered
+        vi.mocked(resetNetworkTransform).mockImplementation(() => {
+            throw new Error("Test error");
+        });
+
         // Call handleResize which should now throw an error
-        act(() => {
+        await act(async () => {
             contextValue.handleResize();
         });
 
-        // Check that error was caught and logged
-        expect(console.error).toHaveBeenCalledWith(
-            "Error during window resize:",
-            expect.any(Error),
-        );
+        // Wait a bit for the error to be logged (debounce might delay it)
+        await waitFor(() => {
+            expect(console.error).toHaveBeenCalledWith(
+                "Error during window resize:",
+                "Test error",
+            );
+        });
     });
 });

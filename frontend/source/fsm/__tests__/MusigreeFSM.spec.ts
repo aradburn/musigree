@@ -10,7 +10,7 @@ import type {
 import type { RelationsData } from "../../relations";
 import type { APINetworkDataResponse } from "../../api";
 import { showMessage } from "../../messages";
-import { fetchAPINetwork, fetchAPIRandom, fetchAPIRadial } from "../../api";
+import { fetchAPINetwork, fetchAPIRandom, fetchAPIRelations } from "../../api";
 import type { State } from "../State";
 import { AbstractFSM } from "../AbstractFSM";
 import type { AbstractFSM as _AbstractFSM } from "../AbstractFSM";
@@ -189,15 +189,12 @@ vi.mock("../../api", () => ({
             lastTouchTime: 0,
         },
     }),
-    fetchAPIRadial: vi.fn().mockResolvedValue({}),
+    fetchAPIRelations: vi.fn().mockResolvedValue({}),
+    fetchAPIEntity: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("../../messages", () => ({
     showMessage: vi.fn(),
-}));
-
-vi.mock("../../utils", () => ({
-    debounce: vi.fn().mockImplementation((fn) => fn as unknown),
 }));
 
 // Define the DocumentMock type to avoid 'global' reference issues
@@ -310,7 +307,7 @@ describe("MusigreeFSM", () => {
             expect(states.has("uninitialized")).toBe(true);
             expect(states.has("state-viewing-network")).toBe(true);
             expect(states.has("state-requesting-network")).toBe(true);
-            expect(states.has("state-requesting-radial")).toBe(true);
+            expect(states.has("state-requesting-relations")).toBe(true);
             expect(states.has("state-requesting-random")).toBe(true);
             expect(states.has("state-viewing-radial")).toBe(true);
         });
@@ -438,20 +435,20 @@ describe("MusigreeFSM", () => {
             });
         });
 
-        describe("requestRadial", () => {
-            it("should fetch radial data for an entity", async () => {
-                const fetchAPIRadialSpy = vi.mocked(fetchAPIRadial);
+        describe("requestRelations", () => {
+            it("should fetch relations data for an entity", async () => {
+                const fetchAPIRelationsSpy = vi.mocked(fetchAPIRelations);
                 const transitionSpy = vi.spyOn(
                     fsm as unknown as MusigreeFSMPrivate,
                     "transition",
                 );
 
-                fsm.requestRadial("artist-123");
+                fsm.requestRelations("artist-123");
 
                 expect(transitionSpy).toHaveBeenCalledWith(
-                    "state-requesting-radial",
+                    "state-requesting-relations",
                 );
-                expect(fetchAPIRadialSpy).toHaveBeenCalledWith("artist-123");
+                expect(fetchAPIRelationsSpy).toHaveBeenCalledWith("artist-123");
             });
         });
 

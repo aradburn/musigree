@@ -77,7 +77,6 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-    # noinspection PyUnreachableCode
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_integrity_error(
@@ -92,12 +91,13 @@ class TestOfflineTransaction:
         mock_ctx.set.return_value = "old_token"
         test_error = IntegrityError("Test integrity error", None, Exception("Original error"))
 
-        # Execute - IntegrityError is caught and handled, not re-raised
-        async with offline_transaction() as session:
-            assert session is mock_session
-            raise test_error
+        # Execute & Verify - IntegrityError is caught, handled, and re-raised
+        with pytest.raises(IntegrityError):
+            async with offline_transaction() as session:
+                assert session is mock_session
+                raise test_error
 
-        # Verify - this section is reachable because IntegrityError is handled
+        # Verify
         mock_get_session.assert_called_once()
         mock_ctx.set.assert_called_once_with(mock_session)
         mock_session.rollback.assert_called_once()
@@ -105,7 +105,6 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-    # noinspection PyUnreachableCode
     @patch("musigree.offline.database.offline_transaction.get_offline_session")
     @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_invalid_request_error(
@@ -120,12 +119,13 @@ class TestOfflineTransaction:
         mock_ctx.set.return_value = "old_token"
         test_error = InvalidRequestError("Test invalid request error")
 
-        # Execute - InvalidRequestError is caught and handled, not re-raised
-        async with offline_transaction() as session:
-            assert session is mock_session
-            raise test_error
+        # Execute & Verify - InvalidRequestError is caught, handled, and re-raised
+        with pytest.raises(InvalidRequestError, match="Test invalid request error"):
+            async with offline_transaction() as session:
+                assert session is mock_session
+                raise test_error
 
-        # Verify - this section is reachable because InvalidRequestError is handled
+        # Verify
         mock_get_session.assert_called_once()
         mock_ctx.set.assert_called_once_with(mock_session)
         mock_session.rollback.assert_called_once()
@@ -148,11 +148,12 @@ class TestOfflineTransaction:
         test_error = IntegrityError("Commit error", None, Exception("Original error"))
         mock_session.commit.side_effect = test_error
 
-        # Execute
-        async with offline_transaction() as session:
-            assert session is mock_session
-            # No exceptions raised in the block
-            pass
+        # Execute & Verify - commit error is caught, handled, and re-raised
+        with pytest.raises(IntegrityError):
+            async with offline_transaction() as session:
+                assert session is mock_session
+                # No exceptions raised in the block
+                pass
 
         # Verify
         mock_get_session.assert_called_once()

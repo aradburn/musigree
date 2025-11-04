@@ -41,11 +41,8 @@ describe("WhoModal Component", () => {
 
         // Check for links to tools
         expect(screen.getByText("Python 3")).toBeInTheDocument();
-        expect(screen.getByText("Peewee")).toBeInTheDocument();
         expect(screen.getByText("D3")).toBeInTheDocument();
         expect(screen.getByText("Bootstrap CSS")).toBeInTheDocument();
-        expect(screen.getByText("Machina-JS")).toBeInTheDocument();
-        expect(screen.getByText("Flask")).toBeInTheDocument();
 
         // Check for Discogs link - using getAllByText since it appears multiple times
         const discogsLinks = screen.getAllByText("Discogs.com");

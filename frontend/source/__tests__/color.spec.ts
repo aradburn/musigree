@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { getNodeColorClass, getLinkColorClass } from "../color";
 import type { SimNode, SimLink } from "../network/data";
 import { NodeType } from "../network/data";

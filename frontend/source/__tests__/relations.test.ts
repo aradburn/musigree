@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type MockInstance,
+} from "vitest";
 import * as d3 from "d3";
 import * as relationsModule from "../relations";
 import {
@@ -147,14 +155,20 @@ vi.mock("../core", () => {
 });
 
 describe("Relations Module", () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>;
+    let consoleSpy: MockInstance<typeof console.log>;
 
     // Create spies for each function
-    let initRelationsSpy: ReturnType<typeof vi.spyOn>;
-    let setRelationsDataSpy: ReturnType<typeof vi.spyOn>;
-    let createRadialChartSpy: ReturnType<typeof vi.spyOn>;
-    let handleZoomSpy: ReturnType<typeof vi.spyOn>;
-    let clearRelationsLayerSpy: ReturnType<typeof vi.spyOn>;
+    let initRelationsSpy: MockInstance<typeof relationsModule.initRelations>;
+    let setRelationsDataSpy: MockInstance<
+        typeof relationsModule.setRelationsData
+    >;
+    let createRadialChartSpy: MockInstance<
+        typeof relationsModule.createRadialChart
+    >;
+    let handleZoomSpy: MockInstance<typeof relationsModule.handleZoom>;
+    let clearRelationsLayerSpy: MockInstance<
+        typeof relationsModule.clearRelationsLayer
+    >;
 
     beforeEach(() => {
         // We'll use a hybrid approach - spy on the real implementation for simpler functions
@@ -2580,6 +2594,13 @@ describe("Relations Module", () => {
         });
 
         it("should call internal transform function correctly", () => {
+            // Ensure d3.select returns a proper mock with append method
+            const mockSelection = {
+                append: vi.fn().mockReturnThis(),
+                attr: vi.fn().mockReturnThis(),
+            };
+            vi.spyOn(d3, "select").mockReturnValue(mockSelection as any);
+
             // Restore original implementation
             vi.spyOn(relationsModule, "createRadialChart").mockImplementation(
                 () => {
@@ -2663,6 +2684,12 @@ describe("Relations Module", () => {
         });
 
         it("should test the textAnchor function with coverage for different quadrants", () => {
+            // Ensure d3.select returns a proper mock with append method
+            const mockSelection = {
+                append: vi.fn().mockReturnThis(),
+                attr: vi.fn().mockReturnThis(),
+            };
+            vi.spyOn(d3, "select").mockReturnValue(mockSelection as any);
             // Restore original implementation
             vi.spyOn(relationsModule, "createRadialChart").mockImplementation(
                 () => {
@@ -2723,6 +2750,13 @@ describe("Relations Module", () => {
         });
 
         it("should handle arc generation with proper attributes", () => {
+            // Ensure d3.select returns a proper mock with append method
+            const mockSelection = {
+                append: vi.fn().mockReturnThis(),
+                attr: vi.fn().mockReturnThis(),
+            };
+            vi.spyOn(d3, "select").mockReturnValue(mockSelection as any);
+
             // Create more detailed mock of d3.arc
             const arcMock = {
                 startAngle: vi.fn().mockReturnThis(),
@@ -2783,6 +2817,13 @@ describe("Relations Module", () => {
         });
 
         it("should handle d3 interpolation for arc animation tweening", () => {
+            // Ensure d3.select returns a proper mock with append method
+            const mockSelection = {
+                append: vi.fn().mockReturnThis(),
+                attr: vi.fn().mockReturnThis(),
+            };
+            vi.spyOn(d3, "select").mockReturnValue(mockSelection as any);
+
             // Mock d3.interpolate to track its usage
             const interpolateMock = vi.fn(
                 (start, end) => (t: number) => start + (end - start) * t,

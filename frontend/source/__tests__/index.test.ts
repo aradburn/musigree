@@ -66,8 +66,9 @@ describe("index.ts", () => {
                 domContentLoadedCallback.handleEvent(mockEvent);
             }
 
-            // Allow async import to resolve (using a zero-timeout)
-            await new Promise((resolve) => setTimeout(resolve, 0));
+            // Allow async import promise to resolve
+            // The dynamic import in the handler returns a promise that needs to resolve
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
             // Verify initReactApp was called
             expect(initReactApp).toHaveBeenCalled();

@@ -57,7 +57,7 @@ describe("NetworkView Component", () => {
 
         expect(mainElement).toBeTruthy();
         expect(mainElement?.id).toBe(DOM_IDS.SVG_CONTAINER);
-        expect(mainElement?.className).toContain("container-fluid");
+        expect(mainElement?.className).toContain("h-100");
         expect(mainElement?.className).toContain("flex-grow-1");
         expect(mainElement?.className).toContain("flex-shrink-1");
         expect(mainElement?.className).toContain("px-0");

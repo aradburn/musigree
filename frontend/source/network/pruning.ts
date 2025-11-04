@@ -3,6 +3,7 @@ import type { LinkKey, NodeKey, SimData } from "./data";
 // Graph size limits
 const MAX_NODES_BEFORE_PRUNING = 600; // Maximum nodes before pruning is triggered
 const MAX_LINKS_BEFORE_PRUNING = 1800; // Maximum links before pruning is triggered
+const MAX_ALIAS_LINKS_BEFORE_PRUNING = 100; // Maximum links before pruning is triggered
 
 export const pruneSimData = (simData: SimData): SimData => {
     // Get some useful stats
@@ -28,6 +29,14 @@ export const pruneSimData = (simData: SimData): SimData => {
         }
     }
 
+    const aliasLinkCount = Array.from(simData.linkMap.keys()).filter((key) => {
+        const parts = key.split("-");
+        const role = parts.slice(2, 2 + parts.length - 4).join("-");
+        return role == "alias";
+    }).length;
+    if (aliasLinkCount > MAX_ALIAS_LINKS_BEFORE_PRUNING) {
+        console.log("alias size  : ", aliasLinkCount);
+    }
     console.log("pruning final node size  : ", simData.nodeMap.size);
     console.log("pruning final link size  : ", simData.linkMap.size);
 
@@ -51,21 +60,33 @@ const prune = (
         simData.nodeMap.size > MAX_NODES_BEFORE_PRUNING ||
         simData.linkMap.size > MAX_LINKS_BEFORE_PRUNING
     ) {
+        //         console.log("pruning maxDist: " + maxDist + ", minLinks: " + minLinks);
         const nodeKeysToPrune: NodeKey[] = [];
+        const nodeKeyDistancesToPrune: number[] = [];
         Array.from(simData.nodeMap.values()).forEach((node) => {
+            //             console.log("  node: dist" + node.distance + ", links len: " + node.links.length);
             if (
                 node.distance &&
                 node.distance >= maxDist &&
                 node.links &&
                 node.links.length <= minLinks
             ) {
+                //                 console.log("    node pruned: dist: " + node.distance + ", links len: " + node.links.length);
                 nodeKeysToPrune.push(node.key);
+                nodeKeyDistancesToPrune.push(node.distance);
             }
         });
+        // Check if all nodes to be removed are at distance 1
+        const abortPruning = nodeKeyDistancesToPrune.every((val) => val === 1);
+        if (abortPruning) {
+            nodeKeysToPrune.length = 0;
+            console.log("    aborted pruning");
+        }
+
         nodeKeysToPrune.forEach((key) => {
             simData.nodeMap.delete(key);
         });
-        //         console.log("pruned nodes: ", nodeKeysToPrune.length);
+        console.log("pruned nodes: ", nodeKeysToPrune.length);
 
         const linkKeysToPrune: LinkKey[] = [];
         const intermediateNodesToPrune: NodeKey[] = [];

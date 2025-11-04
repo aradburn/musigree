@@ -11,7 +11,7 @@ describe("WelcomeModal Component", () => {
 
         // Modal content should not be visible
         expect(
-            screen.queryByText("Hello music lovers!"),
+            screen.queryByText("Welcome music lovers!"),
         ).not.toBeInTheDocument();
     });
 
@@ -20,7 +20,7 @@ describe("WelcomeModal Component", () => {
 
         // Modal content should not be visible
         expect(
-            screen.queryByText("Hello music lovers!"),
+            screen.queryByText("Welcome music lovers!"),
         ).not.toBeInTheDocument();
     });
 
@@ -28,13 +28,14 @@ describe("WelcomeModal Component", () => {
         render(<WelcomeModal show={true} />);
 
         // Check for modal title
-        const modalTitle = screen.getByText("Hello music lovers!", {
+        const modalTitle = screen.getByText("Welcome music lovers!", {
             selector: ".modal-title",
         });
         expect(modalTitle).toBeInTheDocument();
 
         // Check for key content
-        expect(screen.getByText(/Welcome to/i)).toBeInTheDocument();
+        expect(screen.getByText(/Musigree/i)).toBeInTheDocument();
+        expect(screen.getByText(/interactive visualization/i)).toBeInTheDocument();
         // Use getAllByText since "Musigree" appears multiple times
         const musigreeElements = screen.getAllByText(/Musigree/i);
         expect(musigreeElements.length).toBeGreaterThan(0);
@@ -49,7 +50,7 @@ describe("WelcomeModal Component", () => {
 
         // Check for specific usage instructions
         expect(
-            screen.getByText(/Use the search box in the right corner/i),
+            screen.getByText(/Use the search box in the top bar/i),
         ).toBeInTheDocument();
         expect(
             screen.getByText(/click and drag the nodes around/i),

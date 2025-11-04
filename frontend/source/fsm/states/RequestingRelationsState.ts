@@ -1,5 +1,5 @@
 /**
- * @fileoverview Implementation of the requesting-radial state
+ * @fileoverview Implementation of the requesting-relations state
  */
 
 import type { RelationsData } from "../../relations";
@@ -7,14 +7,14 @@ import type { StateContext } from "../State";
 import { BaseState } from "./BaseState";
 
 /**
- * State when requesting radial data for an entity
+ * State when requesting relations data for an entity
  */
-export class RequestingRadialState extends BaseState {
+export class RequestingRelationsState extends BaseState {
     /**
      * Called when entering this state
      */
     onEnter(context: StateContext): void {
-        console.log("REQUESTING-RADIAL _onEnter");
+        console.log("REQUESTING-RELATIONS _onEnter");
         context.actions.toggleLoading(true);
     }
 
@@ -22,7 +22,7 @@ export class RequestingRadialState extends BaseState {
      * Called when exiting this state
      */
     onExit(context: StateContext): void {
-        console.log("REQUESTING-RADIAL _onExit");
+        console.log("REQUESTING-RELATIONS _onExit");
         context.actions.toggleLoading(false);
     }
 
@@ -34,10 +34,10 @@ export class RequestingRadialState extends BaseState {
     }
 
     /**
-     * Handle a radial data received event
+     * Handle a relations data received event
      */
-    receivedRadial(context: StateContext, data: RelationsData): void {
-        console.log("REQUESTING-RADIAL received-radial");
+    receivedRelations(context: StateContext, data: RelationsData): void {
+        console.log("REQUESTING-RELATIONS received-relations");
         context.actions.showRadial(data);
     }
 }

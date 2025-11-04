@@ -23,10 +23,12 @@ describe("RequestingNetworkState", () => {
             loadInlineData: vi.fn(),
             pushState: vi.fn(),
             requestNetwork: vi.fn(),
-            requestRadial: vi.fn(),
+            requestRelations: vi.fn(),
+            requestEntity: vi.fn(),
             requestRandom: vi.fn(),
             showNetwork: vi.fn(),
             showRadial: vi.fn(),
+            updateEntityDetails: vi.fn(),
             toggleFilter: vi.fn(),
             toggleNetwork: vi.fn(),
             toggleLoading: vi.fn(),
@@ -180,7 +182,7 @@ describe("RequestingNetworkState", () => {
         });
     });
 
-    describe("receivedRadial method", () => {
+    describe("receivedRelations method", () => {
         it("should call showRadial with the provided data", () => {
             // Arrange
             const mockData: RelationsData = {
@@ -188,7 +190,7 @@ describe("RequestingNetworkState", () => {
             };
 
             // Act
-            state.receivedRadial(mockContext, mockData);
+            state.receivedRelations(mockContext, mockData);
 
             // Assert
             expect(mockActions.showRadial).toHaveBeenCalledWith(mockData);

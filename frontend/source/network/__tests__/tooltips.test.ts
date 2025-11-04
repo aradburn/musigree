@@ -15,15 +15,42 @@ interface MockedTooltip {
     dispose: () => void;
 }
 
+// Track tooltip instances for testing - use globalThis to avoid hoisting issues
+declare global {
+    var __tooltipInstances: Array<{
+        show: ReturnType<typeof vi.fn>;
+        dispose: ReturnType<typeof vi.fn>;
+    }>;
+}
+
 // Mock Bootstrap's Tooltip class
-vi.mock("bootstrap", () => ({
-    Tooltip: vi.fn().mockImplementation(
-        (): MockedTooltip => ({
+vi.mock("bootstrap", () => {
+    // Create a constructor function that can be spied on
+    function MockTooltip(_element: Element, _options?: any) {
+        const instance = {
             show: vi.fn(),
             dispose: vi.fn(),
-        }),
-    ),
-}));
+        };
+        if (!globalThis.__tooltipInstances) {
+            globalThis.__tooltipInstances = [];
+        }
+        globalThis.__tooltipInstances.push(instance);
+        return instance;
+    }
+
+    // Create a spy that wraps the constructor
+    const TooltipSpy = vi.fn(MockTooltip);
+    // Make it work with 'new'
+    Object.setPrototypeOf(TooltipSpy, MockTooltip);
+    Object.setPrototypeOf(MockTooltip.prototype, Object.prototype);
+
+    return {
+        Tooltip: TooltipSpy,
+    };
+});
+
+// Helper to access tooltip instances
+const getTooltipInstances = () => globalThis.__tooltipInstances || [];
 
 // Test fixtures
 const mockNode: SimNode = {
@@ -81,11 +108,13 @@ const mockLink: SimLink = {
 describe("TooltipManager", () => {
     let tooltipManager: TooltipManager<SimNode>;
     let element: HTMLDivElement;
-    const mockedTooltip = vi.mocked(Tooltip);
 
     beforeEach(() => {
-        // Reset all mocks before each test
+        // Reset all mocks and instances before each test
         vi.clearAllMocks();
+        if (globalThis.__tooltipInstances) {
+            globalThis.__tooltipInstances.length = 0;
+        }
 
         // Create a fresh DOM element for each test
         element = document.createElement("div");
@@ -111,7 +140,7 @@ describe("TooltipManager", () => {
     it("should show tooltip with correct content", () => {
         tooltipManager.show(mockNode, element);
 
-        expect(mockedTooltip).toHaveBeenCalledWith(
+        expect(vi.mocked(Tooltip)).toHaveBeenCalledWith(
             element,
             expect.objectContaining({
                 placement: "bottom",
@@ -125,8 +154,9 @@ describe("TooltipManager", () => {
         tooltipManager.show(mockNode, element);
         tooltipManager.hide();
 
-        const tooltip = mockedTooltip.mock.results[0].value as MockedTooltip;
-        expect(tooltip.dispose).toHaveBeenCalled();
+        const instances = getTooltipInstances();
+        expect(instances.length).toBeGreaterThan(0);
+        expect(instances[0].dispose).toHaveBeenCalled();
     });
 
     it("should update tooltip content", () => {
@@ -135,7 +165,7 @@ describe("TooltipManager", () => {
         const updatedNode = { ...mockNode, name: "Updated Node" };
         tooltipManager.update(updatedNode);
 
-        expect(mockedTooltip).toHaveBeenLastCalledWith(
+        expect(vi.mocked(Tooltip)).toHaveBeenLastCalledWith(
             element,
             expect.objectContaining({
                 title: "<span>Updated Node</span>",
@@ -145,23 +175,25 @@ describe("TooltipManager", () => {
 
     it("should not update tooltip if not shown", () => {
         tooltipManager.update(mockNode);
-        expect(mockedTooltip).not.toHaveBeenCalled();
+        expect(vi.mocked(Tooltip)).not.toHaveBeenCalled();
     });
 });
 
 describe("Exported tooltip instances", () => {
     let element: HTMLDivElement;
-    const mockedTooltip = vi.mocked(Tooltip);
 
     beforeEach(() => {
         vi.clearAllMocks();
+        if (globalThis.__tooltipInstances) {
+            globalThis.__tooltipInstances.length = 0;
+        }
         element = document.createElement("div");
     });
 
     it("should create node tooltip with correct content", () => {
         nodeTooltip.show(mockNode, element);
 
-        expect(mockedTooltip).toHaveBeenCalledWith(
+        expect(vi.mocked(Tooltip)).toHaveBeenCalledWith(
             element,
             expect.objectContaining({
                 placement: "bottom",
@@ -174,7 +206,7 @@ describe("Exported tooltip instances", () => {
     it("should create link tooltip with correct content", () => {
         linkTooltip.show(mockLink, element);
 
-        expect(mockedTooltip).toHaveBeenCalledWith(
+        expect(vi.mocked(Tooltip)).toHaveBeenCalledWith(
             element,
             expect.objectContaining({
                 placement: "top",
@@ -189,18 +221,18 @@ describe("Exported tooltip instances", () => {
             nodeTooltip.show(mockNode, element);
             hideAllTooltips();
 
-            const nodeTooltipInstance = mockedTooltip.mock.results[0]
-                .value as MockedTooltip;
-            expect(nodeTooltipInstance.dispose).toHaveBeenCalled();
+            const instances = getTooltipInstances();
+            expect(instances.length).toBeGreaterThanOrEqual(1);
+            expect(instances[0].dispose).toHaveBeenCalled();
         });
 
         it("should hide link tooltip", () => {
             linkTooltip.show(mockLink, element);
             hideAllTooltips();
 
-            const linkTooltipInstance = mockedTooltip.mock.results[0]
-                .value as MockedTooltip;
-            expect(linkTooltipInstance.dispose).toHaveBeenCalled();
+            const instances = getTooltipInstances();
+            expect(instances.length).toBeGreaterThanOrEqual(1);
+            expect(instances[0].dispose).toHaveBeenCalled();
         });
 
         it("should hide both tooltips when both are shown", () => {
@@ -210,12 +242,10 @@ describe("Exported tooltip instances", () => {
 
             hideAllTooltips();
 
-            const nodeTooltipInstance = mockedTooltip.mock.results[0]
-                .value as MockedTooltip;
-            const linkTooltipInstance = mockedTooltip.mock.results[1]
-                .value as MockedTooltip;
-            expect(nodeTooltipInstance.dispose).toHaveBeenCalled();
-            expect(linkTooltipInstance.dispose).toHaveBeenCalled();
+            const instances = getTooltipInstances();
+            expect(instances.length).toBeGreaterThanOrEqual(2);
+            expect(instances[0].dispose).toHaveBeenCalled();
+            expect(instances[1].dispose).toHaveBeenCalled();
         });
     });
 });

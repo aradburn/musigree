@@ -5,6 +5,7 @@
 import type { NodeKey } from "../../network/data";
 import type { StateContext } from "../State";
 import { BaseState } from "./BaseState";
+import type { EntityData } from "../../entities";
 
 /**
  * State when the user is viewing the network diagram
@@ -38,11 +39,27 @@ export class ViewingNetworkState extends BaseState {
     }
 
     /**
+     * Handle a request to get entity data
+     */
+    requestEntity(context: StateContext, entityKey: NodeKey): void {
+        console.log("VIEWING-NETWORK request-entity");
+        context.actions.requestEntity(entityKey);
+    }
+
+    /**
      * Handle a request to get a random entity
      */
     requestRandom(context: StateContext): void {
         console.log("VIEWING-NETWORK request-random");
         context.actions.requestRandom();
+    }
+
+    /**
+     * Handle a relations data received event
+     */
+    receivedEntity(context: StateContext, data: EntityData): void {
+        console.log("VIEWING-NETWORK received-entity");
+        context.actions.updateEntityDetails(data);
     }
 
     /**

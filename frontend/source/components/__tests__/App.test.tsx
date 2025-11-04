@@ -48,7 +48,7 @@ vi.mock("../App", () => {
                     data-showhelp="true"
                     data-showwho="true"
                 />
-                <div data-testid="sidebar-component" />
+                <div data-testid="sidebar-left-component" />
                 <div data-testid="network-view-component" />
                 <div data-testid="loading-animation-component" />
 
@@ -77,8 +77,8 @@ vi.mock("../Layout/Header.tsx", () => ({
     Header: vi.fn((props) => <div data-testid="header-component" {...props} />),
 }));
 
-vi.mock("../Layout/Sidebar", () => ({
-    Sidebar: vi.fn(() => <div data-testid="sidebar-component" />),
+vi.mock("../Layout/SidebarLeft", () => ({
+    SidebarLeft: vi.fn(() => <div data-testid="sidebar-left-component" />),
 }));
 
 vi.mock("../Visualization/NetworkView", () => ({
@@ -138,7 +138,7 @@ describe("App Component", () => {
         render(<App />);
         expect(screen.getByTestId("app-component")).toBeInTheDocument();
         expect(screen.getByTestId("header-component")).toBeInTheDocument();
-        expect(screen.getByTestId("sidebar-component")).toBeInTheDocument();
+        expect(screen.getByTestId("sidebar-left-component")).toBeInTheDocument();
         expect(
             screen.getByTestId("network-view-component"),
         ).toBeInTheDocument();

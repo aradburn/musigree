@@ -217,15 +217,13 @@ class TestProdAssetFunction:
     @patch("musigree.app.fastapi_assets.templates")
     @patch("musigree.app.fastapi_assets.FRONTEND_DIR")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("musigree.app.fastapi_assets.log")
     def test_prod_asset_function_logging(
         self,
-        mock_log: Mock,
         mock_file: Mock,
         mock_frontend_dir: Mock,
         mock_templates: Mock,
     ) -> None:
-        """Test that prod_asset function logs correctly."""
+        """Test that prod_asset function returns correct asset path."""
         # Setup
         config = SqliteTestConfiguration()
         config.PRODUCTION = True
@@ -248,8 +246,7 @@ class TestProdAssetFunction:
         # Call the function
         result = asset_func("main.js")
 
-        # Verify logging
-        mock_log.debug.assert_called_with("prod asset: main.js")
+        # Verify result
         assert result == "/prodassets/assets/main-abcd1234.js"
 
     @patch("musigree.app.fastapi_assets.templates")

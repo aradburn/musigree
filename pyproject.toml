@@ -1,6 +1,6 @@
 [project]
 name = "musigree"
-version = "1.0.31"
+version = "1.0.32"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
@@ -11,33 +11,35 @@ requires-python = "==3.13.7"
 readme = "README.md"
 
 dependencies = [
-    "fastapi==0.116.2",
-    "sqlalchemy[asyncio]==2.0.43",
-    "psycopg[binary]==3.2.10",
+    "fastapi==0.120.4",
+    "sqlalchemy[asyncio]==2.0.44",
+    "psycopg[binary]==3.2.12",
     "aiosqlite==0.21.0",
-    "pydantic==2.11.9",
-    "pydantic-settings==2.10.1",
-    "fakeredis==2.31.1",
+    "pydantic==2.12.3",
+    "pydantic-settings==2.11.0",
+    "fakeredis==2.32.0",
     "luigi==3.6.0",
     "sortedcontainers==2.4.0",
     "deepdiff==8.6.1",
-    "RapidFuzz==3.14.1",
+    "RapidFuzz==3.14.3",
     "retrying==1.4.2",
     "requests==2.32.5",
     "python-dateutil==2.9.0.post0",
-    "toolz==1.0.0",
+    "toolz==1.1.0",
     "Unidecode==1.4.0",
-    "python-dotenv==1.1.1",
-    "uvicorn==0.35.0",
+    "python-dotenv==1.2.1",
+    "gunicorn==23.0.0",
+    "uvicorn==0.38.0",
     "httpx==0.28.1",
     "jinja2==3.1.6",
     "asyncio-atexit==1.0.1",
     "asyncstdlib==3.13.1",
+    "types-python-dateutil>=2.9.0.20250822",
 ]
 
 [project.urls]
 Repository = "https://github.com/aradburn/musigree"
-Homepage = "https://github.com/aradburn/musigree"
+Homepage = "https://musigree.com"
 Issues = "https://github.com/aradburn/musigree/issues"
 
 [build-system]
@@ -66,15 +68,15 @@ dev-dependencies = [
     "pytest-asyncio==1.2.0",
     "pytest-cov==7.0.0",
     "mypy==1.18.2",
-    "memray==1.18.0",
+    "memray==1.19.1",
     "pytest-memray==1.8.0",
     "sortedcontainers-stubs==2.4.3",
     "types-requests==2.32.4.20250913",
-    "types-python-dateutil==2.9.0.20250822",
+    "types-python-dateutil==2.9.0.20251008",
     "locust==2.40.5",
-    "ruff==0.13.1",
+    "ruff==0.14.3",
     "hatchling==1.27.0",
-    "yappi==1.6.10",
+    "yappi==1.7.3",
     "pre-commit==4.3.0",
 ]
 reinstall-package = ["musigree"]

@@ -6,7 +6,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "musigree.app.fastapi_prod_app:app",
         host="0.0.0.0",
-        port=8080,
+        port=5000,
         workers=1,
         access_log=False,
         log_level="debug",

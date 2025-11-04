@@ -35,10 +35,12 @@ describe("BaseState", () => {
             loadInlineData: vi.fn(),
             pushState: vi.fn(),
             requestNetwork: vi.fn(),
-            requestRadial: vi.fn(),
+            requestRelations: vi.fn(),
+            requestEntity: vi.fn(),
             requestRandom: vi.fn(),
             showNetwork: vi.fn(),
             showRadial: vi.fn(),
+            updateEntityDetails: vi.fn(),
             toggleFilter: vi.fn(),
             toggleNetwork: vi.fn(),
             toggleLoading: vi.fn(),
@@ -124,7 +126,7 @@ describe("BaseState", () => {
             };
 
             // Act
-            testState.receivedRadial(mockContext, mockData);
+            testState.receivedRelations(mockContext, mockData);
 
             // Assert - should not throw and not call any actions
             expect(mockActions.handleError).not.toHaveBeenCalled();

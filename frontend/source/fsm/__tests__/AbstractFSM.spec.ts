@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type MockInstance,
+} from "vitest";
 import { AbstractFSM, type EventData } from "../AbstractFSM";
 import type { State } from "../State";
 import type { FSMStateType } from "../types";
@@ -74,9 +82,9 @@ class BrokenFallbackFSM extends AbstractFSM {
 
 // Define an interface for console spies
 interface ConsoleSpy {
-    log: ReturnType<typeof vi.spyOn>;
-    warn: ReturnType<typeof vi.spyOn>;
-    error: ReturnType<typeof vi.spyOn>;
+    log: MockInstance<typeof console.log>;
+    warn: MockInstance<typeof console.warn>;
+    error: MockInstance<typeof console.error>;
 }
 
 describe("AbstractFSM", () => {
@@ -139,19 +147,21 @@ describe("AbstractFSM", () => {
         });
 
         it("should return the fallback state if the requested state doesn't exist", () => {
-            const stateType: FSMStateType = "state-requesting-radial";
-            const state = fsm.exposeGetOrCreateState(stateType);
+            // Use a type assertion to test with a non-existent state
+            // This simulates what happens when an invalid state is requested
+            const invalidStateType = "invalid-state" as FSMStateType;
+            const invalidState = fsm.exposeGetOrCreateState(invalidStateType);
 
             // Should return the fallback state
-            expect(state).toBe(fsm["_states"].get("uninitialized"));
+            expect(invalidState).toBe(fsm["_states"].get("uninitialized"));
             expect(consoleSpy.warn).toHaveBeenCalledWith(
-                `State ${stateType} not found, using fallback state`,
+                `State ${invalidStateType} not found, using fallback state`,
             );
         });
 
         it("should throw an error if fallback state is not available", () => {
             const brokenFsm = new BrokenFallbackFSM();
-            const stateType: FSMStateType = "state-requesting-radial";
+            const stateType = "invalid-state" as FSMStateType;
 
             expect(() => {
                 brokenFsm.exposeGetOrCreateState(stateType);

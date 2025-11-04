@@ -5,24 +5,37 @@
  */
 $mg-primary-color: rgba(70, 115, 94, 0.7333333333);
 $mg-secondary-color: #4d8c6f;
-$mg-background-color: #1c5a51;
+// $mg-background-light-color: #70AEA5;
+$mg-background-light-color: #9db8ac;
+// $mg-background-light-color: #a3beb2;
+// $mg-background-light-color: #bcd2c9;
+$mg-background-dark-color: #1c5a51;
+$mg-text-color: #111;
 $mg-text-inner-color: #000;
 $mg-text-outer-color: #fff;
 
 $mg-svg-background-color: #eee;
-$mg-modal-background-color: #ffc;
+$mg-modal-background-color: #ffffe6;
 
 $mg-tooltip-color: #111;
 $mg-tooltip-background-color: #ffffcc;
 
 $mg-node-tooltip-color: #111;
 $mg-node-tooltip-background-color: #ffffcc;
-$mg-node-tooltip-border-color: #800026;
+$mg-node-tooltip-border-color: #9db8ac;
+// $mg-node-tooltip-border-color: #800026;
 
 $mg-link-tooltip-color: #111;
 $mg-link-tooltip-background-color: #ffeda0;
-$mg-link-tooltip-border-color: #800026;
+$mg-link-tooltip-border-color: #9db8ac;
+// $mg-link-tooltip-border-color: #800026;
 
+.bg-opacity-40 {
+  --bs-bg-opacity: 0.4;
+}
+.bg-opacity-60 {
+  --bs-bg-opacity: 0.6;
+}
 
 html,
 body {
@@ -64,14 +77,23 @@ body {
     /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 
-.sidebar {
-    background-color: $mg-background-color !important;
+.sidebar-left {
+    background-color: $mg-background-dark-color !important;
     /* background-color: #1C575A !important;*/
+    min-width: 200px;
+    max-width: 200px;
+}
+
+.sidebar-right {
+    background-color: $mg-background-light-color !important;
+    /* background-color: #1C575A !important;*/
+    min-width: 30rem;
+    max-width: 30rem;
 }
 
 // Side menu content container
 .side-menu-content {
-    background-color: rgba($mg-background-color, 0.95);
+    /*background-color: rgba($mg-background-dark-color, 0.95);*/
     color: $mg-text-outer-color;
     overflow-y: auto;
     transition:
@@ -83,7 +105,7 @@ body {
     width: min(300px, 25vw); // Responsive width, maximum 300px
     z-index: 1000;
     box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
-    border-right: 1px solid lighten($mg-background-color, 10%);
+    border-right: 1px solid lighten($mg-background-dark-color, 10%);
     padding: 1rem;
     transform: translateX(-100%); // Start off-screen to the left
     opacity: 0;
@@ -119,6 +141,34 @@ body {
     }
 }
 
+.details-panel {
+    background-color: $mg-background-light-color !important;
+    min-width: 29.5rem;
+    max-width: 29.5rem;
+}
+
+.details-title {
+    color: $mg-text-color;
+}
+
+.details-content {
+    color: $mg-text-color;
+}
+
+.modal-dialog {
+    margin-top: 50px;
+}
+
+#help-modal .modal-content, #welcome-modal .modal-content, #who-modal .modal-content {
+    background-color: $mg-modal-background-color;
+    border-color: $mg-primary-color;
+    border-width: 4px;
+}
+
+.modal-header .btn-close {
+    margin-right: calc(-.5 * var(--bs-modal-header-padding-x) + 0.8rem);
+}
+
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -150,7 +200,7 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-moz-range-thumb,
 input[type="range"]::-webkit-slider-thumb,
 input[type="range"]::slider-thumb {
-    background-color: $mg-background-color !important;
+    background-color: $mg-background-dark-color !important;
 }
 
 // #nav-bottom {
@@ -168,15 +218,7 @@ input[type="range"]::slider-thumb {
     line-height: 20px;
 }
 
-.modal-dialog {
-    margin-top: 50px;
-}
 
-#help-modal .modal-content, #welcome-modal .modal-content {
-    background-color: $mg-modal-background-color;
-    border-color: $mg-primary-color;
-    border-width: 4px;
-}
 
 
 .tt-menu {
@@ -202,23 +244,24 @@ input[type="range"]::slider-thumb {
     cursor: move;
 }
 
-a {
-    &:hover {
-        color: #cc8548;
-    }
-
-    .input-group-addon {
-        color: #337ab7;
-
-        &:active {
-            background-color: #ccc;
-        }
-    }
+a[href^="http"]::after,
+a[href^="https://"]::after
+{
+  content: "";
+  width: 9px;
+  height: 9px;
+  margin-left: 5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: inline-block;
 }
+
 
 /* NETWORK */
 
-#networkLayer {
+#network-layer {
     .link {
         opacity: 0.7;
 
@@ -442,7 +485,7 @@ a {
 
 /* RADIAL */
 
-#relationsLayer {
+#relations-layer {
     g.segment {
         &.selected {
             path.arc {
@@ -492,15 +535,12 @@ a {
 
 /* LOADING */
 
-#loadingLayer {
+#loading-layer {
     path {
         &.arc {
-            opacity: 0.75;
+            opacity: 1.0;
             stroke: white;
             stroke-width: 1px;
-            &:hover {
-                fill: red;
-            }
         }
     }
 }

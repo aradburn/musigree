@@ -4,6 +4,7 @@
 
 import type { NetworkData, NetworkCenter } from "../../network/data";
 import type { RelationsData } from "../../relations";
+import type { EntityData } from "../../entities";
 import type { StateContext } from "../State";
 import { BaseState } from "./BaseState";
 
@@ -57,8 +58,16 @@ export class RequestingNetworkState extends BaseState {
     /**
      * Handle a radial data received event
      */
-    receivedRadial(context: StateContext, data: RelationsData): void {
-        console.log("REQUESTING-NETWORK received-radial");
+    receivedRelations(context: StateContext, data: RelationsData): void {
+        console.log("REQUESTING-NETWORK received-relations");
         context.actions.showRadial(data);
+    }
+
+    /**
+     * Handle a relations data received event
+     */
+    receivedEntity(context: StateContext, data: EntityData): void {
+        console.log("REQUESTING-ENTITY received-entity");
+        context.actions.updateEntityDetails(data);
     }
 }
