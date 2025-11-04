@@ -7,6 +7,8 @@ rate limiting enhancements, and other security best practices.
 """
 
 import logging
+import sys
+from enum import Enum
 from typing import Union, TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -18,6 +20,12 @@ if TYPE_CHECKING:
     pass
 
 log = logging.getLogger(__name__)
+
+
+class ProductionCSPSetting(Enum):
+    REPORT_ONLY = 1
+    REPORT_SECURE = 2
+    PRODUCTION = 3
 
 
 class SecurityHeadersMiddleware:
@@ -58,14 +66,23 @@ class SecurityHeadersMiddleware:
                 security_headers: dict[bytes, bytes] = {
                     # Prevent MIME type sniffing
                     b"x-content-type-options": b"nosniff",
+                    # TODO Cross Origin Resource Policy - See fastapi_app.py for CORS setup
+                    # b"cross-origin-embedder-policy": b"require-corp",
+                    # b"cross-origin-opener-policy": b"same-origin",
+                    # b"cross-origin-resource-policy": b"same-origin",
                     # Prevent clickjacking
                     b"x-frame-options": b"DENY",
                     # Enable XSS protection
                     b"x-xss-protection": b"1; mode=block",
                     # Referrer policy
                     b"referrer-policy": b"strict-origin-when-cross-origin",
+                    # Privacy and anti-tracking headers
+                    b"sec-gpc": b"1",
+                    b"dnt": b"1",
                     # Permissions policy (previously Feature-Policy)
-                    b"permissions-policy": b"camera=(), microphone=(), geolocation=(), interest-cohort=()",
+                    b"permissions-policy": b"geolocation=(), camera=(), microphone=(), interest-cohort=(), "
+                    b"accelerometer=(), gyroscope=(), magnetometer=(), usb=(), "
+                    b"screen-wake-lock=(), payment=()",
                 }
 
                 if self.is_production:
@@ -74,16 +91,72 @@ class SecurityHeadersMiddleware:
                         b"max-age=31536000; includeSubDomains; preload"
                     )
 
-                    # Content Security Policy for production
-                    security_headers[b"content-security-policy"] = (
-                        b"default-src 'self' data:; "
-                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://umami.musigree.com; "
-                        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                        b"font-src 'self'; "
-                        b"img-src 'self' data: https:; "
-                        b"connect-src 'self' https://api.discogs.com; "
-                        b"frame-ancestors 'none';"
-                    )
+                    production_csp_setting = ProductionCSPSetting.PRODUCTION
+                    match production_csp_setting:
+                        case ProductionCSPSetting.REPORT_ONLY:
+                            log.info("CSP Report Only")
+                            # Report Only Content Security Policy for production
+                            # - use to report what is being prevented by CSP policy
+                            security_headers[b"content-security-policy-report-only"] = (
+                                b"frame-ancestors 'self';"
+                                b"block-all-mixed-content;"
+                                b"default-src 'self';"
+                                b"script-src 'self';"
+                                b"style-src 'self';"
+                                b"object-src 'none';"
+                                b"frame-src 'self';"
+                                b"child-src 'self';"
+                                b"img-src 'self';"
+                                b"font-src 'self';"
+                                b"connect-src 'self';"
+                                b"manifest-src 'self';"
+                                b"base-uri 'self';"
+                                b"form-action 'self';"
+                                b"media-src 'self';"
+                                b"prefetch-src 'self';"
+                                b"worker-src 'self';"
+                            )
+                        case ProductionCSPSetting.REPORT_SECURE:
+                            log.info("CSP Report Secure")
+                            security_headers[b"content-security-policy-report-only"] = (
+                                b"frame-ancestors 'self';"
+                                b"default-src 'self';"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ ;"
+                                b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
+                                b"object-src 'none';"
+                                b"frame-src 'self';"
+                                b"child-src 'self';"
+                                b"img-src 'self' data:;"
+                                b"font-src 'self';"
+                                b"connect-src 'self';"
+                                b"manifest-src 'self';"
+                                b"base-uri 'self';"
+                                b"form-action 'self';"
+                                b"media-src 'self' data:;"
+                                b"worker-src 'self';"
+                            )
+                        case ProductionCSPSetting.PRODUCTION:
+                            security_headers[b"content-security-policy"] = (
+                                b"frame-ancestors 'self';"
+                                b"default-src 'self';"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ ;"
+                                b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
+                                b"object-src 'none';"
+                                b"frame-src 'self';"
+                                b"child-src 'self';"
+                                b"img-src 'self' data:;"
+                                b"font-src 'self';"
+                                b"connect-src 'self';"
+                                b"manifest-src 'self';"
+                                b"base-uri 'self';"
+                                b"form-action 'self';"
+                                b"media-src 'self' data:;"
+                                b"worker-src 'self';"
+                            )
+                        case _:
+                            log.error("CSP Production Security Headers Not Set")
+                            sys.exit("CSP Production Security Headers Not Set")
+
                 else:
                     # More permissive CSP for development
                     security_headers[b"content-security-policy"] = (
