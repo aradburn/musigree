@@ -90,7 +90,7 @@ export const LOADING = {
     BAR_HEIGHT: 500,
     BAR_HEIGHT_MIN_SCALE: 0.1, // 1/10
     ARC_COUNT: 20,
-    MAX_ROTATION_RATE: 0.2,
+    MAX_ROTATION_RATE: 0.28,
 };
 
 // Typeahead Constants
