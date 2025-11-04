@@ -294,6 +294,7 @@ describe("SVG String Processing", () => {
             get: () => [
                 {
                     ownerNode: styleElement,
+                    href: "http://example.com/musigree-styles.css",
                     get cssRules() {
                         return [
                             createMockCSSStyleRule(
@@ -365,6 +366,7 @@ describe("SVG String Processing", () => {
             get: () => [
                 {
                     ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
                     get cssRules() {
                         const error = new Error("Security Error");
                         error.name = "SecurityError";
@@ -394,6 +396,7 @@ describe("SVG String Processing", () => {
             get: () => [
                 {
                     ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
                     get cssRules() {
                         throw new Error("Different Error");
                     },
