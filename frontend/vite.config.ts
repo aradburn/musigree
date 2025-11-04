@@ -25,6 +25,13 @@ export default defineConfig({
         manifest: "manifest.json",
         rollupOptions: {
             input: "source/index.ts",
+            output: {
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name == 'style.css')
+                        return 'assets/musigree-[hash].css';
+                    return assetInfo.name;
+                },
+            },
             external: [ /public/ ],
         },
         emptyOutDir: true,

@@ -169,7 +169,7 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
     // Extract CSS Rules
     let extractedCSSText = "";
     for (const sheet of document.styleSheets) {
-        if (sheet.ownerNode.textContent.includes("Musigree")) {
+        if (sheet.href.includes("musigree-")) {
             try {
                 const cssRules = sheet.cssRules;
                 if (!cssRules) continue;
