@@ -92,6 +92,7 @@ class SecurityHeadersMiddleware:
                     )
 
                     production_csp_setting = ProductionCSPSetting.PRODUCTION
+                    # noinspection PyUnreachableCode
                     match production_csp_setting:
                         case ProductionCSPSetting.REPORT_ONLY:
                             log.info("CSP Report Only")
