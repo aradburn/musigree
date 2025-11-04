@@ -83,5 +83,5 @@ ENTRYPOINT []
 USER nonroot
 
 EXPOSE 5000
-CMD ["gunicorn", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker",
+CMD ["gunicorn", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", "--worker-connections", "1000", "musigree.app.fastapi_prod_app:app"]
