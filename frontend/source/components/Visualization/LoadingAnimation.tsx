@@ -248,7 +248,6 @@ const LoadingAnimation = (): null => {
             const path = d3.select(this);
             const timer = d3.timer((_elapsed) => {
                 const delta = d.rotationRate;
-                // const delta = (elapsed / TIMING.ANIMATION_DURATION) * d.rotationRate;
                 d.startAngle += delta;
                 d.endAngle += delta;
                 path.attr("d", arcRef.current(d));
