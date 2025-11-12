@@ -243,6 +243,72 @@ describe("SVG Utilities", () => {
             );
         });
 
+        it("should handle missing SVG container gracefully", () => {
+            const consoleErrorSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+
+            // Mock getElementById to return null (container not found)
+            vi.spyOn(document, "getElementById").mockReturnValue(null);
+
+            // Call setSvgSize
+            setSvgSize(DOM_IDS.SVG_ID);
+
+            // Verify error was logged
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                expect.stringContaining("SVG container element"),
+            );
+
+            consoleErrorSpy.mockRestore();
+        });
+
+        it("should handle empty SVG selection gracefully", () => {
+            const consoleWarnSpy = vi
+                .spyOn(console, "warn")
+                .mockImplementation(() => {});
+
+            // Create a mock selection that returns empty
+            const emptySelection = createMockSelection();
+            emptySelection.empty.mockReturnValue(true);
+
+            // Mock d3.select to return empty selection
+            vi.spyOn(d3, "select").mockReturnValue(
+                emptySelection as unknown as D3Selection,
+            );
+
+            // Call setSvgSize
+            setSvgSize(DOM_IDS.SVG_ID);
+
+            // Verify warning was logged
+            expect(consoleWarnSpy).toHaveBeenCalledWith(
+                "SVG element or attr function not found",
+            );
+
+            consoleWarnSpy.mockRestore();
+        });
+
+        it("should handle errors in setSvgSize gracefully", () => {
+            const consoleErrorSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+
+            // Mock getElementById to throw an error
+            vi.spyOn(document, "getElementById").mockImplementation(() => {
+                throw new Error("Test error");
+            });
+
+            // Call setSvgSize - should not throw
+            expect(() => setSvgSize(DOM_IDS.SVG_ID)).not.toThrow();
+
+            // Verify error was logged
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                "Error setting SVG size:",
+                expect.any(Error),
+            );
+
+            consoleErrorSpy.mockRestore();
+        });
+
         it("should handle different dimensions", () => {
             // Mock different dimensions directly on the mock
             vi.spyOn(mockContainer, "clientWidth", "get").mockReturnValue(1200);
@@ -353,6 +419,53 @@ describe("SVG Utilities", () => {
 
             // Restore mock
             selectSpy.mockRestore();
+        });
+
+        it("should handle empty SVG selection gracefully", () => {
+            const consoleWarnSpy = vi
+                .spyOn(console, "warn")
+                .mockImplementation(() => {});
+
+            // Create a mock selection that returns empty
+            const emptySelection = createMockSelection();
+            emptySelection.empty.mockReturnValue(true);
+
+            // Mock d3.select to return empty selection
+            vi.spyOn(d3, "select").mockReturnValue(
+                emptySelection as unknown as D3Selection,
+            );
+
+            // Call setupSvgDefs
+            setupSvgDefs(DOM_IDS.SVG_ID);
+
+            // Verify warning was logged
+            expect(consoleWarnSpy).toHaveBeenCalledWith(
+                "SVG element or append function not found",
+            );
+
+            consoleWarnSpy.mockRestore();
+        });
+
+        it("should handle errors in setupSvgDefs gracefully", () => {
+            const consoleErrorSpy = vi
+                .spyOn(console, "error")
+                .mockImplementation(() => {});
+
+            // Mock d3.select to throw an error
+            vi.spyOn(d3, "select").mockImplementation(() => {
+                throw new Error("Test error");
+            });
+
+            // Call setupSvgDefs - should not throw
+            expect(() => setupSvgDefs(DOM_IDS.SVG_ID)).not.toThrow();
+
+            // Verify error was logged
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                "Error setting up SVG definitions:",
+                expect.any(Error),
+            );
+
+            consoleErrorSpy.mockRestore();
         });
     });
 });

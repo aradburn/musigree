@@ -195,6 +195,75 @@ describe("BaseState", () => {
             expect(mockActions.handleError).not.toHaveBeenCalled();
             expect(mockTransition).not.toHaveBeenCalled();
         });
+
+        it("should have receivedEntity method that does nothing", () => {
+            // Arrange
+            const mockEntityData = {
+                key: "entity1" as NodeKey,
+                name: "Test Entity",
+            };
+
+            // Act
+            testState.receivedEntity(mockContext, mockEntityData);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should have updateEntityDetails method that does nothing", () => {
+            // Act
+            testState.updateEntityDetails(mockContext);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should handle selectEntity with null entityKey", () => {
+            // Act
+            testState.selectEntity(mockContext, null, false);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should handle receivedNetwork with pushHistory true", () => {
+            // Arrange
+            const mockNode = {
+                key: "entity1" as NodeKey,
+                name: "Test Entity",
+                type: NodeType.Artist,
+                size: 10,
+                x: 0,
+                y: 0,
+                missing: 0,
+                hasMissing: false,
+                lastClickTime: 0,
+                lastTouchTime: 0,
+                distance: 0,
+                radius: 0,
+                links: [],
+                cluster: 0,
+                fixed: false,
+                isIntermediate: false,
+            };
+
+            const mockData: NetworkData = {
+                nodeMap: new Map([[mockNode.key, mockNode]]),
+                center: mockNode,
+                linkMap: new Map(),
+                maxDistance: 0,
+            };
+
+            // Act
+            testState.receivedNetwork(mockContext, mockData, true);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
     });
 
     describe("handleError method", () => {

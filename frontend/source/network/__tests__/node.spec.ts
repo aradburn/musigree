@@ -20,8 +20,8 @@ const mockNetworkManager = {
     },
 };
 
-// Mock the core module
-vi.mock("../core", () => ({
+// Mock the core module - need to use a getter to allow dynamic updates
+vi.mock("../core/singletons", () => ({
     networkManager: mockNetworkManager,
 }));
 
@@ -121,8 +121,28 @@ vi.mock("./events", () => ({
     onDragStart: vi.fn(),
     onDragEnd: vi.fn(),
     onDrag: vi.fn(),
-    RequestNetworkEvent: vi.fn(),
-    SelectEntityEvent: vi.fn(),
+    RequestNetworkEvent: class RequestNetworkEvent extends CustomEvent<{
+        entityKey: string;
+        pushHistory: boolean;
+    }> {
+        constructor(entityKey: string, pushHistory: boolean) {
+            super("musigree:request-network", {
+                bubbles: true,
+                detail: { entityKey, pushHistory },
+            });
+        }
+    },
+    SelectEntityEvent: class SelectEntityEvent extends CustomEvent<{
+        entityKey: string;
+        fixed: boolean;
+    }> {
+        constructor(entityKey: string, fixed: boolean) {
+            super("musigree:select-entity", {
+                bubbles: true,
+                detail: { entityKey, fixed },
+            });
+        }
+    },
 }));
 
 import {
@@ -139,6 +159,8 @@ import {
 } from "../node";
 import type { SimNode } from "../data";
 import { nodeTooltip } from "../tooltips";
+import { SelectEntityEvent, RequestNetworkEvent } from "../events";
+import { networkManager } from "../../core/singletons";
 
 // Mock types
 type MockD3Element = {
@@ -434,6 +456,66 @@ describe("Network Node Functions", () => {
             );
         });
 
+        it("should show more indicator when node has missing links", () => {
+            const nodeWithMissing = {
+                ...mockArtistNode,
+                hasMissing: true,
+                missing: 5,
+            };
+            const mockEnterWithMissing = {
+                ...mockNodeEnterSelection,
+                filter: vi.fn().mockReturnThis(),
+            };
+            onNodeEnter(mockEnterWithMissing as any);
+
+            // Verify opacity style function returns 1 for nodes with missing
+            const opacityCalls = mockPath.style.mock.calls.filter(
+                (call) => call[0] === "opacity",
+            );
+            const opacityFunc = opacityCalls[0]?.[1] as (d: SimNode) => number;
+            expect(opacityFunc(nodeWithMissing)).toBe(1);
+        });
+
+        it("should hide more indicator when node has no missing links", () => {
+            const nodeWithoutMissing = {
+                ...mockArtistNode,
+                hasMissing: false,
+                missing: 0,
+            };
+            const mockEnterWithoutMissing = {
+                ...mockNodeEnterSelection,
+                filter: vi.fn().mockReturnThis(),
+            };
+            onNodeEnter(mockEnterWithoutMissing as any);
+
+            // Verify opacity style function returns 0 for nodes without missing
+            const opacityCalls = mockPath.style.mock.calls.filter(
+                (call) => call[0] === "opacity",
+            );
+            const opacityFunc = opacityCalls[0]?.[1] as (d: SimNode) => number;
+            expect(opacityFunc(nodeWithoutMissing)).toBe(0);
+        });
+
+        it("should handle nodes with missing > 0", () => {
+            const nodeWithMissingCount = {
+                ...mockArtistNode,
+                hasMissing: false,
+                missing: 3,
+            };
+            const mockEnterWithMissingCount = {
+                ...mockNodeEnterSelection,
+                filter: vi.fn().mockReturnThis(),
+            };
+            onNodeEnter(mockEnterWithMissingCount as any);
+
+            // Verify opacity style function returns 1 when missing > 0
+            const opacityCalls = mockPath.style.mock.calls.filter(
+                (call) => call[0] === "opacity",
+            );
+            const opacityFunc = opacityCalls[0]?.[1] as (d: SimNode) => number;
+            expect(opacityFunc(nodeWithMissingCount)).toBe(1);
+        });
+
         it("should bind mouse and touch events with proper debouncing", () => {
             onNodeEnter(mockNodeEnterSelection);
 
@@ -497,6 +579,64 @@ describe("Network Node Functions", () => {
 
             // Manually call the tooltip hide function to simulate what the handler would do
             nodeTooltip.hide();
+            expect(nodeTooltip.hide).toHaveBeenCalled();
+        });
+
+        it("should call mouseenter handler with status true", () => {
+            onNodeEnter(mockNodeEnterSelection);
+
+            // Get the mouseenter handler
+            let mouseenterCall: unknown[] | undefined;
+            for (const call of mockAppendedGroup.on.mock.calls) {
+                if (call[0] === "mouseenter") {
+                    mouseenterCall = call;
+                    break;
+                }
+            }
+            const mouseenterHandler = mouseenterCall?.[1] as (
+                this: SVGGElement,
+                event: MouseEvent,
+                d: SimNode,
+            ) => void;
+
+            const mockElement = document.createElement("g");
+            const mockEvent = new MouseEvent("mouseenter");
+
+            // Call the handler directly to test the debounced tooltip
+            if (mouseenterHandler) {
+                mouseenterHandler.call(mockElement, mockEvent, mockArtistNode);
+                // Advance timers to trigger debounce
+                vi.advanceTimersByTime(250);
+            }
+
+            // Verify tooltip was called (indirectly through debounce)
+            expect(nodeTooltip.show).toHaveBeenCalled();
+        });
+
+        it("should call mouseenter handler with status false (mouseleave)", () => {
+            onNodeEnter(mockNodeEnterSelection);
+
+            // Get the mouseleave handler
+            let mouseleaveCall: unknown[] | undefined;
+            for (const call of mockAppendedGroup.on.mock.calls) {
+                if (call[0] === "mouseleave") {
+                    mouseleaveCall = call;
+                    break;
+                }
+            }
+            const mouseleaveHandler = mouseleaveCall?.[1] as (
+                event: MouseEvent,
+                d: SimNode,
+            ) => void;
+
+            const mockEvent = new MouseEvent("mouseleave");
+
+            // Call the handler directly
+            if (mouseleaveHandler) {
+                mouseleaveHandler(mockEvent, mockArtistNode);
+            }
+
+            // Verify tooltip hide was called
             expect(nodeTooltip.hide).toHaveBeenCalled();
         });
     });
@@ -698,12 +838,100 @@ describe("Network Node Functions", () => {
             // due to our safety checks. What matters is that the function doesn't throw errors.
         });
 
-        it("should handle mousedown events", () => {
+        it("should handle mouseover when text layer is missing", () => {
+            const nodeLayer = createLayerMock();
+            const textLayer = null;
+
+            mockNetworkManager.layers = {
+                root: createLayerMock(),
+                halo: createLayerMock(),
+                text: textLayer,
+                node: nodeLayer,
+                link: createLayerMock(),
+            };
+
+            const mockEvent = new MouseEvent("mouseover");
+            const mockElement = document.createElement("g");
+
+            expect(() => {
+                onNodeMouseOver.call(mockElement, mockEvent, mockArtistNode);
+            }).not.toThrow();
+        });
+
+        it("should handle mouseover when node layer is missing", () => {
+            const nodeLayer = null;
+            const textLayer = createLayerMock();
+
+            mockNetworkManager.layers = {
+                root: createLayerMock(),
+                halo: createLayerMock(),
+                text: textLayer,
+                node: nodeLayer,
+                link: createLayerMock(),
+            };
+
+            const mockEvent = new MouseEvent("mouseover");
+            const mockElement = document.createElement("g");
+
+            expect(() => {
+                onNodeMouseOver.call(mockElement, mockEvent, mockArtistNode);
+            }).not.toThrow();
+        });
+
+        it("should handle mousedown events - first click", () => {
             const event = new MouseEvent("mousedown");
             const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
 
+            // First click - no lastClickTime
+            mockArtistNode.lastClickTime = 0;
             onNodeMouseDown(event, mockArtistNode);
+
             expect(dispatchEventSpy).toHaveBeenCalled();
+            const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+            expect(dispatchedEvent).toBeInstanceOf(SelectEntityEvent);
+            dispatchEventSpy.mockRestore();
+        });
+
+        it("should handle mousedown events - click after > 700ms", () => {
+            const event = new MouseEvent("mousedown");
+            const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+
+            // Mock d3.now() to return a controlled value
+            const mockNow = vi.fn(() => 2000);
+            vi.doMock("d3", async () => {
+                const actual = await vi.importActual<typeof import("d3")>("d3");
+                return {
+                    ...actual,
+                    now: mockNow,
+                };
+            });
+
+            // Set lastClickTime to a value that's definitely > 700ms before the mocked now()
+            mockArtistNode.lastClickTime = 1000; // 1000ms before now (2000)
+            onNodeMouseDown(event, mockArtistNode);
+
+            expect(dispatchEventSpy).toHaveBeenCalled();
+            const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+            // Should dispatch SelectEntityEvent when time > 700ms (2000 - 1000 = 1000 > 700)
+            expect(dispatchedEvent).toBeDefined();
+            // Check the event type instead of instanceof for mocked classes
+            if (dispatchedEvent instanceof CustomEvent) {
+                expect(dispatchedEvent.type).toBe("musigree:select-entity");
+            }
+            dispatchEventSpy.mockRestore();
+        });
+
+        it("should handle mousedown events - double click (< 700ms)", () => {
+            const event = new MouseEvent("mousedown");
+            const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+
+            // Click within 700ms (double click)
+            mockArtistNode.lastClickTime = Date.now() - 200;
+            onNodeMouseDown(event, mockArtistNode);
+
+            expect(dispatchEventSpy).toHaveBeenCalled();
+            const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+            expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
             dispatchEventSpy.mockRestore();
         });
 
@@ -719,16 +947,58 @@ describe("Network Node Functions", () => {
             dispatchEventSpy.mockRestore();
         });
 
-        it("should handle touch events", () => {
-            const event = new TouchEvent("touchstart");
-            const stopPropagationSpy = vi.fn();
-            event.stopPropagation = stopPropagationSpy;
-            const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+        describe("onNodeTouchStart", () => {
+            it("should dispatch SelectEntityEvent on first touch", () => {
+                const event = new TouchEvent("touchstart");
+                const stopPropagationSpy = vi.fn();
+                event.stopPropagation = stopPropagationSpy;
+                const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
 
-            onNodeTouchStart(event, mockArtistNode);
-            expect(stopPropagationSpy).toHaveBeenCalled();
-            expect(dispatchEventSpy).toHaveBeenCalled();
-            dispatchEventSpy.mockRestore();
+                // First touch - no lastTouchTime
+                mockArtistNode.lastTouchTime = 0;
+                onNodeTouchStart(event, mockArtistNode);
+
+                expect(stopPropagationSpy).toHaveBeenCalled();
+                expect(dispatchEventSpy).toHaveBeenCalled();
+                const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+                expect(dispatchedEvent).toBeInstanceOf(SelectEntityEvent);
+                expect(mockArtistNode.lastTouchTime).toBeGreaterThan(0);
+                dispatchEventSpy.mockRestore();
+            });
+
+            it("should dispatch SelectEntityEvent when time since last touch > 500ms", () => {
+                const event = new TouchEvent("touchstart");
+                const stopPropagationSpy = vi.fn();
+                event.stopPropagation = stopPropagationSpy;
+                const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+
+                // Set lastTouchTime to more than 500ms ago
+                mockArtistNode.lastTouchTime = Date.now() - 600;
+                onNodeTouchStart(event, mockArtistNode);
+
+                expect(stopPropagationSpy).toHaveBeenCalled();
+                expect(dispatchEventSpy).toHaveBeenCalled();
+                const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+                expect(dispatchedEvent).toBeInstanceOf(SelectEntityEvent);
+                dispatchEventSpy.mockRestore();
+            });
+
+            it("should dispatch RequestNetworkEvent on double touch (< 500ms)", () => {
+                const event = new TouchEvent("touchstart");
+                const stopPropagationSpy = vi.fn();
+                event.stopPropagation = stopPropagationSpy;
+                const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
+
+                // Set lastTouchTime to less than 500ms ago
+                mockArtistNode.lastTouchTime = Date.now() - 200;
+                onNodeTouchStart(event, mockArtistNode);
+
+                expect(stopPropagationSpy).toHaveBeenCalled();
+                expect(dispatchEventSpy).toHaveBeenCalled();
+                const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
+                expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
+                dispatchEventSpy.mockRestore();
+            });
         });
 
         it("should determine node selection correctly", () => {
@@ -749,6 +1019,98 @@ describe("Network Node Functions", () => {
                 key: "unselected-node",
             };
             expect(selectionPredicate(unselectedNode)).toBe(false);
+        });
+    });
+
+    describe("updateSelectedNodes", () => {
+        beforeEach(() => {
+            // Reset networkManager mock
+            mockNetworkManager.layers.node = null;
+            mockNetworkManager.layers.text = null;
+        });
+
+        it("should update node selection when layers exist", () => {
+            const mockClassed = vi.fn().mockReturnThis();
+            const mockNodeSelectAll = vi.fn().mockReturnValue({
+                classed: mockClassed,
+            });
+            const mockTextSelectAll = vi.fn().mockReturnValue({
+                classed: mockClassed,
+            });
+            const mockNodeLayer = {
+                selectAll: mockNodeSelectAll,
+            };
+            const mockTextLayer = {
+                selectAll: mockTextSelectAll,
+            };
+
+            // Update the mock directly
+            (networkManager as typeof mockNetworkManager).layers.node =
+                mockNodeLayer as unknown;
+            (networkManager as typeof mockNetworkManager).layers.text =
+                mockTextLayer as unknown;
+
+            const selectedKeys = ["artist-test", "label-test"];
+            updateSelectedNodes(selectedKeys);
+
+            expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
+            expect(mockTextSelectAll).toHaveBeenCalledWith(".node");
+            expect(mockClassed).toHaveBeenCalledWith(
+                "selected",
+                expect.any(Function),
+            );
+        });
+
+        it("should handle missing node layer gracefully", () => {
+            const mockClassed = vi.fn().mockReturnThis();
+            const mockTextSelectAll = vi.fn().mockReturnValue({
+                classed: mockClassed,
+            });
+            const mockTextLayer = {
+                selectAll: mockTextSelectAll,
+            };
+
+            // Update the mock directly
+            (networkManager as typeof mockNetworkManager).layers.node = null;
+            (networkManager as typeof mockNetworkManager).layers.text =
+                mockTextLayer as unknown;
+
+            const selectedKeys = ["artist-test"];
+            updateSelectedNodes(selectedKeys);
+
+            // Should not throw, and should still update text layer
+            // Node layer is null, so it won't be called, but text layer should be
+            expect(mockTextSelectAll).toHaveBeenCalledWith(".node");
+        });
+
+        it("should handle missing text layer gracefully", () => {
+            const mockClassed = vi.fn().mockReturnThis();
+            const mockNodeSelectAll = vi.fn().mockReturnValue({
+                classed: mockClassed,
+            });
+            const mockNodeLayer = {
+                selectAll: mockNodeSelectAll,
+            };
+
+            // Update the mock directly
+            (networkManager as typeof mockNetworkManager).layers.node =
+                mockNodeLayer as unknown;
+            (networkManager as typeof mockNetworkManager).layers.text = null;
+
+            const selectedKeys = ["artist-test"];
+            updateSelectedNodes(selectedKeys);
+
+            // Should not throw, and should still update node layer
+            // Text layer is null, so it won't be called, but node layer should be
+            expect(mockNodeSelectAll).toHaveBeenCalledWith(".node");
+        });
+
+        it("should handle missing both layers gracefully", () => {
+            (networkManager as typeof mockNetworkManager).layers.node = null;
+            (networkManager as typeof mockNetworkManager).layers.text = null;
+
+            const selectedKeys = ["artist-test"];
+            expect(() => updateSelectedNodes(selectedKeys)).not.toThrow();
         });
     });
 });
