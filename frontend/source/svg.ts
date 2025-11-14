@@ -8,6 +8,7 @@
 import * as d3 from "d3";
 import { musigreeManager } from "./core/index";
 import { SVG, MARKER, SVG_IDS, DOM_IDS, GRADIENT } from "./constants";
+import { convertRemToPixels } from "./utils";
 
 /**
  * Initializes the SVG element with basic setup
@@ -59,6 +60,7 @@ export const setSvgSize = (svgSelector: string): void => {
         console.log("window devicePixelRatio: ", dpr);
 
         const svgContainer = document.getElementById(DOM_IDS.SVG_CONTAINER);
+        const navTopContainer = document.getElementById(DOM_IDS.NAV_TOP);
 
         // Add null check to prevent errors when the SVG container doesn't exist
         if (!svgContainer) {
@@ -68,8 +70,11 @@ export const setSvgSize = (svgSelector: string): void => {
             return;
         }
 
-        const width = svgContainer.clientWidth;
-        const height = svgContainer.clientHeight;
+        const calculatedSvgContainerWidth = window.innerWidth - convertRemToPixels(45);
+        const smallSvgContainerHeight = window.innerHeight / 2.0;
+        const largeSvgContainerHeight = window.innerHeight - navTopContainer.clientHeight;
+        const width = window.innerWidth >= 576 ? calculatedSvgContainerWidth : window.innerWidth;
+        const height = window.innerWidth >= 576 ? largeSvgContainerHeight : smallSvgContainerHeight;
         const svgContainerDimensions: [number, number] = [width, height];
         const svgCanvasDimensions: [number, number] = [
             svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,

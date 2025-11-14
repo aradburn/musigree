@@ -10,16 +10,16 @@ import { useEntity } from "../../contexts/useEntity";
 export const SidebarRight: React.FC = () => {
     const { state } = useEntity();
     return (
-        <div
-            className="sidebar sidebar-right col-auto flex-shrink-0 ms-auto d-flex p-2 h-100
-                        gap-2
-                        flex-column
-                        overflow-x-hidden
-                        bg-secondary-subtle text-light"
-        >
-            {/* Details panel */}
-            <Details entity={state.entity} />
-            <Advert adClient="ca-pub-5857652035840115" adSlot="3061976325" />
+        <div className="p-2 d-flex h-sm-100">
+            <div className="flex-fill ms-auto d-flex gap-2 flex-column text-light">
+                <div className="flex-fill overflow-x-hidden overflow-y-auto">
+                    {/* Details panel */}
+                    <Details entity={state.entity} />
+                </div>
+                <div className="flex-shrink-0">
+                    <Advert adClient="ca-pub-5857652035840115" adSlot="3061976325" />
+                </div>
+            </div>
         </div>
     );
 };

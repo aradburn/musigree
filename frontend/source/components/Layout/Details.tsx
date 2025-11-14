@@ -39,12 +39,12 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
               .filter((url): url is string => typeof url === "string")
               .map((url, i) => (
                   <React.Fragment key={i}>
-                      <dt className="col-sm-3">
+                      <dt className="col-3">
                           <span className={createExternalLinkBadgeClass(url)}>
                               {createExternalLinkBadgeText(url)}
                           </span>
                       </dt>
-                      <dd className="col-sm-9">
+                      <dd className="col-9">
                           <a
                               href={DOMPurify.sanitize(url)}
                               className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
@@ -62,7 +62,6 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
         <div
             id="details-panel"
             className="details-panel
-                        flex-grow-1 overflow-x-hidden overflow-y-scroll
                         mx-auto pe-3
                         bg-secondary-subtle"
         >
@@ -71,56 +70,56 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                 <span>{hasEntity ? entity?.name : "Details"}</span>
             </div>
             <div className="details-content">
-                <dl className="row">
-                    <dt className="col-sm-3">Aliases</dt>
-                    <dd className="col-sm-9">{aliasesStr}</dd>
+                <dl className="d-flex flex-wrap">
+                    <dt className="col-3">Aliases</dt>
+                    <dd className="col-9">{aliasesStr}</dd>
 
-                    <dt className="col-sm-3">Real Name</dt>
-                    <dd className="col-sm-9">{realNameStr}</dd>
+                    <dt className="col-3">Real Name</dt>
+                    <dd className="col-9">{realNameStr}</dd>
 
-                    <dt className="col-sm-3">Alt Names</dt>
-                    <dd className="col-sm-9">{altNamesStr}</dd>
+                    <dt className="col-3">Alt Names</dt>
+                    <dd className="col-9">{altNamesStr}</dd>
 
-                    <dt className="col-sm-3">Type</dt>
-                    <dd className="col-sm-9">
+                    <dt className="col-3">Type</dt>
+                    <dd className="col-9">
                         {hasEntity ? capitalCase(entity?.type) : "-"}
                     </dd>
 
-                    <dt className="col-sm-3">Country</dt>
-                    <dd className="col-sm-9">
+                    <dt className="col-3">Country</dt>
+                    <dd className="col-9">
                         {hasEntity && entity?.countries
                             ? expandCommas(entity.countries)
                             : "-"}
                     </dd>
 
-                    <dt className="col-sm-3">Genres</dt>
-                    <dd className="col-sm-9">
+                    <dt className="col-3">Genres</dt>
+                    <dd className="col-9">
                         {hasEntity && entity?.genres
                             ? expandCommas(entity.genres)
                             : "-"}
                     </dd>
 
-                    <dt className="col-sm-3">Styles</dt>
-                    <dd className="col-sm-9">
+                    <dt className="col-3">Styles</dt>
+                    <dd className="col-9">
                         {hasEntity && entity?.styles
                             ? expandCommas(entity.styles)
                             : "-"}
                     </dd>
 
-                    <dt className="col-sm-3">Profile</dt>
+                    <dt className="col-3">Profile</dt>
                     <dd
-                        className="col-sm-9"
+                        className="col-9"
                         dangerouslySetInnerHTML={sanitizedData(profileStr)}
                     ></dd>
 
-                    <dt className="col-sm-11">External Links</dt>
-                    <dd className="col-sm-1"></dd>
+                    <dt className="col-11">External Links</dt>
+                    <dd className="col-1"></dd>
                     {Array.isArray(urls) && urls.length > 0 ? (
                         <React.Fragment>{urlListItems}</React.Fragment>
                     ) : (
                         <React.Fragment>
-                            <dt className="col-sm-3"></dt>
-                            <dd className="col-sm-9">-</dd>
+                            <dt className="col-3"></dt>
+                            <dd className="col-9">-</dd>
                         </React.Fragment>
                     )}
                 </dl>
