@@ -118,7 +118,10 @@ const App: React.FC = (): React.ReactElement => {
             <NetworkProvider>
                 <LoadingProvider>
                     <EntityProvider>
-                        <Container fluid className="d-flex flex-column h-sm-100">
+                        <Container
+                            fluid
+                            className="d-flex flex-column h-sm-100"
+                        >
                             <Row>
                                 <Header
                                     onShowHelp={handleShowHelp}

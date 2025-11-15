@@ -70,11 +70,19 @@ export const setSvgSize = (svgSelector: string): void => {
             return;
         }
 
-        const calculatedSvgContainerWidth = window.innerWidth - convertRemToPixels(45);
+        const calculatedSvgContainerWidth =
+            window.innerWidth - convertRemToPixels(45);
         const smallSvgContainerHeight = window.innerHeight / 2.0;
-        const largeSvgContainerHeight = window.innerHeight - navTopContainer.clientHeight;
-        const width = window.innerWidth >= 576 ? calculatedSvgContainerWidth : window.innerWidth;
-        const height = window.innerWidth >= 576 ? largeSvgContainerHeight : smallSvgContainerHeight;
+        const largeSvgContainerHeight =
+            window.innerHeight - navTopContainer.clientHeight;
+        const width =
+            window.innerWidth >= 576
+                ? calculatedSvgContainerWidth
+                : window.innerWidth;
+        const height =
+            window.innerWidth >= 576
+                ? largeSvgContainerHeight
+                : smallSvgContainerHeight;
         const svgContainerDimensions: [number, number] = [width, height];
         const svgCanvasDimensions: [number, number] = [
             svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,

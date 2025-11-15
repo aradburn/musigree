@@ -258,6 +258,8 @@ export const sanitizedData = (s: string): { __html: string } => ({
     __html: DOMPurify.sanitize(s),
 });
 
-export const convertRemToPixels = (rem: float): float => {
-    return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+export const convertRemToPixels = (rem: number): number => {
+    return (
+        rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
+    );
 };

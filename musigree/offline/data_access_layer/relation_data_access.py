@@ -234,6 +234,7 @@ class RelationDataAccess:
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
+        # noinspection PyTypeHints
         if (
             len(artist_ids) == 1
             and release.artists
