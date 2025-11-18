@@ -9,9 +9,9 @@ import {
     expandProfileURLs,
     expandProfileReferences,
     removeURLProtocol,
-    sanitizedData,
 } from "../../utils";
 import DOMPurify from "dompurify";
+import { Profile } from "./Profile";
 
 /**
  * Details component provides a panel display for details.
@@ -60,7 +60,7 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
 
     return (
         <div
-            id="details-panel"
+            id="entity-details-panel"
             className="details-panel
                         mx-auto pe-3
                         bg-secondary-subtle"
@@ -107,10 +107,9 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
                     </dd>
 
                     <dt className="col-3">Profile</dt>
-                    <dd
-                        className="col-9"
-                        dangerouslySetInnerHTML={sanitizedData(profileStr)}
-                    ></dd>
+                    <dd className="col-9">
+                        <Profile profileHtml={profileStr}></Profile>
+                    </dd>
 
                     <dt className="col-11">External Links</dt>
                     <dd className="col-1"></dd>
