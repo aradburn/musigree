@@ -24,9 +24,16 @@ export const clamp = (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
 };
 
-export const createEntityLink = (entityKey: string, entityName: string): string => {
+export const createEntityLink = (
+    entityKey: string,
+    entityName: string,
+): string => {
     return (
-        '<EntityLink entityKey="' + entityKey + '" entityName="' + entityName + '">' +
+        '<EntityLink entityKey="' +
+        entityKey +
+        '" entityName="' +
+        entityName +
+        '">' +
         "</EntityLink>"
     );
 };
@@ -196,7 +203,10 @@ export const expandArtistLinkReferences = (str: string): string => {
             const entity_key = "artist-" + match[0].slice(2, -1);
             const value = networkManager.data.nodeMap.get(entity_key);
             const name = value?.name ?? match[0];
-            expanded = expanded.replace(match[0], createEntityLink(entity_key, name));
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, name),
+            );
         }
     }
     return expanded;
@@ -212,7 +222,10 @@ export const expandLabelLinkReferences = (str: string): string => {
             const entity_key = "label-" + match[0].slice(2, -1);
             const value = networkManager.data.nodeMap.get(entity_key);
             const name = value?.name ?? match[0];
-            expanded = expanded.replace(match[0], createEntityLink(entity_key, name));
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, name),
+            );
         }
     }
     return expanded;
@@ -232,18 +245,23 @@ export const expandArtistTextReferences = (str: string): string => {
                     entity_key = key;
                 }
             }
-            expanded = expanded.replace(match[0], createEntityLink(entity_key, entity_name));
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, entity_name),
+            );
         }
     }
     return expanded;
-//     const pattern = /\[[aA]=(.*?)]/g;
-//     return str.replace(pattern, (_match, name: string) => createEntityLink(null, name));
+    //     const pattern = /\[[aA]=(.*?)]/g;
+    //     return str.replace(pattern, (_match, name: string) => createEntityLink(null, name));
 };
 
 export const expandLabelTextReferences = (str: string): string => {
     // Converts a label reference [l=Some Label Name Here] into a badge
     const pattern = /\[[lL]=(.*?)]/g;
-    return str.replace(pattern, (_match, name: string) => createEntityLink(null, name));
+    return str.replace(pattern, (_match, name: string) =>
+        createEntityLink(null, name),
+    );
 };
 
 export const expandProfileReferences = (str: string): string => {

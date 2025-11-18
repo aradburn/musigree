@@ -12,19 +12,34 @@ interface ProfileProps {
  * Profile component renders the entity's profile text with clickable links.
  */
 export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
-    const allowedTags = ["b", "strong", "i", "em", "mark", "small", "del", "ins", "sub", "sup", "u"];
+    const allowedTags = [
+        "b",
+        "strong",
+        "i",
+        "em",
+        "mark",
+        "small",
+        "del",
+        "ins",
+        "sub",
+        "sup",
+        "u",
+    ];
 
     const parseProfile = (profileHtml: string): ReactNode => {
-        let isProcessingTag = false;
-        let currentTagName = "";
-        let currentTagAttributes = null;
-        let currentTagText = "";
+        let isProcessingTag: boolean = false;
+        let currentTagName: string = "";
+        let currentTagAttributes: { [s: string]: string } = null;
+        let currentTagText: string = "";
         const reactElements: ReactNode[] = [];
-        let key = 0;
+        let key: number = 0;
 
         const parser = new htmlparser2.Parser(
             {
-                onopentag(tagName, tagAttributes) {
+                onopentag(
+                    tagName: string,
+                    tagAttributes: { [s: string]: string },
+                ): void {
                     /*
                      * This fires when a new tag is opened.
                      *
@@ -35,7 +50,7 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
                     currentTagName = tagName;
                     currentTagAttributes = tagAttributes;
                 },
-                ontext(text) {
+                ontext(text: string): void {
                     /*
                      * Fires whenever a section of text was processed.
                      *
@@ -52,7 +67,7 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
                         key++;
                     }
                 },
-                onclosetag(tagName) {
+                onclosetag(tagName: string): void {
                     /*
                      * Fires when a tag is closed.
                      *
@@ -65,8 +80,8 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
                         const element = (
                             <EntityLink
                                 key={key}
-                                entityKey={currentTagAttributes.entityKey}
-                                entityName={currentTagAttributes.entityName}
+                                entityKey={currentTagAttributes?.entityKey}
+                                entityName={currentTagAttributes?.entityName}
                             />
                         );
                         reactElements.push(element);
@@ -82,15 +97,15 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
                         reactElements.push(element);
                         key++;
                     } else if (tagName === "br") {
-                        const element = React.createElement(
-                            currentTagName,
-                            {
-                                key: key,
-                            }
-                        );
+                        const element = React.createElement(currentTagName, {
+                            key: key,
+                        });
                         reactElements.push(element);
                         key++;
                     }
+                    currentTagName = "";
+                    currentTagAttributes = null;
+                    currentTagText = "";
                 },
             },
             {
