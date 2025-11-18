@@ -27,8 +27,6 @@ class TestDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            print(f"id_1: {id_1}")
-            print(f"id_2: {id_2}")
             key = dict(
                 subject=id_1,
                 role="Producer",

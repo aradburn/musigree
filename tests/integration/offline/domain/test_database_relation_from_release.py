@@ -1364,11 +1364,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         )
         release_element = ElementTree.fromstring(source)
         release_document = ParserRelease().from_element(release_element)
-        print(f"release_document: {release_document}")
         async with offline_transaction():
             entity_repository = EntityRepository()
             await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            print(f"release_document: {release_document}")
             actual = RelationDataAccess.from_release(release_document)
 
         expected = [

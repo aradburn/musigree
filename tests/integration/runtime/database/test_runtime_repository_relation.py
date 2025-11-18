@@ -67,8 +67,6 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
         entity_2 = ParserEntity().from_element(entity_element_2)
 
         runtime_entity_dict_1 = to_runtime_entity_dict(entity_details_index, entity_1)
-        print(f"entity_1: {entity_1}")
-        print(f"runtime_entity_dict_1: {runtime_entity_dict_1}")
 
         runtime_entity_dict_2 = to_runtime_entity_dict(entity_details_index, entity_2)
         runtime_entity_1 = RuntimeEntity.model_validate(runtime_entity_dict_1)

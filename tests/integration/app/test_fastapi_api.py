@@ -66,11 +66,9 @@ class TestFastAPIAPI:
     ) -> None:
         """Test search endpoint with basic query."""
         response = await client.get("/api/search/Morris")
-        print(f"response: {response}")
         assert response.status_code == 200
 
         actual = response.json()
-        print(f"actual: {actual}")
         expected = {
             "results": [
                 {"key": "artist-496270", "name": "Morris Gould"},
@@ -116,7 +114,6 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
         actual = response.json()
-        print(f'actual["results"]: {actual["results"]}')
 
         expected = [
             {
