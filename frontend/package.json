@@ -48,7 +48,8 @@
         "react-dom": "^19.2.0",
         "text-case": "1.2.9",
         "dompurify": "3.3.0",
-        "debounce": "3.0.0"
+        "debounce": "3.0.0",
+        "htmlparser2": "10.0.0"
     },
     "devDependencies": {
         "@playwright/test": "^1.56.1",
