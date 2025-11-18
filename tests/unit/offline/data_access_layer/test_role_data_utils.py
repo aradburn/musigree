@@ -1,5 +1,3 @@
-import csv
-import pytest
 
 from musigree.constants import ROOT_DIR
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
@@ -285,78 +283,74 @@ def test_normalise_role_names_6() -> None:
     assert expected_str == actual_str
 
 
-@pytest.mark.skip(reason="not used")
-def test_normalise_role_names_from_test_file() -> None:
-    """Test normalisation of role names from test data file.
-
-    This test is skipped as it's not currently used.
-    """
-    with open(TEST_DATA_ROLES_PATH, encoding="utf-8") as csvfile:
-        dialect = csv.Sniffer().sniff(csvfile.read(1024))
-        csvfile.seek(0)
-        csv_reader = csv.DictReader(csvfile, dialect=dialect, escapechar="\\")
-
-        for row in csv_reader:
-            input_str: str = row["input"]
-            expected_1_str: str | None = row["expected_1"]
-            if expected_1_str == "":
-                expected_1_str = None
-            if expected_1_str is not None:
-                expected_1_str = expected_1_str.replace('\\"', '"')
-            expected_2_str: str | None = row["expected_2"]
-            if expected_2_str == "":
-                expected_2_str = None
-            if expected_2_str is not None:
-                expected_2_str = expected_2_str.replace('\\"', '"')
-            expected_3_str: str | None = row["expected_3"]
-            if expected_3_str == "":
-                expected_3_str = None
-            if expected_3_str is not None:
-                expected_3_str = expected_3_str.replace('\\"', '"')
-            expected_4_str: str | None = row["expected_4"]
-            if expected_4_str == "":
-                expected_4_str = None
-            if expected_4_str is not None:
-                expected_4_str = expected_4_str.replace('\\"', '"')
-            expected_5_str: str | None = row["expected_5"]
-            if expected_5_str == "":
-                expected_5_str = None
-            if expected_5_str is not None:
-                expected_5_str = expected_5_str.replace('\\"', '"')
-            print(f"input: {input_str}, expected_1: {expected_1_str}, expected_2: {expected_2_str}")
-            normalised_role_name_list = RoleDataUtils.normalise_role_names(input_str)
-            actual_1_str = (
-                normalised_role_name_list[0]
-                if len(normalised_role_name_list) > 0 and len(normalised_role_name_list[0]) > 0
-                else None
-            )
-            print(f"      actual_1: {actual_1_str}")
-            actual_2_str = (
-                normalised_role_name_list[1]
-                if len(normalised_role_name_list) > 1 and len(normalised_role_name_list[1]) > 0
-                else None
-            )
-            actual_3_str = (
-                normalised_role_name_list[2]
-                if len(normalised_role_name_list) > 2 and len(normalised_role_name_list[2]) > 0
-                else None
-            )
-            actual_4_str = (
-                normalised_role_name_list[3]
-                if len(normalised_role_name_list) > 3 and len(normalised_role_name_list[3]) > 0
-                else None
-            )
-            actual_5_str = (
-                normalised_role_name_list[4]
-                if len(normalised_role_name_list) > 4 and len(normalised_role_name_list[4]) > 0
-                else None
-            )
-            print(f"      actual_2: {actual_2_str}")
-            assert expected_1_str == actual_1_str
-            assert expected_2_str == actual_2_str
-            assert expected_3_str == actual_3_str
-            assert expected_4_str == actual_4_str
-            assert expected_5_str == actual_5_str
+# def test_normalise_role_names_from_test_file() -> None:
+#     """Test normalisation of role names from test data file.
+#
+#     This test is skipped as it's not currently used.
+#     """
+#     with open(TEST_DATA_ROLES_PATH, encoding="utf-8") as csvfile:
+#         dialect = csv.Sniffer().sniff(csvfile.read(1024))
+#         csvfile.seek(0)
+#         csv_reader = csv.DictReader(csvfile, dialect=dialect, escapechar="\\")
+#
+#         for row in csv_reader:
+#             input_str: str = row["input"]
+#             expected_1_str: str | None = row["expected_1"]
+#             if expected_1_str == "":
+#                 expected_1_str = None
+#             if expected_1_str is not None:
+#                 expected_1_str = expected_1_str.replace('\\"', '"')
+#             expected_2_str: str | None = row["expected_2"]
+#             if expected_2_str == "":
+#                 expected_2_str = None
+#             if expected_2_str is not None:
+#                 expected_2_str = expected_2_str.replace('\\"', '"')
+#             expected_3_str: str | None = row["expected_3"]
+#             if expected_3_str == "":
+#                 expected_3_str = None
+#             if expected_3_str is not None:
+#                 expected_3_str = expected_3_str.replace('\\"', '"')
+#             expected_4_str: str | None = row["expected_4"]
+#             if expected_4_str == "":
+#                 expected_4_str = None
+#             if expected_4_str is not None:
+#                 expected_4_str = expected_4_str.replace('\\"', '"')
+#             expected_5_str: str | None = row["expected_5"]
+#             if expected_5_str == "":
+#                 expected_5_str = None
+#             if expected_5_str is not None:
+#                 expected_5_str = expected_5_str.replace('\\"', '"')
+#             normalised_role_name_list = RoleDataUtils.normalise_role_names(input_str)
+#             actual_1_str = (
+#                 normalised_role_name_list[0]
+#                 if len(normalised_role_name_list) > 0 and len(normalised_role_name_list[0]) > 0
+#                 else None
+#             )
+#             actual_2_str = (
+#                 normalised_role_name_list[1]
+#                 if len(normalised_role_name_list) > 1 and len(normalised_role_name_list[1]) > 0
+#                 else None
+#             )
+#             actual_3_str = (
+#                 normalised_role_name_list[2]
+#                 if len(normalised_role_name_list) > 2 and len(normalised_role_name_list[2]) > 0
+#                 else None
+#             )
+#             actual_4_str = (
+#                 normalised_role_name_list[3]
+#                 if len(normalised_role_name_list) > 3 and len(normalised_role_name_list[3]) > 0
+#                 else None
+#             )
+#             actual_5_str = (
+#                 normalised_role_name_list[4]
+#                 if len(normalised_role_name_list) > 4 and len(normalised_role_name_list[4]) > 0
+#                 else None
+#             )
+#             assert expected_1_str == actual_1_str
+#             assert expected_2_str == actual_2_str
+#             assert expected_3_str == actual_3_str
+#             assert expected_4_str == actual_4_str
+#             assert expected_5_str == actual_5_str
 
 
 # def test_generate_test_data_file():
