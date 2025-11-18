@@ -75,6 +75,7 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Check frontend passes tests
+    echo "Check frontend passes tests..."
     cd frontend
     npm run check-type
     npm run lint
@@ -83,6 +84,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd ..
 
     # Check backend passes tests
+    echo "Check backend passes tests..."
     uv run pytest tests/unit \
         --log-disable=musigree.app.fastapi_api \
         --log-disable=musigree.app.fastapi_app \

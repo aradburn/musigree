@@ -38,7 +38,7 @@ repos:
             -   id: release
                 name: release and bump version
                 entry: ./release.sh --force patch
-                language: system
+                language: unsupported_script
                 pass_filenames: false
                 stages: [ pre-push ]
                 verbose: true
