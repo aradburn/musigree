@@ -30,7 +30,6 @@ async def create_entity_details_index(_config: Configuration) -> None:
     # Setup Cache
     CacheManager.setup_cache(_config)
     cache = CacheManager.get_cache()
-    print(f"cache: {cache}")
     if cache is None:
         log.error("Cache not set")
         sys.exit()

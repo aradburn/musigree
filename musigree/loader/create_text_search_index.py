@@ -59,7 +59,6 @@ def create_text_search_index() -> None:
     # Setup Cache
     CacheManager.setup_cache(offline_config)
     cache = CacheManager.get_cache()
-    print(f"cache: {cache}")
     if cache is None:
         log.error("Cache not set")
         sys.exit()
