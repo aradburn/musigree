@@ -16,7 +16,7 @@ vi.mock("../core/singletons", () => {
 
 import {
     clamp,
-    createBadge,
+    createEntityLink,
     createURLBadgeClass,
     createExternalLinkBadgeClass,
     createExternalLinkBadgeText,
@@ -137,24 +137,34 @@ describe("Utility Functions", () => {
         });
     });
 
-    describe("createBadge", () => {
-        it("should create a badge HTML string with the given text", () => {
-            const result = createBadge("Test Badge");
-            expect(result).toContain("Test Badge");
-            expect(result).toContain('class="badge');
-            expect(result).toContain("<span");
-            expect(result).toContain("</span>");
+    describe("createEntityLink", () => {
+        it("should create a EntityLink component string with entityKey and entityName", () => {
+            const result = createEntityLink("artist-123", "Test Artist");
+            expect(result).toContain("Test Artist");
+            expect(result).toContain('entityKey="artist-123"');
+            expect(result).toContain('entityName="Test Artist"');
+            expect(result).toContain("<EntityLink");
+            expect(result).toContain("</EntityLink>");
         });
 
-        it("should handle empty string", () => {
-            const result = createBadge("");
-            expect(result).toContain('class="badge');
-            expect(result).toContain("</span>");
+        it("should handle empty strings", () => {
+            const result = createEntityLink("", "");
+            expect(result).toContain('entityKey=""');
+            expect(result).toContain('entityName=""');
+            expect(result).toContain("<EntityLink");
+            expect(result).toContain("</EntityLink>");
         });
 
         it("should handle special characters", () => {
-            const result = createBadge("Test & Badge");
+            const result = createEntityLink("artist-123", "Test & Badge");
             expect(result).toContain("Test & Badge");
+            expect(result).toContain('entityName="Test & Badge"');
+        });
+
+        it("should handle null entityKey", () => {
+            const result = createEntityLink(null, "Test Artist");
+            expect(result).toContain('entityKey="null"');
+            expect(result).toContain('entityName="Test Artist"');
         });
     });
 
@@ -426,6 +436,18 @@ describe("Utility Functions", () => {
         it("should handle empty string", () => {
             expect(expandCommas("")).toBe("");
         });
+
+        it("should handle comma at start of string", () => {
+            expect(expandCommas(",word")).toBe(", word");
+        });
+
+        it("should handle comma at end of string", () => {
+            expect(expandCommas("word,")).toBe("word,");
+        });
+
+        it("should handle commas with numbers", () => {
+            expect(expandCommas("1,2,3")).toBe("1, 2, 3");
+        });
     });
 
     describe("expandBold", () => {
@@ -449,6 +471,16 @@ describe("Utility Functions", () => {
 
         it("should handle empty string", () => {
             expect(expandBold("")).toBe("");
+        });
+
+        it("should handle adjacent tags", () => {
+            expect(expandBold("[b]first[/b][b]second[/b]")).toBe(
+                "<b>first</b><b>second</b>",
+            );
+        });
+
+        it("should handle tags with special characters", () => {
+            expect(expandBold("[b]text & more[/b]")).toBe("<b>text & more</b>");
         });
     });
 
@@ -504,6 +536,14 @@ describe("Utility Functions", () => {
 
         it("should handle empty string", () => {
             expect(expandItalic("")).toBe("");
+        });
+
+        it("should handle case-insensitive tags", () => {
+            expect(expandItalic("[I]test[/I]")).toBe("<i>test</i>");
+        });
+
+        it("should handle mixed case tags", () => {
+            expect(expandItalic("[i]test[/I]")).toBe("<i>test</i>");
         });
     });
 
@@ -751,6 +791,26 @@ describe("Utility Functions", () => {
         it("should handle empty string", () => {
             expect(expandProfileURLs("")).toBe("");
         });
+
+        it("should handle URL with query parameters", () => {
+            const result = expandProfileURLs(
+                "[url=http://example.com?param=value]Link[/url]",
+            );
+            expect(result).toContain('href="http://example.com?param=value"');
+            expect(result).toContain("Link");
+        });
+
+        it("should handle URL with fragment", () => {
+            const result = expandProfileURLs(
+                "[url=http://example.com#section]Link[/url]",
+            );
+            expect(result).toContain('href="http://example.com#section"');
+        });
+
+        it("should handle URL with empty text", () => {
+            const result = expandProfileURLs("[url=http://example.com][/url]");
+            expect(result).toContain('href="http://example.com"');
+        });
     });
 
     describe("expandArtistLinkReferences", () => {
@@ -758,7 +818,7 @@ describe("Utility Functions", () => {
             getMockNodeMap().clear();
         });
 
-        it("should replace [a123] with artist name from nodeMap", () => {
+        it("should replace [a123] with EntityLink component containing artist name from nodeMap", () => {
             const mockNode: Partial<SimNode> = {
                 name: "Artist Name",
                 key: "artist-123",
@@ -766,7 +826,9 @@ describe("Utility Functions", () => {
             getMockNodeMap().set("artist-123", mockNode as SimNode);
 
             const result = expandArtistLinkReferences("Check out [a123]");
-            expect(result).toBe("Check out Artist Name");
+            expect(result).toContain("Artist Name");
+            expect(result).toContain('entityKey="artist-123"');
+            expect(result).toContain("<EntityLink");
         });
 
         it("should handle multiple artist references", () => {
@@ -776,12 +838,19 @@ describe("Utility Functions", () => {
             getMockNodeMap().set("artist-456", mockNode2 as SimNode);
 
             const result = expandArtistLinkReferences("[a123] and [a456]");
-            expect(result).toBe("Artist One and Artist Two");
+            expect(result).toContain("Artist One");
+            expect(result).toContain("Artist Two");
+            expect(result).toContain('entityKey="artist-123"');
+            expect(result).toContain('entityKey="artist-456"');
+            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
         });
 
-        it("should keep reference if artist not found", () => {
+        it("should create EntityLink with reference as name if artist not found", () => {
             const result = expandArtistLinkReferences("Check out [a999]");
-            expect(result).toBe("Check out [a999]");
+            expect(result).toContain("[a999]");
+            expect(result).toContain('entityKey="artist-999"');
+            expect(result).toContain('entityName="[a999]"');
+            expect(result).toContain("<EntityLink");
         });
 
         it("should handle empty string", () => {
@@ -791,6 +860,30 @@ describe("Utility Functions", () => {
         it("should handle string without artist references", () => {
             expect(expandArtistLinkReferences("plain text")).toBe("plain text");
         });
+
+        it("should handle case-insensitive artist references", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Artist Name",
+                key: "artist-123",
+            };
+            getMockNodeMap().set("artist-123", mockNode as SimNode);
+
+            const result = expandArtistLinkReferences("Check out [A123]");
+            expect(result).toContain("Artist Name");
+            expect(result).toContain('entityKey="artist-123"');
+        });
+
+        it("should handle artist reference with multiple digits", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Artist",
+                key: "artist-12345",
+            };
+            getMockNodeMap().set("artist-12345", mockNode as SimNode);
+
+            const result = expandArtistLinkReferences("Check out [a12345]");
+            expect(result).toContain("Artist");
+            expect(result).toContain('entityKey="artist-12345"');
+        });
     });
 
     describe("expandLabelLinkReferences", () => {
@@ -798,7 +891,7 @@ describe("Utility Functions", () => {
             getMockNodeMap().clear();
         });
 
-        it("should replace [l123] with label name from nodeMap", () => {
+        it("should replace [l123] with EntityLink component containing label name from nodeMap", () => {
             const mockNode: Partial<SimNode> = {
                 name: "Label Name",
                 key: "label-123",
@@ -806,7 +899,9 @@ describe("Utility Functions", () => {
             getMockNodeMap().set("label-123", mockNode as SimNode);
 
             const result = expandLabelLinkReferences("Check out [l123]");
-            expect(result).toBe("Check out Label Name");
+            expect(result).toContain("Label Name");
+            expect(result).toContain('entityKey="label-123"');
+            expect(result).toContain("<EntityLink");
         });
 
         it("should handle multiple label references", () => {
@@ -816,12 +911,19 @@ describe("Utility Functions", () => {
             getMockNodeMap().set("label-456", mockNode2 as SimNode);
 
             const result = expandLabelLinkReferences("[l123] and [l456]");
-            expect(result).toBe("Label One and Label Two");
+            expect(result).toContain("Label One");
+            expect(result).toContain("Label Two");
+            expect(result).toContain('entityKey="label-123"');
+            expect(result).toContain('entityKey="label-456"');
+            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
         });
 
-        it("should keep reference if label not found", () => {
+        it("should create EntityLink with reference as name if label not found", () => {
             const result = expandLabelLinkReferences("Check out [l999]");
-            expect(result).toBe("Check out [l999]");
+            expect(result).toContain("[l999]");
+            expect(result).toContain('entityKey="label-999"');
+            expect(result).toContain('entityName="[l999]"');
+            expect(result).toContain("<EntityLink");
         });
 
         it("should handle empty string", () => {
@@ -831,13 +933,42 @@ describe("Utility Functions", () => {
         it("should handle string without label references", () => {
             expect(expandLabelLinkReferences("plain text")).toBe("plain text");
         });
+
+        it("should handle case-insensitive label references", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Label Name",
+                key: "label-123",
+            };
+            getMockNodeMap().set("label-123", mockNode as SimNode);
+
+            const result = expandLabelLinkReferences("Check out [L123]");
+            expect(result).toContain("Label Name");
+            expect(result).toContain('entityKey="label-123"');
+        });
+
+        it("should handle label reference with multiple digits", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Label",
+                key: "label-99999",
+            };
+            getMockNodeMap().set("label-99999", mockNode as SimNode);
+
+            const result = expandLabelLinkReferences("Check out [l99999]");
+            expect(result).toContain("Label");
+            expect(result).toContain('entityKey="label-99999"');
+        });
     });
 
     describe("expandArtistTextReferences", () => {
-        it("should convert [a=Artist Name] to badge", () => {
+        beforeEach(() => {
+            getMockNodeMap().clear();
+        });
+
+        it("should convert [a=Artist Name] to EntityLink component", () => {
             const result = expandArtistTextReferences("[a=Artist Name]");
             expect(result).toContain("Artist Name");
-            expect(result).toContain('class="badge');
+            expect(result).toContain("<EntityLink");
+            expect(result).toContain('entityName="Artist Name"');
         });
 
         it("should handle multiple artist text references", () => {
@@ -846,7 +977,25 @@ describe("Utility Functions", () => {
             );
             expect(result).toContain("First Artist");
             expect(result).toContain("Second Artist");
-            expect((result.match(/class="badge/g) || []).length).toBe(2);
+            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
+        });
+
+        it("should use found entityKey if artist name matches nodeMap entry", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Artist Name",
+                key: "artist-123",
+            };
+            getMockNodeMap().set("artist-123", mockNode as SimNode);
+
+            const result = expandArtistTextReferences("[a=Artist Name]");
+            expect(result).toContain('entityKey="artist-123"');
+            expect(result).toContain('entityName="Artist Name"');
+        });
+
+        it("should use null entityKey if artist name not found in nodeMap", () => {
+            const result = expandArtistTextReferences("[a=Unknown Artist]");
+            expect(result).toContain('entityKey="null"');
+            expect(result).toContain('entityName="Unknown Artist"');
         });
 
         it("should not modify strings without artist text references", () => {
@@ -856,13 +1005,27 @@ describe("Utility Functions", () => {
         it("should handle empty string", () => {
             expect(expandArtistTextReferences("")).toBe("");
         });
+
+        it("should handle case-insensitive artist text references", () => {
+            const result = expandArtistTextReferences("[A=Artist Name]");
+            expect(result).toContain("Artist Name");
+            expect(result).toContain("<EntityLink");
+        });
+
+        it("should handle artist text reference with special characters", () => {
+            const result = expandArtistTextReferences("[a=Artist & Name]");
+            expect(result).toContain("Artist & Name");
+            expect(result).toContain('entityName="Artist & Name"');
+        });
     });
 
     describe("expandLabelTextReferences", () => {
-        it("should convert [l=Label Name] to badge", () => {
+        it("should convert [l=Label Name] to EntityLink component", () => {
             const result = expandLabelTextReferences("[l=Label Name]");
             expect(result).toContain("Label Name");
-            expect(result).toContain('class="badge');
+            expect(result).toContain("<EntityLink");
+            expect(result).toContain('entityName="Label Name"');
+            expect(result).toContain('entityKey="null"');
         });
 
         it("should handle multiple label text references", () => {
@@ -871,7 +1034,13 @@ describe("Utility Functions", () => {
             );
             expect(result).toContain("First Label");
             expect(result).toContain("Second Label");
-            expect((result.match(/class="badge/g) || []).length).toBe(2);
+            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
+        });
+
+        it("should handle case-insensitive label references", () => {
+            const result = expandLabelTextReferences("[L=Label Name]");
+            expect(result).toContain("Label Name");
+            expect(result).toContain("<EntityLink");
         });
 
         it("should not modify strings without label text references", () => {
@@ -880,6 +1049,12 @@ describe("Utility Functions", () => {
 
         it("should handle empty string", () => {
             expect(expandLabelTextReferences("")).toBe("");
+        });
+
+        it("should handle label text reference with special characters", () => {
+            const result = expandLabelTextReferences("[l=Label & Name]");
+            expect(result).toContain("Label & Name");
+            expect(result).toContain('entityName="Label & Name"');
         });
     });
 
@@ -896,16 +1071,31 @@ describe("Utility Functions", () => {
                 "[a123] [a=Text Artist] [i]italic[/i] word1,word2 [url=http://test.com]Link[/url]";
             const result = expandProfileReferences(input);
 
-            // Check artist link reference was expanded
+            // Check artist link reference was expanded to EntityLink
             expect(result).toContain("Test Artist");
-            // Check artist text reference was converted to badge
+            expect(result).toContain('entityKey="artist-123"');
+            // Check artist text reference was converted to EntityLink
             expect(result).toContain("Text Artist");
-            expect(result).toContain('class="badge');
+            expect(result).toContain("<EntityLink");
             // Check italics were expanded
             expect(result).toContain("<i>italic</i>");
             // Check commas were expanded
             expect(result).toContain("word1, word2");
             // Check URL was expanded
+            expect(result).toContain('href="http://test.com"');
+        });
+
+        it("should handle complex nested patterns", () => {
+            const mockNode: Partial<SimNode> = { name: "Artist" };
+            getMockNodeMap().set("artist-1", mockNode as SimNode);
+
+            const input =
+                "[a1] [b]bold[/b] [i]italic[/i] [url=http://test.com]Link[/url]";
+            const result = expandProfileReferences(input);
+
+            expect(result).toContain("Artist");
+            expect(result).toContain("<b>bold</b>");
+            expect(result).toContain("<i>italic</i>");
             expect(result).toContain('href="http://test.com"');
         });
 
@@ -945,6 +1135,20 @@ describe("Utility Functions", () => {
             const result = sanitizedData(input);
             expect(result.__html).toContain("href");
             expect(result.__html).toContain("Link");
+        });
+
+        it("should handle HTML with multiple elements", () => {
+            const input = "<div>First</div><p>Second</p>";
+            const result = sanitizedData(input);
+            expect(result.__html).toContain("First");
+            expect(result.__html).toContain("Second");
+        });
+
+        it("should sanitize event handlers", () => {
+            const input = "<div onclick=\"alert('xss')\">Safe</div>";
+            const result = sanitizedData(input);
+            expect(result.__html).not.toContain("onclick");
+            expect(result.__html).toContain("Safe");
         });
     });
 });

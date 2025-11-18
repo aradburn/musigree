@@ -4,6 +4,7 @@ import type { StateContext, Actions } from "../../State";
 import { NodeType } from "../../../network/data";
 import type { NodeKey, NetworkData } from "../../../network/data";
 import type { RelationsData } from "../../../relations";
+import type { EntityData } from "../../../entities";
 import type { TransitionFunction } from "../../AbstractFSM";
 
 // Create a concrete implementation of BaseState for testing
@@ -119,7 +120,7 @@ describe("BaseState", () => {
             expect(mockTransition).not.toHaveBeenCalled();
         });
 
-        it("should have receivedRadial method that does nothing", () => {
+        it("should have receivedRelations method that does nothing", () => {
             // Arrange
             const mockData: RelationsData = {
                 results: [],
@@ -199,8 +200,37 @@ describe("BaseState", () => {
         it("should have receivedEntity method that does nothing", () => {
             // Arrange
             const mockEntityData = {
-                key: "entity1" as NodeKey,
+                id: 1,
+                type: "artist" as const,
                 name: "Test Entity",
+                metadata: {},
+                entities: {},
+                relation_counts: {},
+                countries: null,
+                genres: null,
+                styles: null,
+            };
+
+            // Act
+            testState.receivedEntity(mockContext, mockEntityData);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should handle receivedEntity with label type", () => {
+            // Arrange
+            const mockEntityData: EntityData = {
+                id: 2,
+                type: "label",
+                name: "Test Label",
+                metadata: { founded: 1990 },
+                entities: {},
+                relation_counts: { releases: 100 },
+                countries: "US",
+                genres: "Rock",
+                styles: "Alternative",
             };
 
             // Act
@@ -264,6 +294,51 @@ describe("BaseState", () => {
             expect(mockActions.handleError).not.toHaveBeenCalled();
             expect(mockTransition).not.toHaveBeenCalled();
         });
+
+        it("should handle receivedNetwork with empty nodeMap", () => {
+            // Arrange
+            const mockData: NetworkData = {
+                nodeMap: new Map(),
+                center: {
+                    key: "entity1" as NodeKey,
+                    name: "Test Entity",
+                    type: NodeType.Artist,
+                    size: 10,
+                    x: 0,
+                    y: 0,
+                    missing: 0,
+                    hasMissing: false,
+                    lastClickTime: 0,
+                    lastTouchTime: 0,
+                    distance: 0,
+                    radius: 0,
+                    links: [],
+                    cluster: 0,
+                    fixed: false,
+                    isIntermediate: false,
+                },
+                linkMap: new Map(),
+                maxDistance: 0,
+            };
+
+            // Act
+            testState.receivedNetwork(mockContext, mockData);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should handle multiple calls to the same method", () => {
+            // Act - call multiple times
+            testState.onEnter(mockContext);
+            testState.onEnter(mockContext);
+            testState.onEnter(mockContext);
+
+            // Assert - should not throw and not call any actions
+            expect(mockActions.handleError).not.toHaveBeenCalled();
+            expect(mockTransition).not.toHaveBeenCalled();
+        });
     });
 
     describe("handleError method", () => {
@@ -277,6 +352,44 @@ describe("BaseState", () => {
             // Assert
             expect(mockActions.handleError).toHaveBeenCalledWith(error);
             expect(mockTransition).not.toHaveBeenCalled();
+        });
+
+        it("should handle string errors", () => {
+            // Arrange
+            const error = "String error";
+
+            // Act
+            testState.handleError(mockContext, error);
+
+            // Assert
+            expect(mockActions.handleError).toHaveBeenCalledWith(error);
+        });
+
+        it("should handle null errors", () => {
+            // Act
+            testState.handleError(mockContext, null);
+
+            // Assert
+            expect(mockActions.handleError).toHaveBeenCalledWith(null);
+        });
+
+        it("should handle undefined errors", () => {
+            // Act
+            testState.handleError(mockContext, undefined);
+
+            // Assert
+            expect(mockActions.handleError).toHaveBeenCalledWith(undefined);
+        });
+
+        it("should handle object errors", () => {
+            // Arrange
+            const error = { code: 500, message: "Server error" };
+
+            // Act
+            testState.handleError(mockContext, error);
+
+            // Assert
+            expect(mockActions.handleError).toHaveBeenCalledWith(error);
         });
     });
 
