@@ -1585,9 +1585,9 @@ def test_generator_with_id_accumulator_boolean_id() -> None:
 
 
 # Tests for download_file function
-@pytest.mark.skip
+@patch("musigree.utils.shutil.copyfileobj")
 @patch("musigree.utils.requests.get")
-def test_download_file_success(mock_get: MagicMock) -> None:
+def test_download_file_success(mock_get: MagicMock, mock_copyfileobj: MagicMock) -> None:
     """Test download_file successfully downloads and writes content."""
     # Arrange
     mock_response = MagicMock()
@@ -1605,12 +1605,14 @@ def test_download_file_success(mock_get: MagicMock) -> None:
     # Assert
     mock_get.assert_called_once_with("https://example.com/test.txt", stream=True)
     mock_response.raise_for_status.assert_called_once()
+    mock_copyfileobj.assert_called_once_with(mock_response.raw, mock_output_file, length=10 * 1024)
     mock_output_file.flush.assert_called_once()
     mock_output_file.close.assert_called_once()
 
 
+@patch("musigree.utils.shutil.copyfileobj")
 @patch("musigree.utils.requests.get")
-def test_download_file_http_error(mock_get: MagicMock) -> None:
+def test_download_file_http_error(mock_get: MagicMock, mock_copyfileobj: MagicMock) -> None:
     """Test download_file raises exception on HTTP error."""
     # Arrange
     mock_response = MagicMock()
@@ -1623,9 +1625,13 @@ def test_download_file_http_error(mock_get: MagicMock) -> None:
     with pytest.raises(requests.HTTPError, match="404 Not Found"):
         utils.download_file("https://example.com/notfound.txt", mock_output_file)
 
+    # Assert that copyfileobj was never called due to the error
+    mock_copyfileobj.assert_not_called()
 
+
+@patch("musigree.utils.shutil.copyfileobj")
 @patch("musigree.utils.requests.get")
-def test_download_file_network_error(mock_get: MagicMock) -> None:
+def test_download_file_network_error(mock_get: MagicMock, mock_copyfileobj: MagicMock) -> None:
     """Test download_file raises exception on network error."""
     # Arrange
     mock_get.side_effect = requests.RequestException("Network error")
@@ -1636,10 +1642,13 @@ def test_download_file_network_error(mock_get: MagicMock) -> None:
     with pytest.raises(requests.RequestException, match="Network error"):
         utils.download_file("https://example.com/test.txt", mock_output_file)
 
+    # Assert that copyfileobj was never called due to the error
+    mock_copyfileobj.assert_not_called()
 
-@pytest.mark.skip
+
+@patch("musigree.utils.shutil.copyfileobj")
 @patch("musigree.utils.requests.get")
-def test_download_file_with_buffered_writer(mock_get: MagicMock) -> None:
+def test_download_file_with_buffered_writer(mock_get: MagicMock, mock_copyfileobj: MagicMock) -> None:
     """Test download_file works with BufferedWriter."""
     # Arrange
     mock_response = MagicMock()
@@ -1658,6 +1667,7 @@ def test_download_file_with_buffered_writer(mock_get: MagicMock) -> None:
     # Assert
     mock_get.assert_called_once_with("https://example.com/test.txt", stream=True)
     mock_response.raise_for_status.assert_called_once()
+    mock_copyfileobj.assert_called_once_with(mock_response.raw, mock_output_file, length=10 * 1024)
     mock_output_file.flush.assert_called_once()
     mock_output_file.close.assert_called_once()
 
