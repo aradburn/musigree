@@ -166,16 +166,11 @@ body {
         overflow-y: auto;
     }
 
-    #entity-details-panel {
-        a {
-            color: $mg-primary-color;
-            text-decoration: none;
 
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-    }
+}
+
+#entity-details-panel {
+
 }
 
 .details-panel {
@@ -190,6 +185,14 @@ body {
 
 .details-content {
     color: $mg-text-color;
+}
+
+.entity-link {
+    cursor: pointer;
+    text-decoration: none;
+    &:hover {
+        text-decoration: underline;
+    }
 }
 
 .modal-dialog {
@@ -359,12 +362,22 @@ a[href^="https://"]::after
             &.inner {
                 fill: $mg-text-inner-color;
                 stroke: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+                font:
+                    0.6rem "Open Sans",
+                    sans-serif;
             }
 
             &.outer {
                 stroke: $mg-text-outer-color;
                 stroke-width: 3px;
                 fill: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+                font:
+                    0.6rem "Open Sans",
+                    sans-serif;
             }
         }
 
