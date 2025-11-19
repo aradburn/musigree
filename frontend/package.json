@@ -22,7 +22,7 @@
         "url": "https://github.com/aradburn/musigree.git"
     },
     "scripts": {
-        "test": "vitest --pool=threads run",
+        "test": "vitest --pool=threads --no-isolate run",
         "test:watch": "vitest watch",
         "test:coverage": "vitest run --coverage",
         "test:e2e": "playwright test",
