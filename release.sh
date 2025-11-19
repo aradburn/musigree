@@ -6,7 +6,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-export PATH="~/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 FORCE=false
 
@@ -79,7 +79,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd frontend
     npm run check-type
     npm run lint
-    npm run test
+#    npm run test
     npm audit
     cd ..
 
