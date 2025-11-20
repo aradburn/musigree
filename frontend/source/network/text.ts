@@ -33,7 +33,17 @@ type TextExitSelection = d3.Selection<
  * Vertical offset for node labels from their center point
  * @constant {number}
  */
-export const LABEL_OFFSET_Y = 9;
+export const ARTIST_TEXT_OFFSET_Y = 10;
+export const LABEL_TEXT_OFFSET_Y = 9;
+
+/**
+ * Calculates the offset of the text from the node
+ * @param {SimNode} d - Node data
+ * @returns {number} - Label offset in y direction
+ */
+export const getLabelOffset = (d: SimNode): number => {
+    return d.type === "artist" ? ARTIST_TEXT_OFFSET_Y : LABEL_TEXT_OFFSET_Y;
+};
 
 /**
  * Generates the display text for a network node
@@ -90,14 +100,14 @@ export const onTextEnter = (
     textGroup
         .append("text")
         .attr("class", "outer")
-        .attr("dy", (d: SimNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + getLabelOffset(d))
         .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
         .text(getNodeText);
 
     textGroup
         .append("text")
         .attr("class", "inner")
-        .attr("dy", (d: SimNode) => getOuterRadius(d) + LABEL_OFFSET_Y)
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + getLabelOffset(d))
         .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
         .text(getNodeText);
 
@@ -112,8 +122,16 @@ export const onTextEnter = (
 export const onTextUpdate = (
     textUpdate: TextUpdateSelection,
 ): TextUpdateSelection => {
-    textUpdate.select(".outer").text(getNodeText);
-    textUpdate.select(".inner").text(getNodeText);
+    textUpdate
+        .select(".outer")
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + getLabelOffset(d))
+        .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
+        .text(getNodeText);
+    textUpdate
+        .select(".inner")
+        .attr("dy", (d: SimNode) => getOuterRadius(d) + getLabelOffset(d))
+        .attr("width", (d: SimNode) => getOuterRadius(d) * 3)
+        .text(getNodeText);
     return textUpdate;
 };
 
