@@ -73,16 +73,20 @@ export const NetworkProvider = ({
                 ? 0.01 * d.radius * d.radius * d.radius * d.radius
                 : 0;
             const intermediateMultiplier = d.isIntermediate ? 0.05 : 0.1;
+//             console.log("type: ", d.type);
+            const typeMultiplier = d.type === "label" ? 2.0 : 1.0;
+//             console.log("typeMultiplier: ", typeMultiplier);
             const strength =
                 baseStrength * nodeStrengthMultiplier -
                 d.radius *
-                    d.radius *
-                    d.radius *
-                    intermediateMultiplier *
-                    nodeStrengthMultiplier -
+                d.radius *
+                d.radius *
+                intermediateMultiplier *
+                typeMultiplier *
+                nodeStrengthMultiplier -
                 levelOneBoost;
-            //             console.log("setupChargeForce radius:", d.radius);
-            //             console.log("setupChargeForce strength:", strength);
+//             console.log("setupChargeForce radius:", d.radius);
+//             console.log("setupChargeForce strength:", strength);
             return strength;
         }
     }, []);
@@ -121,12 +125,14 @@ export const NetworkProvider = ({
                         : FORCE.DISTANCE.LINK / 10;
             }
 
+            const typeMultiplier = d.source.type === "label" || d.target.type === "label" ? 2.0 : 1.0;
+
             const minRadius = Math.min(d.source.radius, d.target.radius);
             // const maxRadius = Math.max(d.source.radius, d.target.radius);
             // const combinedRadius = d.source.radius + d.target.radius;
             const strength =
-                distance * linkStrengthMultiplier +
-                minRadius * 10.0 * linkStrengthMultiplier +
+                distance * typeMultiplier * linkStrengthMultiplier +
+                minRadius * 10.0 * typeMultiplier * linkStrengthMultiplier +
                 innerDistance;
             return strength * 0.7;
         }
