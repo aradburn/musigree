@@ -757,9 +757,14 @@ describe("useResizeObserver", () => {
             });
 
             expect(getBoundingClientRectSpy).toHaveBeenCalled();
+            expect(result.current.width).toBe(100);
+            expect(result.current.height).toBe(200);
 
             // Change dimensions for delayed measurement
-            getBoundingClientRectSpy.mockReturnValueOnce({
+            // Use mockReturnValue to ensure it applies to the delayed measurement
+            // The implementation may call getBoundingClientRect multiple times
+            // (immediate, requestAnimationFrame, and setTimeout)
+            getBoundingClientRectSpy.mockReturnValue({
                 width: 200,
                 height: 300,
                 top: 0,
@@ -771,7 +776,7 @@ describe("useResizeObserver", () => {
                 toJSON: vi.fn(),
             } as DOMRect);
 
-            // Advance timers to trigger delayed measurement
+            // Advance timers to trigger delayed measurement (100ms setTimeout)
             act(() => {
                 vi.advanceTimersByTime(100);
             });
@@ -1142,6 +1147,162 @@ describe("useResizeObserver", () => {
             expect(addEventListenerSpy).toHaveBeenCalledWith(
                 "resize",
                 expect.any(Function),
+            );
+        });
+
+        it("should force re-measurement when trigger changes", () => {
+            const div = document.createElement("div");
+            div.getBoundingClientRect =
+                getBoundingClientRectSpy as () => DOMRect;
+            const ref = { current: div };
+
+            const { result, rerender } = renderHook(
+                ({ trigger }) => useResizeObserver({ ref, trigger }),
+                {
+                    initialProps: { trigger: false },
+                },
+            );
+
+            act(() => {
+                vi.runAllTimers();
+            });
+
+            expect(result.current.width).toBe(100);
+            expect(result.current.height).toBe(200);
+
+            const initialCallCount = getBoundingClientRectSpy.mock.calls.length;
+
+            // Change trigger to force re-measurement
+            getBoundingClientRectSpy.mockReturnValue({
+                width: 250,
+                height: 350,
+                top: 0,
+                left: 0,
+                bottom: 350,
+                right: 250,
+                x: 0,
+                y: 0,
+                toJSON: vi.fn(),
+            } as DOMRect);
+
+            rerender({ trigger: true });
+
+            act(() => {
+                vi.runAllTimers();
+            });
+
+            // Should have called getBoundingClientRect again due to trigger change
+            expect(getBoundingClientRectSpy.mock.calls.length).toBeGreaterThan(
+                initialCallCount,
+            );
+            expect(result.current.width).toBe(250);
+            expect(result.current.height).toBe(350);
+        });
+
+        it("should retry when trigger is truthy but element is not available", () => {
+            const ref = { current: null as HTMLDivElement | null };
+
+            const { rerender } = renderHook(
+                ({ trigger }) => useResizeObserver({ ref, trigger }),
+                {
+                    initialProps: { trigger: true },
+                },
+            );
+
+            expect(observeSpy).not.toHaveBeenCalled();
+
+            // Advance timers to trigger retry timeout (50ms)
+            act(() => {
+                vi.advanceTimersByTime(50);
+            });
+
+            // Element becomes available
+            const div = document.createElement("div");
+            div.getBoundingClientRect =
+                getBoundingClientRectSpy as () => DOMRect;
+            ref.current = div;
+
+            // Re-render to trigger element check
+            rerender({ trigger: true });
+
+            act(() => {
+                vi.runAllTimers();
+            });
+
+            // Should now observe the element
+            expect(observeSpy).toHaveBeenCalledWith(div, {
+                box: "content-box",
+            });
+        });
+
+        it("should update onResize callback when it changes", async () => {
+            vi.useRealTimers();
+            const div = document.createElement("div");
+            div.getBoundingClientRect =
+                getBoundingClientRectSpy as () => DOMRect;
+            const ref = { current: div };
+            const onResize1 = vi.fn();
+            const onResize2 = vi.fn();
+
+            const { rerender } = renderHook(
+                ({ onResize }) => useResizeObserver({ ref, onResize }),
+                {
+                    initialProps: { onResize: onResize1 },
+                },
+            );
+
+            await waitFor(
+                () => {
+                    expect(observeSpy).toHaveBeenCalled();
+                    expect(callback).toBeDefined();
+                },
+                { timeout: 1000 },
+            );
+
+            const mockEntry1 = {
+                contentBoxSize: [{ inlineSize: 100, blockSize: 200 }],
+                borderBoxSize: [],
+                devicePixelContentBoxSize: [],
+                contentRect: { width: 100, height: 200 },
+            } as unknown as ResizeObserverEntry;
+
+            act(() => {
+                callback([mockEntry1], {} as ResizeObserver);
+            });
+
+            await waitFor(
+                () => {
+                    expect(onResize1).toHaveBeenCalledWith({
+                        width: 100,
+                        height: 200,
+                    });
+                },
+                { timeout: 1000 },
+            );
+
+            // Change onResize callback
+            rerender({ onResize: onResize2 });
+
+            // Use a different size to trigger the callback (implementation only calls onResize when size changes)
+            const mockEntry2 = {
+                contentBoxSize: [{ inlineSize: 150, blockSize: 250 }],
+                borderBoxSize: [],
+                devicePixelContentBoxSize: [],
+                contentRect: { width: 150, height: 250 },
+            } as unknown as ResizeObserverEntry;
+
+            act(() => {
+                callback([mockEntry2], {} as ResizeObserver);
+            });
+
+            await waitFor(
+                () => {
+                    expect(onResize2).toHaveBeenCalledWith({
+                        width: 150,
+                        height: 250,
+                    });
+                },
+                { timeout: 1000 },
             );
         });
     });

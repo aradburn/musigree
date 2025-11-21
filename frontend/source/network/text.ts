@@ -9,6 +9,7 @@ import { getOuterRadius } from "./node";
 import { getNodeColorClass } from "../color";
 import { musigreeManager } from "../core/singletons";
 import type { SimNode } from "./data";
+import { NodeType } from "./data";
 
 type TextEnterSelection = d3.Selection<
     d3.EnterElement,
@@ -42,7 +43,9 @@ export const LABEL_TEXT_OFFSET_Y = 9;
  * @returns {number} - Label offset in y direction
  */
 export const getLabelOffset = (d: SimNode): number => {
-    return d.type === "artist" ? ARTIST_TEXT_OFFSET_Y : LABEL_TEXT_OFFSET_Y;
+    return d.type === NodeType.Artist
+        ? ARTIST_TEXT_OFFSET_Y
+        : LABEL_TEXT_OFFSET_Y;
 };
 
 /**
