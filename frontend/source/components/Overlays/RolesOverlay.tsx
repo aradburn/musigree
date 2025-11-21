@@ -61,9 +61,11 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
     );
 
     // Use the resize observer to get the container height
-    const { height: containerHeight = 400 } = useResizeObserver({
+    // Pass 'show' as trigger to force re-measurement when overlay is shown
+    const { height: containerHeight } = useResizeObserver({
         ref: containerRef,
         box: "border-box",
+        trigger: show,
     });
 
     // Function to recursively get all descendant node IDs
@@ -192,6 +194,54 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
 
         return (): void => clearTimeout(timer);
     }, [selectedIds, show]);
+
+    // Effect to ensure container is measured when overlay is shown
+    useEffect(() => {
+        if (!show) {
+            return;
+        }
+
+        // Use multiple attempts to ensure element is measured after it's laid out
+        const attemptMeasurement = (attempt: number): void => {
+            if (!containerRef.current) {
+                if (attempt < 5) {
+                    // Try up to 5 times with increasing delays
+                    setTimeout(
+                        () => attemptMeasurement(attempt + 1),
+                        50 * attempt,
+                    );
+                }
+                return;
+            }
+
+            // Force a layout recalculation by reading offsetHeight
+            // This ensures the element is fully laid out
+            void containerRef.current.offsetHeight;
+
+            // Force React to re-render by updating a state that the hook depends on
+            // The hook's polling effect should detect the element, but we can also
+            // trigger a resize event to ensure the window resize handler runs
+            window.dispatchEvent(new Event("resize"));
+
+            // Also try to force the hook to re-check by triggering a layout
+            // This might help the ResizeObserver fire
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    // Force a reflow
+                    void containerRef.current.offsetHeight;
+                    // Trigger resize again after layout
+                    window.dispatchEvent(new Event("resize"));
+                }
+            });
+        };
+
+        // Start measurement attempts after a short delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+            attemptMeasurement(1);
+        }, 0);
+
+        return (): void => clearTimeout(timer);
+    }, [show]);
 
     // Function to handle node selection with parent-child relationship
     const handleNodeSelection = (
@@ -402,31 +452,32 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
             onHide={handleClose}
             placement="start"
             style={offcanvasStyle}
-            className="roles-offcanvas"
+            className="roles-offcanvas d-flex flex-column"
             backdropClassName="roles-backdrop"
         >
             <Offcanvas.Header closeButton>
-                <Offcanvas.Title id="roles-title">Roles</Offcanvas.Title>
+                <div id="roles-title" className="offcanvas-title h4">
+                    Roles
+                </div>
             </Offcanvas.Header>
 
-            <Offcanvas.Body>
+            <Offcanvas.Body className="flex-fill d-flex">
                 <div
                     id={DOM_IDS.ROLES_PANEL}
-                    className="roles-panel"
-                    style={{ height: "100%" }}
+                    className="flex-fill d-flex"
                     ref={containerRef}
                 >
                     <Tree<NodeData>
                         ref={treeRef}
                         data={arboristData}
+                        width="100%"
+                        height={containerHeight}
                         rowHeight={32}
                         padding={8}
                         disableDrag={true}
                         disableDrop={true}
-                        width="100%"
-                        height={containerHeight - 20}
                         selection="none"
-                        className="roles-tree"
+                        className="roles-tree w-100 h-100"
                         openByDefault={false}
                         initialOpenState={initialOpenState}
                     >
@@ -454,7 +505,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                             backgroundColor: selectedIds.has(
                                                 node.id,
                                             )
-                                                ? "#e0e0e0"
+                                                ? "#9db8ac"
                                                 : "transparent",
                                             padding: "4px 8px",
                                         }}
@@ -468,6 +519,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                             />
                                         ) : (
                                             <div
+                                                className="text-primary-emphasis"
                                                 style={{
                                                     width: "16px",
                                                     height: "16px",
@@ -476,9 +528,8 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                     alignItems: "center",
                                                     marginRight: "8px",
                                                     cursor: "pointer",
-                                                    fontSize: "10px",
-                                                    color: "#555",
-                                                    backgroundColor: "white",
+                                                    fontSize: "1rem",
+                                                    backgroundColor: "#9db8ac",
                                                 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -489,11 +540,11 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                     style={{
                                                         display: "inline-block",
                                                         backgroundColor:
-                                                            "white",
+                                                            "#9db8ac",
                                                         width: "100%",
                                                         height: "100%",
                                                         textAlign: "center",
-                                                        lineHeight: "16px",
+                                                        lineHeight: "1rem",
                                                     }}
                                                 >
                                                     {node.isOpen ? (
@@ -505,8 +556,8 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                             <path
                                                                 d="M1 4L5 8L9 4"
                                                                 fill="none"
-                                                                stroke="#555"
-                                                                strokeWidth="1.5"
+                                                                stroke="#212529"
+                                                                strokeWidth="1.8"
                                                             />
                                                         </svg>
                                                     ) : (
@@ -518,8 +569,8 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                             <path
                                                                 d="M4 1L8 5L4 9"
                                                                 fill="none"
-                                                                stroke="#555"
-                                                                strokeWidth="1.5"
+                                                                stroke="#212529"
+                                                                strokeWidth="1.8"
                                                             />
                                                         </svg>
                                                     )}

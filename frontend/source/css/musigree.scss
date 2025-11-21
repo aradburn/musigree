@@ -160,13 +160,6 @@ body {
         width: 80vw; // Reduce width on small screens
         // The top and height are already set correctly with CSS variables
     }
-
-    #roles-panel {
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
-    }
-
-
 }
 
 #entity-details-panel {
@@ -190,9 +183,28 @@ body {
 .entity-link {
     cursor: pointer;
     text-decoration: none;
+    font-size: 1rem;
     &:hover {
         text-decoration: underline;
     }
+}
+
+.url-badge {
+    font-size: 1rem;
+    padding: 0.4rem !important;
+}
+
+#roles-overlay {
+    background-color: $mg-background-light-color !important;
+}
+
+.roles-title {
+    color: $mg-text-color;
+}
+
+#roles-panel {
+/*    overflow-y: auto;*/
+    background-color: $mg-background-light-color !important;
 }
 
 .modal-dialog {
@@ -251,13 +263,8 @@ input[type="range"]::slider-thumb {
 
 .navbar-title {
     transition: color ease-in-out 0.2s;
-    display: block;
     text-align: center;
-    float: none;
-    height: 50px;
-    padding: 15px 15px;
-    font-size: 18px;
-    line-height: 20px;
+    font-size: 2rem;
 }
 
 
@@ -450,6 +457,11 @@ a[href^="https://"]::after
         stroke-width: 1.5px;
 
         circle.shadow {
+            fill: url(#radial-gradient);
+            stroke: none;
+        }
+
+        rect.shadow {
             fill: url(#radial-gradient);
             stroke: none;
         }
