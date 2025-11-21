@@ -122,7 +122,7 @@ class SecurityHeadersMiddleware:
                             security_headers[b"content-security-policy-report-only"] = (
                                 b"frame-ancestors 'self';"
                                 b"default-src 'self';"
-                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ ;"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ https://fundingchoicesmessages.google.com ;"
                                 b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
                                 b"object-src 'none';"
                                 b"frame-src 'self';"
@@ -140,7 +140,7 @@ class SecurityHeadersMiddleware:
                             security_headers[b"content-security-policy"] = (
                                 b"frame-ancestors 'self';"
                                 b"default-src 'self';"
-                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ ;"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://pagead2.googlesyndication.com/ https://fundingchoicesmessages.google.com ;"
                                 b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
                                 b"object-src 'none';"
                                 b"frame-src 'self';"
