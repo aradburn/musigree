@@ -163,7 +163,7 @@ const onNodeEnterElementConstruction = (
         .attr("class", "shadow")
         .attr("cx", (d) => getOuterRadius(d) / 3 + 1)
         .attr("cy", (d) => getOuterRadius(d) / 3 + 1)
-        .attr("r", (d) => Math.pow(getOuterRadius(d), 1.2) - 2);
+        .attr("r", (d) => getOuterRadius(d) * 1.2);
     artistEnter
         .append("circle")
         .attr("class", (d) => {
@@ -183,6 +183,23 @@ const onNodeEnterElementConstruction = (
     const labelEnter = nodeEnter.filter(function (d) {
         return d.type === NodeType.Label;
     });
+    labelEnter
+        .append("rect")
+        .attr("class", "shadow")
+        .attr("height", (d) => 3 * getOuterRadius(d))
+        .attr("width", (d) => 3 * getOuterRadius(d))
+        .attr("x", (d) => -1 * getOuterRadius(d))
+        .attr("y", (d) => -1 * getOuterRadius(d));
+    labelEnter
+        .append("rect")
+        .attr("class", (d) => {
+            const classes = ["outer", getNodeColorClass(d)];
+            return classes.join(" ");
+        })
+        .attr("height", (d) => 2 * getOuterRadius(d))
+        .attr("width", (d) => 2 * getOuterRadius(d))
+        .attr("x", (d) => -1 * getOuterRadius(d))
+        .attr("y", (d) => -1 * getOuterRadius(d));
     labelEnter
         .append("rect")
         .attr("class", (d) => {
@@ -269,7 +286,7 @@ export const onNodeUpdate = (
         .select<SVGGElement>(".shadow")
         .attr("cx", (d) => getOuterRadius(d) / 3 + 1)
         .attr("cy", (d) => getOuterRadius(d) / 3 + 1)
-        .attr("r", (d) => Math.pow(getOuterRadius(d), 1.2) - 2);
+        .attr("r", (d) => getOuterRadius(d) * 1.2);
 
     artistUpdate
         .select<SVGGElement>(".outer")

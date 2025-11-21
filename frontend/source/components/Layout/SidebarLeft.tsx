@@ -21,37 +21,39 @@ export const SidebarLeft: React.FC = () => {
     };
 
     return (
-        <div
-            className="sidebar sidebar-left col-auto flex-fill d-flex p-2 h-100
-                        flex-sm-column flex-xl-column
-                        justify-content-evenly
-                        justify-content-sm-start justify-content-xl-start
-                        align-items-start
-                        align-items-sm-start align-items-xl-start
-                        bg-secondary-subtle text-light"
-        >
-            {/* Roles button */}
+        <div className="p-2 d-flex flex-fill h-100">
             <div
-                className="navbar-text px-sm-0 px-2"
-                role="button"
-                onClick={handleShowRoles}
+                className="col-auto d-flex flex-fill h-100
+                            flex-sm-column flex-xl-column
+                            justify-content-evenly
+                            justify-content-sm-start justify-content-xl-start
+                            align-items-start
+                            align-items-sm-start align-items-xl-start
+                            text-light"
             >
-                <i className="fs-5 bi-person"></i>
-                <span className="ms-1 d-none d-sm-inline">ROLES</span>
-            </div>
+                {/* Roles button */}
+                <div
+                    className="navbar-text px-sm-0 px-2"
+                    role="button"
+                    onClick={handleShowRoles}
+                >
+                    <i className="fs-5 bi-person"></i>
+                    <span className="ms-1 d-none d-sm-inline">ROLES</span>
+                </div>
 
-            {/* Print button */}
-            <div
-                className="navbar-text px-sm-0 px-2 mb-sm-auto"
-                role="button"
-                onClick={handlePrint}
-            >
-                <i className="fs-5 bi-printer"></i>
-                <span className="ms-1 d-none d-sm-inline">PRINT</span>
-            </div>
+                {/* Print button */}
+                <div
+                    className="navbar-text px-sm-0 px-2 mb-sm-auto"
+                    role="button"
+                    onClick={handlePrint}
+                >
+                    <i className="fs-5 bi-printer"></i>
+                    <span className="ms-1 d-none d-sm-inline">PRINT</span>
+                </div>
 
-            {/* Force Controls */}
-            <ForceControls />
+                {/* Force Controls */}
+                <ForceControls />
+            </div>
         </div>
     );
 };

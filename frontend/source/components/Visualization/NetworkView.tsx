@@ -60,13 +60,7 @@ const NetworkView: React.FC = () => {
         };
     }, [dispatch]);
 
-    return (
-        <main
-            ref={containerRef}
-            id={DOM_IDS.SVG_CONTAINER}
-            className="h-100 flex-grow-1 flex-shrink-1 px-0"
-        ></main>
-    );
+    return <main id={DOM_IDS.SVG_CONTAINER} ref={containerRef}></main>;
 };
 
 // Wrap with memo to prevent unnecessary re-renders as this component rarely changes

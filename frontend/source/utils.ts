@@ -24,16 +24,22 @@ export const clamp = (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
 };
 
-export const createBadge = (str: string): string => {
+export const createEntityLink = (
+    entityKey: string,
+    entityName: string,
+): string => {
     return (
-        '<span class="badge px-1 py-0 text-black bg-success-subtle bg-opacity-40 bg-gradient">' +
-        str +
-        "</span>"
+        '<EntityLink entityKey="' +
+        entityKey +
+        '" entityName="' +
+        entityName +
+        '">' +
+        "</EntityLink>"
     );
 };
 
 export const createURLBadgeClass = (_str: string): string => {
-    return "badge rounded-pill px-2 py-1 me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient";
+    return "badge url-badge rounded-pill me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient";
 };
 
 export const createExternalLinkBadgeClass = (str: string): string => {
@@ -196,8 +202,11 @@ export const expandArtistLinkReferences = (str: string): string => {
         if (match[0]) {
             const entity_key = "artist-" + match[0].slice(2, -1);
             const value = networkManager.data.nodeMap.get(entity_key);
-            const replacement = value?.name ?? match[0];
-            expanded = expanded.replace(match[0], replacement);
+            const name = value?.name ?? match[0];
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, name),
+            );
         }
     }
     return expanded;
@@ -212,8 +221,11 @@ export const expandLabelLinkReferences = (str: string): string => {
         if (match[0]) {
             const entity_key = "label-" + match[0].slice(2, -1);
             const value = networkManager.data.nodeMap.get(entity_key);
-            const replacement = value?.name ?? match[0];
-            expanded = expanded.replace(match[0], replacement);
+            const name = value?.name ?? match[0];
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, name),
+            );
         }
     }
     return expanded;
@@ -221,14 +233,35 @@ export const expandLabelLinkReferences = (str: string): string => {
 
 export const expandArtistTextReferences = (str: string): string => {
     // Converts an artist reference [a=Some Artist Name Here] into a badge
-    const pattern = /\[[aA]=(.*?)]/g;
-    return str.replace(pattern, (_match, name: string) => createBadge(name));
+    const regexp = /\[[aA]=(.*?)]/g;
+    const matches = Array.from(str.matchAll(regexp));
+    let expanded = String(str);
+    for (const match of matches) {
+        if (match[0]) {
+            let entity_key: string = null;
+            const entity_name = match[0].slice(3, -1);
+            for (const [key, value] of networkManager.data.nodeMap) {
+                if (value?.name === entity_name) {
+                    entity_key = key;
+                }
+            }
+            expanded = expanded.replace(
+                match[0],
+                createEntityLink(entity_key, entity_name),
+            );
+        }
+    }
+    return expanded;
+    //     const pattern = /\[[aA]=(.*?)]/g;
+    //     return str.replace(pattern, (_match, name: string) => createEntityLink(null, name));
 };
 
 export const expandLabelTextReferences = (str: string): string => {
     // Converts a label reference [l=Some Label Name Here] into a badge
     const pattern = /\[[lL]=(.*?)]/g;
-    return str.replace(pattern, (_match, name: string) => createBadge(name));
+    return str.replace(pattern, (_match, name: string) =>
+        createEntityLink(null, name),
+    );
 };
 
 export const expandProfileReferences = (str: string): string => {
@@ -257,3 +290,9 @@ export const expandProfileReferences = (str: string): string => {
 export const sanitizedData = (s: string): { __html: string } => ({
     __html: DOMPurify.sanitize(s),
 });
+
+export const convertRemToPixels = (rem: number): number => {
+    return (
+        rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
+    );
+};

@@ -41,11 +41,17 @@ html,
 body {
     margin: 0;
     width: 100%;
-    height: 100%;
+//     height: 100%;
     top: 0;
     left: 0;
     position: fixed;
     z-index: -1;
+}
+
+@media (min-width: 576px) {
+    body {
+        height: 100%;
+    }
 }
 
 .custom-tooltip {
@@ -77,18 +83,49 @@ body {
     /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
 }
 
-.sidebar-left {
+.sidebar-left-container {
     background-color: $mg-background-dark-color !important;
     /* background-color: #1C575A !important;*/
-    min-width: 200px;
-    max-width: 200px;
+    width: 15rem;
+    min-width: 15rem;
+    max-width: 15rem;
 }
 
-.sidebar-right {
+.sidebar-right-container {
     background-color: $mg-background-light-color !important;
-    /* background-color: #1C575A !important;*/
+    width: 30rem;
     min-width: 30rem;
     max-width: 30rem;
+}
+
+#svg-container-fluid {
+    width: calc(100vw - 45rem);
+//     min-width: calc(100vw - 45rem);
+//     max-width: calc(100vw - 45rem);
+}
+
+@media (min-width: 576px) {
+    .h-sm-100 {
+        height: calc(100vh - var(--navbar-height)) !important;
+    }
+}
+
+@media (max-width: 575px) {
+    .sidebar-left-container {
+        background-color: $mg-background-dark-color !important;
+        width: 100vw;
+        min-width: 100vw;
+        max-width: 100vw;
+    }
+    #svg-container-fluid {
+        width: 100vw;
+    }
+    .sidebar-right-container {
+        background-color: $mg-background-light-color !important;
+        width: 100vw;
+        min-width: 100vw;
+        max-width: 100vw;
+    }
 }
 
 // Side menu content container
@@ -123,22 +160,10 @@ body {
         width: 80vw; // Reduce width on small screens
         // The top and height are already set correctly with CSS variables
     }
+}
 
-    #roles-panel {
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
-    }
+#entity-details-panel {
 
-    #entity-details-panel {
-        a {
-            color: $mg-primary-color;
-            text-decoration: none;
-
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-    }
 }
 
 .details-panel {
@@ -153,6 +178,33 @@ body {
 
 .details-content {
     color: $mg-text-color;
+}
+
+.entity-link {
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1rem;
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.url-badge {
+    font-size: 1rem;
+    padding: 0.4rem !important;
+}
+
+#roles-overlay {
+    background-color: $mg-background-light-color !important;
+}
+
+.roles-title {
+    color: $mg-text-color;
+}
+
+#roles-panel {
+/*    overflow-y: auto;*/
+    background-color: $mg-background-light-color !important;
 }
 
 .modal-dialog {
@@ -174,7 +226,9 @@ input[type="range"] {
     appearance: none;
     background: transparent;
     cursor: pointer;
-    width: 90%;
+    width: 100%;
+    padding-left: 10%;
+    padding-right: 10%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -209,13 +263,8 @@ input[type="range"]::slider-thumb {
 
 .navbar-title {
     transition: color ease-in-out 0.2s;
-    display: block;
     text-align: center;
-    float: none;
-    height: 50px;
-    padding: 15px 15px;
-    font-size: 18px;
-    line-height: 20px;
+    font-size: 2rem;
 }
 
 
@@ -320,12 +369,22 @@ a[href^="https://"]::after
             &.inner {
                 fill: $mg-text-inner-color;
                 stroke: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+                font:
+                    0.6rem "Open Sans",
+                    sans-serif;
             }
 
             &.outer {
                 stroke: $mg-text-outer-color;
                 stroke-width: 3px;
                 fill: none;
+                dominant-baseline: middle;
+                text-anchor: middle;
+                font:
+                    0.6rem "Open Sans",
+                    sans-serif;
             }
         }
 
@@ -398,6 +457,11 @@ a[href^="https://"]::after
         stroke-width: 1.5px;
 
         circle.shadow {
+            fill: url(#radial-gradient);
+            stroke: none;
+        }
+
+        rect.shadow {
             fill: url(#radial-gradient);
             stroke: none;
         }

@@ -45,12 +45,6 @@ describe("SidebarLeft Component", () => {
     it("renders correctly with all expected elements", () => {
         render(<SidebarLeft />);
 
-        // Check if the sidebar container is rendered
-        const sidebarLeft = screen
-            .getByRole("button", { name: /print/i })
-            .closest(".sidebar");
-        expect(sidebarLeft).toBeInTheDocument();
-
         // Check if all buttons are rendered with correct text
         expect(
             screen.getByRole("button", { name: /roles/i }),

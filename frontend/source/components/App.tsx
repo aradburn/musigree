@@ -118,7 +118,10 @@ const App: React.FC = (): React.ReactElement => {
             <NetworkProvider>
                 <LoadingProvider>
                     <EntityProvider>
-                        <Container fluid className="h-100 d-flex flex-column">
+                        <Container
+                            fluid
+                            className="d-flex flex-column h-sm-100"
+                        >
                             <Row>
                                 <Header
                                     onShowHelp={handleShowHelp}
@@ -126,18 +129,27 @@ const App: React.FC = (): React.ReactElement => {
                                 />
                             </Row>
 
-                            <Row
-                                className="flex-grow-1 flex-nowrap"
-                                style={{ minHeight: 0 }}
-                            >
-                                <SidebarLeft />
-
-                                <div className="h-100 px-0 flex-grow-1 col-auto">
-                                    <NetworkView />
-                                    <LoadingAnimation />
+                            <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
+                                <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
+                                    <div className="flex-sm-column flex-row h-sm-100">
+                                        {/* sidebar left panel */}
+                                        <SidebarLeft />
+                                    </div>
                                 </div>
 
-                                <SidebarRight />
+                                <div className="main-container flex-fill p-0 order-sm-2 order-1">
+                                    <div className="flex-sm-column flex-row h-sm-100">
+                                        <NetworkView />
+                                        <LoadingAnimation />
+                                    </div>
+                                </div>
+
+                                <div className="sidebar-right-container p-0 order-sm-3 order-2">
+                                    <div className="flex-sm-column flex-row h-sm-100">
+                                        {/* sidebar right panel */}
+                                        <SidebarRight />
+                                    </div>
+                                </div>
 
                                 {/* Use the React components for overlays */}
                                 <RolesOverlay

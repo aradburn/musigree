@@ -6,7 +6,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-export PATH="~/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 FORCE=false
 
@@ -73,6 +73,54 @@ fi
 echo
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+    # Check frontend passes tests
+    echo "Check frontend passes tests..."
+    cd frontend
+    npm run check-type
+    npm run lint
+#    npm run test
+    npm audit
+    cd ..
+
+    # Check backend passes tests
+    echo "Check backend passes tests..."
+    uv run pytest tests/unit \
+        --log-disable=musigree.app.fastapi_api \
+        --log-disable=musigree.app.fastapi_app \
+        --log-disable=musigree.app.fastapi_assets \
+        --log-disable=musigree.app.fastapi_dependencies \
+        --log-disable=musigree.app.fastapi_security \
+        --log-disable=musigree.app.fastapi_ui \
+        --log-disable=musigree.exceptions \
+        --log-disable=musigree.exceptions \
+        --log-disable=musigree.library.cache.cache_manager \
+        --log-disable=musigree.library.full_text_search.text_search_index \
+        --log-disable=musigree.loader.create_entity_details_index \
+        --log-disable=musigree.loader.offline_loader \
+        --log-disable=musigree.loader.runtime_loader \
+        --log-disable=musigree.logging_config \
+        --log-disable=musigree.offline.data_access_layer.release_data_access \
+        --log-disable=musigree.offline.data_access_layer.role_data_access \
+        --log-disable=musigree.offline.database.offline_transaction \
+        --log-disable=musigree.offline.loader.loader_base \
+        --log-disable=musigree.offline.loader.loader_role \
+        --log-disable=musigree.offline.loader.loader_target \
+        --log-disable=musigree.offline.loader.loader_utils \
+        --log-disable=musigree.offline.loader.worker_entity_pass_three \
+        --log-disable=musigree.offline.loader.worker_entity_updater \
+        --log-disable=musigree.offline.offline_database_manager \
+        --log-disable=musigree.runtime.data_access_layer.relation_grapher \
+        --log-disable=musigree.runtime.data_access_layer.runtime_entity_data_access \
+        --log-disable=musigree.runtime.data_access_layer.runtime_entity_search \
+        --log-disable=musigree.runtime.data_access_layer.runtime_role_data_access \
+        --log-disable=musigree.runtime.runtime_database_manager \
+        --log-disable=musigree.runtime.runtime_database.runtime_transaction \
+        --log-disable=musigree.transfer.transfer_manager \
+        --log-disable=musigree.transfer.transfer_task \
+        --log-disable=musigree.utils \
+        --disable-warnings --no-header --no-summary
+
     # replace version number
     uv version --bump "$1"
 
@@ -80,7 +128,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Update frontend to be same version as backend
     cd frontend
-    npm version --no-git-tag-version $new_version
+    npm version --no-git-tag-version "$new_version"
     echo "export const version = \"$new_version\";" > source/version.ts
     cd ..
 

@@ -8,9 +8,16 @@ import {
     type Mock,
 } from "vitest";
 import * as d3 from "d3";
-import { onLinkEnter, onLinkExit, onLinkUpdate, onLinkMouseOut } from "../link";
+import {
+    onLinkEnter,
+    onLinkExit,
+    onLinkUpdate,
+    onLinkMouseOut,
+    handleLinkTooltip,
+} from "../link";
 import type { SimLink } from "../data";
 import { NodeType } from "../data";
+import { linkTooltip } from "../tooltips";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({
@@ -44,9 +51,9 @@ vi.mock("d3", async (importOriginal) => {
     };
 });
 
-// Mock for utils debounce
-vi.mock("../../utils", () => ({
-    debounce: (fn: Function) => fn,
+// Mock for debounce package
+vi.mock("debounce", () => ({
+    default: (fn: Function) => fn,
 }));
 
 describe("Network Link Functions", () => {
@@ -405,6 +412,148 @@ describe("Network Link Functions", () => {
             // Verify transition and duration were called
             expect(mockTransition).toHaveBeenCalled();
             expect(mockTransitionDuration).toHaveBeenCalled();
+        });
+    });
+
+    describe("onLinkMouseOver", () => {
+        it("should add 'selected' class and show tooltip", () => {
+            // Import the function dynamically since it's not exported
+            // We'll test it through the event handler binding
+            const mockEvent = {
+                target: document.createElement("g"),
+            } as unknown as MouseEvent;
+
+            // Mock d3.select for this test
+            const mockTransitionDuration = vi.fn();
+            const mockTransition = vi.fn().mockReturnValue({
+                duration: mockTransitionDuration,
+            });
+            const mockClassed = vi.fn().mockReturnValue({
+                transition: mockTransition,
+            });
+
+            const d3SelectSpy = vi.spyOn(d3, "select").mockReturnValue({
+                classed: mockClassed,
+            } as any);
+
+            // Get the mouseover handler from onLinkEnter
+            onLinkEnter(mockLinkEnterSelection);
+            const mockCalls = (mockAppendedGroup.on as Mock).mock.calls;
+            let mouseoverHandler: Function | undefined;
+            for (let i = 0; i < mockCalls.length; i++) {
+                if (mockCalls[i][0] === "mouseover") {
+                    mouseoverHandler = mockCalls[i][1] as Function;
+                    break;
+                }
+            }
+
+            expect(mouseoverHandler).toBeDefined();
+            if (mouseoverHandler) {
+                mouseoverHandler(mockEvent, mockLink);
+                expect(d3SelectSpy).toHaveBeenCalledWith(mockEvent.target);
+                expect(mockClassed).toHaveBeenCalledWith("selected", true);
+            }
+        });
+    });
+
+    describe("handleLinkTooltip", () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("should return early if element is null", () => {
+            const nullElement = null as unknown as SVGGElement;
+            handleLinkTooltip(nullElement, mockLink, true);
+            // Since debounce is mocked to return the function directly, it should be called immediately
+            // But since element is null, it should return early
+            expect(linkTooltip.show).not.toHaveBeenCalled();
+            expect(linkTooltip.hide).not.toHaveBeenCalled();
+        });
+
+        it("should show tooltip on text element when found via querySelector", () => {
+            const mockTextElement = document.createElement("text");
+            const mockElement = {
+                querySelector: vi.fn().mockReturnValue(mockTextElement),
+            } as unknown as SVGGElement;
+
+            handleLinkTooltip(mockElement, mockLink, true);
+            // Since debounce is mocked to return the function directly, advance timers to ensure execution
+            vi.advanceTimersByTime(0);
+
+            expect(linkTooltip.show).toHaveBeenCalledWith(
+                mockLink,
+                mockTextElement,
+            );
+        });
+
+        it("should show tooltip on parent text element when not found on element", () => {
+            const mockTextElement = document.createElement("text");
+            const mockParent = {
+                querySelector: vi.fn().mockReturnValue(mockTextElement),
+            } as unknown as Element;
+            const mockElement = {
+                querySelector: vi.fn().mockReturnValue(null),
+                parentElement: mockParent,
+            } as unknown as SVGGElement;
+
+            handleLinkTooltip(mockElement, mockLink, true);
+            vi.advanceTimersByTime(0);
+
+            expect(linkTooltip.show).toHaveBeenCalledWith(
+                mockLink,
+                mockTextElement,
+            );
+        });
+
+        it("should fallback to element itself when no text element found", () => {
+            const mockElement = {
+                querySelector: vi.fn().mockReturnValue(null),
+                parentElement: null,
+            } as unknown as SVGGElement;
+
+            handleLinkTooltip(mockElement, mockLink, true);
+            vi.advanceTimersByTime(0);
+
+            expect(linkTooltip.show).toHaveBeenCalledWith(
+                mockLink,
+                mockElement,
+            );
+        });
+
+        it("should handle errors gracefully and fallback to element", () => {
+            const mockElement = {
+                querySelector: vi.fn().mockImplementation(() => {
+                    throw new Error("Query selector error");
+                }),
+            } as unknown as SVGGElement;
+
+            expect(() => {
+                handleLinkTooltip(mockElement, mockLink, true);
+                vi.advanceTimersByTime(0);
+            }).not.toThrow();
+
+            expect(linkTooltip.show).toHaveBeenCalledWith(
+                mockLink,
+                mockElement,
+            );
+        });
+
+        it("should hide tooltip when status is false", () => {
+            const mockElement = {
+                querySelector: vi.fn().mockReturnValue(null),
+            } as unknown as SVGGElement;
+
+            handleLinkTooltip(mockElement, mockLink, false);
+            vi.advanceTimersByTime(0);
+
+            // Since debounce is mocked to return the function directly, it should be called immediately
+            expect(linkTooltip.hide).toHaveBeenCalled();
+            expect(linkTooltip.show).not.toHaveBeenCalled();
         });
     });
 });

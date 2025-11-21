@@ -28,7 +28,6 @@ async def run_offline_loading_process(
     # Setup Cache
     CacheManager.setup_cache(_config)
     cache = CacheManager.get_cache()
-    print(f"cache: {cache}")
     if cache is None:
         log.error("Cache not set")
         sys.exit()

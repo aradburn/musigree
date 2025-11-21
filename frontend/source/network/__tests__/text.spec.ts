@@ -8,7 +8,7 @@ import {
     onTextEnter,
     onTextExit,
     onTextUpdate,
-    LABEL_OFFSET_Y,
+    ARTIST_TEXT_OFFSET_Y,
 } from "../text";
 import { musigreeManager } from "../../core/singletons";
 import type { SimNode } from "../data";
@@ -333,8 +333,8 @@ describe("Network Node Text Module", () => {
     });
 
     describe("Constants", () => {
-        it("should export LABEL_OFFSET_Y constant", () => {
-            expect(LABEL_OFFSET_Y).toBe(9);
+        it("should export ARTIST_TEXT_OFFSET_Y constant", () => {
+            expect(ARTIST_TEXT_OFFSET_Y).toBe(10);
         });
     });
 });

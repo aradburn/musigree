@@ -415,7 +415,9 @@ class RelationGrapher:
             if entity_two_key not in self.nodes:
                 # log.debug(f"        add entity_two_key: {entity_two_key}")
                 self.entity_keys_to_visit.add(entity_two_key)
-            self.links[link_key] = relation
+            # Do not add self referential links
+            if entity_one_key != entity_two_key:
+                self.links[link_key] = relation
         # log.debug(f"        entity_keys_to_visit: {self.entity_keys_to_visit}")
 
     def recurse_trellis(self, node: TrellisNode) -> set[tuple[int, EntityType]]:

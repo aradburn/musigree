@@ -25,7 +25,12 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
     };
 
     return (
-        <Navbar bg="body-tertiary" expand="lg" className="text-body p-0">
+        <Navbar
+            id="nav-top"
+            bg="body-tertiary"
+            expand="lg"
+            className="text-body p-0"
+        >
             <Container fluid>
                 {/* Brand section */}
                 <div className="px-2 py-0 col-lg-2 col-md-2 col-sm-1 col-1 order-1 order-md-1">

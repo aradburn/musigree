@@ -21,8 +21,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
-
         assert cache is not None
         CacheManager.shutdown_cache()
 
@@ -32,7 +30,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,
@@ -50,7 +47,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,
@@ -72,8 +68,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
-
         assert cache is not None
         CacheManager.shutdown_cache()
 
@@ -83,7 +77,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,
@@ -101,7 +94,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,
@@ -123,8 +115,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
-
         assert cache is not None
         CacheManager.shutdown_cache()
 
@@ -134,7 +124,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,
@@ -152,7 +141,6 @@ class TestCache:
 
         cache = CacheManager.get_cache()
 
-        print(f"test cache: {cache}")
         assert cache is not None
         data = {
             "aaa": 111,

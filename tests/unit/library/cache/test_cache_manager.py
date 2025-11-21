@@ -221,32 +221,43 @@ class TestRedisCache:
         cache = RedisCache()
         assert cache._client == mock_fake_client
 
-    @pytest.mark.skip("Skipping RedisCache tests that require a real Redis server.")
     def test_redis_cache_initialization_params(self) -> None:
         """Test RedisCache initialization parameters."""
-        with patch("musigree.library.cache.cache_manager.fakeredis"):
-            cache = RedisCache(
-                host="example.com",
-                port=6380,
-                password="secret",
-                db=1,
-                default_timeout=600,
-                key_prefix="test:",
-            )
-            assert cache.default_timeout == 600
-            assert cache.key_prefix == "test:"
+        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
+            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
+                mock_fake_client = MagicMock()
+                mock_fakeredis.FakeRedis.return_value = mock_fake_client
+                cache = RedisCache(
+                    host="example.com",
+                    port=6380,
+                    password="secret",
+                    db=1,
+                    default_timeout=600,
+                    key_prefix="test:",
+                )
+                assert cache.default_timeout == 600
+                assert cache.key_prefix == "test:"
+                assert cache._client == mock_fake_client
 
     def test_redis_cache_make_key(self) -> None:
         """Test key prefixing in RedisCache."""
-        with patch("musigree.library.cache.cache_manager.fakeredis"):
-            cache = RedisCache(key_prefix="app:")
-            assert cache._make_key("key1") == "app:key1"
+        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
+            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
+                mock_fake_client = MagicMock()
+                mock_fakeredis.FakeRedis.return_value = mock_fake_client
+                cache = RedisCache(key_prefix="app:")
+                assert cache._make_key("key1") == "app:key1"
+                assert cache._client == mock_fake_client
 
     def test_redis_cache_make_key_no_prefix(self) -> None:
         """Test key handling without prefix."""
-        with patch("musigree.library.cache.cache_manager.fakeredis"):
-            cache = RedisCache()
-            assert cache._make_key("key1") == "key1"
+        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
+            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
+                mock_fake_client = MagicMock()
+                mock_fakeredis.FakeRedis.return_value = mock_fake_client
+                cache = RedisCache()
+                assert cache._make_key("key1") == "key1"
+                assert cache._client == mock_fake_client
 
 
 class TestCacheManager:

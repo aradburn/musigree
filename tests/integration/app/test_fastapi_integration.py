@@ -48,7 +48,7 @@ class TestFastAPIIntegration:
             "OPTIONS",
             "/api/roles",
             headers={
-                "Origin": "http://localhost:3000",
+                "Origin": "http://localhost:5000",
                 "Access-Control-Request-Method": "GET",
             },
         )
