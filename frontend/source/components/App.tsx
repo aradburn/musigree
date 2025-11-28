@@ -6,10 +6,10 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Header } from "./Layout/Header.tsx";
 import { SidebarLeft } from "./Layout/SidebarLeft";
 import { SidebarRight } from "./Layout/SidebarRight";
-import { HelpModal, WelcomeModal, WhoModal } from "./Modals/index";
+import { HelpModal } from "./Modals/HelpModal";
 import { NetworkView } from "./Visualization/NetworkView";
 import { LoadingAnimation } from "./Visualization";
-import { RolesOverlay } from "./Overlays";
+import { RolesOverlay } from "./Overlays/RolesOverlay";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
 import { LoadingProvider } from "../contexts/LoadingContext";
@@ -25,10 +25,8 @@ import type { TreeConfig } from "../roles";
  */
 const App: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
-    const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(false);
-    const [showWhoModal, setShowWhoModal] = useState<boolean>(false);
     const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
-    const [isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
+    const [_isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
     const [rolesConfig, setRolesConfig] = useState<TreeConfig | undefined>(
         undefined,
     );
@@ -39,7 +37,6 @@ const App: React.FC = (): React.ReactElement => {
         const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
         if (!hasVisitedBefore) {
             // First time visitor - show welcome modal
-            setShowWelcomeModal(true);
             localStorage.setItem("hasVisitedBefore", "true");
         } else {
             setIsReturnVisitor(true);
@@ -101,18 +98,6 @@ const App: React.FC = (): React.ReactElement => {
         setShowHelpModal(false);
     };
 
-    const handleHideWelcome = (): void => {
-        setShowWelcomeModal(false);
-    };
-
-    const handleShowWho = (): void => {
-        setShowWhoModal(true);
-    };
-
-    const handleHideWho = (): void => {
-        setShowWhoModal(false);
-    };
-
     return (
         <WindowProvider>
             <NetworkProvider>
@@ -123,10 +108,7 @@ const App: React.FC = (): React.ReactElement => {
                             className="d-flex flex-column h-sm-100"
                         >
                             <Row>
-                                <Header
-                                    onShowHelp={handleShowHelp}
-                                    onShowWho={handleShowWho}
-                                />
+                                <Header onShowHelp={handleShowHelp} />
                             </Row>
 
                             <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
@@ -164,15 +146,6 @@ const App: React.FC = (): React.ReactElement => {
                             <HelpModal
                                 show={showHelpModal}
                                 onHide={handleHideHelp}
-                            />
-                            <WhoModal
-                                show={showWhoModal}
-                                onHide={handleHideWho}
-                            />
-                            <WelcomeModal
-                                show={showWelcomeModal}
-                                onHide={handleHideWelcome}
-                                isReturnVisitor={isReturnVisitor}
                             />
                         </Container>
                     </EntityProvider>

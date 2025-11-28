@@ -3,39 +3,10 @@
  * Copyright 2023-2025 Andrew Radburn
  * Licensed under MIT (https://github.com/aradburn/musigree/blob/main/LICENSE)
  */
-$mg-primary-color: rgba(70, 115, 94, 0.7333333333);
-$mg-secondary-color: #4d8c6f;
-// $mg-background-light-color: #70AEA5;
-$mg-background-light-color: #9db8ac;
-// $mg-background-light-color: #a3beb2;
-// $mg-background-light-color: #bcd2c9;
-$mg-background-dark-color: #1c5a51;
-$mg-text-color: #111;
-$mg-text-inner-color: #000;
-$mg-text-outer-color: #fff;
 
-$mg-svg-background-color: #eee;
-$mg-modal-background-color: #ffffe6;
+@use './default-theme-variables.scss' as *;
 
-$mg-tooltip-color: #111;
-$mg-tooltip-background-color: #ffffcc;
 
-$mg-node-tooltip-color: #111;
-$mg-node-tooltip-background-color: #ffffcc;
-$mg-node-tooltip-border-color: #9db8ac;
-// $mg-node-tooltip-border-color: #800026;
-
-$mg-link-tooltip-color: #111;
-$mg-link-tooltip-background-color: #ffeda0;
-$mg-link-tooltip-border-color: #9db8ac;
-// $mg-link-tooltip-border-color: #800026;
-
-.bg-opacity-40 {
-  --bs-bg-opacity: 0.4;
-}
-.bg-opacity-60 {
-  --bs-bg-opacity: 0.6;
-}
 
 html,
 body {
@@ -54,6 +25,14 @@ body {
     }
 }
 
+.bg-opacity-40 {
+  --bs-bg-opacity: 0.4;
+}
+
+.bg-opacity-60 {
+  --bs-bg-opacity: 0.6;
+}
+
 .custom-tooltip {
     --bs-tooltip-bg: $mg-tooltip-background-color;
     --bs-tooltip-color: $mg-tooltip-color;
@@ -61,6 +40,23 @@ body {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.navbar {
+    background-image: linear-gradient(
+        #c9d9cd55 0%,
+        #2F5954AA 100%
+    );
+}
+
+.navbar-brand-icon {
+    font-size: 2rem;
+}
+
+.navbar-title {
+    transition: color ease-in-out 0.2s;
+    text-align: center;
+    font-size: 2rem;
 }
 
 #search-results {
@@ -74,18 +70,13 @@ body {
     background-color: rgba(70, 115, 94, 0.5) !important;
 }
 
-.navbar {
-    background-image: linear-gradient(
-        #{$mg-secondary-color}55 0%,
-        #46735ebb 100%
-    );
-    /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
-    /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
+.search-results-body {
+    max-height: calc(100vh - var(--navbar-height) - 3rem);
+    overflow-y: auto;
 }
 
 .sidebar-left-container {
     background-color: $mg-background-dark-color !important;
-    /* background-color: #1C575A !important;*/
     width: 15rem;
     min-width: 15rem;
     max-width: 15rem;
@@ -203,7 +194,6 @@ body {
 }
 
 #roles-panel {
-/*    overflow-y: auto;*/
     background-color: $mg-background-light-color !important;
 }
 
@@ -211,7 +201,7 @@ body {
     margin-top: 50px;
 }
 
-#help-modal .modal-content, #welcome-modal .modal-content, #who-modal .modal-content {
+#help-modal .modal-content {
     background-color: $mg-modal-background-color;
     border-color: $mg-primary-color;
     border-width: 4px;
@@ -255,16 +245,6 @@ input[type="range"]::-moz-range-thumb,
 input[type="range"]::-webkit-slider-thumb,
 input[type="range"]::slider-thumb {
     background-color: $mg-background-dark-color !important;
-}
-
-// #nav-bottom {
-//     background-image: linear-gradient(#ddd, #ccc 60%);
-// }
-
-.navbar-title {
-    transition: color ease-in-out 0.2s;
-    text-align: center;
-    font-size: 2rem;
 }
 
 

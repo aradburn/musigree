@@ -389,7 +389,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                         width: "18px",
                         height: "18px",
                         display: "inline-block",
-                        backgroundColor: "#0d6efd", // Blue background
+                        backgroundColor: "#9db1ae", // Blue-Green background
                         border: "1px solid #0d6efd",
                         borderRadius: "3px",
                         cursor: "pointer",
@@ -505,7 +505,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                             backgroundColor: selectedIds.has(
                                                 node.id,
                                             )
-                                                ? "#9db8ac"
+                                                ? "#9db1ae"
                                                 : "transparent",
                                             padding: "4px 8px",
                                         }}
@@ -529,7 +529,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                     marginRight: "8px",
                                                     cursor: "pointer",
                                                     fontSize: "1rem",
-                                                    backgroundColor: "#9db8ac",
+                                                    backgroundColor: "#9db1ae",
                                                 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -540,7 +540,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                     style={{
                                                         display: "inline-block",
                                                         backgroundColor:
-                                                            "#9db8ac",
+                                                            "#9db1ae",
                                                         width: "100%",
                                                         height: "100%",
                                                         textAlign: "center",

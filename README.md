@@ -24,11 +24,11 @@ All of **Musigree**'s data is derived from the [Discogs](http://www.discogs.com)
 
 ### Live Demo
 
-Visit the live site at https://musigree.net.
+Visit the live site at https://musigree.com.
 
 ### How to Use
 
-1. Visit the https://musigree.net website
+1. Visit the https://musigree.com website
 2. Type an artist, band, or label name into the search box
 3. Explore the connections in the interactive visualization
 4. Click on nodes to see more information

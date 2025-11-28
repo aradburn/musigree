@@ -187,10 +187,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     style={{ minWidth: inputRef.current?.offsetWidth }}
                     ref={popoverRef}
                 >
-                    <Popover.Body
-                        className="p-0"
-                        style={{ maxHeight: "300px", overflowY: "auto" }}
-                    >
+                    <Popover.Body className="search-results-body p-0">
                         {loading && (
                             <div className="d-flex justify-content-center p-3">
                                 <Spinner
