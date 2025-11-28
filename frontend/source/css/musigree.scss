@@ -49,7 +49,13 @@ body {
     );
 }
 
-.nav-top-brand-icon {
+.navbar-brand-icon {
+    font-size: 2rem;
+}
+
+.navbar-title {
+    transition: color ease-in-out 0.2s;
+    text-align: center;
     font-size: 2rem;
 }
 
@@ -71,7 +77,6 @@ body {
 
 .sidebar-left-container {
     background-color: $mg-background-dark-color !important;
-    /* background-color: #1C575A !important;*/
     width: 15rem;
     min-width: 15rem;
     max-width: 15rem;
@@ -189,7 +194,6 @@ body {
 }
 
 #roles-panel {
-/*    overflow-y: auto;*/
     background-color: $mg-background-light-color !important;
 }
 
@@ -197,7 +201,7 @@ body {
     margin-top: 50px;
 }
 
-#help-modal .modal-content, #welcome-modal .modal-content, #who-modal .modal-content {
+#help-modal .modal-content {
     background-color: $mg-modal-background-color;
     border-color: $mg-primary-color;
     border-width: 4px;
@@ -241,16 +245,6 @@ input[type="range"]::-moz-range-thumb,
 input[type="range"]::-webkit-slider-thumb,
 input[type="range"]::slider-thumb {
     background-color: $mg-background-dark-color !important;
-}
-
-// #nav-bottom {
-//     background-image: linear-gradient(#ddd, #ccc 60%);
-// }
-
-.navbar-title {
-    transition: color ease-in-out 0.2s;
-    text-align: center;
-    font-size: 2rem;
 }
 
 

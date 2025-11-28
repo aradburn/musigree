@@ -38,7 +38,11 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
         ? "https://discogs.com/" + entity?.type + "/" + entity?.id
         : null;
 
-    const urls = [ discogs_url, ...(entity?.metadata?.urls || []) ];
+    const metadataUrls = entity?.metadata?.urls;
+    const metadataUrlsArray = Array.isArray(metadataUrls)
+        ? metadataUrls.filter((url): url is string => typeof url === "string")
+        : [];
+    const urls = [discogs_url, ...metadataUrlsArray];
     const urlListItems = Array.isArray(urls)
         ? urls
               .filter((url): url is string => typeof url === "string")

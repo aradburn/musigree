@@ -217,7 +217,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                             musigreeManager.selectedNodeKey,
                             true,
                         );
-                    } else if (networkManager.data.center.key){
+                    } else if (networkManager.data.center.key) {
                         this.requestNetwork(
                             networkManager.data.center.key,
                             true,
