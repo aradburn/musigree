@@ -42,6 +42,17 @@ body {
     cursor: pointer;
 }
 
+.navbar {
+    background-image: linear-gradient(
+        #c9d9cd55 0%,
+        #2F5954AA 100%
+    );
+}
+
+.nav-top-brand-icon {
+    font-size: 2rem;
+}
+
 #search-results {
     border-width: 2px;
 }
@@ -53,17 +64,9 @@ body {
     background-color: rgba(70, 115, 94, 0.5) !important;
 }
 
-.navbar {
-    background-image: linear-gradient(
-        #c9d9cd55 0%,
-        #2F5954AA 100%
-    );
-/*    background-image: linear-gradient(
-        #{$mg-secondary-color}55 0%,
-        #46735ebb 100%
-    );*/
-    /*    background-image: linear-gradient(#13808577 0%, #53466677 140%);*/
-    /*    background-image: linear-gradient(#ddd, #ccc 60%);*/
+.search-results-body {
+    max-height: calc(100vh - var(--navbar-height) - 3rem);
+    overflow-y: auto;
 }
 
 .sidebar-left-container {

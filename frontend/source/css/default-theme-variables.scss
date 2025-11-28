@@ -5,7 +5,15 @@
  */
 $mg-primary-color: rgba(70, 115, 94, 0.7333333333);
 $mg-secondary-color: #4d8c6f;
-$mg-background-light-color: #c1cfcc;
+
+$mg-background-light-color: #022a36;
+$mg-background-dark-color: #2F5954;
+
+$mg-background-light-color: #9db1ae;
+$mg-background-dark-color: #022a36;
+
+// blue-green
+// $mg-background-light-color: #c1cfcc;
 // $mg-background-light-color: #bbd0c9;
 // $mg-background-light-color: #b6c6b9;
 // $mg-background-light-color: #85AB8C;
@@ -17,9 +25,14 @@ $mg-background-light-color: #c1cfcc;
 // $mg-background-light-color: #9db8ac;
 // $mg-background-light-color: #a3beb2;
 // $mg-background-light-color: #bcd2c9;
-$mg-background-dark-color: #2F5954;
+// $mg-background-dark-color: #2F5954;
+
+// Original
+// $mg-background-light-color: #bcd2c9;
 // $mg-background-dark-color: #1c5a51;
-$mg-text-color: #111;
+
+$mg-text-color: #0e0e0e;
+// $mg-text-color: #111;
 $mg-text-inner-color: #000;
 $mg-text-outer-color: #fff;
 
