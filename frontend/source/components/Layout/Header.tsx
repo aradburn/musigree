@@ -40,10 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                         onClick={onShowWho}
                     >
                         <span className="text-body px-2 py-0">
-                            <i
-                                className="bi bi-snow3"
-                                style={{ fontSize: "2rem" }}
-                            ></i>
+                            <i className="nav-top-brand-icon bi bi-snow3"></i>
                         </span>
                         <OverlayTrigger
                             placement="bottom"
@@ -100,7 +97,10 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
                 </div>
 
                 {/* Help button section */}
-                <div className="navbar-text navbar-right px-2 py-0 fs-5 d-flex justify-content-center col-lg-1 col-md-1 col-sm-1 col-1 order-5 order-md-5">
+                <div className="navbar-text navbar-right px-2 py-0 fs-5
+                                d-flex justify-content-center
+                                col-lg-1 col-md-1 col-sm-1 col-1
+                                order-5 order-md-5">
                     <OverlayTrigger
                         placement="bottom"
                         overlay={<Tooltip id="tooltip-help">Help</Tooltip>}
