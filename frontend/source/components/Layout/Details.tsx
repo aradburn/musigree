@@ -33,7 +33,12 @@ export const Details: React.FC<{ entity?: EntityData | null }> = ({
         typeof profile === "string"
             ? expandProfileURLs(expandProfileReferences(profile))
             : "";
-    const urls = entity?.metadata?.urls;
+
+    const discogs_url = hasEntity
+        ? "https://discogs.com/" + entity?.type + "/" + entity?.id
+        : null;
+
+    const urls = [ discogs_url, ...(entity?.metadata?.urls || []) ];
     const urlListItems = Array.isArray(urls)
         ? urls
               .filter((url): url is string => typeof url === "string")
