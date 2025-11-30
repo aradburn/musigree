@@ -51,7 +51,6 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
     const treeRef = useRef<TreeApi<NodeData>>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [arboristData, setArboristData] = useState<NodeData[]>([]);
-    const [navbarHeight, setNavbarHeight] = useState<number>(0);
     const [initialOpenState, setInitialOpenState] = useState<
         Record<string, boolean>
     >({});
@@ -160,28 +159,6 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         }
     }, [roles]);
 
-    // Effect to measure the navbar height
-    useEffect(() => {
-        const updateNavbarHeight = (): void => {
-            const navbar = document.querySelector("nav.navbar");
-            if (navbar) {
-                const height = navbar.getBoundingClientRect().height;
-                setNavbarHeight(height);
-            }
-        };
-
-        // Initial measurement
-        updateNavbarHeight();
-
-        // Update on window resize
-        window.addEventListener("resize", updateNavbarHeight);
-
-        // Cleanup
-        return (): void => {
-            window.removeEventListener("resize", updateNavbarHeight);
-        };
-    }, []);
-
     // Effect to apply selection when the tree is mounted or selectedIds changes
     useEffect(() => {
         // Use a timeout to ensure the tree is fully rendered before trying to select nodes
@@ -194,54 +171,6 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
 
         return (): void => clearTimeout(timer);
     }, [selectedIds, show]);
-
-    // Effect to ensure container is measured when overlay is shown
-    useEffect(() => {
-        if (!show) {
-            return;
-        }
-
-        // Use multiple attempts to ensure element is measured after it's laid out
-        const attemptMeasurement = (attempt: number): void => {
-            if (!containerRef.current) {
-                if (attempt < 5) {
-                    // Try up to 5 times with increasing delays
-                    setTimeout(
-                        () => attemptMeasurement(attempt + 1),
-                        50 * attempt,
-                    );
-                }
-                return;
-            }
-
-            // Force a layout recalculation by reading offsetHeight
-            // This ensures the element is fully laid out
-            void containerRef.current.offsetHeight;
-
-            // Force React to re-render by updating a state that the hook depends on
-            // The hook's polling effect should detect the element, but we can also
-            // trigger a resize event to ensure the window resize handler runs
-            window.dispatchEvent(new Event("resize"));
-
-            // Also try to force the hook to re-check by triggering a layout
-            // This might help the ResizeObserver fire
-            requestAnimationFrame(() => {
-                if (containerRef.current) {
-                    // Force a reflow
-                    void containerRef.current.offsetHeight;
-                    // Trigger resize again after layout
-                    window.dispatchEvent(new Event("resize"));
-                }
-            });
-        };
-
-        // Start measurement attempts after a short delay to ensure DOM is ready
-        const timer = setTimeout(() => {
-            attemptMeasurement(1);
-        }, 0);
-
-        return (): void => clearTimeout(timer);
-    }, [show]);
 
     // Function to handle node selection with parent-child relationship
     const handleNodeSelection = (
@@ -368,11 +297,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         onHide();
     };
 
-    // Custom styles for the offcanvas component
-    const offcanvasStyle = {
-        top: `${navbarHeight}px`,
-        height: `calc(100% - ${navbarHeight}px)`,
-    };
+
 
     // Helper to render the checkbox component based on state
     const renderCheckbox = (node: NodeData): React.ReactNode => {
@@ -382,58 +307,23 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         // Use a completely custom approach for indeterminate state
         if (checkboxState === CheckboxState.Some) {
             return (
-                <div
-                    style={{
-                        position: "relative",
-                        marginRight: "8px",
-                        width: "18px",
-                        height: "18px",
-                        display: "inline-block",
-                        backgroundColor: "#9db1ae", // Blue-Green background
-                        border: "1px solid #0d6efd",
-                        borderRadius: "3px",
-                        cursor: "pointer",
-                    }}
+                <div className="role-checkbox-indeterminate"
                     onClick={(e) => {
                         e.stopPropagation();
                         // Toggle to checked state when clicked
                         handleNodeSelection(node.id, true, node);
                     }}
                 >
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "4px",
-                            right: "4px",
-                            height: "2px",
-                            backgroundColor: "white",
-                            transform: "translateY(-50%)",
-                        }}
-                    />
+                    <div className="role-checkbox-indeterminate-active"/>
                 </div>
             );
         }
 
         // Regular checkbox for selected/unselected states
         return (
-            <div
-                style={{
-                    position: "relative",
-                    marginRight: "8px",
-                    width: "18px",
-                    height: "18px",
-                    display: "inline-block",
-                }}
-            >
+            <div className="role-checkbox">
                 <input
                     type="checkbox"
-                    style={{
-                        margin: 0,
-                        width: "100%",
-                        height: "100%",
-                        cursor: "pointer",
-                    }}
                     checked={isSelected || checkboxState === CheckboxState.All}
                     onChange={(e) => {
                         e.stopPropagation();
@@ -451,8 +341,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
             show={show}
             onHide={handleClose}
             placement="start"
-            style={offcanvasStyle}
-            className="roles-offcanvas d-flex flex-column"
+            className="d-flex flex-column"
             backdropClassName="roles-backdrop"
         >
             <Offcanvas.Header closeButton>
@@ -472,7 +361,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                         data={arboristData}
                         width="100%"
                         height={containerHeight}
-                        rowHeight={32}
+//                         rowHeight={32}
                         padding={8}
                         disableDrag={true}
                         disableDrop={true}
@@ -488,7 +377,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                             );
 
                             return (
-                                <div
+                                <div className="tree-item"
                                     style={style}
                                     ref={dragHandle}
                                     title={node.data.name}
@@ -497,68 +386,25 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                         e.stopPropagation();
                                     }}
                                 >
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            cursor: "pointer",
-                                            backgroundColor: selectedIds.has(
-                                                node.id,
-                                            )
-                                                ? "#9db1ae"
-                                                : "transparent",
-                                            padding: "4px 8px",
-                                        }}
-                                    >
+                                    <div className="tree-item-inner">
                                         {node.isLeaf ? (
-                                            <div
-                                                style={{
-                                                    width: "16px",
-                                                    marginRight: "8px",
-                                                }}
-                                            />
+                                            <div className="tree-item-leaf"/>
                                         ) : (
                                             <div
-                                                className="text-primary-emphasis"
-                                                style={{
-                                                    width: "16px",
-                                                    height: "16px",
-                                                    display: "flex",
-                                                    justifyContent: "center",
-                                                    alignItems: "center",
-                                                    marginRight: "8px",
-                                                    cursor: "pointer",
-                                                    fontSize: "1rem",
-                                                    backgroundColor: "#9db1ae",
-                                                }}
+                                                className="tree-expanded-indicator text-primary-emphasis"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     node.toggle();
                                                 }}
                                             >
-                                                <span
-                                                    style={{
-                                                        display: "inline-block",
-                                                        backgroundColor:
-                                                            "#9db1ae",
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        textAlign: "center",
-                                                        lineHeight: "1rem",
-                                                    }}
-                                                >
+                                                <span>
                                                     {node.isOpen ? (
                                                         <svg
                                                             width="10"
                                                             height="10"
                                                             viewBox="0 0 10 10"
                                                         >
-                                                            <path
-                                                                d="M1 4L5 8L9 4"
-                                                                fill="none"
-                                                                stroke="#212529"
-                                                                strokeWidth="1.8"
-                                                            />
+                                                            <path d="M1 4L5 8L9 4"/>
                                                         </svg>
                                                     ) : (
                                                         <svg
@@ -566,12 +412,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                             height="10"
                                                             viewBox="0 0 10 10"
                                                         >
-                                                            <path
-                                                                d="M4 1L8 5L4 9"
-                                                                fill="none"
-                                                                stroke="#212529"
-                                                                strokeWidth="1.8"
-                                                            />
+                                                            <path d="M4 1L8 5L4 9"/>
                                                         </svg>
                                                     )}
                                                 </span>

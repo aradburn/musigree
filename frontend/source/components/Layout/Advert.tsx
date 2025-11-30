@@ -18,19 +18,6 @@ declare global {
  */
 export const Advert: React.FC<AdvertProps> = ({ adClient, adSlot }) => {
     const adRef = useRef<HTMLModElement>(null);
-    const adStyle = {
-        display: "inline-block",
-        width: "300px",
-        height: "250px",
-    };
-    const hrStyle = {
-        width: "95%",
-        height: "2px",
-        color: "#000",
-        background: "#000",
-        opacity: 0.7,
-        margin: "auto",
-    };
 
     useEffect(() => {
         const options = {
@@ -68,16 +55,15 @@ export const Advert: React.FC<AdvertProps> = ({ adClient, adSlot }) => {
 
     return (
         <div id="advert-panel" className="mx-auto d-none">
-            <hr style={hrStyle} />
-            <h6 className="text-center text-secondary">Advertisment</h6>
+            <hr />
+            <h6 className="text-center text-secondary">Advertisement</h6>
             {/* Advert panel */}
             {/* <Image src="/public/img/small-ad.png" rounded /> */}
 
             {/*  Musigree 300x250 Block Advert  */}
             <ins
-                className="adsbygoogle"
+                className="adsbygoogle advert-content"
                 ref={adRef}
-                style={adStyle}
                 data-ad-client={adClient}
                 data-ad-slot={adSlot}
             ></ins>
