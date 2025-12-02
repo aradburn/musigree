@@ -1,5 +1,5 @@
 <!doctype html>
-<html dir="ltr" lang="en">
+<html dir="ltr" lang="en" prefix="og: https://ogp.me/ns#">
 <head>
     <meta charset="utf-8"/>
     <meta
@@ -7,7 +7,12 @@
         content="width=device-width,
                  initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <meta name="application-name" content="Patchwork"/>
+
+    <meta name="application-name" content="Musigree"/>
+    <meta name="description" content="Discover new music with an interactive tool visualizing the complex network
+    between musicians, bands, and record labels. See how artists connect today.">
+    <meta name="keywords"
+          content="musicians, music connections, artist network, band relationships, record labels, music discovery">
 
     <title>{{ title }}</title>
 
@@ -22,42 +27,42 @@
     </script>
     {%- endif %}
 
-    <!-- Musigree -->
-    <meta
-        property="og:description"
-        content=" Musigree provides an
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ og_title }}"/>
+    <meta property="og:type" content="{{ og_type }}"/>
+    <meta property="og:image" content="{{ og_image }}"/>
+    <meta property="og:url" content="{{ og_url }}"/>
+    <meta property="og:description"
+          content="Musigree provides an
             interactive visualization of the relationships between nearly 11 million
             artists, bands and labels using information derived from the Discogs.com
             database."
     />
-    <meta property="og:title" content="{{ og_title }}"/>
+
     <meta property="og:site_name" content="Musigree"/>
-    <meta property="og:url" content="{{ application_url }}{{ og_url }}"/>
-    <meta
-        property="og:image"
-        content="{{ application_url }}/img/og_image.png"
-    />
+
 
     <!-- favicon-->
     <link
         rel="apple-touch-icon"
         sizes="180x180"
-        href="/public/img/apple-touch-icon.png"
+        href="/img/apple-touch-icon.png"
     />
     <link
         rel="icon"
         type="image/png"
         sizes="32x32"
-        href="/public/img/favicon-32x32.png"
+        href="/img/favicon-32x32.png"
     />
     <link
         rel="icon"
         type="image/png"
         sizes="16x16"
-        href="/public/img/favicon-16x16.png"
+        href="/img/favicon-16x16.png"
     />
 
-    <link rel="manifest" href="/public/site.webmanifest"/>
+    <!-- Musigree -->
+    <link rel="manifest" href="/site.webmanifest"/>
 
     {%- if is_production %}
     <link rel="stylesheet" href="{{ asset('style.css') }}"/>

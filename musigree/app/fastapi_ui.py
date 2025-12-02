@@ -91,16 +91,20 @@ async def route__index(
     """Get the multiselect mapping for roles."""
 
     # Get the application root from the request
-    application_url = str(request.base_url).rstrip("/")
+    application_url = str(request.base_url.replace(scheme="https")).rstrip("/")
+    title = "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
 
     # Build URL with query parameters
-    url = "/"
-    if roles:
-        url += f"?roles={','.join(roles)}"
-        if year:
-            url += f"&year={year}"
-    elif year:
-        url += f"?year={year}"
+    og_url = application_url
+    # if roles:
+    #     og_url += f"?roles={','.join(roles)}"
+    #     if year:
+    #         og_url += f"&year={year}"
+    # elif year:
+    #     og_url += f"?year={year}"
+
+    og_title = title
+    og_image = application_url + "/img/og_image.png"
 
     """Generate the URL for the current request with the selected roles."""
     return templates.TemplateResponse(
@@ -108,19 +112,20 @@ async def route__index(
         name="index.html",
         context={
             # "request": request,
+            "title": title,
             "application_url": application_url,
             "initial_json": initial_js,
             "multiselect_mapping": multiselect_mapping,
-            "og_title": "Musigree",
-            "og_url": url,
+            "og_title": og_title,
+            "og_type": "website",
+            "og_image": og_image,
+            "og_url": og_url,
             "original_roles": roles,
             "original_year": year,
-            "title": "Musigree",
         },
     )
 
 
-@router.get("/{entity_type_str}/{entity_id}", response_class=HTMLResponse)
 async def route__entity_type__entity_id(
     request: Request,
     entity_type: Annotated[EntityType, Depends(get_entity_type)],
@@ -210,16 +215,19 @@ async def route__entity_type__entity_id(
     """Create a unique key for the entity."""
 
     # Get the application root from the request
-    application_url = str(request.base_url).rstrip("/")
+    application_url = str(request.base_url.replace(scheme="https")).rstrip("/")
 
     # Build URL with query parameters
-    url = f"/{entity_type.name.lower()}/{entity_id}"
+    og_url = f"{application_url}/{entity_type.name.lower()}/{entity_id}"
     if roles:
-        url += f"?roles={','.join(roles)}"
+        og_url += f"?roles={','.join(roles)}"
         if year:
-            url += f"&year={year}"
+            og_url += f"&year={year}"
     elif year:
-        url += f"?year={year}"
+        og_url += f"?year={year}"
+
+    og_title = f'Musigree: The "{entity_name}" network'
+    og_image = application_url + "/img/og_image.png"
 
     """Generate the URL for the current entity."""
     title = f"Musigree: {entity_name}"
@@ -231,14 +239,84 @@ async def route__entity_type__entity_id(
         "index.html",
         {
             "request": request,
+            "title": title,
             "application_url": application_url,
             "initial_json": initial_js,
             "key": key,
             "multiselect_mapping": multiselect_mapping,
-            "og_title": f'Musigree: The "{entity_name}" network',
-            "og_url": url,
+            "og_title": og_title,
+            "og_type": "website",
+            "og_image": og_image,
+            "og_url": og_url,
             "original_roles": roles,
             "original_year": year,
-            "title": title,
         },
+    )
+
+
+@router.get("/artist/{entity_id}", response_class=HTMLResponse)
+async def route__artist__entity_id(
+    request: Request,
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    on_mobile: Annotated[bool, Query()] = False,
+) -> HTMLResponse:
+    """
+    Serves the entity-specific page.
+
+    This route handles requests for URLs like "/artist/123" or "/label/456".
+    It retrieves the network graph data for the specified entity, prepares
+    the initial data, renders the index template, and returns the response.
+
+    Args:
+        request: The FastAPI request object.
+        entity_id: The ID of the entity.
+        roles: Optional list of roles to filter the network by.
+        year: Optional year to filter the network by.
+        on_mobile: Optional flag indicating if the request is from a mobile device.
+
+    Returns:
+        HTMLResponse: The rendered entity-specific page.
+
+    Raises:
+        BadRequestError: If the entity type or entity ID is invalid.
+        NotFoundError: If no network data is found for the given entity.
+    """
+    return await route__entity_type__entity_id(
+        request, EntityType.ARTIST, entity_id, roles, year, on_mobile
+    )
+
+
+@router.get("/label/{entity_id}", response_class=HTMLResponse)
+async def route__label__entity_id(
+    request: Request,
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    roles: Annotated[list[str], Depends(get_roles)],
+    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    on_mobile: Annotated[bool, Query()] = False,
+) -> HTMLResponse:
+    """
+    Serves the entity-specific page.
+
+    This route handles requests for URLs like "/artist/123" or "/label/456".
+    It retrieves the network graph data for the specified entity, prepares
+    the initial data, renders the index template, and returns the response.
+
+    Args:
+        request: The FastAPI request object.
+        entity_id: The ID of the entity.
+        roles: Optional list of roles to filter the network by.
+        year: Optional year to filter the network by.
+        on_mobile: Optional flag indicating if the request is from a mobile device.
+
+    Returns:
+        HTMLResponse: The rendered entity-specific page.
+
+    Raises:
+        BadRequestError: If the entity type or entity ID is invalid.
+        NotFoundError: If no network data is found for the given entity.
+    """
+    return await route__entity_type__entity_id(
+        request, EntityType.LABEL, entity_id, roles, year, on_mobile
     )
