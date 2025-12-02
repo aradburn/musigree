@@ -57,6 +57,13 @@ body {
     transition: color ease-in-out 0.2s;
     text-align: center;
     font-size: 2rem;
+ }
+
+#navbar-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50ch;
 }
 
 #search-results {
