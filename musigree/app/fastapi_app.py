@@ -169,12 +169,12 @@ def create_app(config: Configuration) -> FastAPI:
     assets_router, assets_templates = create_assets_router(config)
 
     # Include routers
-    app.mount("/public", StaticFiles(directory=PUBLIC_DIR), name="public")
     app.mount("/prodassets", StaticFiles(directory=FRONTEND_DIR / "dist"), name="prodassets")
     app.include_router(assets_router)
     app.include_router(api_router, prefix="/api")
     app.include_router(ui_router)
     app.include_router(healthcheck_router)
+    app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")
 
     # Set up exception handlers
     @app.exception_handler(BaseError)
@@ -210,13 +210,32 @@ def create_app(config: Configuration) -> FastAPI:
     # noinspection PyUnusedLocal
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Any) -> Response:
-        error = NotFoundError(message="Not Found")
-        return templates.TemplateResponse(
-            request=request,
-            name="error.html",
-            context={"error": error},
-            status_code=error.status_code,
-        )
+        if request.url.path.startswith("/api"):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "status": 400,
+                    "message": "Bad API endpoint",
+                },
+            )
+        elif request.url.path.startswith("/health"):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "status": 400,
+                    "message": "Bad healthcheck endpoint",
+                },
+            )
+        else:
+            error = NotFoundError(message="Not Found")
+            return templates.TemplateResponse(
+                request=request,
+                name="error.html",
+                context={"error": error},
+                status_code=error.status_code,
+            )
 
     # noinspection PyUnusedLocal
     @app.exception_handler(500)
