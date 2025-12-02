@@ -22,10 +22,6 @@ All of **Musigree**'s data is derived from the [Discogs](http://www.discogs.com)
 - 18 million releases
 - Over 100 million different relationships
 
-### Live Demo
-
-Visit the live site at https://musigree.com.
-
 ### How to Use
 
 1. Visit the https://musigree.com website
