@@ -77,7 +77,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Check frontend passes tests
     echo "Check frontend passes tests..."
     cd frontend
-    npm run check-type
+    npm run check-types
     npm run lint
 #    npm run test
     npm audit
