@@ -518,7 +518,7 @@ describe("SVG to Image Conversion", () => {
         // After main image loads, the logo image should be created and its src set
         // Check if logo image source was set correctly
         expect(mockLogoImage.src).toBe(
-            "/public/img/musigree logo with website v3.png",
+            "/img/musigree logo with website v3.png",
         );
 
         // Simulate logo image load after main image loads

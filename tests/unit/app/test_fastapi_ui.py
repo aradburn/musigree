@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
 from fastapi import Request
@@ -12,6 +12,13 @@ from musigree.app.fastapi_ui import (
 )
 from musigree.exceptions import BadRequestError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
+
+
+def _create_mock_base_url(url_string: str) -> Mock:
+    """Create a mock base_url that supports the replace() method."""
+    mock_url = Mock()
+    mock_url.replace.return_value = url_string.replace("http://", "https://")
+    return mock_url
 
 
 class TestFastAPIUI:
@@ -41,7 +48,7 @@ class TestFastAPIUI:
 
         # Create mock request
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Call the route with UI_DEFAULT_ROLES since that's what gets set when no roles are provided
         response = await route__index(mock_request, roles=UI_DEFAULT_ROLES, year=None)
@@ -56,8 +63,8 @@ class TestFastAPIUI:
         assert call_args.kwargs["request"] == mock_request
         assert call_args.kwargs["name"] == "index.html"
         context = call_args.kwargs["context"]
-        assert context["title"] == "Musigree"
-        assert context["og_title"] == "Musigree"
+        assert context["title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
+        assert context["og_title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
         assert context["original_roles"] == UI_DEFAULT_ROLES
         assert context["original_year"] is None
 
@@ -79,7 +86,7 @@ class TestFastAPIUI:
 
         # Create mock request
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Call the route
         response = await route__index(mock_request, roles=["Artist", "Album"], year=2000)
@@ -116,17 +123,20 @@ class TestFastAPIUI:
             "nodes": [],
             "edges": [],
         }
-        # Make the get_network method an AsyncMock that returns the mock data
-        mock_db_manager.runtime_database_helper.get_network = AsyncMock(
-            return_value=mock_network_data
-        )
+        # Create a mock runtime_database_helper with get_network method
+        mock_helper = Mock()
+        mock_helper.get_network = AsyncMock(return_value=mock_network_data)
+        mock_db_manager.runtime_database_helper = mock_helper
 
         # Create mock request
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Mock the transaction context manager
-        with patch("musigree.app.fastapi_ui.runtime_transaction"):
+        mock_transaction = AsyncMock()
+        mock_transaction.__aenter__ = AsyncMock(return_value=None)
+        mock_transaction.__aexit__ = AsyncMock(return_value=None)
+        with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             response = await route__entity_type__entity_id(
                 mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
             )
@@ -165,12 +175,18 @@ class TestFastAPIUI:
     async def test_route_entity_type_entity_id_no_network_data(self, mock_db_manager: Mock) -> None:
         """Test the entity route when no network data is found."""
         # Setup mocks
-        mock_db_manager.runtime_database_helper.get_network = AsyncMock(return_value=None)
+        mock_helper = Mock()
+        mock_helper.get_network = AsyncMock(return_value=None)
+        mock_db_manager.runtime_database_helper = mock_helper
 
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        with patch("musigree.app.fastapi_ui.runtime_transaction"):
+        # Mock the transaction context manager
+        mock_transaction = AsyncMock()
+        mock_transaction.__aenter__ = AsyncMock(return_value=None)
+        mock_transaction.__aexit__ = AsyncMock(return_value=None)
+        with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             with pytest.raises(NotFoundError) as exc_info:
                 await route__entity_type__entity_id(
                     mock_request, EntityType.ARTIST, 123, roles=[], year=None
@@ -201,7 +217,7 @@ class TestFastAPIUI:
         mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
 
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         _response = await route__index(mock_request, roles=["Artist"], year=2000)
 
@@ -209,7 +225,8 @@ class TestFastAPIUI:
         call_args = mock_templates.TemplateResponse.call_args
         context = call_args.kwargs["context"]
         assert "og_url" in context
-        assert context["og_url"].startswith("/")
+        # og_url should be the application_url (https://localhost:8000) without trailing slash
+        assert "https://localhost:8000" in context["og_url"]
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -234,14 +251,18 @@ class TestFastAPIUI:
             "nodes": [],
             "edges": [],
         }
-        mock_db_manager.runtime_database_helper.get_network = AsyncMock(
-            return_value=mock_network_data
-        )
+        mock_helper = Mock()
+        mock_helper.get_network = AsyncMock(return_value=mock_network_data)
+        mock_db_manager.runtime_database_helper = mock_helper
 
         mock_request = Mock(spec=Request)
-        mock_request.base_url = "http://localhost:8000/"
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        with patch("musigree.app.fastapi_ui.runtime_transaction"):
+        # Mock the transaction context manager
+        mock_transaction = AsyncMock()
+        mock_transaction.__aenter__ = AsyncMock(return_value=None)
+        mock_transaction.__aexit__ = AsyncMock(return_value=None)
+        with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             _response = await route__entity_type__entity_id(
                 mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
             )
@@ -250,7 +271,9 @@ class TestFastAPIUI:
         call_args = mock_templates.TemplateResponse.call_args
         context = call_args[0][1]  # Second positional argument
         assert "og_url" in context
-        assert context["og_url"].startswith("/artist/123")
+        assert "/artist/123" in context["og_url"]
+        assert "roles=Artist" in context["og_url"]
+        assert "year=2000" in context["og_url"]
 
     def test_entity_type_validation(self) -> None:
         """Test entity type validation via dependency function."""

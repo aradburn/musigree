@@ -16,9 +16,7 @@ import { Profile } from "./Profile";
 /**
  * Details component provides a panel display for details.
  */
-export const Details: React.FC<{ entity?: EntityData | null }> = ({
-    entity,
-}) => {
+export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
     const hasEntity = Boolean(entity);
     const hasAliases = entity?.entities?.aliases;
     const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : ["-"];

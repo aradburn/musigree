@@ -719,7 +719,7 @@ describe("MusigreeFSM", () => {
                 consoleSpy.mockRestore();
             });
 
-            it("should handle nodeOff and linkOff when entityKey is null", () => {
+            it("should handle nodeOff and linkOff when entityKey is undefined", () => {
                 const mockNodeOff = {
                     classed: vi.fn().mockReturnThis(),
                     each: vi.fn(),
@@ -734,7 +734,7 @@ describe("MusigreeFSM", () => {
                     selectAll: vi.fn().mockReturnValue(mockLinkOff),
                 };
 
-                fsm.selectEntity(null, false);
+                fsm.selectEntity(undefined, false);
 
                 // Verify nodeOff and linkOff were called
                 expect(mockNodeOff.classed).toHaveBeenCalledWith(

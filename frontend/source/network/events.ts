@@ -11,8 +11,11 @@ import type * as d3 from "d3";
 import type { SimNode } from "./data";
 import { networkManager } from "../core/singletons";
 
-interface D3DragEventWithSource<GElement extends Element, Datum, Subject>
-    extends d3.D3DragEvent<GElement, Datum, Subject> {
+interface D3DragEventWithSource<
+    GElement extends Element,
+    Datum,
+    Subject,
+> extends d3.D3DragEvent<GElement, Datum, Subject> {
     sourceEvent: MouseEvent | TouchEvent;
 }
 

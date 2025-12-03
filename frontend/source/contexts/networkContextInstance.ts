@@ -5,7 +5,8 @@ export interface NetworkState {
     nodeStrength: number;
     linkStrength: number;
     gravityStrength: number;
-    selectedNode: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    selectedNode: string | undefined;
 }
 
 // Define the actions that can be dispatched
@@ -13,7 +14,8 @@ export type NetworkAction =
     | { type: "SET_NODE_STRENGTH"; value: number }
     | { type: "SET_LINK_STRENGTH"; value: number }
     | { type: "SET_GRAVITY_STRENGTH"; value: number }
-    | { type: "SELECT_NODE"; nodeId: string | null }
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    | { type: "SELECT_NODE"; nodeId: string | undefined }
     | { type: "SET_FORCES" }
     | { type: "RESET_FORCES" };
 
@@ -22,7 +24,7 @@ export const initialState: NetworkState = {
     nodeStrength: 12,
     linkStrength: 40,
     gravityStrength: 10,
-    selectedNode: null,
+    selectedNode: undefined,
 };
 
 // Reducer function

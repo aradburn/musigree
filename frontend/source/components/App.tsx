@@ -27,9 +27,7 @@ const App: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
     const [_isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
-    const [rolesConfig, setRolesConfig] = useState<TreeConfig | undefined>(
-        undefined,
-    );
+    const [rolesConfig, setRolesConfig] = useState<TreeConfig>();
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {

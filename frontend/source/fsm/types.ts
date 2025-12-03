@@ -30,7 +30,8 @@ export interface FSMInstance {
             | EntityData
             | NetworkCenter
             | NodeKey
-            | null,
+            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+            | undefined,
         pushHistory: boolean,
         fixed: boolean,
     ): void;
@@ -42,7 +43,8 @@ export interface FSMInstance {
     requestRandom(): void;
     requestRelations(entityKey: NodeKey): void;
     requestEntity(entityKey: NodeKey): void;
-    selectEntity(entityKey: NodeKey | null, fixed: boolean): void;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    selectEntity(entityKey: NodeKey | undefined, fixed: boolean): void;
     loadInlineData(): void;
     toggleRadial(show: boolean): void;
     toggleNetwork(show: boolean): void;
@@ -59,7 +61,8 @@ export interface FSMInstance {
                 | EntityData
                 | NetworkCenter
                 | NodeKey
-                | null,
+                // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+                | undefined,
         ) => void,
     ): void;
     _showNetworkHandler?: (event: Event) => void;
@@ -84,7 +87,8 @@ export interface FSMState {
     "show-network"?: (this: FSMInstance) => void;
     "select-entity"?: (
         this: FSMInstance,
-        entityKey: string | null,
+        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+        entityKey: string | undefined,
         fixed: boolean,
     ) => void;
     errored?: (this: FSMInstance, error: unknown) => void;
@@ -128,7 +132,8 @@ export interface FSMConfig extends FSMState {
     requestEntity?: (this: FSMInstance, entityKey: NodeKey) => void;
     selectEntity?: (
         this: FSMInstance,
-        entityKey: string | null,
+        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+        entityKey: string | undefined,
         fixed: boolean,
     ) => void;
     showNetwork?: (
@@ -141,7 +146,13 @@ export interface FSMConfig extends FSMState {
     handle?: (
         this: FSMInstance,
         event: string,
-        data: NetworkData | RelationsData | EntityData | NodeKey | null,
+        data:
+            | NetworkData
+            | RelationsData
+            | EntityData
+            | NodeKey
+            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+            | undefined,
         pushHistory: boolean,
         fixed: boolean,
     ) => void;

@@ -5,8 +5,8 @@ import type { RefObject } from "react";
 const DEBUG = false;
 
 type Size = {
-    width: number | undefined;
-    height: number | undefined;
+    width: number;
+    height: number;
 };
 
 type UseResizeObserverOptions<T extends HTMLElement = HTMLElement> = {
@@ -30,11 +30,11 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
     const onResize = useRef<((size: Size) => void) | undefined>(undefined);
     onResize.current = options.onResize;
     const observerRef = useRef<ResizeObserver | null>(null);
-    const observedElementRef = useRef<T | null>(null);
+    const observedElementRef = useRef<T>(null);
     const windowResizeHandlerRef = useRef<(() => void) | null>(null);
     // Track element availability to trigger effect re-run when element becomes available
     const [elementKey, setElementKey] = useState(0);
-    const lastCheckedElementRef = useRef<T | null>(null);
+    const lastCheckedElementRef = useRef<T>(null);
     const lastTriggerRef = useRef<unknown>(undefined);
 
     // Poll for element availability - check on every render if element changed
@@ -84,10 +84,10 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
     });
 
     // Helper function to measure element size
-    const measureElement = (element: T): Size | null => {
+    const measureElement = (element: T): Size => {
         const rect = element.getBoundingClientRect();
-        let measuredWidth: number | undefined;
-        let measuredHeight: number | undefined;
+        let measuredWidth: number;
+        let measuredHeight: number;
 
         if (box === "border-box") {
             measuredWidth = rect.width;
@@ -448,7 +448,7 @@ function extractSize(
     entry: ResizeObserverEntry,
     box: BoxSizesKey,
     sizeType: keyof ResizeObserverSize,
-): number | undefined {
+): number {
     if (!entry[box]) {
         if (box === "contentBoxSize") {
             return entry.contentRect[

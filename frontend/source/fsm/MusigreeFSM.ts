@@ -119,7 +119,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             | EntityData
             | NetworkCenter
             | NodeKey
-            | null,
+            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+            | undefined,
         pushHistory: boolean,
         fixed: boolean,
     ): void {
@@ -251,7 +252,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         // Handle browser history navigation
         window.onpopstate = (event: PopStateEvent): void => {
-            const state = event?.state as { key: string } | null;
+            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+            const state = event?.state as { key: string } | undefined;
             if (state?.key) {
                 window.dispatchEvent(new RequestNetworkEvent(state.key, false));
             }
@@ -647,7 +649,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
     /**
      * Select an entity in the network
      */
-    selectEntity(entityKey: NodeKey | null, fixed: boolean): void {
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    selectEntity(entityKey: NodeKey | undefined, fixed: boolean): void {
         console.log("FSM selectEntity", entityKey, fixed);
 
         musigreeManager.selectedNodeKey = entityKey;
@@ -668,7 +671,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             return;
         }
 
-        if (entityKey !== null) {
+        if (entityKey !== undefined) {
             nodeOn = nodeLayer.selectAll<SVGGElement, SimNode>(
                 "g" + "#node-" + entityKey,
             );

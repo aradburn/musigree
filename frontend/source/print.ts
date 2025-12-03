@@ -272,7 +272,7 @@ export const svgString2Image = (
                 callback(blob, blob.size);
             }, "image/" + format);
         };
-        logo.src = "/public/img/musigree logo with website v3.png";
+        logo.src = "/img/musigree logo with website v3.png";
     };
     image.src = imgsrc;
 };

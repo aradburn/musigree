@@ -22,10 +22,6 @@ All of **Musigree**'s data is derived from the [Discogs](http://www.discogs.com)
 - 18 million releases
 - Over 100 million different relationships
 
-### Live Demo
-
-Visit the live site at https://musigree.com.
-
 ### How to Use
 
 1. Visit the https://musigree.com website
@@ -39,6 +35,7 @@ Visit the live site at https://musigree.com.
 
 - Small circles represent artists
 - Large circles represent bands
+- Squares represent labels or other companies involved in producing records
 - Solid lines show artist / band membership and sub-label / parent-label relationships
 - Dashed lines show pseudonyms between artists ("also known as" or "AKA" for short)
 - Dotted lines show all kinds of other relationships (e.g., "artist X played guitar for artist Y")

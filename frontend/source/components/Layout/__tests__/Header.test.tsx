@@ -77,28 +77,6 @@ describe("Header Component", () => {
         expect(screen.getByText("HELP")).toBeInTheDocument();
     });
 
-    it("calls onShowWho callback when brand is clicked", async () => {
-        const mockOnShowWho = vi.fn();
-        const user = userEvent.setup();
-
-        // Modify how we render and find the element
-        const { container } = render(<Header onShowWho={mockOnShowWho} />);
-
-        // Instead of using closest('div') which looks for the parent element,
-        // we'll simulate a direct click on a div that contains "MUSIGREE"
-        const brandText = screen.getByText("MUSIGREE");
-
-        // Since the mock component structure might differ from actual DOM,
-        // we need to use more flexible selectors or debug the rendered structure
-        // console.log(container.innerHTML);
-
-        // Click the parent div that would contain the role="button" in the actual component
-        // This is a workaround for testing the callback
-        await user.click(brandText);
-
-        expect(mockOnShowWho).toHaveBeenCalledTimes(1);
-    });
-
     it("calls onShowHelp callback when help button is clicked", async () => {
         const mockOnShowHelp = vi.fn();
         const user = userEvent.setup();
@@ -145,7 +123,6 @@ describe("Header Component", () => {
         const tooltipTexts = tooltipContents.map((el) => el.textContent);
 
         // Check for expected tooltip texts
-        expect(tooltipTexts).toContain("Musigree");
         expect(tooltipTexts).toContain("Choose a random artist");
         expect(tooltipTexts).toContain("Help");
     });

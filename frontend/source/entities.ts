@@ -15,9 +15,12 @@ export interface EntityData {
     /** Counts of various relationships the entity has */
     relation_counts: Record<string, number>;
     /** Countries associated with the entity */
-    countries: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    countries: string | undefined;
     /** Genres associated with the entity */
-    genres: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    genres: string | undefined;
     /** Styles associated with the entity */
-    styles: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    styles: string | undefined;
 }
