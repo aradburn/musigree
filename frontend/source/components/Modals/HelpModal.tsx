@@ -60,7 +60,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     <li>Squares represent labels and other companies.</li>
                     <li>Solid lines show band membership.</li>
                     <li>Dashed lines show pseudonyms.</li>
-                    <li>Dotted lines show other kinds of relations.</li>
+                    <li>Dotted lines show other kinds of relationships.</li>
                 </ul>
 
                 <p>
