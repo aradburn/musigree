@@ -300,13 +300,18 @@ class RelationGrapher:
         return trellis_nodes_by_distance
 
     def build_trellis(self) -> None:
+        links_to_remove: list[str] = []
         for link_key, relation in tuple(self.links.items()):
             if (
                 relation.entity_one_key not in self.nodes
                 or relation.entity_two_key not in self.nodes
             ):
-                self.links.pop(link_key)
-                continue
+                links_to_remove.append(link_key)
+        for link_key in links_to_remove:
+            log.debug(f"                removing link: {link_key}")
+            self.links.pop(link_key)
+
+        for link_key, relation in tuple(self.links.items()):
             source_node = self.nodes[relation.entity_one_key]
             source_node.links.add(link_key)
             target_node = self.nodes[relation.entity_two_key]
@@ -321,16 +326,26 @@ class RelationGrapher:
                 target_node.children.add(source_node)
                 source_node.parents.add(target_node)
         self.recurse_trellis(self.nodes[self.center_entity.entity_key])
+
+        nodes_to_remove: list[tuple[int, EntityType]] = []
         for node_key, node in self.nodes.items():
             if node.subgraph_size is None:
-                self.nodes.pop(node_key)
+                nodes_to_remove.append(node_key)
+        for node_key in nodes_to_remove:
+            log.debug(f"                removing node: {node_key}")
+            self.nodes.pop(node_key)
+
+        links_to_remove.clear()
         for link_key, relation in tuple(self.links.items()):
             if (
                 relation.entity_one_key not in self.nodes
                 or relation.entity_two_key not in self.nodes
             ):
-                self.links.pop(link_key)
-                continue
+                links_to_remove.append(link_key)
+        for link_key in links_to_remove:
+            log.debug(f"                removing link: {link_key}")
+            self.links.pop(link_key)
+
         log.debug(f"    Built trellis: {len(self.nodes)} nodes / {len(self.links)} links")
 
     @staticmethod
