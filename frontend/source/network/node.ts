@@ -69,7 +69,7 @@ export const getRadius = (
     size: number,
     distance: number,
     numLinks: number,
-    cluster: number | undefined,
+    cluster: number,
 ): number => {
     const boost1 = distance === 0 ? 10 : distance === 1 ? 5 : 0;
     const boost2 = numLinks >= 20 ? 10 : numLinks >= 10 ? 5 : 0;

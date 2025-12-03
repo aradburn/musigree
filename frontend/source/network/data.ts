@@ -18,8 +18,8 @@ interface DraggableNodeBase {
     dragy: number;
     x: number;
     y: number;
-    fx: number | null;
-    fy: number | null;
+    fx: number;
+    fy: number;
 }
 
 export type DraggableNode = NetworkNode & DraggableNodeBase;
@@ -49,8 +49,10 @@ export type SimNode = NetworkNode & SimulationProps;
 /**
  * Link type for force simulation
  */
-export interface SimLink
-    extends Omit<NetworkLink, "source" | "target" | "intermediate"> {
+export interface SimLink extends Omit<
+    NetworkLink,
+    "source" | "target" | "intermediate"
+> {
     source: SimNode;
     target: SimNode;
     role: string;

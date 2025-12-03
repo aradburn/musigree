@@ -58,7 +58,7 @@ export const Advert: React.FC<AdvertProps> = ({ adClient, adSlot }) => {
             <hr />
             <h6 className="text-center text-secondary">Advertisement</h6>
             {/* Advert panel */}
-            {/* <Image src="/public/img/small-ad.png" rounded /> */}
+            {/* <Image src="/img/small-ad.png" rounded /> */}
 
             {/*  Musigree 300x250 Block Advert  */}
             <ins

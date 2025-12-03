@@ -32,7 +32,7 @@ export default defineConfig({
                     return assetInfo.name;
                 },
             },
-            external: [ /public/ ],
+            external: [ /fonts/ ],
         },
         emptyOutDir: true,
         copyPublicDir: false,

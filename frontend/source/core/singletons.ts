@@ -17,7 +17,8 @@ let _relationsManager: RelationsManager | null = null;
  * Creates a lazy proxy for a manager instance
  */
 function createLazyProxy<T extends object>(createInstance: () => T): T {
-    let instance: T | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    let instance: T | undefined;
 
     return new Proxy({} as T, {
         get(_target: T, prop: string | symbol): unknown {

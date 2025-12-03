@@ -185,12 +185,14 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         const findDirectParent = (
             childId: string | number,
             nodes: NodeData[],
-        ): NodeData | null => {
+            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+        ): NodeData | undefined => {
             // Flat array to track the search path
             const flatSearch = (
                 nodesArray: NodeData[],
                 targetId: string | number,
-            ): NodeData | null => {
+                // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+            ): NodeData | undefined => {
                 // First check if any node in this level is a direct parent
                 for (const node of nodesArray) {
                     if (
@@ -211,7 +213,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                     }
                 }
 
-                return null; // Not found
+                return undefined; // Not found
             };
 
             return flatSearch(nodes, childId);
@@ -297,8 +299,6 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         onHide();
     };
 
-
-
     // Helper to render the checkbox component based on state
     const renderCheckbox = (node: NodeData): React.ReactNode => {
         const checkboxState = getNodeCheckboxState(node);
@@ -307,14 +307,15 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         // Use a completely custom approach for indeterminate state
         if (checkboxState === CheckboxState.Some) {
             return (
-                <div className="role-checkbox-indeterminate"
+                <div
+                    className="role-checkbox-indeterminate"
                     onClick={(e) => {
                         e.stopPropagation();
                         // Toggle to checked state when clicked
                         handleNodeSelection(node.id, true, node);
                     }}
                 >
-                    <div className="role-checkbox-indeterminate-active"/>
+                    <div className="role-checkbox-indeterminate-active" />
                 </div>
             );
         }
@@ -361,7 +362,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                         data={arboristData}
                         width="100%"
                         height={containerHeight}
-//                         rowHeight={32}
+                        //                         rowHeight={32}
                         padding={8}
                         disableDrag={true}
                         disableDrop={true}
@@ -377,7 +378,8 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                             );
 
                             return (
-                                <div className="tree-item"
+                                <div
+                                    className="tree-item"
                                     style={style}
                                     ref={dragHandle}
                                     title={node.data.name}
@@ -388,7 +390,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                 >
                                     <div className="tree-item-inner">
                                         {node.isLeaf ? (
-                                            <div className="tree-item-leaf"/>
+                                            <div className="tree-item-leaf" />
                                         ) : (
                                             <div
                                                 className="tree-expanded-indicator text-primary-emphasis"
@@ -404,7 +406,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                             height="10"
                                                             viewBox="0 0 10 10"
                                                         >
-                                                            <path d="M1 4L5 8L9 4"/>
+                                                            <path d="M1 4L5 8L9 4" />
                                                         </svg>
                                                     ) : (
                                                         <svg
@@ -412,7 +414,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                                             height="10"
                                                             viewBox="0 0 10 10"
                                                         >
-                                                            <path d="M4 1L8 5L4 9"/>
+                                                            <path d="M4 1L8 5L4 9" />
                                                         </svg>
                                                     )}
                                                 </span>

@@ -23,7 +23,8 @@ interface SearchApiResponse {
 interface SearchApiResult {
     results: SearchResult[];
     loading: boolean;
-    error: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    error: string | undefined;
 }
 
 /**
@@ -38,7 +39,8 @@ export const useSearchApi = (
 ): SearchApiResult => {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    const [error, setError] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         // Don't search if query is too short

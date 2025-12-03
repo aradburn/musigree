@@ -8,13 +8,12 @@ import { version } from "../../version";
 
 interface HeaderProps {
     onShowHelp?: () => void;
-    onShowWho?: () => void;
 }
 
 /**
  * Header UI component.
  */
-export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
+export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
     const handleRandom = (e: React.MouseEvent<HTMLDivElement>): void => {
         e.preventDefault();
         // Dispatch the REQUEST_RANDOM event to trigger the FSM transition
@@ -34,26 +33,15 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp, onShowWho }) => {
             <Container fluid>
                 {/* Brand section */}
                 <div className="px-2 py-0 col-lg-2 col-md-2 col-sm-1 col-1 order-1 order-md-1">
-                    <div
-                        className="d-flex flex-row navbar-brand px-0 py-0"
-                        role="button"
-                        onClick={onShowWho}
-                    >
-                        <span className="text-body px-2 py-0">
+                    <div className="d-flex flex-row navbar-brand px-0 py-0">
+                        <span className="text-body px-sm-2 px-0 py-0">
                             <i className="navbar-brand-icon bi bi-snow3"></i>
                         </span>
-                        <OverlayTrigger
-                            placement="bottom"
-                            overlay={
-                                <Tooltip id="tooltip-musigree">
-                                    Musigree
-                                </Tooltip>
-                            }
-                        >
-                            <h3 className="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse">
-                                MUSIGREE
-                            </h3>
-                        </OverlayTrigger>
+
+                        <h3 className="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse">
+                            MUSIGREE
+                        </h3>
+
                         <h6 className="text-body mb-0 collapse navbar-collapse">
                             &nbsp;v{version}
                         </h6>

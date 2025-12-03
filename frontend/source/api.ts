@@ -2,7 +2,6 @@ import type { NodeKey, LinkKey } from "./network/data";
 import type { NetworkCenter } from "./network/data";
 import type { EntityData } from "./entities";
 import type { RelationsData } from "./relations";
-import type { NodeType } from "./network/data";
 import { API } from "./constants";
 
 interface APINetworkNode {
@@ -14,7 +13,7 @@ interface APINetworkNode {
     missing?: number;
     name: string;
     size: number;
-    type: NodeType | string; // Allow string for backwards compatibility with API
+    type: string; // Allow string for backwards compatibility with API (NodeType is a subset of string)
 }
 
 interface APINetworkLink {

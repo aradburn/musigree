@@ -2,13 +2,18 @@ import { createContext, type Dispatch } from "react";
 import type { EntityData } from "../entities";
 
 export interface EntityState {
-    entity: EntityData | null;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    entity: EntityData | undefined;
 }
 
-export type EntityAction = { type: "SET_ENTITY"; entity: EntityData | null };
+export type EntityAction = {
+    type: "SET_ENTITY";
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    entity: EntityData | undefined;
+};
 
 export const initialEntityState: EntityState = {
-    entity: null,
+    entity: undefined,
 };
 
 export function entityReducer(

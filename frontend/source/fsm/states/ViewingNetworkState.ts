@@ -75,7 +75,8 @@ export class ViewingNetworkState extends BaseState {
      */
     selectEntity(
         context: StateContext,
-        entityKey: NodeKey | null,
+        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+        entityKey: NodeKey | undefined,
         fixed: boolean,
     ): void {
         console.log("VIEWING-NETWORK select-entity:", entityKey);
