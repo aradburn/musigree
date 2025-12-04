@@ -127,8 +127,9 @@ def create_app(config: Configuration) -> FastAPI:
     if config.PRODUCTION:
         # Production: specific origins only
         allowed_origins = [
-            "https://www.musigree.com",  # Add your production domain
-            "https://musigree.com",  # Add your production domain
+            "https://www.musigree.com",
+            "https://musigree.com",
+            "https://umami.musigree.com",
         ]
         log.debug("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -136,7 +137,7 @@ def create_app(config: Configuration) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_methods=["GET"],
+            allow_methods=["GET,HEAD,POST,OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
