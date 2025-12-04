@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 // Debug flag - set to false to disable console logs
@@ -32,56 +32,26 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
     const observerRef = useRef<ResizeObserver | null>(null);
     const observedElementRef = useRef<T>(null);
     const windowResizeHandlerRef = useRef<(() => void) | null>(null);
-    // Track element availability to trigger effect re-run when element becomes available
-    const [elementKey, setElementKey] = useState(0);
-    const lastCheckedElementRef = useRef<T>(null);
     const lastTriggerRef = useRef<unknown>(undefined);
+    const rafIdRef = useRef<number | null>(null);
+    const [elementVersion, setElementVersion] = useState(0);
+    const lastCheckedElementRef = useRef<T | null>(null);
+    const retryCountRef = useRef<number>(0);
 
-    // Poll for element availability - check on every render if element changed
-    useEffect(() => {
-        const checkElement = (): void => {
-            const currentElement = ref.current;
-            if (DEBUG) {
-                console.log(
-                    "[useResizeObserver] Polling effect running",
-                    "currentElement:",
-                    currentElement,
-                    "lastChecked:",
-                    lastCheckedElementRef.current,
-                );
+    // Lightweight check to detect element changes - runs synchronously after render
+    // This is not CPU-intensive because it only updates state if there's an actual change
+    // and uses a ref to prevent infinite loops
+    useLayoutEffect(() => {
+        const currentElement = ref.current;
+        // Only update if element actually changed
+        if (currentElement !== lastCheckedElementRef.current) {
+            lastCheckedElementRef.current = currentElement;
+            // Only trigger re-setup if element is different from what we're observing
+            if (currentElement !== observedElementRef.current) {
+                setElementVersion((prev) => prev + 1);
             }
-            if (
-                currentElement &&
-                currentElement !== lastCheckedElementRef.current
-            ) {
-                if (DEBUG) {
-                    console.log(
-                        "[useResizeObserver] Element became available, incrementing elementKey",
-                    );
-                }
-                lastCheckedElementRef.current = currentElement;
-                setElementKey((prev) => prev + 1);
-            } else if (!currentElement && lastCheckedElementRef.current) {
-                if (DEBUG) {
-                    console.log(
-                        "[useResizeObserver] Element became unavailable, incrementing elementKey",
-                    );
-                }
-                lastCheckedElementRef.current = null;
-                setElementKey((prev) => prev + 1);
-            }
-        };
-
-        // Check immediately
-        checkElement();
-
-        // Also check after a frame to catch elements that become available after render
-        const rafId = requestAnimationFrame(() => {
-            checkElement();
-        });
-
-        return (): void => cancelAnimationFrame(rafId);
-    });
+        }
+    }, [ref]);
 
     // Helper function to measure element size
     const measureElement = (element: T): Size => {
@@ -216,22 +186,38 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
                 ref.current,
                 "trigger:",
                 trigger,
-                "elementKey:",
-                elementKey,
             );
         }
+
+        // Clean up any pending RAF
+        if (rafIdRef.current !== null) {
+            cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = null;
+        }
+
         const element = ref.current;
-        if (!element) {
+        const lastObserved = observedElementRef.current;
+
+        // Check if element changed (became null or different element)
+        // This must happen before cleanup runs, so we can detect the change
+        const elementChanged = lastObserved && lastObserved !== element;
+
+        // Check if trigger changed - update ref early so retry chains can see the change
+        const triggerChanged = lastTriggerRef.current !== trigger;
+        const previousTrigger = lastTriggerRef.current;
+        lastTriggerRef.current = trigger;
+
+        // Clean up when trigger is explicitly false (e.g., overlay is hidden)
+        // Only clean up if trigger is explicitly false (not undefined)
+        if (trigger === false && lastObserved) {
             if (DEBUG) {
                 console.log(
-                    "[useResizeObserver] Element not available, cleaning up",
+                    "[useResizeObserver] Trigger is false, cleaning up observers",
                 );
             }
-            // Clean up if element is no longer available
             if (observerRef.current) {
                 observerRef.current.disconnect();
                 observerRef.current = null;
-                observedElementRef.current = null;
             }
             if (windowResizeHandlerRef.current) {
                 window.removeEventListener(
@@ -240,32 +226,193 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
                 );
                 windowResizeHandlerRef.current = null;
             }
+            observedElementRef.current = null;
+            // Reset retry count when overlay is hidden
+            retryCountRef.current = 0;
+            // Don't set up new observers when trigger is explicitly false
+            return (): void => {
+                if (rafIdRef.current !== null) {
+                    cancelAnimationFrame(rafIdRef.current);
+                    rafIdRef.current = null;
+                }
+            };
+        }
 
-            // If trigger is truthy (e.g., show=true), the element should be available soon
-            // Retry checking for the element after a short delay
-            if (trigger) {
+        if (!element) {
+            if (DEBUG) {
+                console.log(
+                    "[useResizeObserver] Element not available, cleaning up",
+                );
+            }
+            // Clean up if element is no longer available or changed
+            // Always clean up when element becomes null to prevent resource leaks
+            if (lastObserved) {
+                if (observerRef.current) {
+                    observerRef.current.disconnect();
+                    observerRef.current = null;
+                }
+                if (windowResizeHandlerRef.current) {
+                    window.removeEventListener(
+                        "resize",
+                        windowResizeHandlerRef.current,
+                    );
+                    windowResizeHandlerRef.current = null;
+                }
+            }
+            observedElementRef.current = null;
+
+            // Only retry when trigger is not explicitly false - element should be available soon
+            // Retry multiple times with RAF to handle cases where element takes time to appear (e.g., Bootstrap animations)
+            if (trigger !== false) {
                 if (DEBUG) {
                     console.log(
-                        "[useResizeObserver] Trigger is truthy but element not available, will retry",
+                        "[useResizeObserver] Trigger allows retry but element not available, will retry after frame",
+                        "retryCount:",
+                        retryCountRef.current,
                     );
                 }
-                const retryTimeout = setTimeout(() => {
-                    const retryElement = ref.current;
-                    if (retryElement) {
+                // Store the trigger value at the time we set up the retry
+                // This helps us detect if trigger changed from false to true
+                const triggerAtRetryTime = trigger;
+                const previousTriggerAtRetryTime = lastTriggerRef.current;
+                const maxRetries = 10; // Retry up to 10 times (about 160ms at 60fps)
+
+                // Recursive helper function to retry finding the element
+                // Use lastTriggerRef to check current trigger state (not captured closure value)
+                const retryFindElement = (attempt: number): void => {
+                    // Check if trigger became false (overlay was hidden) - stop retrying
+                    // Use lastTriggerRef to get current trigger value, not the captured one
+                    if (lastTriggerRef.current === false) {
+                        retryCountRef.current = 0;
                         if (DEBUG) {
                             console.log(
-                                "[useResizeObserver] Element became available on retry, incrementing elementKey",
+                                "[useResizeObserver] Trigger is false, stopping retry chain",
                             );
                         }
-                        setElementKey((prev) => prev + 1);
+                        return;
                     }
-                }, 50);
 
-                return (): void => clearTimeout(retryTimeout);
+                    if (attempt > maxRetries) {
+                        retryCountRef.current = 0;
+                        if (DEBUG) {
+                            console.log(
+                                "[useResizeObserver] Max retries reached, element still not available",
+                            );
+                        }
+                        return;
+                    }
+
+                    rafIdRef.current = requestAnimationFrame(() => {
+                        // Check again if trigger became false during RAF wait
+                        if (lastTriggerRef.current === false) {
+                            rafIdRef.current = null;
+                            retryCountRef.current = 0;
+                            if (DEBUG) {
+                                console.log(
+                                    "[useResizeObserver] Trigger became false during RAF, stopping retry",
+                                );
+                            }
+                            return;
+                        }
+
+                        rafIdRef.current = null;
+                        const checkElement = ref.current;
+                        if (DEBUG) {
+                            console.log(
+                                "[useResizeObserver] RAF retry attempt",
+                                attempt,
+                                "element:",
+                                checkElement,
+                                "observedElement:",
+                                observedElementRef.current,
+                            );
+                        }
+
+                        if (
+                            checkElement &&
+                            checkElement !== observedElementRef.current
+                        ) {
+                            if (DEBUG) {
+                                console.log(
+                                    "[useResizeObserver] Element became available after",
+                                    attempt,
+                                    "attempt(s)",
+                                );
+                            }
+                            // Reset retry count on success
+                            retryCountRef.current = 0;
+                            // If trigger changed from false to true, measure immediately
+                            // This ensures we get the size even if triggerChanged is false in next effect run
+                            if (
+                                triggerAtRetryTime !== false &&
+                                previousTriggerAtRetryTime === false
+                            ) {
+                                if (DEBUG) {
+                                    console.log(
+                                        "[useResizeObserver] Trigger changed from false to true, " +
+                                            "measuring in RAF callback",
+                                    );
+                                }
+                                const measuredSize =
+                                    measureElement(checkElement);
+                                if (measuredSize) {
+                                    if (DEBUG) {
+                                        console.log(
+                                            "[useResizeObserver] Measured size in RAF:",
+                                            measuredSize,
+                                        );
+                                    }
+                                    updateSize(measuredSize);
+                                }
+                            }
+                            if (DEBUG) {
+                                console.log(
+                                    "[useResizeObserver] Triggering elementVersion update",
+                                );
+                            }
+                            setElementVersion((prev) => prev + 1);
+                        } else {
+                            // Element still not available, retry again (if trigger is still valid)
+                            if (lastTriggerRef.current === false) {
+                                retryCountRef.current = 0;
+                                if (DEBUG) {
+                                    console.log(
+                                        "[useResizeObserver] Trigger became false, stopping retry chain",
+                                    );
+                                }
+                                return;
+                            }
+                            retryCountRef.current = attempt;
+                            if (DEBUG) {
+                                console.log(
+                                    "[useResizeObserver] Element still not available, retrying (",
+                                    attempt + 1,
+                                    "/",
+                                    maxRetries,
+                                    ")",
+                                );
+                            }
+                            retryFindElement(attempt + 1);
+                        }
+                    });
+                };
+
+                // Start retry chain
+                retryFindElement(1);
+            } else {
+                // Reset retry count when trigger is false
+                retryCountRef.current = 0;
             }
 
-            return;
+            // Return cleanup function to ensure pending RAFs are cancelled when overlay is hidden
+            return (): void => {
+                if (rafIdRef.current !== null) {
+                    cancelAnimationFrame(rafIdRef.current);
+                    rafIdRef.current = null;
+                }
+            };
         }
+
         if (DEBUG) {
             console.log(
                 "[useResizeObserver] Element available:",
@@ -275,19 +422,35 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
             );
         }
 
-        // Check if trigger changed - if so, force a re-measurement
-        const triggerChanged = lastTriggerRef.current !== trigger;
+        // Trigger change was already checked and updated above
         if (DEBUG) {
             console.log(
                 "[useResizeObserver] Trigger changed:",
                 triggerChanged,
                 "lastTrigger:",
-                lastTriggerRef.current,
+                previousTrigger,
                 "currentTrigger:",
                 trigger,
             );
         }
-        lastTriggerRef.current = trigger;
+
+        // Clean up previous observer if we're observing a different element
+        // Do this first so we can then check if we need to set up a new observer
+        if (elementChanged) {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+                observerRef.current = null;
+            }
+            if (windowResizeHandlerRef.current) {
+                window.removeEventListener(
+                    "resize",
+                    windowResizeHandlerRef.current,
+                );
+                windowResizeHandlerRef.current = null;
+            }
+            // Clear observed element so we can set up new observer
+            observedElementRef.current = null;
+        }
 
         // If we're already observing this element and trigger hasn't changed, don't set up again
         if (
@@ -304,29 +467,21 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         }
 
         // If trigger changed and we're already observing, force a measurement
+        // Only if trigger is not explicitly false (undefined or truthy)
         if (
             observedElementRef.current === element &&
             observerRef.current &&
-            triggerChanged
+            triggerChanged &&
+            trigger !== false
         ) {
             if (DEBUG) {
                 console.log(
-                    "[useResizeObserver] Trigger changed, forcing re-measurement",
+                    "[useResizeObserver] Trigger changed to truthy, forcing re-measurement",
                 );
             }
-            // Force immediate measurement
-            const immediateSize = measureElement(element);
-            if (DEBUG) {
-                console.log(
-                    "[useResizeObserver] Immediate measurement result:",
-                    immediateSize,
-                );
-            }
-            if (immediateSize) {
-                updateSize(immediateSize);
-            }
-            // Also schedule measurement after layout
-            requestAnimationFrame(() => {
+            // Schedule measurement after layout
+            rafIdRef.current = requestAnimationFrame(() => {
+                rafIdRef.current = null;
                 if (DEBUG) {
                     console.log(
                         "[useResizeObserver] requestAnimationFrame callback executing",
@@ -337,21 +492,7 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
                     updateSize(measuredSize);
                 }
             });
-            // Don't set up observer again, just return
             return;
-        }
-
-        // Clean up previous observer if we're observing a different element
-        if (observerRef.current && observedElementRef.current !== element) {
-            observerRef.current.disconnect();
-            observerRef.current = null;
-        }
-        if (windowResizeHandlerRef.current) {
-            window.removeEventListener(
-                "resize",
-                windowResizeHandlerRef.current,
-            );
-            windowResizeHandlerRef.current = null;
         }
 
         if (typeof window === "undefined") return;
@@ -359,22 +500,35 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         if (DEBUG) {
             console.log("[useResizeObserver] Setting up observer for element");
         }
+
         // Perform immediate measurement
         const immediateSize = measureElement(element);
-        if (DEBUG) {
-            console.log(
-                "[useResizeObserver] Immediate measurement:",
-                immediateSize,
-            );
-        }
         if (immediateSize) {
             updateSize(immediateSize);
-        } else {
+        }
+
+        // If trigger changed from false to truthy (e.g., overlay was hidden and is now shown),
+        // force an additional measurement after layout to ensure accurate size
+        // This handles cases where the element becomes available after animation completes
+        if (triggerChanged && trigger !== false && previousTrigger === false) {
             if (DEBUG) {
                 console.log(
-                    "[useResizeObserver] Immediate measurement returned null",
+                    "[useResizeObserver] Trigger changed from false to truthy, scheduling delayed re-measurement",
                 );
             }
+            // Use RAF to ensure measurement happens after layout is complete
+            rafIdRef.current = requestAnimationFrame(() => {
+                rafIdRef.current = null;
+                if (DEBUG) {
+                    console.log(
+                        "[useResizeObserver] Delayed re-measurement executing after trigger change",
+                    );
+                }
+                const measuredSize = measureElement(element);
+                if (measuredSize) {
+                    updateSize(measuredSize);
+                }
+            });
         }
 
         // Set up ResizeObserver if available
@@ -386,19 +540,10 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
             observer.observe(element, { box });
             observerRef.current = observer;
             observedElementRef.current = element;
-
-            // Force an initial measurement via ResizeObserver by triggering a layout
-            // Some browsers don't fire ResizeObserver immediately on observe()
-            // Requesting animation frame ensures the element is laid out
-            requestAnimationFrame(() => {
-                const measuredSize = measureElement(element);
-                if (measuredSize) {
-                    updateSize(measuredSize);
-                }
-            });
+            // ResizeObserver will fire automatically, no need for additional RAF
         }
 
-        // Set up window resize listener as backup
+        // Set up window resize listener as backup (works alongside ResizeObserver)
         const handleWindowResize = (): void => {
             const measuredSize = measureElement(element);
             if (measuredSize) {
@@ -406,10 +551,12 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
             }
         };
 
+        // We already checked window is defined above (line 375)
         window.addEventListener("resize", handleWindowResize);
         windowResizeHandlerRef.current = handleWindowResize;
 
-        // Also check after a short delay in case element wasn't fully laid out
+        // Delayed measurement as fallback in case element wasn't fully laid out
+        // This works alongside ResizeObserver to catch edge cases
         const timeoutId = setTimeout(() => {
             const measuredSize = measureElement(element);
             if (measuredSize) {
@@ -418,11 +565,20 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         }, 100);
 
         return (): void => {
-            clearTimeout(timeoutId);
+            // Clear timeout if it was set (only when ResizeObserver is not available)
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
+            // Cancel any pending RAFs
+            if (rafIdRef.current !== null) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+            }
+            // Always disconnect and clean up when effect re-runs or unmounts
+            // This handles both unmount and element change cases
             if (observerRef.current) {
                 observerRef.current.disconnect();
                 observerRef.current = null;
-                observedElementRef.current = null;
             }
             if (windowResizeHandlerRef.current) {
                 window.removeEventListener(
@@ -431,10 +587,14 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
                 );
                 windowResizeHandlerRef.current = null;
             }
+            // Note: Don't set observedElementRef.current = null here because
+            // we need it to detect element changes in the next effect run
         };
-        // elementKey is included to trigger re-run when element becomes available
-        // trigger is included to force re-measurement when it changes
-    }, [box, ref, elementKey, trigger]);
+        // elementVersion tracks when ref.current changes to trigger re-setup
+        // trigger forces re-measurement when it changes
+        // Note: This effect also checks ref.current directly, so it will work even
+        // if elementVersion doesn't update (e.g., when element is available on first render)
+    }, [box, ref, trigger, elementVersion]);
 
     return size;
 }

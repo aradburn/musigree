@@ -1,7 +1,6 @@
 /** @jsxImportSource react */
 import React from "react";
 import { Details } from "./Details";
-import { Advert } from "./Advert";
 import { useEntity } from "../../contexts/useEntity";
 
 /**
@@ -17,10 +16,10 @@ export const SidebarRight: React.FC = () => {
                     <Details entity={state.entity} />
                 </div>
                 <div className="flex-shrink-0">
-                    <Advert
-                        adClient="ca-pub-5857652035840115"
-                        adSlot="3061976325"
-                    />
+                    {/*<Advert*/}
+                    {/*    adClient="ca-pub-5857652035840115"*/}
+                    {/*    adSlot="3061976325"*/}
+                    {/*/>*/}
                 </div>
             </div>
         </div>

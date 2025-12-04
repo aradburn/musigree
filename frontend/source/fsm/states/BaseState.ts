@@ -106,7 +106,6 @@ export abstract class BaseState implements State {
      */
     selectEntity(
         _context: StateContext,
-        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         _entityKey: NodeKey | undefined,
         _fixed: boolean,
     ): void {

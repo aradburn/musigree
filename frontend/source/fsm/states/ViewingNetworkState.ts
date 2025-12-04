@@ -75,7 +75,6 @@ export class ViewingNetworkState extends BaseState {
      */
     selectEntity(
         context: StateContext,
-        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         entityKey: NodeKey | undefined,
         fixed: boolean,
     ): void {

@@ -23,7 +23,6 @@ interface SearchApiResponse {
 interface SearchApiResult {
     results: SearchResult[];
     loading: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     error: string | undefined;
 }
 
@@ -39,7 +38,6 @@ export const useSearchApi = (
 ): SearchApiResult => {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     const [error, setError] = useState<string | undefined>(undefined);
 
     useEffect(() => {

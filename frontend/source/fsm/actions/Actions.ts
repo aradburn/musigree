@@ -84,9 +84,5 @@ export interface Actions {
     /**
      * Select an entity in the network
      */
-    selectEntity(
-        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-        entityKey: NodeKey | undefined,
-        fixed: boolean,
-    ): void;
+    selectEntity(entityKey: NodeKey | undefined, fixed: boolean): void;
 }

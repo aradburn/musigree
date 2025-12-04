@@ -129,8 +129,6 @@ def create_app(config: Configuration) -> FastAPI:
         allowed_origins = [
             "https://www.musigree.com",  # Add your production domain
             "https://musigree.com",  # Add your production domain
-            "https://pagead2.googlesyndication.com",  # Adverts domain
-            "https://fundingchoicesmessages.google.com",
         ]
         log.debug("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")

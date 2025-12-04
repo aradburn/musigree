@@ -13,7 +13,6 @@ export { RelationsManager } from "./RelationsManager";
 export { musigreeManager, networkManager, relationsManager };
 
 // Helper function used in svg.test.ts
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 export const getSelectedNodeKey = (): string | undefined => {
     const key = networkManager.selectedNodeKey;
     return typeof key === "string" ? key : undefined;

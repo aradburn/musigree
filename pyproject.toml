@@ -1,6 +1,6 @@
 [project]
 name = "musigree"
-version = "1.0.45"
+version = "1.0.46"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
@@ -11,9 +11,9 @@ requires-python = "==3.13.7"
 readme = "README.md"
 
 dependencies = [
-    "fastapi==0.123.0",
+    "fastapi==0.123.5",
     "sqlalchemy[asyncio]==2.0.44",
-    "psycopg[binary]==3.3.0",
+    "psycopg[binary]==3.3.1",
     "aiosqlite==0.21.0",
     "pydantic==2.12.5",
     "pydantic-settings==2.12.0",
