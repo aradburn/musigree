@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as d3 from "d3";
-import { saveAs } from "file-saver";
+import saveAs from "file-saver";
 import * as printModule from "../print";
 import {
     printSvg,
@@ -84,7 +84,7 @@ vi.mock("d3", () => {
 });
 
 vi.mock("file-saver", () => ({
-    saveAs: vi.fn(),
+    default: vi.fn(),
 }));
 
 vi.mock("../messages", () => ({
@@ -129,6 +129,9 @@ vi.mock("../core", () => {
 describe("Print SVG", () => {
     let mockCanvas: MockHTMLCanvasElement;
     let mockContext: MockCanvasRenderingContext2D;
+    let mockImage: Partial<HTMLImageElement>;
+    let mockLogoImage: Partial<HTMLImageElement>;
+    let imageCreationCount = 0;
 
     beforeEach(() => {
         // Create mock SVG element in a way that's compatible with React's virtual DOM
@@ -142,17 +145,44 @@ describe("Print SVG", () => {
 
         mockCanvas = {
             getContext: vi.fn().mockReturnValue(mockContext),
-            toBlob: vi.fn(),
+            toBlob: vi
+                .fn()
+                .mockImplementation((callback: (blob: Blob | null) => void) => {
+                    const blob = new Blob(["test"], { type: "image/png" });
+                    callback(blob);
+                }),
             width: 100,
             height: 100,
         };
 
-        // Mock document.createElement for canvas
+        // Initialize mock images
+        mockImage = {
+            onload: null,
+            src: "",
+        };
+
+        mockLogoImage = {
+            onload: null,
+            src: "",
+        };
+
+        imageCreationCount = 0;
+
+        // Mock document.createElement for canvas and images
         const originalCreateElement = document.createElement;
         vi.spyOn(document, "createElement").mockImplementation(
             (tagName: string): HTMLElement => {
                 if (tagName === "canvas") {
                     return mockCanvas as unknown as HTMLCanvasElement;
+                }
+                if (tagName === "img") {
+                    imageCreationCount++;
+                    // First image is the main SVG image, second is the logo
+                    if (imageCreationCount === 1) {
+                        return mockImage as unknown as HTMLImageElement;
+                    } else {
+                        return mockLogoImage as unknown as HTMLImageElement;
+                    }
                 }
                 // Create element with explicit type
                 const element = originalCreateElement.call(
@@ -180,20 +210,147 @@ describe("Print SVG", () => {
         vi.spyOn(musigreeManager, "selectedNodeKey", "get").mockReturnValue(
             "test-node",
         );
+
+        // Mock XMLSerializer
+        global.XMLSerializer = class MockXMLSerializer {
+            serializeToString = vi
+                .fn()
+                .mockReturnValue(
+                    '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+                );
+        } as unknown as typeof XMLSerializer;
+
+        // Mock document.styleSheets
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [],
+            configurable: true,
+        });
     });
 
-    it("should show messages when saving image", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("should show messages when saving image", async () => {
         const width = 100;
         const height = 100;
 
-        // Since this function might be complex to test in React environment,
-        // simplify the test to just check if messages are shown correctly
         printSvg(width, height);
 
         expect(showMessage).toHaveBeenCalledWith(
             "Saving image to disk, please wait...",
             "dark",
         );
+
+        // Simulate image loading
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            logoImageOnload.call(mockLogoImage);
+        }
+
+        // Wait for async operations
+        await new Promise<void>((resolve) => {
+            setTimeout(() => {
+                expect(clearMessages).toHaveBeenCalled();
+                expect(showMessage).toHaveBeenCalledWith(
+                    "Saving image complete",
+                    "success",
+                );
+                expect(saveAs).toHaveBeenCalled();
+                resolve();
+            }, 100);
+        });
+    });
+
+    it("should throw error when SVG element is not found", () => {
+        const mockSelection = createMockSelection();
+        mockSelection.node.mockReturnValue(null);
+
+        vi.spyOn(d3, "select").mockImplementation(
+            () => mockSelection as unknown as D3Selection,
+        );
+
+        expect(() => printSvg(100, 100)).toThrow("SVG element not found");
+    });
+
+    it("should throw error when selected node is not in nodeMap", () => {
+        vi.spyOn(musigreeManager, "selectedNodeKey", "get").mockReturnValue(
+            "non-existent-node",
+        );
+
+        expect(() => printSvg(100, 100)).toThrow("Selected node not found");
+    });
+
+    it("should throw error when blob creation fails in svgString2Image", () => {
+        const callback = vi.fn();
+        mockCanvas.toBlob = vi
+            .fn()
+            .mockImplementation((callbackFn: (blob: Blob | null) => void) => {
+                callbackFn(null);
+            });
+
+        printModule.svgString2Image("<svg></svg>", 100, 100, "png", callback);
+
+        // Simulate image loading
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            expect(() => {
+                logoImageOnload.call(mockLogoImage);
+            }).toThrow("Failed to create blob from canvas");
+        }
+    });
+
+    it("should handle errors in svgString2Image callback and rethrow them", () => {
+        // Test that errors in the callback are handled
+        const callback = vi.fn(() => {
+            throw new Error("Test error");
+        });
+
+        printModule.svgString2Image("<svg></svg>", 100, 100, "png", callback);
+
+        // Simulate image loading
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            expect(() => {
+                logoImageOnload.call(mockLogoImage);
+            }).toThrow("Test error");
+        }
+    });
+
+    it("should throw error when selected node is not found in saveBlob", () => {
+        vi.spyOn(musigreeManager, "selectedNodeKey", "get").mockReturnValue(
+            null,
+        );
+
+        printSvg(100, 100);
+
+        // Simulate image loading to trigger saveBlob
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            expect(() => {
+                logoImageOnload.call(mockLogoImage);
+            }).toThrow("Selected node not found");
+        }
     });
 });
 
@@ -235,8 +392,62 @@ describe("SVG String Processing", () => {
         const result = printModule.getSvgString(svgElement);
         expect(result).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
         expect(result).not.toMatch(/NS\d+:href/);
+        expect(svgElement.getAttribute("xlink")).toBe(
+            "http://www.w3.org/1999/xlink",
+        );
 
         // Restore original
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should fix xlink namespace without xmlns prefix", () => {
+        const mockSerializeToString = vi
+            .fn()
+            .mockReturnValue(
+                '<svg xlink:href="test" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>',
+            );
+        global.XMLSerializer = class MockXMLSerializer {
+            serializeToString = mockSerializeToString;
+        } as unknown as typeof XMLSerializer;
+
+        const originalStyleSheets = document.styleSheets;
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [],
+            configurable: true,
+        });
+
+        const result = printModule.getSvgString(svgElement);
+        expect(result).toContain("xmlns:xlink=");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should handle SVG string with multiple namespace issues", () => {
+        const mockSerializeToString = vi
+            .fn()
+            .mockReturnValue(
+                '<svg NS1:href="test1" NS2:href="test2" xlink:href="test3"></svg>',
+            );
+        global.XMLSerializer = class MockXMLSerializer {
+            serializeToString = mockSerializeToString;
+        } as unknown as typeof XMLSerializer;
+
+        const originalStyleSheets = document.styleSheets;
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [],
+            configurable: true,
+        });
+
+        const result = printModule.getSvgString(svgElement);
+        expect(result).not.toMatch(/NS\d+:href/);
+        expect(result).toContain("xlink:href");
+
         Object.defineProperty(document, "styleSheets", {
             get: () => originalStyleSheets,
             configurable: true,
@@ -426,6 +637,256 @@ describe("SVG String Processing", () => {
         expect(styleElement?.getAttribute("type")).toBe("text/css");
         expect(styleElement?.textContent).toBe(cssText);
     });
+
+    it("should append CSS styles before defs element if it exists", () => {
+        const defs = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "defs",
+        );
+        svgElement.appendChild(defs);
+
+        const cssText = ".test-style { fill: red; }";
+        printModule.appendCSS(cssText, svgElement);
+
+        const styleElement = svgElement.querySelector("style");
+        expect(styleElement).not.toBeNull();
+        expect(svgElement.firstChild).toBe(styleElement);
+    });
+
+    it("should append CSS styles before first child if defs does not exist", () => {
+        const circle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle",
+        );
+        svgElement.appendChild(circle);
+
+        const cssText = ".test-style { fill: red; }";
+        printModule.appendCSS(cssText, svgElement);
+
+        const styleElement = svgElement.querySelector("style");
+        expect(styleElement).not.toBeNull();
+        expect(svgElement.firstChild).toBe(styleElement);
+    });
+
+    it("should append CSS styles to empty SVG element", () => {
+        const emptySvg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+        );
+        const cssText = ".test-style { fill: red; }";
+        printModule.appendCSS(cssText, emptySvg);
+
+        const styleElement = emptySvg.querySelector("style");
+        expect(styleElement).not.toBeNull();
+        expect(emptySvg.firstChild).toBe(styleElement);
+    });
+
+    it("should extract CSS styles with CSS variables", () => {
+        const root = document.documentElement;
+        root.style.setProperty("--test-color", "#ff0000");
+
+        const originalStyleSheets = document.styleSheets;
+        const createMockCSSStyleRule = (
+            selectorText: string,
+            cssText: string,
+        ) => {
+            const mockRule = {
+                selectorText,
+                cssText,
+            };
+            Object.setPrototypeOf(mockRule, CSSStyleRule.prototype);
+            return mockRule as CSSStyleRule;
+        };
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
+                    get cssRules() {
+                        return [
+                            createMockCSSStyleRule(
+                                "#svg",
+                                "#svg { color: var(--test-color); }",
+                            ),
+                        ];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
+        const styles = printModule.getCSSStyles(svgElement);
+        expect(styles).toContain("#svg");
+        expect(styles).toContain("#ff0000");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+        root.style.removeProperty("--test-color");
+    });
+
+    it("should handle network-layer selector replacement", () => {
+        const originalStyleSheets = document.styleSheets;
+        const createMockCSSStyleRule = (
+            selectorText: string,
+            cssText: string,
+        ) => {
+            const mockRule = {
+                selectorText,
+                cssText,
+            };
+            Object.setPrototypeOf(mockRule, CSSStyleRule.prototype);
+            return mockRule as CSSStyleRule;
+        };
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
+                    get cssRules() {
+                        return [
+                            createMockCSSStyleRule(
+                                "#network-layer .test-class",
+                                "#network-layer .test-class { fill: red; }",
+                            ),
+                        ];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
+        const child = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "g",
+        );
+        child.classList.add("test-class");
+        svgElement.appendChild(child);
+
+        const styles = printModule.getCSSStyles(svgElement);
+        expect(styles).toContain(".test-class");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should handle stylesheets without cssRules", () => {
+        const originalStyleSheets = document.styleSheets;
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
+                    cssRules: null,
+                },
+            ],
+            configurable: true,
+        });
+
+        expect(() => printModule.getCSSStyles(svgElement)).not.toThrow();
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should handle stylesheets that are not CSSStyleRule instances", () => {
+        const originalStyleSheets = document.styleSheets;
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
+                    get cssRules() {
+                        return [
+                            {
+                                selectorText: null,
+                                cssText: "test",
+                            },
+                        ];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
+        expect(() => printModule.getCSSStyles(svgElement)).not.toThrow();
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should handle empty selectorTextArr", () => {
+        const emptySvg = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg",
+        );
+        const originalStyleSheets = document.styleSheets;
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [],
+            configurable: true,
+        });
+
+        const styles = printModule.getCSSStyles(emptySvg);
+        expect(styles).toBe("");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
+    it("should handle stylesheets without href or ownerNode", () => {
+        const originalStyleSheets = document.styleSheets;
+        const createMockCSSStyleRule = (
+            selectorText: string,
+            cssText: string,
+        ) => {
+            const mockRule = {
+                selectorText,
+                cssText,
+            };
+            Object.setPrototypeOf(mockRule, CSSStyleRule.prototype);
+            return mockRule as CSSStyleRule;
+        };
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    href: undefined,
+                    ownerNode: undefined,
+                    get cssRules() {
+                        return [
+                            createMockCSSStyleRule(
+                                "#svg",
+                                "#svg { fill: none; }",
+                            ),
+                        ];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
+        const styles = printModule.getCSSStyles(svgElement);
+        expect(styles).toBe("");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
 });
 
 describe("SVG to Image Conversion", () => {
@@ -535,6 +996,134 @@ describe("SVG to Image Conversion", () => {
         expect(callback).toHaveBeenCalledWith(
             expect.any(Blob),
             expect.any(Number),
+        );
+    });
+
+    it("should throw error when canvas context is null", () => {
+        mockCanvas.getContext = vi.fn().mockReturnValue(null);
+
+        expect(() => {
+            printModule.svgString2Image(
+                "<svg></svg>",
+                100,
+                100,
+                "png",
+                vi.fn(),
+            );
+        }).toThrow("Could not get canvas context");
+    });
+
+    it("should throw error when blob creation fails", () => {
+        mockCanvas.toBlob = vi
+            .fn()
+            .mockImplementation((callback: (blob: Blob | null) => void) => {
+                callback(null);
+            });
+
+        printModule.svgString2Image("<svg></svg>", 100, 100, "png", vi.fn());
+
+        // Simulate main image load
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            expect(() => {
+                mainImageOnload.call(mockImage);
+                const logoImageOnload = mockLogoImage.onload;
+                if (typeof logoImageOnload === "function") {
+                    logoImageOnload.call(mockLogoImage);
+                }
+            }).toThrow("Failed to create blob from canvas");
+        }
+    });
+
+    it("should handle different image formats", () => {
+        const callback = vi.fn();
+        printModule.svgString2Image("<svg></svg>", 100, 100, "jpeg", callback);
+
+        // Simulate image loading
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            logoImageOnload.call(mockLogoImage);
+        }
+
+        // Verify toBlob was called with jpeg format
+        expect(mockCanvas.toBlob).toHaveBeenCalledWith(
+            expect.any(Function),
+            "image/jpeg",
+        );
+    });
+
+    it("should use default png format when format is not specified", () => {
+        const callback = vi.fn();
+        printModule.svgString2Image(
+            "<svg></svg>",
+            100,
+            100,
+            undefined,
+            callback,
+        );
+
+        // Simulate image loading
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            logoImageOnload.call(mockLogoImage);
+        }
+
+        // Verify toBlob was called with default png format
+        expect(mockCanvas.toBlob).toHaveBeenCalledWith(
+            expect.any(Function),
+            "image/png",
+        );
+    });
+
+    it("should correctly encode SVG string to base64", () => {
+        const svgString = '<svg><circle r="10"/></svg>';
+        printModule.svgString2Image(svgString, 100, 100, "png", vi.fn());
+
+        // Check that the image src contains the base64 encoded SVG
+        expect(mockImage.src).toContain("data:image/svg+xml;base64,");
+        expect(mockImage.src).toMatch(/^data:image\/svg\+xml;base64,.+/);
+    });
+
+    it("should draw logo at correct position", () => {
+        const callback = vi.fn();
+        printModule.svgString2Image("<svg></svg>", 100, 100, "png", callback);
+
+        // Simulate main image load
+        const mainImageOnload = mockImage.onload;
+        if (typeof mainImageOnload === "function") {
+            mainImageOnload.call(mockImage);
+        }
+
+        // Verify main image was drawn
+        expect(mockContext.drawImage).toHaveBeenCalledWith(
+            mockImage,
+            0,
+            0,
+            100,
+            100,
+        );
+
+        // Simulate logo image load
+        const logoImageOnload = mockLogoImage.onload;
+        if (typeof logoImageOnload === "function") {
+            logoImageOnload.call(mockLogoImage);
+        }
+
+        // Verify logo was drawn at position 200, 200
+        expect(mockContext.drawImage).toHaveBeenCalledWith(
+            mockLogoImage,
+            200,
+            200,
         );
     });
 });
