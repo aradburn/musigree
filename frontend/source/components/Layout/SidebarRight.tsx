@@ -1,7 +1,6 @@
 /** @jsxImportSource react */
 import React from "react";
 import { Details } from "./Details";
-import { Advert } from "./Advert";
 import { useEntity } from "../../contexts/useEntity";
 
 /**
