@@ -17,10 +17,10 @@ export const SidebarRight: React.FC = () => {
                     <Details entity={state.entity} />
                 </div>
                 <div className="flex-shrink-0">
-                    <Advert
-                        adClient="ca-pub-5857652035840115"
-                        adSlot="3061976325"
-                    />
+                    {/*<Advert*/}
+                    {/*    adClient="ca-pub-5857652035840115"*/}
+                    {/*    adSlot="3061976325"*/}
+                    {/*/>*/}
                 </div>
             </div>
         </div>
