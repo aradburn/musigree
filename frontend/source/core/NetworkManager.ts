@@ -48,7 +48,6 @@ export class NetworkManager {
     /** Bound event handler for request network events */
     private _boundRequestNetworkHandler: (this: Window, ev: Event) => void;
     /** Currently selected node key */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     private _selectedNodeKey: NodeKey | undefined;
 
     /**
@@ -185,7 +184,6 @@ export class NetworkManager {
      * Gets the currently selected node key
      * @returns {NodeKey | undefined} The selected node key, or undefined if no node is selected
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     get selectedNodeKey(): NodeKey | undefined {
         return this._selectedNodeKey;
     }
@@ -194,7 +192,6 @@ export class NetworkManager {
      * Sets the currently selected node key
      * @param {NodeKey | undefined} key - The new selected node key
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     set selectedNodeKey(key: NodeKey | undefined) {
         this._selectedNodeKey = key;
     }

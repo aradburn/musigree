@@ -119,7 +119,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             | EntityData
             | NetworkCenter
             | NodeKey
-            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
             | undefined,
         pushHistory: boolean,
         fixed: boolean,
@@ -252,7 +251,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         // Handle browser history navigation
         window.onpopstate = (event: PopStateEvent): void => {
-            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
             const state = event?.state as { key: string } | undefined;
             if (state?.key) {
                 window.dispatchEvent(new RequestNetworkEvent(state.key, false));
@@ -649,7 +647,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
     /**
      * Select an entity in the network
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     selectEntity(entityKey: NodeKey | undefined, fixed: boolean): void {
         console.log("FSM selectEntity", entityKey, fixed);
 

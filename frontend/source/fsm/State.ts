@@ -25,7 +25,6 @@ export interface Actions {
     toggleNetwork(status: boolean): void;
     toggleLoading(status: boolean): void;
     toggleRadial(status: boolean): void;
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     selectEntity(entityKey: NodeKey | undefined, fixed: boolean): void;
 }
 
@@ -115,7 +114,6 @@ export interface State {
      */
     selectEntity?(
         context: StateContext,
-        // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         entityKey: NodeKey | undefined,
         fixed: boolean,
     ): void;

@@ -61,6 +61,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
 
     // Use the resize observer to get the container height
     // Pass 'show' as trigger to force re-measurement when overlay is shown
+    // When show is false, the hook will clean up observers automatically
     const { height: containerHeight } = useResizeObserver({
         ref: containerRef,
         box: "border-box",
@@ -159,19 +160,6 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         }
     }, [roles]);
 
-    // Effect to apply selection when the tree is mounted or selectedIds changes
-    useEffect(() => {
-        // Use a timeout to ensure the tree is fully rendered before trying to select nodes
-        const timer = setTimeout(() => {
-            if (treeRef.current && selectedIds.size > 0) {
-                // Don't try to use the tree's selection methods at all
-                // They may not be working properly
-            }
-        }, 300);
-
-        return (): void => clearTimeout(timer);
-    }, [selectedIds, show]);
-
     // Function to handle node selection with parent-child relationship
     const handleNodeSelection = (
         nodeId: string | number,
@@ -185,13 +173,11 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
         const findDirectParent = (
             childId: string | number,
             nodes: NodeData[],
-            // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
         ): NodeData | undefined => {
             // Flat array to track the search path
             const flatSearch = (
                 nodesArray: NodeData[],
                 targetId: string | number,
-                // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
             ): NodeData | undefined => {
                 // First check if any node in this level is a direct parent
                 for (const node of nodesArray) {
@@ -357,88 +343,91 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                     className="flex-fill d-flex"
                     ref={containerRef}
                 >
-                    <Tree<NodeData>
-                        ref={treeRef}
-                        data={arboristData}
-                        width="100%"
-                        height={containerHeight}
-                        //                         rowHeight={32}
-                        padding={8}
-                        disableDrag={true}
-                        disableDrop={true}
-                        selection="none"
-                        className="roles-tree w-100 h-100"
-                        openByDefault={false}
-                        initialOpenState={initialOpenState}
-                    >
-                        {({ node, style, dragHandle }) => {
-                            // Get node checkbox state (Selected, Partial, None)
-                            const _checkboxState = getNodeCheckboxState(
-                                node.data,
-                            );
+                    {containerHeight !== undefined && (
+                        <Tree<NodeData>
+                            key={`tree-${show}`}
+                            ref={treeRef}
+                            data={arboristData}
+                            width="100%"
+                            height={containerHeight}
+                            //                         rowHeight={32}
+                            padding={8}
+                            disableDrag={true}
+                            disableDrop={true}
+                            selection="none"
+                            className="roles-tree w-100 h-100"
+                            openByDefault={false}
+                            initialOpenState={initialOpenState}
+                        >
+                            {({ node, style, dragHandle }) => {
+                                // Get node checkbox state (Selected, Partial, None)
+                                const _checkboxState = getNodeCheckboxState(
+                                    node.data,
+                                );
 
-                            return (
-                                <div
-                                    className="tree-item"
-                                    style={style}
-                                    ref={dragHandle}
-                                    title={node.data.name}
-                                    onClick={(e) => {
-                                        // Prevent bubbling to avoid tree selection
-                                        e.stopPropagation();
-                                    }}
-                                >
-                                    <div className="tree-item-inner">
-                                        {node.isLeaf ? (
-                                            <div className="tree-item-leaf" />
-                                        ) : (
-                                            <div
-                                                className="tree-expanded-indicator text-primary-emphasis"
+                                return (
+                                    <div
+                                        className="tree-item"
+                                        style={style}
+                                        ref={dragHandle}
+                                        title={node.data.name}
+                                        onClick={(e) => {
+                                            // Prevent bubbling to avoid tree selection
+                                            e.stopPropagation();
+                                        }}
+                                    >
+                                        <div className="tree-item-inner">
+                                            {node.isLeaf ? (
+                                                <div className="tree-item-leaf" />
+                                            ) : (
+                                                <div
+                                                    className="tree-expanded-indicator text-primary-emphasis"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        node.toggle();
+                                                    }}
+                                                >
+                                                    <span>
+                                                        {node.isOpen ? (
+                                                            <svg
+                                                                width="10"
+                                                                height="10"
+                                                                viewBox="0 0 10 10"
+                                                            >
+                                                                <path d="M1 4L5 8L9 4" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg
+                                                                width="10"
+                                                                height="10"
+                                                                viewBox="0 0 10 10"
+                                                            >
+                                                                <path d="M4 1L8 5L4 9" />
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Use the custom checkbox rendering function */}
+                                            {renderCheckbox(node.data)}
+
+                                            <span
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    node.toggle();
+                                                    if (!node.isLeaf) {
+                                                        node.toggle();
+                                                    }
                                                 }}
                                             >
-                                                <span>
-                                                    {node.isOpen ? (
-                                                        <svg
-                                                            width="10"
-                                                            height="10"
-                                                            viewBox="0 0 10 10"
-                                                        >
-                                                            <path d="M1 4L5 8L9 4" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg
-                                                            width="10"
-                                                            height="10"
-                                                            viewBox="0 0 10 10"
-                                                        >
-                                                            <path d="M4 1L8 5L4 9" />
-                                                        </svg>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Use the custom checkbox rendering function */}
-                                        {renderCheckbox(node.data)}
-
-                                        <span
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (!node.isLeaf) {
-                                                    node.toggle();
-                                                }
-                                            }}
-                                        >
-                                            {node.data.name}
-                                        </span>
+                                                {node.data.name}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        }}
-                    </Tree>
+                                );
+                            }}
+                        </Tree>
+                    )}
 
                     {/* Temporary placeholder that displays when no data is available */}
                     {arboristData.length === 0 && show && (
