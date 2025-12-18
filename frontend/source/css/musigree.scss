@@ -166,8 +166,10 @@ body {
 
 .details-panel {
     background-color: $mg-background-light-color !important;
-    min-width: 29.5rem;
-    max-width: 29.5rem;
+    @media (min-width: 575.98px) {
+      min-width: 29.5rem;
+      max-width: 29.5rem;
+    }
 }
 
 .details-title {
