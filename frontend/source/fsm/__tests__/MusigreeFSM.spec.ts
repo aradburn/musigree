@@ -224,6 +224,9 @@ type WindowMock = {
     dgNetwork?: APINetworkDataResponse;
     dispatchEvent: ReturnType<typeof vi.fn>;
     document: DocumentMock;
+    umami: {
+        track: ReturnType<typeof vi.fn>;
+    };
 };
 
 // Create document mock
@@ -269,6 +272,9 @@ const windowMock: WindowMock = {
     dgNetwork: undefined,
     dispatchEvent: vi.fn(),
     document: documentMock,
+    umami: {
+        track: vi.fn(),
+    },
 };
 
 // Mock global objects

@@ -117,7 +117,7 @@ const App: React.FC = (): React.ReactElement => {
                                     </div>
                                 </div>
 
-                                <div className="main-container flex-fill p-0 order-sm-2 order-1">
+                                <div className="main-container flex-sm-fill p-0 order-sm-2 order-1">
                                     <div className="flex-sm-column flex-row h-sm-100">
                                         <NetworkView />
                                         <LoadingAnimation />

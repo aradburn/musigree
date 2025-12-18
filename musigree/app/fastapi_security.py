@@ -162,9 +162,9 @@ class SecurityHeadersMiddleware:
                     # More permissive CSP for development
                     security_headers[b"content-security-policy"] = (
                         b"default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; "
-                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:5173; "
-                        b"connect-src 'self' http://localhost:* ws://localhost:*; "
-                        b"img-src 'self' data: https: http://localhost:5173;"
+                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:5173 https://umami.musigree.com/ ;"
+                        b"connect-src 'self' http://localhost:* ws://localhost:* https://umami.musigree.com/ ;"
+                        b"img-src 'self' data: https: http://localhost:5173 https://umami.musigree.com/ ;"
                     )
 
                 # Merge security headers with existing headers
