@@ -33,6 +33,13 @@ body {
   --bs-bg-opacity: 0.6;
 }
 
+#react-app-container {
+    @media (max-width: 575.98px) {
+      overflow-y: scroll;
+      height: 100vh;
+    }
+}
+
 .custom-tooltip {
     --bs-tooltip-bg: $mg-tooltip-background-color;
     --bs-tooltip-color: $mg-tooltip-color;
