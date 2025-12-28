@@ -4,5 +4,6 @@
     "python.testing.unittestEnabled": false,
     "python.analysis.typeCheckingMode": "basic",
     "cursorpyright.analysis.typeCheckingMode": "basic",
-    "python.testing.pytestArgs": ["tests"]
+    "python.testing.pytestArgs": ["tests"],
+    "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy"
 }
