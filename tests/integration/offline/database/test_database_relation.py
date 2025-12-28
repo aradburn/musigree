@@ -14,7 +14,8 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None],
+                              is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -124,7 +125,8 @@ class TestDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None],
+                              is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 21209
         entity_one_type = EntityType.ARTIST
@@ -166,7 +168,8 @@ class TestDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_03(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_from_db_03(self, offline_database_setup: AsyncGenerator[None, None],
+                              is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 335173
         entity_one_type = EntityType.ARTIST

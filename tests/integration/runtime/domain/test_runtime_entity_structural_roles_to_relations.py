@@ -24,7 +24,8 @@ class TestRuntimeEntityStructuralRolesToRelations(AbstractDatabaseTest):
     async def test_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """Test structural roles to relations conversion."""
         entity_id = 430141

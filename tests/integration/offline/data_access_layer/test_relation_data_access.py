@@ -19,7 +19,7 @@ class TestRelationDataAccess(AbstractDatabaseTest):
     async def test_from_release(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 1700
@@ -280,7 +280,7 @@ class TestRelationDataAccess(AbstractDatabaseTest):
     async def test_get_release_setup(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 1700

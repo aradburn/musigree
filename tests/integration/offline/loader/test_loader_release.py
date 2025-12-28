@@ -7,6 +7,7 @@ from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
 
 
+# noinspection HttpUrlsUsage
 class TestLoaderRelease:
     def test_release_xml_parse(self) -> None:
         # GIVEN

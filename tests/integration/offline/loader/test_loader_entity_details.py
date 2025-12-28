@@ -11,7 +11,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestLoaderEntityDetails(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_entity_details(
-        self, offline_database_setup: AsyncGenerator[None, None]
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
 

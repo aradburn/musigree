@@ -11,7 +11,8 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None],
+                              is_load_offline_data_required: bool) -> None:
         release_id = 157
         async with offline_transaction():
             release_repository = ReleaseRepository()
@@ -80,7 +81,8 @@ class TestDatabaseRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None],
+                              is_load_offline_data_required: bool) -> None:
         release_id = 635
         async with offline_transaction():
             release_repository = ReleaseRepository()

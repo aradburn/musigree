@@ -1,7 +1,7 @@
 import os
 import shutil
 import tempfile
-from typing import Generator, cast
+from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -395,7 +395,8 @@ class TestRedisCacheMethods:
 
     def test_get_value_not_found(self, redis_cache: RedisCache) -> None:
         """Test get method when key doesn't exist."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.get.return_value = None
 
         result = redis_cache.get("nonexistent_key")
@@ -405,7 +406,8 @@ class TestRedisCacheMethods:
 
     def test_get_value_non_bytes(self, redis_cache: RedisCache) -> None:
         """Test get method when Redis returns non-bytes value."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.get.return_value = "string_value"  # Not bytes
 
         result = redis_cache.get("test_key")
@@ -414,7 +416,8 @@ class TestRedisCacheMethods:
 
     def test_get_value_pickle_error(self, redis_cache: RedisCache) -> None:
         """Test get method when pickle.loads raises exception."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.get.return_value = b"invalid_pickle_data"
 
         with patch("pickle.loads", side_effect=Exception("Pickle error")):
@@ -424,7 +427,8 @@ class TestRedisCacheMethods:
 
     def test_get_redis_client_exception(self, redis_cache: RedisCache) -> None:
         """Test get method when Redis client raises exception."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.get.side_effect = Exception("Redis error")
 
         result = redis_cache.get("test_key")
@@ -435,7 +439,8 @@ class TestRedisCacheMethods:
         """Test set method with custom timeout."""
         redis_cache.set("test_key", "test_value", timeout=3600)
 
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.setex.assert_called_once()
         call_args = mock_client.setex.call_args
         assert call_args[1]["name"] == f"{redis_cache.key_prefix}test_key"
@@ -446,12 +451,14 @@ class TestRedisCacheMethods:
         redis_cache.default_timeout = 0
         redis_cache.set("test_key", "test_value")
 
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.set.assert_called_once()
 
     def test_set_with_exception(self, redis_cache: RedisCache) -> None:
         """Test set method when Redis client raises exception."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.setex.side_effect = Exception("Redis error")
 
         # Should not raise exception
@@ -461,12 +468,14 @@ class TestRedisCacheMethods:
         """Test delete method success."""
         redis_cache.delete("test_key")
 
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.delete.assert_called_once_with(f"{redis_cache.key_prefix}test_key")
 
     def test_delete_with_exception(self, redis_cache: RedisCache) -> None:
         """Test delete method when Redis client raises exception."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.delete.side_effect = Exception("Redis error")
 
         # Should not raise exception
@@ -476,12 +485,14 @@ class TestRedisCacheMethods:
         """Test clear method success."""
         redis_cache.clear()
 
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.flushdb.assert_called_once()
 
     def test_clear_with_exception(self, redis_cache: RedisCache) -> None:
         """Test clear method when Redis client raises exception."""
-        mock_client = cast(MagicMock, redis_cache._client)
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.flushdb.side_effect = Exception("Redis error")
 
         # Should not raise exception
@@ -552,6 +563,5 @@ class TestCacheManagerUncoveredMethods:
 
         with pytest.raises(AttributeError):
             CacheManager.clear()
-
 
 # Note: pytest automatically discovers and runs tests, so no main block is needed

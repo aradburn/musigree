@@ -15,7 +15,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
     async def test_release_updated(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 157
@@ -92,7 +92,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
     async def test_release_not_updated(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 635
@@ -186,7 +186,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
     async def test_release_inserted(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 99999999
@@ -272,7 +272,7 @@ class TestLoaderReleaseUpdater(AbstractDatabaseTest):
     async def test_release_deleted(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 61930

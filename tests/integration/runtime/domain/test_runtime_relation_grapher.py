@@ -28,7 +28,8 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """
         Test RelationGrapher with Seefeel artist.
@@ -174,7 +175,8 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_02(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """Test RelationGrapher with Justin Fletcher artist."""
         # GIVEN
@@ -311,7 +313,8 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_03(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_type = EntityType.ARTIST
@@ -446,7 +449,8 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_04(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """
         Missing count takes into account structural roles: members,
@@ -675,7 +679,8 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_05(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """Test RelationGrapher with Lab Studio, Berlin label."""
         # GIVEN

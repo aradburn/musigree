@@ -12,7 +12,7 @@ class TestFastAPIHealthcheck:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient,
+        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
     ) -> None:
         response = await client.get("/health")
         assert response.status_code == 200
@@ -23,7 +23,7 @@ class TestFastAPIHealthcheck:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient,
+        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
     ) -> None:
         response = await client.get("/health/malformed")
         assert response.status_code == 400

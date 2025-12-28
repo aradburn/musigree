@@ -18,7 +18,7 @@ class TestRepositoryEntity(AbstractDatabaseTest):
     async def test_create_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
@@ -38,7 +38,7 @@ class TestRepositoryEntity(AbstractDatabaseTest):
     async def test_get_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA

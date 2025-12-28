@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from fastapi import Request
@@ -17,6 +17,7 @@ from musigree.library.fields.entity_type import EntityType
 def _create_mock_base_url(url_string: str) -> Mock:
     """Create a mock base_url that supports the replace() method."""
     mock_url = Mock()
+    # noinspection HttpUrlsUsage
     mock_url.replace.return_value = url_string.replace("http://", "https://")
     return mock_url
 
@@ -64,7 +65,8 @@ class TestFastAPIUI:
         assert call_args.kwargs["name"] == "index.html"
         context = call_args.kwargs["context"]
         assert context["title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
-        assert context["og_title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
+        assert context[
+                   "og_title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
         assert context["original_roles"] == UI_DEFAULT_ROLES
         assert context["original_year"] is None
 

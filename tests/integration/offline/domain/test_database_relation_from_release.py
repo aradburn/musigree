@@ -18,6 +18,7 @@ from musigree.offline.loader.parser_release import ParserRelease
 from tests.conftest import AbstractDatabaseTest
 
 
+# noinspection HttpUrlsUsage
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
@@ -25,7 +26,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None, None],
         offline_config: Configuration,
-    ) -> None:
+        is_load_offline_data_required: bool) -> None:
         # GIVEN
         disocogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
@@ -77,7 +78,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_relation_from_release_02(
-        self, offline_database_setup: AsyncGenerator[None, None]
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         source = utils.normalize(
             """
@@ -220,7 +221,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_03(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_03(self, offline_database_setup: AsyncGenerator[None, None],
+                      is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -439,7 +441,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_04(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_04(self, offline_database_setup: AsyncGenerator[None, None],
+                      is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -798,7 +801,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_05(self, offline_database_setup: AsyncGenerator[None, None]) -> None:
+    async def test_05(self, offline_database_setup: AsyncGenerator[None, None],
+                      is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>

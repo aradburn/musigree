@@ -20,6 +20,7 @@ from musigree.offline.domain.entity import Entity
 from musigree.offline.loader.worker_entity_updater import update_entities_worker_async
 
 
+# noinspection HttpUrlsUsage
 class TestWorkerEntityUpdater:
     """Test class for worker_entity_updater module."""
 

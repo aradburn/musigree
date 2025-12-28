@@ -17,7 +17,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     async def test_from_db_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         name = "Acoustic Bass"
         async with runtime_transaction():
@@ -39,7 +40,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     async def test_from_db_02(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         name = "Mezzo-Soprano Vocals"
         async with runtime_transaction():
