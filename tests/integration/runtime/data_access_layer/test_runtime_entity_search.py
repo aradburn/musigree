@@ -23,7 +23,8 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """Test text search functionality for 'Wax' query."""
         text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
@@ -65,7 +66,8 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         """Test text search functionality for 'Joker' query."""
         text_search_path = runtime_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME

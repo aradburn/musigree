@@ -25,16 +25,11 @@ role information.
 """
 
 import logging
-from typing import Any, cast
+from typing import Annotated
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
-from typing import Annotated
 
-from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
-
-from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.app.fastapi_dependencies import (
     rate_limiter,
     get_entity_type,
@@ -42,6 +37,10 @@ from musigree.app.fastapi_dependencies import (
     get_roles,
     get_year,
 )
+from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.library.fields.entity_type import EntityType
+from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
+from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
@@ -107,7 +106,7 @@ async def route__api__entity_type__relations__entity_id(
     if data is None:
         raise NotFoundError(message="No Data")
 
-    return cast(dict[str, Any], data)
+    return data
 
 
 # noinspection PyUnusedLocal

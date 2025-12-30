@@ -16,7 +16,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestRepositoryMetadata(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_metadata(
-        self, offline_database_setup: AsyncGenerator[None, None]
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         """Test creating metadata in the repository.
 
@@ -54,7 +54,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_get_metadata_by_key(
-        self, offline_database_setup: AsyncGenerator[None, None]
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         """Test retrieving metadata by key from the repository.
 

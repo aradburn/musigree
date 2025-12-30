@@ -34,7 +34,8 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_roles(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         async with offline_transaction():
@@ -56,7 +57,8 @@ class TestTransfer(AbstractDatabaseTest):
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_details_path = (
@@ -79,7 +81,8 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_relations(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         async with offline_transaction():
@@ -100,7 +103,8 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_entity_details(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         async with runtime_transaction():

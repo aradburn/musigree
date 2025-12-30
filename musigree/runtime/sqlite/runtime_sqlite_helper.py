@@ -51,6 +51,8 @@ runtime operation.
 """
 
 import logging
+import sys
+from sqlite3 import OperationalError
 from typing import Type
 
 from sqlalchemy import text, StaticPool, URL, Pool, AsyncAdaptedQueuePool
@@ -196,9 +198,10 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 """Commit the operation."""
 
             log.info("Runtime Database connected OK.")
-        except DatabaseError:
+        except (DatabaseError, OperationalError):
             """Handle database errors."""
-            log.exception("Runtime Database Connection Error", exc_info=True)
+            log.error("Runtime Database Connection Error")
+            sys.exit("Runtime Database Connection Error")
 
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:

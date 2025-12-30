@@ -16,7 +16,7 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_wikipedia_instruments(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -31,7 +31,7 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_hornbostel_sachs_instruments(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -49,7 +49,7 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_roles_from_files(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration,
+        offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         roles_directory = offline_config.DATA_DIR / ROLES_DATA
@@ -67,7 +67,7 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None, None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None, None],
+        reset_offline_database: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         roles_directory = offline_config.DATA_DIR / ROLES_DATA
@@ -91,7 +91,7 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None, None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None, None],
+        reset_offline_database: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -115,7 +115,7 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None, None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None, None],
+        reset_offline_database: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA

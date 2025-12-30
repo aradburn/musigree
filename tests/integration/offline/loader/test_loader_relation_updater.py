@@ -17,7 +17,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_one_id = 42
@@ -61,7 +61,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_02(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_one_id = 49
@@ -105,7 +105,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_03(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_one_id = 300407
@@ -149,7 +149,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_04(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_one_id = 445854
@@ -193,7 +193,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         key = dict(
@@ -302,7 +302,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_02(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         key = dict(
@@ -343,7 +343,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_03(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None],
+        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         key = dict(

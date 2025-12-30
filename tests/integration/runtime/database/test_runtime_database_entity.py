@@ -11,6 +11,7 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from tests.conftest import AbstractDatabaseTest
 
 
+# noinspection HttpUrlsUsage
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
 class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
@@ -18,7 +19,8 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
     async def test_from_db_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 3
@@ -65,16 +67,16 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
                     "Winxs",
                 ],
                 "profile": "After forming [l=Ovum Recordings] as an independent label in October 1994 "
-                + "with former partner [a=King Britt], Josh recorded the cult classic 'Liquid Summer'. "
-                + "He went on to release singles for a wide variety of revered European labels ranging "
-                + "from Belgium's [l=R & S Records] to England's [l=XL Recordings]. In 1995, Wink became "
-                + "one of the first DJ-producers to translate his hard work into mainstream success when "
-                + "he unleashed a string of classics including 'Don't Laugh'\u00b8 'I'm Ready' and "
-                + "'Higher State of Consciousness' that topped charts worldwide. "
-                + "More recently he has had massive club hits such as 'How's Your Evening So Far' and "
-                + "'Superfreak' but he has also gained a lot of attention trough his remixes for "
-                + "[a=FC Kahuna], [a=Paul Oakenfold], [a=Ladytron], [a=Clint Mansell], [a=Sting] "
-                + "and [a=Depeche Mode], among others.",
+                           + "with former partner [a=King Britt], Josh recorded the cult classic 'Liquid Summer'. "
+                           + "He went on to release singles for a wide variety of revered European labels ranging "
+                           + "from Belgium's [l=R & S Records] to England's [l=XL Recordings]. In 1995, Wink became "
+                           + "one of the first DJ-producers to translate his hard work into mainstream success when "
+                           + "he unleashed a string of classics including 'Don't Laugh'\u00b8 'I'm Ready' and "
+                           + "'Higher State of Consciousness' that topped charts worldwide. "
+                           + "More recently he has had massive club hits such as 'How's Your Evening So Far' and "
+                           + "'Superfreak' but he has also gained a lot of attention trough his remixes for "
+                           + "[a=FC Kahuna], [a=Paul Oakenfold], [a=Ladytron], [a=Clint Mansell], [a=Sting] "
+                           + "and [a=Depeche Mode], among others.",
                 "real_name": "Joshua Winkelman",
                 "urls": [
                     "http://www.joshwink.com/",
@@ -104,7 +106,8 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
     async def test_from_db_02(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 2239
@@ -133,7 +136,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {
                 "profile": "British electronic/rock group formed in the early 1990s. "
-                + "They are currently signed to Warp Records.",
+                           + "They are currently signed to Warp Records.",
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
                 "urls": [
                     "http://www.myspace.com/seefeelmyspace",
@@ -171,7 +174,8 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
     async def test_from_db_03(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 1
@@ -213,7 +217,8 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
     async def test_from_db_04(
         self,
         offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 138147
@@ -233,14 +238,14 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
             "entity_id": 138147,
             "entity_metadata": {
                 "profile": "Music publishing company, and a division of the Warner "
-                + "Music Group. \r\n[b]Pre 1987 issues - please use [l51877][/b]\r\nThe "
-                + "company traces its origins back to 1811 and the founding of Chappell & "
-                + "Company, a music publishing company and instrument shop on London\u2019s "
-                + "Bond Street.\r\nWarner/Chappell was created in 1987 when Warner "
-                + "Communications purchased Chappell & Co. and is one of the largest music "
-                + "publishers with a catalog of more than one million songs and a roster of "
-                + 'more than 65,000 songwriters.\r\n\r\nAlso credited as "Warner '
-                + 'Chappell".\r\n',
+                           + "Music Group. \r\n[b]Pre 1987 issues - please use [l51877][/b]\r\nThe "
+                           + "company traces its origins back to 1811 and the founding of Chappell & "
+                           + "Company, a music publishing company and instrument shop on London\u2019s "
+                           + "Bond Street.\r\nWarner/Chappell was created in 1987 when Warner "
+                           + "Communications purchased Chappell & Co. and is one of the largest music "
+                           + "publishers with a catalog of more than one million songs and a roster of "
+                           + 'more than 65,000 songwriters.\r\n\r\nAlso credited as "Warner '
+                           + 'Chappell".\r\n',
                 "urls": ["http://www.warnerchappell.com/"],
             },
             "entity_name": "Warner/Chappell",

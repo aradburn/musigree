@@ -125,6 +125,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     uv version --bump "$1"
 
     new_version=$(uv version --short)
+    created_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
     # Update frontend to be same version as backend
     cd frontend
@@ -132,8 +133,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "export const version = \"$new_version\";" > source/version.ts
     cd ..
 
+    # Update Dockerfile labels
+    sed -i "s/org.opencontainers.image.version=.*$/org.opencontainers.image.version=\"${new_version}\" \\\\/" Dockerfile
+    sed -i "s/org.opencontainers.image.created=.*$/org.opencontainers.image.created=\"${created_date}\" \\\\/" Dockerfile
+
     # commit changes
-    git add pyproject.toml uv.lock frontend/package.json frontend/package-lock.json frontend/source/version.ts
+    git add Dockerfile pyproject.toml uv.lock frontend/package.json frontend/package-lock.json frontend/source/version.ts
     git commit -m "bump version to $new_version"
     # git tag -a "v$new_version" -m "v$new_version"
 

@@ -112,6 +112,7 @@ def test_normalize_dict_01() -> None:
     assert actual == utils.strip_input(expected)
 
 
+# noinspection HttpUrlsUsage
 def test_normalize_dict_02() -> None:
     """Test normalize_dict with complex nested dictionary structure."""
     input_dict = {
@@ -120,9 +121,9 @@ def test_normalize_dict_02() -> None:
         "entity_type": "EntityType.LABEL",
         "metadata": {
             "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
-            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
-            + "operations were moved to New Windsor in 2005. "
-            + "Operated by Chief Engineer [a=Alan Douches].\n",
+                       + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+                       + "operations were moved to New Windsor in 2005. "
+                       + "Operated by Chief Engineer [a=Alan Douches].\n",
             "urls": ["http://www.westwestsidemusic.com/"],
         },
         "name": "West West Side Music",
@@ -135,9 +136,9 @@ def test_normalize_dict_02() -> None:
         "entity_type": "EntityType.LABEL",
         "metadata": {
             "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
-            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
-            + "operations were moved to New Windsor in 2005. "
-            + "Operated by Chief Engineer [a=Alan Douches].\n",
+                       + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+                       + "operations were moved to New Windsor in 2005. "
+                       + "Operated by Chief Engineer [a=Alan Douches].\n",
             "urls": ["http://www.westwestsidemusic.com/"],
         },
         "name": "West West Side Music",
@@ -491,7 +492,7 @@ def test_normalize_dict_list_duplicate_entries() -> None:
 def test_normalize_dict_list_extreme_values() -> None:
     """Test normalize_dict_list with extreme numeric values."""
     input_list = [
-        {"max_int": 2**63 - 1, "min_int": -(2**63), "max_float": 1e308, "min_float": -1e308},
+        {"max_int": 2 ** 63 - 1, "min_int": -(2 ** 63), "max_float": 1e308, "min_float": -1e308},
         {"zero": 0, "neg_zero": -0.0, "inf": float("inf"), "neg_inf": float("-inf")},
     ]
     actual = utils.normalize_dict_list(input_list)
@@ -853,6 +854,7 @@ def _test_delay_worker_function(
 @pytest.mark.asyncio
 async def test_queue_worker_functions_basic_operation() -> None:
     """Test queue_worker_functions with basic partial function processing."""
+
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
     # We can only test that the function completes without error
 
@@ -876,6 +878,7 @@ async def test_queue_worker_functions_basic_operation() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_concurrency() -> None:
     """Test queue_worker_functions respects concurrency limits."""
+
     # Note: This test uses ProcessPoolExecutor, so we can't easily track concurrency
     # across processes in unit tests
 
@@ -912,6 +915,7 @@ async def test_queue_worker_functions_empty_generator() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_single_worker() -> None:
     """Test queue_worker_functions with single worker."""
+
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
 
     def records_generator() -> Any:
@@ -932,6 +936,7 @@ async def test_queue_worker_functions_single_worker() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_exception_handling() -> None:
     """Test queue_worker_functions handles exceptions in worker functions."""
+
     # Note: This test uses ProcessPoolExecutor, so exceptions are propagated
     # from the worker processes back to the main process
 
@@ -960,6 +965,7 @@ async def test_queue_worker_functions_exception_handling() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_zero_concurrency() -> None:
     """Test queue_worker_functions with zero concurrency creates one worker."""
+
     # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
 
     def records_generator() -> Any:
