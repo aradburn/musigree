@@ -64,10 +64,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
       org.opencontainers.image.title="musigree" \
       org.opencontainers.image.description="Interactive visualization of the Discogs database" \
-      org.opencontainers.image.version="1.0.51" \
+      org.opencontainers.image.version="1.0.52" \
       org.opencontainers.image.source="https://github.com/aradburn/musigree" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.created="2025-12-30T16:14:48Z" \
+      org.opencontainers.image.created="2025-12-30T16:51:31Z" \
       org.opencontainers.image.revision="" \
       security.scan.enabled="true"
 
