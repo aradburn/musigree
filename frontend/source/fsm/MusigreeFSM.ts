@@ -691,10 +691,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                 console.log("nodeOn not found");
                 return;
             }
-            if (nodeOff.empty()) {
-                console.log("nodeOff not found");
-                return;
-            }
 
             const nodeData = nodeOn.datum();
             if (!nodeData) {
@@ -702,7 +698,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                 return;
             }
 
-            //             console.log("nodeData: ", nodeData);
             const linkKeys = nodeData.links.map((l) => l.key);
             const linkSelection = linkLayer.selectAll<SVGGElement, SimLink>(
                 "g.link",
@@ -720,7 +715,6 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                 console.log("node not found");
                 return;
             }
-            //             console.log("new selected node: ", node);
 
             const [, id] = node.key.split("-");
             const url = `http://discogs.com/${node.type}/${id}`;
@@ -749,10 +743,9 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
             nodeOn.raise();
             nodeOn.classed("selected", true);
-            //             console.log("nodeOn: ", nodeOn);
 
             if (fixed) {
-                //nodeOn.each(function(d) { d.fixed = true; });
+                // nodeOn.each(function(d) { d.fixed = true; });
                 node.fixed = true;
             }
             linkOn.classed("selected", true);
@@ -762,11 +755,9 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         }
 
         if (nodeOff) {
-            //             console.log("nodeOff: ", nodeOff);
             nodeOff.classed("selected", false).each((d) => (d.fixed = false));
         }
         if (linkOff) {
-            //             console.log("linkOff: ", linkOff);
             linkOff.classed("selected", false);
         }
 
