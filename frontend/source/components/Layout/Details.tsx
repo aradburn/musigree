@@ -19,13 +19,16 @@ import { Profile } from "./Profile";
 export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
     const hasEntity = Boolean(entity);
     const hasAliases = entity?.entities?.aliases;
-    const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : ["-"];
+    const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : [""];
     const aliasesStr = aliases.join(", ");
     const nameVariations = entity?.metadata?.name_variations;
-    const altNames = Array.isArray(nameVariations) ? nameVariations : ["-"];
+    const altNames = Array.isArray(nameVariations) ? nameVariations : [""];
     const altNamesStr = altNames.join(", ");
     const realName = entity?.metadata?.real_name;
-    const realNameStr = typeof realName === "string" ? realName : "-";
+    const realNameStr = typeof realName === "string" ? realName : "";
+    const countriesStr = entity?.countries ? expandCommas(entity.countries) : "";
+    const genresStr = entity?.genres ? expandCommas(entity.genres) : "";
+    const stylesStr = entity?.styles ? expandCommas(entity.styles) : "";
     const profile = entity?.metadata?.profile;
     const profileStr =
         typeof profile === "string"
@@ -78,47 +81,73 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
             </div>
             <div className="details-content">
                 <dl className="d-flex flex-wrap">
-                    <dt className="col-3">Aliases</dt>
-                    <dd className="col-9">{aliasesStr}</dd>
+                    {aliasesStr ?
+                        <>
+                            <dt className="col-3">Aliases</dt>
+                            <dd className="col-9">{aliasesStr}</dd>
+                        </>
+                        :
+                        null
+                    }
 
+                    {/*
                     <dt className="col-3">Real Name</dt>
                     <dd className="col-9">{realNameStr}</dd>
+                    */}
 
-                    <dt className="col-3">Alt Names</dt>
-                    <dd className="col-9">{altNamesStr}</dd>
+                    {altNamesStr ?
+                        <>
+                            <dt className="col-3">Alt Names</dt>
+                            <dd className="col-9">{altNamesStr}</dd>
+                        </>
+                        :
+                        null
+                    }
 
                     <dt className="col-3">Type</dt>
                     <dd className="col-9">
                         {hasEntity ? capitalCase(entity?.type) : "-"}
                     </dd>
 
-                    <dt className="col-3">Country</dt>
-                    <dd className="col-9">
-                        {hasEntity && entity?.countries
-                            ? expandCommas(entity.countries)
-                            : "-"}
-                    </dd>
+                    {countriesStr ?
+                        <>
+                            <dt className="col-3">Countries</dt>
+                            <dd className="col-9">{countriesStr}</dd>
+                        </>
+                        :
+                        null
+                    }
 
-                    <dt className="col-3">Genres</dt>
-                    <dd className="col-9">
-                        {hasEntity && entity?.genres
-                            ? expandCommas(entity.genres)
-                            : "-"}
-                    </dd>
+                    {genresStr ?
+                        <>
+                            <dt className="col-3">Genres</dt>
+                            <dd className="col-9">{genresStr}</dd>
+                        </>
+                        :
+                        null
+                    }
 
-                    <dt className="col-3">Styles</dt>
-                    <dd className="col-9">
-                        {hasEntity && entity?.styles
-                            ? expandCommas(entity.styles)
-                            : "-"}
-                    </dd>
+                    {stylesStr ?
+                        <>
+                            <dt className="col-3">Styles</dt>
+                            <dd className="col-9">{stylesStr}</dd>
+                        </>
+                        :
+                        null
+                    }
 
-                    <dt className="col-3">Profile</dt>
-                    <dd className="col-9">
-                        <Profile profileHtml={profileStr}></Profile>
-                    </dd>
+                    {profileStr ?
+                        <>
+                            <dt className="col-3">Profile</dt>
+                            <dd className="col-9">
+                                <Profile profileHtml={profileStr}></Profile>
+                            </dd>
+                        </>
+                        :
+                        null
+                    }
 
-                    <dt className="col-11">External Links</dt>
+                    <dt className="col-11 mb-2">External Links</dt>
                     <dd className="col-1"></dd>
                     {Array.isArray(urls) && urls.length > 0 ? (
                         <React.Fragment>{urlListItems}</React.Fragment>
