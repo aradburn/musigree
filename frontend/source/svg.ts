@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager } from "./core/index";
+import { musigreeManager, networkManager } from "./core/index";
 import { SVG, MARKER, SVG_IDS, DOM_IDS, GRADIENT } from "./constants";
 import { convertRemToPixels } from "./utils";
 
@@ -44,7 +44,7 @@ export const initSvg = (): void => {
     svgSelection.append("svg").attr("id", DOM_IDS.SVG);
 
     // Setup window dimensions on SVG element
-    setSvgSize(DOM_IDS.SVG_ID);
+    setSvgSize(DOM_IDS.SVG_ID, false);
 
     // Setup SVG common definitions
     setupSvgDefs(DOM_IDS.SVG_ID);
@@ -54,7 +54,8 @@ export const initSvg = (): void => {
  * Sets the size and viewport attributes of the main SVG element
  * Uses global musigreeManager.dimensions and musigreeManager.svgDimensions for sizing
  */
-export const setSvgSize = (svgSelector: string): void => {
+export const setSvgSize = (svgSelector: string, isSidebarRightCollapsed: bool): void => {
+    console.log("setSvgSize isSidebarRightCollapsed: ", isSidebarRightCollapsed);
     try {
         const dpr = window.devicePixelRatio || 1;
         console.log("window devicePixelRatio: ", dpr);
@@ -70,8 +71,9 @@ export const setSvgSize = (svgSelector: string): void => {
             return;
         }
 
-        const calculatedSvgContainerWidth =
-            window.innerWidth - convertRemToPixels(45);
+        const calculatedSvgContainerWidth = isSidebarRightCollapsed ?
+                     window.innerWidth - convertRemToPixels(20) :
+                     window.innerWidth - convertRemToPixels(45);
         const smallSvgContainerHeight = window.innerHeight / 2.0;
         const largeSvgContainerHeight =
             window.innerHeight - navTopContainer.clientHeight;

@@ -26,7 +26,9 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
     const altNamesStr = altNames.join(", ");
     const realName = entity?.metadata?.real_name;
     const realNameStr = typeof realName === "string" ? realName : "";
-    const countriesStr = entity?.countries ? expandCommas(entity.countries) : "";
+    const countriesStr = entity?.countries
+        ? expandCommas(entity.countries)
+        : "";
     const genresStr = entity?.genres ? expandCommas(entity.genres) : "";
     const stylesStr = entity?.styles ? expandCommas(entity.styles) : "";
     const profile = entity?.metadata?.profile;
@@ -81,71 +83,59 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
             </div>
             <div className="details-content">
                 <dl className="d-flex flex-wrap">
-                    {aliasesStr ?
+                    {aliasesStr ? (
                         <>
                             <dt className="col-3">Aliases</dt>
                             <dd className="col-9">{aliasesStr}</dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
                     {/*
                     <dt className="col-3">Real Name</dt>
                     <dd className="col-9">{realNameStr}</dd>
                     */}
 
-                    {altNamesStr ?
+                    {altNamesStr ? (
                         <>
                             <dt className="col-3">Alt Names</dt>
                             <dd className="col-9">{altNamesStr}</dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
                     <dt className="col-3">Type</dt>
                     <dd className="col-9">
                         {hasEntity ? capitalCase(entity?.type) : "-"}
                     </dd>
 
-                    {countriesStr ?
+                    {countriesStr ? (
                         <>
                             <dt className="col-3">Countries</dt>
                             <dd className="col-9">{countriesStr}</dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
-                    {genresStr ?
+                    {genresStr ? (
                         <>
                             <dt className="col-3">Genres</dt>
                             <dd className="col-9">{genresStr}</dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
-                    {stylesStr ?
+                    {stylesStr ? (
                         <>
                             <dt className="col-3">Styles</dt>
                             <dd className="col-9">{stylesStr}</dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
-                    {profileStr ?
+                    {profileStr ? (
                         <>
                             <dt className="col-3">Profile</dt>
                             <dd className="col-9">
                                 <Profile profileHtml={profileStr}></Profile>
                             </dd>
                         </>
-                        :
-                        null
-                    }
+                    ) : null}
 
                     <dt className="col-11 mb-2">External Links</dt>
                     <dd className="col-1"></dd>

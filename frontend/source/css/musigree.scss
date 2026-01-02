@@ -4,15 +4,13 @@
  * Licensed under MIT (https://github.com/aradburn/musigree/blob/main/LICENSE)
  */
 
-@use './default-theme-variables.scss' as *;
-
-
+@use "./default-theme-variables.scss" as *;
 
 html,
 body {
     margin: 0;
     width: 100%;
-//     height: 100%;
+    //     height: 100%;
     top: 0;
     left: 0;
     position: fixed;
@@ -26,17 +24,17 @@ body {
 }
 
 .bg-opacity-40 {
-  --bs-bg-opacity: 0.4;
+    --bs-bg-opacity: 0.4;
 }
 
 .bg-opacity-60 {
-  --bs-bg-opacity: 0.6;
+    --bs-bg-opacity: 0.6;
 }
 
 #react-app-container {
     @media (max-width: 575.98px) {
-      overflow-y: scroll;
-      height: 100vh;
+        overflow-y: scroll;
+        height: 100vh;
     }
 }
 
@@ -50,10 +48,7 @@ body {
 }
 
 .navbar {
-    background-image: linear-gradient(
-        #c9d9cd55 0%,
-        #2F5954AA 100%
-    );
+    background-image: linear-gradient(#c9d9cd55 0%, #2f5954aa 100%);
 }
 
 .navbar-brand-icon {
@@ -64,7 +59,7 @@ body {
     transition: color ease-in-out 0.2s;
     text-align: center;
     font-size: 2rem;
- }
+}
 
 #navbar-title {
     white-space: nowrap;
@@ -103,10 +98,17 @@ body {
     max-width: 30rem;
 }
 
+.sidebar-right-container-collapsed {
+    background-color: $mg-background-light-color !important;
+    width: 5rem;
+    min-width: 5rem;
+    max-width: 5rem;
+}
+
 #svg-container-fluid {
-    width: calc(100vw - 45rem);
-//     min-width: calc(100vw - 45rem);
-//     max-width: calc(100vw - 45rem);
+//     width: calc(100vw - 45rem);
+    //     min-width: calc(100vw - 45rem);
+    //     max-width: calc(100vw - 45rem);
 }
 
 @media (min-width: 576px) {
@@ -168,19 +170,19 @@ body {
 }
 
 #entity-details-panel {
-
 }
 
 .details-panel {
     background-color: $mg-background-light-color !important;
     @media (min-width: 575.98px) {
-      min-width: 29.5rem;
-      max-width: 29.5rem;
+        min-width: 29.5rem;
+        max-width: 29.5rem;
     }
 }
 
 .details-title {
     color: $mg-text-color;
+    max-width: 25rem;
 }
 
 .details-content {
@@ -258,11 +260,11 @@ body {
 }
 
 .role-checkbox {
-   position: relative;
-   margin-right: 8px;
-   width: 18px;
-   height: 18px;
-   display: inline-block;
+    position: relative;
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    display: inline-block;
 }
 
 .role-checkbox input {
@@ -308,8 +310,6 @@ body {
     margin-right: 8px;
 }
 
-
-
 .modal-dialog {
     margin-top: 50px;
 }
@@ -321,7 +321,7 @@ body {
 }
 
 .modal-header .btn-close {
-    margin-right: calc(-.5 * var(--bs-modal-header-padding-x) + 0.8rem);
+    margin-right: calc(-0.5 * var(--bs-modal-header-padding-x) + 0.8rem);
 }
 
 input[type="range"] {
@@ -360,9 +360,6 @@ input[type="range"]::slider-thumb {
     background-color: $mg-background-dark-color !important;
 }
 
-
-
-
 .tt-menu {
     width: 100%;
     max-height: 70vh;
@@ -382,24 +379,23 @@ input[type="range"]::slider-thumb {
     }
 }
 
-#svg:active, #svg:focus {
+#svg:active,
+#svg:focus {
     cursor: move;
 }
 
 a[href^="http"]::after,
-a[href^="https://"]::after
-{
-  content: "";
-  width: 9px;
-  height: 9px;
-  margin-left: 5px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  display: inline-block;
+a[href^="https://"]::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    margin-left: 5px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    display: inline-block;
 }
-
 
 /* NETWORK */
 
@@ -447,7 +443,7 @@ a[href^="https://"]::after
             }
             &:hover {
                 stroke: #700;
-                opacity: 1.0;
+                opacity: 1;
             }
         }
 
@@ -537,7 +533,7 @@ a[href^="https://"]::after
         stroke-width: 36;
         stroke-linecap: round;
         stroke-linejoin: round;
-        fill-opacity: 1.0;
+        fill-opacity: 1;
         stroke-opacity: 0.8;
         opacity: 0.5;
     }
@@ -695,7 +691,7 @@ a[href^="https://"]::after
 #loading-layer {
     path {
         &.arc {
-            opacity: 1.0;
+            opacity: 1;
             stroke: white;
             stroke-width: 1px;
         }

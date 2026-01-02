@@ -14,7 +14,10 @@ import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
 import { LoadingProvider } from "../contexts/LoadingContext";
 import { EntityProvider } from "../contexts/EntityContext";
+import { FSM, DOM_IDS } from "../constants";
+import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
+import { resetNetworkTransform } from "@/network/init.ts";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
@@ -28,6 +31,8 @@ const App: React.FC = (): React.ReactElement => {
     const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
     const [_isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
     const [rolesConfig, setRolesConfig] = useState<TreeConfig>();
+    const [isSidebarRightCollapsed, setIsSidebarRightCollapsed] =
+        useState<boolean>(false);
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {
@@ -96,6 +101,19 @@ const App: React.FC = (): React.ReactElement => {
         setShowHelpModal(false);
     };
 
+    const handleToggleSidebarRight = (): void => {
+        const newCollapsedState = !isSidebarRightCollapsed;
+        setIsSidebarRightCollapsed(newCollapsedState);
+
+        // Setup window dimensions on SVG element
+        setSvgSize(DOM_IDS.SVG_ID, newCollapsedState);
+
+        resetNetworkTransform();
+
+        // Dispatch custom resize event
+        window.dispatchEvent(new CustomEvent(FSM.EVENTS.RESIZE));
+    };
+
     return (
         <WindowProvider>
             <NetworkProvider>
@@ -124,10 +142,23 @@ const App: React.FC = (): React.ReactElement => {
                                     </div>
                                 </div>
 
-                                <div className="sidebar-right-container p-0 order-sm-3 order-2">
+                                <div
+                                    className={`${
+                                        isSidebarRightCollapsed
+                                            ? "sidebar-right-container-collapsed"
+                                            : "sidebar-right-container"
+                                    } p-0 order-sm-3 order-2`}
+                                >
                                     <div className="flex-sm-column flex-row h-sm-100">
                                         {/* sidebar right panel */}
-                                        <SidebarRight />
+                                        <SidebarRight
+                                            isCollapsed={
+                                                isSidebarRightCollapsed
+                                            }
+                                            onToggleCollapse={
+                                                handleToggleSidebarRight
+                                            }
+                                        />
                                     </div>
                                 </div>
 

@@ -267,7 +267,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         // Handle window resize events with debounce
         const handleResize = debounce(() => {
-            console.log("handleResize fsm");
+            console.log("FSM handleResize()");
 
             // Center the loading visualization
             const transform = `translate(${musigreeManager.svgDimensions[0] / 2},${musigreeManager.svgDimensions[1] / 2})`;
