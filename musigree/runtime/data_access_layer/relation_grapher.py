@@ -2,7 +2,6 @@ import logging
 from collections import OrderedDict
 from typing import Any
 
-from musigree import utils
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.runtime_entity_data_access import (
@@ -509,36 +508,36 @@ class RelationGrapher:
 
     # PUBLIC METHODS
 
-    @classmethod
-    def make_cache_key(
-        cls,
-        template: str,
-        entity_id: int,
-        entity_type: EntityType,
-        roles: list[str] | None = None,
-        year: list[int] | int | None = None,
-    ) -> str:
-        entity_type_str = entity_type.name.lower()
-        key = template.format(entity_id=entity_id, entity_type=entity_type_str)
-        if roles or year:
-            parts = []
-            if roles:
-                roles_sub = (utils.WORD_PATTERN.sub("+", _) for _ in roles)
-                roles_params = ("roles[]={}".format(_) for _ in roles_sub)
-                roles_all = "&".join(sorted(roles_params))
-                parts.append(roles_all)
-            if year:
-                if isinstance(year, int):
-                    year_param = f"year={year}"
-                else:
-                    year_param_list = "-".join(str(_) for _ in year)
-                    year_param = f"year={year_param_list}"
-                parts.append(year_param)
-            query_string = "&".join(parts)
-            key = f"{key}?{query_string}"
-        # key = f"musigree:{key}"
-        # log.debug(f"  cache key: {key}")
-        return key
+    # @classmethod
+    # def make_cache_key(
+    #     cls,
+    #     template: str,
+    #     entity_id: int,
+    #     entity_type: EntityType,
+    #     roles: list[str] | None = None,
+    #     year: list[int] | int | None = None,
+    # ) -> str:
+    #     entity_type_str = entity_type.name.lower()
+    #     key = template.format(entity_id=entity_id, entity_type=entity_type_str)
+    #     if roles or year:
+    #         parts = []
+    #         if roles:
+    #             roles_sub = (utils.WORD_PATTERN.sub("+", _) for _ in roles)
+    #             roles_params = ("roles[]={}".format(_) for _ in roles_sub)
+    #             roles_all = "&".join(sorted(roles_params))
+    #             parts.append(roles_all)
+    #         if year:
+    #             if isinstance(year, int):
+    #                 year_param = f"year={year}"
+    #             else:
+    #                 year_param_list = "-".join(str(_) for _ in year)
+    #                 year_param = f"year={year_param_list}"
+    #             parts.append(year_param)
+    #         query_string = "&".join(parts)
+    #         key = f"{key}?{query_string}"
+    #     # key = f"musigree:{key}"
+    #     # log.debug(f"  cache key: {key}")
+    #     return key
 
     # PUBLIC PROPERTIES
 

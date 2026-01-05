@@ -103,7 +103,7 @@ async def route__index(
     # elif year:
     #     og_url += f"?year={year}"
 
-    og_title = title
+    og_title = "Musigree - An Interactive Map of Artists, Bands & Labels"
     og_image = application_url + "/img/og_image.png"
 
     """Generate the URL for the current request with the selected roles."""

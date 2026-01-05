@@ -555,48 +555,6 @@ class TestRelationGrapher:
         grapher.should_break_loop = False
         assert grapher.should_break_loop is False
 
-    def test_make_cache_key_basic(self) -> None:
-        """Test make_cache_key with basic parameters."""
-        # When
-        key = RelationGrapher.make_cache_key(
-            template="test/{entity_type}/{entity_id}",
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-        )
-
-        # Then
-        assert key == "test/artist/123"
-
-    def test_make_cache_key_with_roles_and_year(self) -> None:
-        """Test make_cache_key with roles and year parameters."""
-        # When
-        key = RelationGrapher.make_cache_key(
-            template="test/{entity_type}/{entity_id}",
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-            roles=["Artist Role", "Producer Role"],
-            year=2020,
-        )
-
-        # Then
-        assert "test/artist/123?" in key
-        assert "roles[]=Artist+Role" in key
-        assert "roles[]=Producer+Role" in key
-        assert "year=2020" in key
-
-    def test_make_cache_key_with_year_range(self) -> None:
-        """Test make_cache_key with year range."""
-        # When
-        key = RelationGrapher.make_cache_key(
-            template="test/{entity_type}/{entity_id}",
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-            year=[2015, 2020],
-        )
-
-        # Then
-        assert "year=2015-2020" in key
-
     @pytest.mark.asyncio
     async def test_get_relation_graph_basic_flow(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock

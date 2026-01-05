@@ -1,6 +1,4 @@
-import os
-import shutil
-import tempfile
+import json
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +8,6 @@ from musigree.constants import CacheType
 from musigree.library.cache.cache_manager import (
     BaseCache,
     CacheManager,
-    FileSystemCache,
     RedisCache,
     SimpleCache,
 )
@@ -30,7 +27,19 @@ class TestBaseCache:
             cache.set("key", "value")
 
         with pytest.raises(NotImplementedError):
-            cache.delete("key")
+            cache.hgetall("key")
+
+        with pytest.raises(NotImplementedError):
+            cache.hset("key", {"field": "value"})
+
+        with pytest.raises(NotImplementedError):
+            cache.incr("key")
+
+        with pytest.raises(NotImplementedError):
+            cache.expire("key", 60)
+
+        with pytest.raises(NotImplementedError):
+            cache.ttl("key")
 
         with pytest.raises(NotImplementedError):
             cache.clear()
@@ -66,17 +75,6 @@ class TestSimpleCache:
         """Test getting non-existent key returns None."""
         assert self.cache.get("nonexistent") is None
 
-    def test_simple_cache_delete(self) -> None:
-        """Test deleting keys from SimpleCache."""
-        self.cache.set("key1", "value1")
-        self.cache.delete("key1")
-        assert self.cache.get("key1") is None
-
-    def test_simple_cache_delete_nonexistent(self) -> None:
-        """Test deleting non-existent key doesn't raise error."""
-        # Should not raise an exception
-        self.cache.delete("nonexistent")
-
     def test_simple_cache_clear(self) -> None:
         """Test clearing all entries from SimpleCache."""
         self.cache.set("key1", "value1")
@@ -91,111 +89,66 @@ class TestSimpleCache:
         self.cache.set("key1", "value1", timeout=60)
         assert self.cache.get("key1") == "value1"
 
+    def test_simple_cache_hgetall(self) -> None:
+        """Test getting hash values from SimpleCache."""
+        assert self.cache.hgetall("nonexistent") is None
+        test_dict = {"field1": "value1", "field2": "value2"}
+        self.cache.hset("hash_key", test_dict)
+        result = self.cache.hgetall("hash_key")
+        assert result == test_dict
 
-class TestFileSystemCache:
-    """Test cases for the FileSystemCache implementation."""
+    def test_simple_cache_hset(self) -> None:
+        """Test setting hash values in SimpleCache."""
+        test_dict = {"field1": "value1", "field2": "value2"}
+        self.cache.hset("hash_key", test_dict)
+        assert self.cache.hgetall("hash_key") == test_dict
 
-    @pytest.fixture(autouse=True)
-    def setup_cache(self) -> Generator[None, None, None]:
-        """Set up test fixtures with temporary directory."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.cache = FileSystemCache(self.temp_dir)
-        yield
-        # Clean up the temporary directory
-        shutil.rmtree(self.temp_dir)
+    def test_simple_cache_hset_timeout_ignored(self) -> None:
+        """Test that timeout parameter is ignored in SimpleCache hset."""
+        test_dict = {"field1": "value1"}
+        self.cache.hset("hash_key", test_dict, timeout=60)
+        assert self.cache.hgetall("hash_key") == test_dict
 
-    def test_filesystem_cache_initialization(self) -> None:
-        """Test FileSystemCache initialization."""
-        assert self.cache.cache_dir == self.temp_dir
-        assert self.cache.threshold == 1000000
-        assert self.cache.default_timeout == 0
-        assert os.path.exists(self.temp_dir)
-
-    def test_filesystem_cache_initialization_with_params(self) -> None:
-        """Test FileSystemCache initialization with custom parameters."""
-        temp_dir2 = tempfile.mkdtemp()
-        try:
-            cache = FileSystemCache(temp_dir2, threshold=500, default_timeout=60)
-            assert cache.threshold == 500
-            assert cache.default_timeout == 60
-        finally:
-            shutil.rmtree(temp_dir2)
-
-    def test_filesystem_cache_creates_directory(self) -> None:
-        """Test that FileSystemCache creates directory if it doesn't exist."""
-        new_dir = os.path.join(self.temp_dir, "new_cache_dir")
-        assert not os.path.exists(new_dir)
-
-        _cache = FileSystemCache(new_dir)
-        assert os.path.exists(new_dir)
-
-    def test_filesystem_cache_set_and_get(self) -> None:
-        """Test setting and getting values in FileSystemCache."""
+    def test_simple_cache_clear_clears_hash_cache(self) -> None:
+        """Test that clear() clears both regular and hash cache."""
         self.cache.set("key1", "value1")
-        assert self.cache.get("key1") == "value1"
-
-    def test_filesystem_cache_get_nonexistent(self) -> None:
-        """Test getting non-existent key returns None."""
-        assert self.cache.get("nonexistent") is None
-
-    def test_filesystem_cache_delete(self) -> None:
-        """Test deleting keys from FileSystemCache."""
-        self.cache.set("key1", "value1")
-        self.cache.delete("key1")
-        assert self.cache.get("key1") is None
-
-    def test_filesystem_cache_delete_nonexistent(self) -> None:
-        """Test deleting non-existent key doesn't raise error."""
-        # Should not raise an exception
-        self.cache.delete("nonexistent")
-
-    def test_filesystem_cache_clear(self) -> None:
-        """Test clearing all entries from FileSystemCache."""
-        self.cache.set("key1", "value1")
-        self.cache.set("key2", "value2")
+        self.cache.hset("hash_key", {"field1": "value1"})
         self.cache.clear()
         assert self.cache.get("key1") is None
-        assert self.cache.get("key2") is None
+        assert self.cache.hgetall("hash_key") is None
 
-    def test_filesystem_cache_get_filename(self) -> None:
-        """Test that _get_filename produces consistent filenames."""
-        filename1 = self.cache._get_filename("key1")
-        filename2 = self.cache._get_filename("key1")
-        assert filename1 == filename2
+    def test_simple_cache_incr_not_implemented(self) -> None:
+        """Test that incr method raises NotImplementedError in SimpleCache."""
+        with pytest.raises(NotImplementedError):
+            self.cache.incr("key")
 
-        # Different keys should produce different filenames
-        filename3 = self.cache._get_filename("key2")
-        assert filename1 != filename3
+    def test_simple_cache_expire_not_implemented(self) -> None:
+        """Test that expire method raises NotImplementedError in SimpleCache."""
+        with pytest.raises(NotImplementedError):
+            self.cache.expire("key", 60)
 
-    @patch("builtins.open", side_effect=IOError())
-    def test_filesystem_cache_io_error_on_set(self, _mock_open: MagicMock) -> None:
-        """Test that IOError on set doesn't raise exception."""
-        # Should not raise an exception
-        self.cache.set("key1", "value1")
-
-    @patch("builtins.open", side_effect=IOError())
-    def test_filesystem_cache_io_error_on_get(self, _mock_open: MagicMock) -> None:
-        """Test that IOError on get returns None."""
-        # Create a file first
-        with patch("os.path.exists", return_value=True):
-            result = self.cache.get("key1")
-            assert result is None
+    def test_simple_cache_ttl_not_implemented(self) -> None:
+        """Test that ttl method raises NotImplementedError in SimpleCache."""
+        with pytest.raises(NotImplementedError):
+            self.cache.ttl("key")
 
 
 class TestRedisCache:
     """Test cases for the RedisCache implementation."""
 
-    @patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False)
-    def test_redis_cache_no_redis_available(self) -> None:
+    @patch("musigree.library.cache.cache_manager.redis")
+    @patch("musigree.library.cache.cache_manager.fakeredis")
+    def test_redis_cache_no_redis_available(
+        self, mock_fakeredis: MagicMock, mock_redis: MagicMock
+    ) -> None:
         """Test RedisCache when Redis is not available."""
-        with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
-            mock_fake_client = MagicMock()
-            mock_fakeredis.FakeRedis.return_value = mock_fake_client
+        mock_redis.Redis.side_effect = Exception("Connection failed")
+        mock_fake_client = MagicMock()
+        mock_fakeredis.FakeRedis.return_value = mock_fake_client
 
-            cache = RedisCache()
-            assert cache._client == mock_fake_client
+        cache = RedisCache()
+        assert cache._client == mock_fake_client
 
-    @patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", True)
     @patch("musigree.library.cache.cache_manager.redis")
     def test_redis_cache_successful_connection(self, mock_redis: MagicMock) -> None:
         """Test RedisCache with successful Redis connection."""
@@ -207,7 +160,6 @@ class TestRedisCache:
         assert cache._client == mock_client
         mock_client.ping.assert_called_once()
 
-    @patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", True)
     @patch("musigree.library.cache.cache_manager.redis")
     @patch("musigree.library.cache.cache_manager.fakeredis")
     def test_redis_cache_connection_failure(
@@ -221,43 +173,24 @@ class TestRedisCache:
         cache = RedisCache()
         assert cache._client == mock_fake_client
 
-    def test_redis_cache_initialization_params(self) -> None:
+    @patch("musigree.library.cache.cache_manager.redis")
+    @patch("musigree.library.cache.cache_manager.fakeredis")
+    def test_redis_cache_initialization_params(
+        self, mock_fakeredis: MagicMock, mock_redis: MagicMock
+    ) -> None:
         """Test RedisCache initialization parameters."""
-        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
-            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
-                mock_fake_client = MagicMock()
-                mock_fakeredis.FakeRedis.return_value = mock_fake_client
-                cache = RedisCache(
-                    host="example.com",
-                    port=6380,
-                    password="secret",
-                    db=1,
-                    default_timeout=600,
-                    key_prefix="test:",
-                )
-                assert cache.default_timeout == 600
-                assert cache.key_prefix == "test:"
-                assert cache._client == mock_fake_client
-
-    def test_redis_cache_make_key(self) -> None:
-        """Test key prefixing in RedisCache."""
-        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
-            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
-                mock_fake_client = MagicMock()
-                mock_fakeredis.FakeRedis.return_value = mock_fake_client
-                cache = RedisCache(key_prefix="app:")
-                assert cache._make_key("key1") == "app:key1"
-                assert cache._client == mock_fake_client
-
-    def test_redis_cache_make_key_no_prefix(self) -> None:
-        """Test key handling without prefix."""
-        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
-            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
-                mock_fake_client = MagicMock()
-                mock_fakeredis.FakeRedis.return_value = mock_fake_client
-                cache = RedisCache()
-                assert cache._make_key("key1") == "key1"
-                assert cache._client == mock_fake_client
+        mock_redis.Redis.side_effect = Exception("Connection failed")
+        mock_fake_client = MagicMock()
+        mock_fakeredis.FakeRedis.return_value = mock_fake_client
+        cache = RedisCache(
+            host="example.com",
+            port=6380,
+            password="secret",
+            db=1,
+            default_timeout=600,
+        )
+        assert cache.default_timeout == 600
+        assert cache._client == mock_fake_client
 
 
 class TestCacheManager:
@@ -285,26 +218,6 @@ class TestCacheManager:
         mock_simple_cache.assert_called_once_with(threshold=1000000, default_timeout=0)
         assert CacheManager.cache == mock_cache_instance
 
-    @patch("musigree.library.cache.cache_manager.FileSystemCache")
-    @patch("musigree.library.cache.cache_manager.os.path.exists")
-    @patch("musigree.library.cache.cache_manager.os.makedirs")
-    def test_cache_manager_setup_filesystem_cache(
-        self, mock_makedirs: MagicMock, mock_exists: MagicMock, mock_fs_cache: MagicMock
-    ) -> None:
-        """Test CacheManager setup with filesystem cache."""
-        config = MagicMock()
-        config.CACHE_TYPE = CacheType.FILESYSTEM
-
-        mock_cache_instance = MagicMock()
-        mock_fs_cache.return_value = mock_cache_instance
-        mock_exists.return_value = False
-
-        CacheManager.setup_cache(config)
-
-        mock_makedirs.assert_called_once()
-        mock_fs_cache.assert_called_once()
-        assert CacheManager.cache == mock_cache_instance
-
     @patch("musigree.library.cache.cache_manager.RedisCache")
     def test_cache_manager_setup_redis_cache(self, mock_redis_cache: MagicMock) -> None:
         """Test CacheManager setup with Redis cache."""
@@ -322,9 +235,33 @@ class TestCacheManager:
             password=None,
             db=0,
             default_timeout=60 * 60 * 24 * 7,
-            key_prefix="musigree:",
         )
         assert CacheManager.cache == mock_cache_instance
+
+    @patch("musigree.library.cache.cache_manager.SimpleCache")
+    @patch("musigree.library.cache.cache_manager.RedisCache")
+    def test_cache_manager_setup_redis_cache_fallback(
+        self, mock_redis_cache: MagicMock, mock_simple_cache: MagicMock
+    ) -> None:
+        """Test CacheManager setup with Redis cache falling back to SimpleCache on error."""
+        config = MagicMock()
+        config.CACHE_TYPE = CacheType.REDIS
+
+        mock_redis_cache.side_effect = Exception("Redis connection failed")
+        mock_simple_cache_instance = MagicMock()
+        mock_simple_cache.return_value = mock_simple_cache_instance
+
+        CacheManager.setup_cache(config)
+
+        mock_redis_cache.assert_called_once_with(
+            host="localhost",
+            port=6379,
+            password=None,
+            db=0,
+            default_timeout=60 * 60 * 24 * 7,
+        )
+        mock_simple_cache.assert_called_once_with(threshold=1000000, default_timeout=0)
+        assert CacheManager.cache == mock_simple_cache_instance
 
     def test_cache_manager_shutdown_cache(self) -> None:
         """Test CacheManager cache shutdown."""
@@ -349,10 +286,9 @@ class TestCacheManager:
     def test_cache_manager_get_cache_when_not_set(self) -> None:
         """Test CacheManager get_cache raises error when cache not set."""
         # Ensure cache is not set
-        if hasattr(CacheManager, "cache"):
-            delattr(CacheManager, "cache")
+        CacheManager.cache = None
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError, match="Invalid cache"):
             CacheManager.get_cache()
 
     def test_cache_manager_clear(self) -> None:
@@ -371,8 +307,9 @@ class TestRedisCacheMethods:
     @pytest.fixture
     def redis_cache(self) -> RedisCache:
         """Create a RedisCache instance for testing."""
-        with patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", False):
+        with patch("musigree.library.cache.cache_manager.redis") as mock_redis:
             with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
+                mock_redis.Redis.side_effect = Exception("Connection failed")
                 mock_fake_client = MagicMock()
                 mock_fakeredis.FakeRedis.return_value = mock_fake_client
                 cache = RedisCache()
@@ -388,11 +325,6 @@ class TestRedisCacheMethods:
         with pytest.raises(RuntimeError, match="Redis client not initialized"):
             cache._get_redis_client()
 
-    def test_make_key(self, redis_cache: RedisCache) -> None:
-        """Test _make_key method."""
-        result = redis_cache._make_key("test_key")
-        assert result == f"{redis_cache.key_prefix}test_key"
-
     def test_get_value_not_found(self, redis_cache: RedisCache) -> None:
         """Test get method when key doesn't exist."""
         assert redis_cache._client is not None
@@ -402,28 +334,30 @@ class TestRedisCacheMethods:
         result = redis_cache.get("nonexistent_key")
 
         assert result is None
-        mock_client.get.assert_called_once()
+        mock_client.get.assert_called_once_with("nonexistent_key")
 
-    def test_get_value_non_bytes(self, redis_cache: RedisCache) -> None:
-        """Test get method when Redis returns non-bytes value."""
+    def test_get_value_bytes(self, redis_cache: RedisCache) -> None:
+        """Test get method when Redis returns bytes value."""
         assert redis_cache._client is not None
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.get.return_value = "string_value"  # Not bytes
+        mock_client.get.return_value = b"bytes_value"
 
         result = redis_cache.get("test_key")
 
-        assert result is None
+        # bytes decoded
+        assert result == "bytes_value"
+        mock_client.get.assert_called_once_with("test_key")
 
-    def test_get_value_pickle_error(self, redis_cache: RedisCache) -> None:
-        """Test get method when pickle.loads raises exception."""
+    def test_get_value_string(self, redis_cache: RedisCache) -> None:
+        """Test get method when Redis returns string value."""
         assert redis_cache._client is not None
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.get.return_value = b"invalid_pickle_data"
+        mock_client.get.return_value = "string_value"
 
-        with patch("pickle.loads", side_effect=Exception("Pickle error")):
-            result = redis_cache.get("test_key")
+        result = redis_cache.get("test_key")
 
-        assert result is None
+        assert result == "string_value"
+        mock_client.get.assert_called_once_with("test_key")
 
     def test_get_redis_client_exception(self, redis_cache: RedisCache) -> None:
         """Test get method when Redis client raises exception."""
@@ -431,9 +365,9 @@ class TestRedisCacheMethods:
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.get.side_effect = Exception("Redis error")
 
-        result = redis_cache.get("test_key")
-
-        assert result is None
+        # Implementation doesn't catch exceptions in get()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.get("test_key")
 
     def test_set_with_timeout(self, redis_cache: RedisCache) -> None:
         """Test set method with custom timeout."""
@@ -441,10 +375,7 @@ class TestRedisCacheMethods:
 
         assert redis_cache._client is not None
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.setex.assert_called_once()
-        call_args = mock_client.setex.call_args
-        assert call_args[1]["name"] == f"{redis_cache.key_prefix}test_key"
-        assert call_args[1]["time"] == 3600
+        mock_client.setex.assert_called_once_with(name="test_key", time=3600, value="test_value")
 
     def test_set_without_timeout(self, redis_cache: RedisCache) -> None:
         """Test set method without timeout."""
@@ -453,7 +384,7 @@ class TestRedisCacheMethods:
 
         assert redis_cache._client is not None
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.set.assert_called_once()
+        mock_client.set.assert_called_once_with(name="test_key", value="test_value")
 
     def test_set_with_exception(self, redis_cache: RedisCache) -> None:
         """Test set method when Redis client raises exception."""
@@ -461,25 +392,9 @@ class TestRedisCacheMethods:
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
         mock_client.setex.side_effect = Exception("Redis error")
 
-        # Should not raise exception
-        redis_cache.set("test_key", "test_value", timeout=3600)
-
-    def test_delete_success(self, redis_cache: RedisCache) -> None:
-        """Test delete method success."""
-        redis_cache.delete("test_key")
-
-        assert redis_cache._client is not None
-        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.delete.assert_called_once_with(f"{redis_cache.key_prefix}test_key")
-
-    def test_delete_with_exception(self, redis_cache: RedisCache) -> None:
-        """Test delete method when Redis client raises exception."""
-        assert redis_cache._client is not None
-        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.delete.side_effect = Exception("Redis error")
-
-        # Should not raise exception
-        redis_cache.delete("test_key")
+        # Implementation doesn't catch exceptions in set()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.set("test_key", "test_value", timeout=3600)
 
     def test_clear_success(self, redis_cache: RedisCache) -> None:
         """Test clear method success."""
@@ -498,7 +413,90 @@ class TestRedisCacheMethods:
         # Should not raise exception
         redis_cache.clear()
 
-    @patch("musigree.library.cache.cache_manager.REDIS_AVAILABLE", True)
+    def test_hgetall_value_not_found(self, redis_cache: RedisCache) -> None:
+        """Test hgetall method when key doesn't exist."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.get.return_value = None
+
+        result = redis_cache.hgetall("nonexistent_key")
+
+        assert result is None
+        mock_client.get.assert_called_once_with("nonexistent_key")
+
+    def test_hgetall_value_bytes(self, redis_cache: RedisCache) -> None:
+        """Test hgetall method when Redis returns bytes keys/values."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.get.return_value = json.dumps({"key1": "value1", "key2": "value2"}).encode("utf-8")
+
+        result = redis_cache.hgetall("test_key")
+
+        assert result == {"key1": "value1", "key2": "value2"}
+        mock_client.get.assert_called_once_with("test_key")
+
+    def test_hgetall_value_string(self, redis_cache: RedisCache) -> None:
+        """Test hgetall method when Redis returns string keys/values."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.get.return_value = json.dumps({"key1": "value1", "key2": "value2"})
+
+        result = redis_cache.hgetall("test_key")
+
+        assert result == {"key1": "value1", "key2": "value2"}
+        mock_client.get.assert_called_once_with("test_key")
+
+    def test_hgetall_not_dict(self, redis_cache: RedisCache) -> None:
+        """Test hgetall method when Redis returns non-dict value."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.get.return_value = "not_a_dict"
+
+        result = redis_cache.hgetall("test_key")
+
+        assert result is None
+        mock_client.get.assert_called_once_with("test_key")
+
+    def test_hgetall_non_string_or_bytes(self, redis_cache: RedisCache) -> None:
+        """Test hgetall method when Redis returns non-string/bytes value."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.get.return_value = {"not": "string_or_bytes"}
+
+        result = redis_cache.hgetall("test_key")
+
+        assert result is None
+        mock_client.get.assert_called_once_with("test_key")
+
+    def test_hset_with_timeout(self, redis_cache: RedisCache) -> None:
+        """Test hset method with custom timeout."""
+        test_dict = {"field1": "value1", "field2": "value2"}
+        redis_cache.hset("test_key", test_dict, timeout=3600)
+
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.setex.assert_called_once_with(name="test_key", time=3600, value=json.dumps(test_dict))
+
+    def test_hset_without_timeout(self, redis_cache: RedisCache) -> None:
+        """Test hset method without timeout."""
+        redis_cache.default_timeout = 0
+        test_dict = {"field1": "value1"}
+        redis_cache.hset("test_key", test_dict)
+
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.set.assert_called_once_with(name="test_key", value=json.dumps(test_dict))
+
+    def test_hset_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test hset method when Redis client raises exception."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.setex.side_effect = Exception("Redis error")
+
+        # Implementation doesn't catch exceptions in hset()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.hset("test_key", {"field1": "value1"}, timeout=3600)
+
     @patch("musigree.library.cache.cache_manager.redis")
     @patch("musigree.library.cache.cache_manager.fakeredis")
     def test_redis_cache_ping_failure(
@@ -514,6 +512,96 @@ class TestRedisCacheMethods:
 
         cache = RedisCache()
         assert cache._client == mock_fake_client
+
+    def test_incr_success(self, redis_cache: RedisCache) -> None:
+        """Test incr method success."""
+        redis_cache.incr("test_key")
+
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.incrby.assert_called_once_with("test_key", 1)
+
+    def test_incr_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test incr method when Redis client raises exception."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.incrby.side_effect = Exception("Redis error")
+
+        # Implementation doesn't catch exceptions in incr()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.incr("test_key")
+
+    def test_expire_success(self, redis_cache: RedisCache) -> None:
+        """Test expire method success."""
+        redis_cache.expire("test_key", 3600)
+
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.expire.assert_called_once_with("test_key", 3600)
+
+    def test_expire_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test expire method when Redis client raises exception."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.expire.side_effect = Exception("Redis error")
+
+        # Implementation doesn't catch exceptions in expire()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.expire("test_key", 3600)
+
+    def test_ttl_key_exists(self, redis_cache: RedisCache) -> None:
+        """Test ttl method when key exists."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ttl.return_value = 3600
+
+        result = redis_cache.ttl("test_key")
+
+        assert result == 3600
+        mock_client.ttl.assert_called_once_with("test_key")
+
+    def test_ttl_key_not_exists(self, redis_cache: RedisCache) -> None:
+        """Test ttl method when key doesn't exist."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ttl.return_value = None
+
+        result = redis_cache.ttl("test_key")
+
+        assert result == -2
+        mock_client.ttl.assert_called_once_with("test_key")
+
+    def test_ttl_key_no_expiry(self, redis_cache: RedisCache) -> None:
+        """Test ttl method when key has no expiry."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ttl.return_value = -1
+
+        result = redis_cache.ttl("test_key")
+
+        assert result == -1
+        mock_client.ttl.assert_called_once_with("test_key")
+
+    def test_ttl_non_int_value(self, redis_cache: RedisCache) -> None:
+        """Test ttl method when Redis returns non-int value."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ttl.return_value = "not_an_int"
+
+        result = redis_cache.ttl("test_key")
+
+        assert result == -2
+        mock_client.ttl.assert_called_once_with("test_key")
+
+    def test_ttl_with_exception(self, redis_cache: RedisCache) -> None:
+        """Test ttl method when Redis client raises exception."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ttl.side_effect = Exception("Redis error")
+
+        # Implementation doesn't catch exceptions in ttl()
+        with pytest.raises(Exception, match="Redis error"):
+            redis_cache.ttl("test_key")
 
 
 class TestCacheManagerUncoveredMethods:
@@ -535,33 +623,28 @@ class TestCacheManagerUncoveredMethods:
         with pytest.raises(ValueError, match="Invalid CACHE_TYPE in configuration"):
             CacheManager.setup_cache(config)
 
-    @patch("musigree.library.cache.cache_manager.FileSystemCache")
-    @patch("musigree.library.cache.cache_manager.os.path.exists")
-    @patch("musigree.library.cache.cache_manager.os.makedirs")
-    def test_cache_manager_setup_filesystem_cache_directory_exists(
-        self, mock_makedirs: MagicMock, mock_exists: MagicMock, mock_fs_cache: MagicMock
-    ) -> None:
-        """Test CacheManager setup with filesystem cache when directory already exists."""
-        config = MagicMock()
-        config.CACHE_TYPE = CacheType.FILESYSTEM
-
-        mock_cache_instance = MagicMock()
-        mock_fs_cache.return_value = mock_cache_instance
-        mock_exists.return_value = True  # Directory already exists
-
-        CacheManager.setup_cache(config)
-
-        mock_makedirs.assert_not_called()  # Should not create directory
-        mock_fs_cache.assert_called_once()
-        assert CacheManager.cache == mock_cache_instance
-
     def test_cache_manager_clear_no_cache(self) -> None:
         """Test CacheManager clear when no cache is set."""
         # Ensure cache is not set
-        if hasattr(CacheManager, "cache"):
-            delattr(CacheManager, "cache")
+        CacheManager.cache = None
 
-        with pytest.raises(AttributeError):
-            CacheManager.clear()
+        # Should not raise exception, just do nothing
+        CacheManager.clear()
+
+    def test_create_cache_key(self) -> None:
+        """Test CacheManager create_cache_key method."""
+        from musigree.constants import CACHE_KEY_SEPARATOR
+
+        result = CacheManager.create_cache_key("domain", "123", "field")
+        expected = f"domain{CACHE_KEY_SEPARATOR}123{CACHE_KEY_SEPARATOR}field"
+        assert result == expected
+
+    def test_create_cache_hkey(self) -> None:
+        """Test CacheManager create_cache_hkey method."""
+        from musigree.constants import CACHE_KEY_SEPARATOR
+
+        result = CacheManager.create_cache_hkey("domain", "123")
+        expected = f"domain{CACHE_KEY_SEPARATOR}123"
+        assert result == expected
 
 # Note: pytest automatically discovers and runs tests, so no main block is needed

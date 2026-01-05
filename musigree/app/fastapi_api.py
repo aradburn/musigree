@@ -28,7 +28,7 @@ import logging
 from typing import Annotated
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 
 from musigree.app.fastapi_dependencies import (
     rate_limiter,
@@ -38,6 +38,7 @@ from musigree.app.fastapi_dependencies import (
     get_year,
 )
 from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
@@ -57,17 +58,17 @@ This router is used to organize the API routes and their related functionality.
 
 
 # noinspection PyUnusedLocal
-@router.get("/{entity_type_str}/relations/{entity_id}")
-async def route__api__entity_type__relations__entity_id(
+@router.get("/{entity_type_str}/details/{entity_id}")
+async def route__api__entity_type__details__entity_id(
     entity_type: Annotated[EntityType, Depends(get_entity_type)],
     entity_id: Annotated[int, Depends(get_entity_id)],
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
 ) -> dict[str, Any]:
     """
-    Retrieves relations for a specific entity.
+    Retrieves detailed information for a specific entity.
 
-    This endpoint returns the relations associated with a given entity,
-    identified by its type and ID.
+    This endpoint returns comprehensive details about an entity, including
+    its metadata, aliases, groups, members, countries, genres, and styles.
 
     Args:
         entity_type: The type of the entity (e.g., "artist", "label").
@@ -75,38 +76,46 @@ async def route__api__entity_type__relations__entity_id(
         _: Dependency injection for rate limiting.
 
     Returns:
-        dict[str, Any]: A dictionary containing the relations data.
+        dict[str, Any]: A dictionary containing the entity details.
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no data is found for the given entity.
+        NotFoundError: If no entity is found with the given ID and type.
     """
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
     )
-    from musigree.runtime.runtime_database.runtime_relation_repository import (
-        RuntimeRelationRepository,
-    )
-    from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-        "runtime_database_helper must be initialized before calling initialize()"
+    # Try to get from cache first
+    cache = CacheManager.get_cache()
+    cache_key_str = CacheManager.create_cache_hkey(
+        "api", f"{entity_type.name.lower()}/details/{entity_id}"
     )
+    entity_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    if entity_data is not None:
+        return entity_data
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
-        relation_repository = RuntimeRelationRepository()
-        data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
-            entity_repository,
-            relation_repository,
-            entity_id,
-            entity_type,
-        )
+        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
 
-    if data is None:
-        raise NotFoundError(message="No Data")
+    # Convert the entity to a dictionary format suitable for API response
+    entity_data = {
+        "id": entity.entity_id,
+        "type": entity.entity_type.name.lower(),
+        "name": entity.entity_name,
+        "metadata": entity.entity_metadata,
+        "entities": entity.entities,
+        "relation_counts": entity.relation_counts,
+        "countries": entity.countries,
+        "genres": entity.genres,
+        "styles": entity.styles,
+    }
 
-    return data
+    # Cache the result
+    cache.hset(cache_key_str, entity_data)
+
+    return entity_data
 
 
 # noinspection PyUnusedLocal
@@ -152,10 +161,19 @@ async def route__api__entity_type__network__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
+    # Try to get from cache first
+    cache = CacheManager.get_cache()
+    cache_key_str = CacheManager.create_cache_hkey(
+        "api", f"{entity_type.name.lower()}/network/{entity_id}"
+    )
+    network_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    if network_data is not None:
+        return network_data
+
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         relation_repository = RuntimeRelationRepository()
-        data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
+        network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
             entity_repository,
             relation_repository,
             entity_id,
@@ -164,15 +182,88 @@ async def route__api__entity_type__network__entity_id(
             roles=roles,
         )
 
-    if data is None:
+    if network_data is None:
         raise NotFoundError(message="No Data")
 
-    return data
+    # Cache the result
+    cache.hset(cache_key_str, network_data)
+
+    return network_data
+
+
+# noinspection PyUnusedLocal
+@router.get("/{entity_type_str}/relations/{entity_id}")
+async def route__api__entity_type__relations__entity_id(
+    entity_type: Annotated[EntityType, Depends(get_entity_type)],
+    entity_id: Annotated[int, Depends(get_entity_id)],
+    _: None = Depends(rate_limiter(max_requests=60, period=60)),
+) -> dict[str, Any]:
+    """
+    Retrieves relations for a specific entity.
+
+    This endpoint returns the relations associated with a given entity,
+    identified by its type and ID.
+
+    Args:
+        entity_type: The type of the entity (e.g., "artist", "label").
+        entity_id: The ID of the entity.
+        _: Dependency injection for rate limiting.
+
+    Returns:
+        dict[str, Any]: A dictionary containing the relations data.
+
+    Raises:
+        BadRequestError: If the entity type or entity ID is invalid.
+        NotFoundError: If no data is found for the given entity.
+    """
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
+    from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+        "runtime_database_helper must be initialized before calling initialize()"
+    )
+
+    # Try to get from cache first
+    cache = CacheManager.get_cache()
+    cache_key_str = CacheManager.create_cache_hkey(
+        "api", f"{entity_type.name.lower()}/relations/{entity_id}"
+    )
+    relations_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    if relations_data is not None:
+        return relations_data
+
+    async with runtime_transaction():
+        entity_repository = RuntimeEntityRepository()
+        relation_repository = RuntimeRelationRepository()
+        relations_data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
+            entity_repository,
+            relation_repository,
+            entity_id,
+            entity_type,
+        )
+
+    if relations_data is None:
+        raise NotFoundError(message="No Relations Data")
+
+    # Cache the result
+    cache.hset(cache_key_str, relations_data)
+
+    return relations_data
 
 
 @router.get("/search/{search_string}")
 async def route__api__search(
-    search_string: str,
+    search_string: str = Path(
+        ...,  # The '...' indicates the parameter is required
+        title="The string to search for",
+        min_length=2,
+        max_length=20,
+    ),
     _: None = Depends(rate_limiter(max_requests=120, period=60)),
 ) -> dict[str, Any]:
     """
@@ -185,71 +276,31 @@ async def route__api__search(
         _: Dependency injection for rate limiting.
 
     Returns:
-        List[dict[str, Any]]: A list of entities matching the search string.
+        dict[str, Any]: A dict containing a list of entities matching the search string.
     """
     from musigree.runtime.data_access_layer.runtime_entity_search import (
         RuntimeEntitySearch,
     )
 
-    log.debug(f"search_string: {search_string}")
+    # Try to get from cache first
+    cache = CacheManager.get_cache()
+    cache_key_str = CacheManager.create_cache_hkey("api", f"search/{search_string}")
+    search_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    if search_data is not None:
+        return search_data
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
         token_repository = TokenRepository()
 
-        data = await RuntimeEntitySearch.search_entities(
+        search_data = await RuntimeEntitySearch.search_entities(
             entity_repository, token_repository, search_string
         )
-    return data
 
+    # Cache the result
+    cache.hset(cache_key_str, search_data)
 
-# noinspection PyUnusedLocal
-@router.get("/{entity_type_str}/details/{entity_id}")
-async def route__api__entity_type__details__entity_id(
-    entity_type: Annotated[EntityType, Depends(get_entity_type)],
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    _: None = Depends(rate_limiter(max_requests=60, period=60)),
-) -> dict[str, Any]:
-    """
-    Retrieves detailed information for a specific entity.
-
-    This endpoint returns comprehensive details about an entity, including
-    its metadata, aliases, groups, members, countries, genres, and styles.
-
-    Args:
-        entity_type: The type of the entity (e.g., "artist", "label").
-        entity_id: The ID of the entity.
-        _: Dependency injection for rate limiting.
-
-    Returns:
-        dict[str, Any]: A dictionary containing the entity details.
-
-    Raises:
-        BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no entity is found with the given ID and type.
-    """
-    from musigree.runtime.runtime_database.runtime_entity_repository import (
-        RuntimeEntityRepository,
-    )
-
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
-
-    # Convert the entity to a dictionary format suitable for API response
-    entity_data = {
-        "id": entity.entity_id,
-        "type": entity.entity_type.name.lower(),
-        "name": entity.entity_name,
-        "metadata": entity.entity_metadata,
-        "entities": entity.entities,
-        "relation_counts": entity.relation_counts,
-        "countries": entity.countries,
-        "genres": entity.genres,
-        "styles": entity.styles,
-    }
-
-    return entity_data
+    return search_data
 
 
 @router.get("/random")
