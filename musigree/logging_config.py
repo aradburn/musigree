@@ -24,7 +24,7 @@ LOGGING_CONFIG: dict[str, Any] = {
             "stream": "ext://sys.stdout",  # Default is stderr
         },
         "console_handler": {
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
@@ -66,7 +66,22 @@ LOGGING_CONFIG: dict[str, Any] = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "tests": {
+            "handlers": ["console_handler"],
+            "level": "ERROR",
+            "propagate": False,
+        },
         "uvicorn": {
+            "handlers": ["console_handler"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "uvicorn.access": {
             "handlers": ["console_handler"],
             "level": "DEBUG",
             "propagate": False,
@@ -99,7 +114,7 @@ TEST_LOGGING_CONFIG: dict[str, Any] = {
     },
     "handlers": {
         "default": {
-            "level": "INFO",
+            "level": "DEBUG",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
@@ -121,7 +136,7 @@ TEST_LOGGING_CONFIG: dict[str, Any] = {
     "loggers": {
         "": {  # root logger
             "handlers": ["default"],
-            "level": "WARNING",
+            "level": "DEBUG",
             "propagate": False,
         },
         "musigree": {
@@ -132,6 +147,66 @@ TEST_LOGGING_CONFIG: dict[str, Any] = {
         "tests": {
             "handlers": ["console_handler"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        "uvicorn": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "fastapi": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "starlette": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "httpx": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "httpcore": {
+            "handlers": ["console_handler"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "sqlalchemy.engine": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "sqlalchemy.dialects.postgresql": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "sqlalchemy.pool": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "asyncio": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
+            "propagate": False,
+        },
+        "aiosqlite": {
+            "handlers": ["console_handler"],
+            "level": "WARN",
             "propagate": False,
         },
         "__main__": {  # if __name__ == '__main__'
