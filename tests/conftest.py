@@ -94,6 +94,14 @@ async def offline_database_setup(
     shutdown_logging()
 
 
+@pytest_asyncio.fixture(scope="class")
+async def offline_database_shutdown() -> AsyncGenerator[None, None]:
+    # Teardown
+    log.info("Tearing down offline database")
+    await OfflineDatabaseManager.shutdown_database()
+    yield
+
+
 @pytest_asyncio.fixture
 async def offline_transaction_fixture() -> AsyncGenerator[AsyncSession, None]:
     """Provide an async transaction context for individual tests."""
@@ -190,6 +198,14 @@ async def runtime_database_setup(
     await RuntimeDatabaseManager.shutdown_database()
     CacheManager.shutdown_cache()
     shutdown_logging()
+
+
+@pytest_asyncio.fixture(scope="class")
+async def runtime_database_shutdown() -> AsyncGenerator[None, None]:
+    # Teardown
+    log.info("Tearing down runtime database")
+    await RuntimeDatabaseManager.shutdown_database()
+    yield
 
 
 @pytest_asyncio.fixture
