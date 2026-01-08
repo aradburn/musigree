@@ -23,7 +23,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
             <div className="p-2 d-flex h-sm-100 justify-content-center align-items-start">
                 <button
                     type="button"
-                    className="btn btn-link text-dark p-2"
+                    className="btn btn-link text-dark px-1 pt-0 pb-1"
                     onClick={onToggleCollapse}
                     aria-label="Open sidebar"
                     title="Open sidebar"
@@ -40,7 +40,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
                 <div className="d-flex justify-content-end mt-0 me-3 position-absolute end-0">
                     <button
                         type="button"
-                        className="btn btn-link text-dark p-2"
+                        className="btn btn-link text-dark ps-1 pe-2 pt-0 pb-1"
                         onClick={onToggleCollapse}
                         aria-label="Close sidebar"
                         title="Close sidebar"
