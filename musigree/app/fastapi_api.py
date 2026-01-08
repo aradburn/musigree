@@ -80,7 +80,7 @@ async def route__api__entity_type__details__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no entity is found with the given ID and type.
+        UnprocessableError: If no entity is found with the given ID and type.
     """
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
@@ -94,10 +94,14 @@ async def route__api__entity_type__details__entity_id(
     entity_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
     if entity_data is not None:
         return entity_data
-
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
+    try:
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
+            )
+    except NotFoundError:
+        raise NotFoundError(message="Entity details not found") from None
 
     # Convert the entity to a dictionary format suitable for API response
     entity_data = {
@@ -147,7 +151,7 @@ async def route__api__entity_type__network__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no data is found for the given entity.
+        UnprocessableError: If no data is found for the given entity.
     """
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
@@ -170,17 +174,20 @@ async def route__api__entity_type__network__entity_id(
     if network_data is not None:
         return network_data
 
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        relation_repository = RuntimeRelationRepository()
-        network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
-            entity_repository,
-            relation_repository,
-            entity_id,
-            entity_type,
-            on_mobile=on_mobile,
-            roles=roles,
-        )
+    try:
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            relation_repository = RuntimeRelationRepository()
+            network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
+                entity_repository,
+                relation_repository,
+                entity_id,
+                entity_type,
+                on_mobile=on_mobile,
+                roles=roles,
+            )
+    except NotFoundError:
+        raise NotFoundError(message="Entity network not found") from None
 
     if network_data is None:
         raise NotFoundError(message="No Data")
@@ -214,7 +221,7 @@ async def route__api__entity_type__relations__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no data is found for the given entity.
+        UnprocessableError: If no data is found for the given entity.
     """
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
@@ -236,16 +243,19 @@ async def route__api__entity_type__relations__entity_id(
     relations_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
     if relations_data is not None:
         return relations_data
+    try:
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            relation_repository = RuntimeRelationRepository()
+            relations_data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
+                entity_repository,
+                relation_repository,
+                entity_id,
+                entity_type,
+            )
 
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        relation_repository = RuntimeRelationRepository()
-        relations_data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
-            entity_repository,
-            relation_repository,
-            entity_id,
-            entity_type,
-        )
+    except NotFoundError:
+        raise NotFoundError(message="Entity relations not found") from None
 
     if relations_data is None:
         raise NotFoundError(message="No Relations Data")
@@ -289,13 +299,16 @@ async def route__api__search(
     if search_data is not None:
         return search_data
 
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        token_repository = TokenRepository()
+    try:
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            token_repository = TokenRepository()
 
-        search_data = await RuntimeEntitySearch.search_entities(
-            entity_repository, token_repository, search_string
-        )
+            search_data = await RuntimeEntitySearch.search_entities(
+                entity_repository, token_repository, search_string
+            )
+    except NotFoundError as _ex:
+        raise NotFoundError(message="Entity name not found") from None
 
     # Cache the result
     cache.hset(cache_key_str, search_data)
@@ -342,7 +355,7 @@ async def route__api__random(
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
-            log.exception("Error in API for /random", exc_info=True)
+            # log.exception("Error in API for /random", exc_info=True)
             raise DatabaseError(message="API error") from None
 
     data = {"center": f"{entity_type.name.lower()}-{entity_id}"}

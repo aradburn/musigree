@@ -25,18 +25,20 @@ The module uses the following components:
 
 import logging
 import sys
-from typing import Any
 from contextlib import asynccontextmanager
+from typing import Any
 
 import asyncio_atexit  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
+from musigree.app.fastapi_cors import PreflightLoggerMiddleware, CustomCORSPreflightMiddleware
+from musigree.app.fastapi_security import setup_security_middleware
 from musigree.config import Configuration
 from musigree.constants import (
     TEMPLATES_DIR,
@@ -53,7 +55,6 @@ from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from musigree.app.fastapi_security import setup_security_middleware
 from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ def create_app(config: Configuration) -> FastAPI:
     from musigree.app.fastapi_assets import create_assets_router
 
     # Setup logging
-    setup_logging()
+    setup_logging(is_testing=config.TESTING)
 
     log_banner()
 
@@ -101,18 +102,18 @@ def create_app(config: Configuration) -> FastAPI:
         # Code to run on application startup
 
         # Initialize the app
-        log.info("######## APPLICATION STARTUP ########")
+        log.info("######## APPLICATION LIFESPAN STARTUP ########")
         await init_app(config)
 
         yield
 
         # Code to run on application shutdown
-        log.info("######## APPLICATION SHUTDOWN ########")
+        log.info("######## APPLICATION LIFESPAN SHUTDOWN ########")
         await shutdown_application()
 
     # Create a new FastAPI app
     app = FastAPI(
-        debug=True,
+        debug=config.DEBUG,
         title="Musigree",
         description="Musigree API for exploring music relationships",
         version="1.0.0",
@@ -120,8 +121,6 @@ def create_app(config: Configuration) -> FastAPI:
     )
 
     # Add middleware
-    # noinspection PyTypeChecker
-    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     # Configure CORS based on environment
     if config.PRODUCTION:
@@ -131,9 +130,9 @@ def create_app(config: Configuration) -> FastAPI:
             "https://musigree.com",
             "https://umami.musigree.com",
         ]
-        log.debug("Configuring CORS for production")
+        log.info("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
-        # noinspection PyTypeChecker
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed_origins,
@@ -141,6 +140,15 @@ def create_app(config: Configuration) -> FastAPI:
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
+        app.add_middleware(
+            CustomCORSPreflightMiddleware,
+            allow_origins=allowed_origins,
+            allow_methods=["GET,HEAD,POST,OPTIONS"],
+            allow_headers=["Content-Type"],
+            allow_credentials=False,
+        )
+        app.add_middleware(PreflightLoggerMiddleware)
+
     else:
         # Development: more permissive for local development
         # noinspection PyTypeChecker
@@ -152,7 +160,7 @@ def create_app(config: Configuration) -> FastAPI:
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8080",
         ]
-        log.debug("Configuring CORS for development")
+        log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")
         app.add_middleware(
             CORSMiddleware,
@@ -163,6 +171,9 @@ def create_app(config: Configuration) -> FastAPI:
 
     # Setup security middleware (should be added after CORS)
     setup_security_middleware(app, config)
+
+    # noinspection PyTypeChecker
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     # Create assets router
     assets_router, assets_templates = create_assets_router(config)
@@ -178,8 +189,7 @@ def create_app(config: Configuration) -> FastAPI:
     # Set up exception handlers
     @app.exception_handler(BaseError)
     async def base_error_handler(request: Request, exc: BaseError) -> Response:
-        log.warning(f"Error: {exc}")
-        if request.url.path.startswith("/api"):
+        if request.url.path.startswith("/api/"):
             return JSONResponse(
                 status_code=exc.status_code,
                 content={
@@ -188,7 +198,7 @@ def create_app(config: Configuration) -> FastAPI:
                     "message": exc.message,
                 },
             )
-        elif request.url.path.startswith("/health"):
+        elif request.url.path.startswith("/health/"):
             return JSONResponse(
                 status_code=exc.status_code,
                 content={
@@ -209,21 +219,21 @@ def create_app(config: Configuration) -> FastAPI:
     # noinspection PyUnusedLocal
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Any) -> Response:
-        if request.url.path.startswith("/api"):
+        if request.url.path.startswith("/api/"):
             return JSONResponse(
-                status_code=400,
+                status_code=404,
                 content={
                     "success": False,
-                    "status": 400,
+                    "status": 404,
                     "message": "Bad API endpoint",
                 },
             )
-        elif request.url.path.startswith("/health"):
+        elif request.url.path.startswith("/health/"):
             return JSONResponse(
-                status_code=400,
+                status_code=404,
                 content={
                     "success": False,
-                    "status": 400,
+                    "status": 404,
                     "message": "Bad healthcheck endpoint",
                 },
             )
@@ -247,6 +257,15 @@ def create_app(config: Configuration) -> FastAPI:
             status_code=error.status_code,
         )
 
+    # Custom exception handler
+    @app.exception_handler(Exception)
+    async def custom_exception_handler(_request: Request, exc: Exception) -> Response:
+        log.error(f"Unhandled exception: {exc}")
+        return JSONResponse(
+            status_code=500,
+            content={"message": "An internal server error occurred."},
+        )
+
     return app
 
 
@@ -262,11 +281,11 @@ async def shutdown_application() -> None:
 
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
-    log.info("######## APPLICATION SHUTDOWN START ########")
+    log.info("######## APPLICATION SHUTDOWN BEGIN ########")
     await RuntimeDatabaseManager.shutdown_database()
     CacheManager.shutdown_cache()
     shutdown_logging()
-    log.info("######## APPLICATION SHUTDOWN DONE ########")
+    log.info("######## APPLICATION SHUTDOWN END ########")
 
 
 async def init_app(config: Configuration) -> None:
@@ -280,6 +299,7 @@ async def init_app(config: Configuration) -> None:
         config: The application configuration object.
     """
 
+    log.info("######## APPLICATION STARTUP BEGIN ########")
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
     # Setup cache
@@ -295,8 +315,14 @@ async def init_app(config: Configuration) -> None:
     # Setup Database
     await RuntimeDatabaseManager.setup_database(config)
 
+    log.info("Database setup OK")
+
     # Load role cache in memory
     await RuntimeRoleDataAccess.load_all_roles_into_cache()
 
+    log.info("Loaded all roles OK")
+
     # Shutdown on app exit
     asyncio_atexit.register(shutdown_application)
+
+    log.info("######## APPLICATION STARTUP END ########")

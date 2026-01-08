@@ -8,7 +8,7 @@ __all__ = ("RuntimeBaseRepository",)
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-from musigree.exceptions import UnprocessableError, DatabaseError, NotFoundError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 
@@ -55,9 +55,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         super().__init__()
 
         if not self.schema_class:
-            raise UnprocessableError(
-                message="Can not initiate the class without schema_class attribute"
-            )
+            raise DatabaseError(message="Can not initiate the class without schema_class attribute")
 
     async def _update(self, key: str, value: Any, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
@@ -134,8 +132,8 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         value = result.scalar()
 
         if not isinstance(value, int):
-            raise UnprocessableError(
-                message=f"For some reason count function returned not an integer.Value: {value}",
+            raise DatabaseError(
+                message=f"Count function returned non integer value: {value}",
             )
 
         return value

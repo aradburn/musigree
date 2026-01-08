@@ -80,9 +80,9 @@ class RuntimeDatabaseManager:
             )
         )
 
-        # Set logging level for SqlAlchemy
+        # Logging level for SqlAlchemy set in logging_config
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-        logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+        # logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
         # Check database connection
         await RuntimeDatabaseManager.runtime_database_helper.check_connection(config, async_engine)

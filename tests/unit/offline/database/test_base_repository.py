@@ -13,7 +13,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-from musigree.exceptions import DatabaseError, NotFoundError, UnprocessableError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.base_table import OfflineBase, ConcreteTable
 
@@ -48,7 +48,7 @@ class TestBaseRepository:
             schema_class: type[ConcreteTable] = None  # type: ignore  # Explicitly set to None to trigger the check
 
         with pytest.raises(
-            UnprocessableError,
+            DatabaseError,
             match="Can not initiate the class without schema_class attribute",
         ):
             BadRepository()
@@ -93,8 +93,8 @@ class TestBaseRepository:
 
             # Execute & Verify
             with pytest.raises(
-                UnprocessableError,
-                match="For some reason count function returned not an integer",
+                DatabaseError,
+                match="Count function returned non integer value",
             ):
                 await repo.count()
 

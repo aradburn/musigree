@@ -27,7 +27,7 @@ from typing import Any, AsyncGenerator
 from sqlalchemy import Result, select, update, Select, delete, func
 
 from musigree.constants import BULK_YIELD_SIZE
-from musigree.exceptions import NotFoundError, UnprocessableError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
@@ -121,7 +121,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         value = result.scalar()
 
         if not isinstance(value, int):
-            raise UnprocessableError(
+            raise DatabaseError(
                 message=f"For some reason count function returned not an integer.Value: {value}",
             )
 

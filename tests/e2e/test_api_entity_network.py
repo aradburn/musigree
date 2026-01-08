@@ -78,10 +78,10 @@ class TestAPIEntityNetwork:
     ) -> None:
         """Test getting network graph for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_network(
+        response, _json_data = await api_helper.get_entity_network(
             TEST_ENTITY_TYPE_ARTIST, TEST_NOT_FOUND_ENTITY_ID
         )
-        # assert response.status == 422
+        assert response.status == 404
 
     async def test_get_entity_network_invalid_id(
         self,

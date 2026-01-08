@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 from sqlalchemy import Result
 
-from musigree.exceptions import NotFoundError, UnprocessableError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
@@ -116,7 +116,7 @@ class TestRuntimeEntityRepository:
         mock_execute.return_value = mock_result
 
         # WHEN/THEN
-        with pytest.raises(UnprocessableError):
+        with pytest.raises(DatabaseError):
             await self.repository.count_by_type(entity_type)
 
     @pytest.mark.asyncio

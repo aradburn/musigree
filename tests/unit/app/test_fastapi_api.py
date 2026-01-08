@@ -12,7 +12,7 @@ from starlette.responses import JSONResponse
 
 from musigree.app.fastapi_api import router
 from musigree.config import SqliteTestConfiguration, Configuration
-from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError
+from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError, UnprocessableContentError
 from musigree.library.fields.entity_type import EntityType
 
 
@@ -25,6 +25,11 @@ async def bad_request_handler(_request: Request, _exc: Exception) -> JSONRespons
 async def not_found_handler(_request: Request, _exc: Exception) -> JSONResponse:
     """Mock not found handler for testing."""
     return JSONResponse(status_code=404, content={"error": "Not Found"})
+
+
+async def unprocessable_content_handler(_request: Request, _exc: Exception) -> JSONResponse:
+    """Mock not found handler for testing."""
+    return JSONResponse(status_code=422, content={"error": "Unprocessable Content"})
 
 
 async def database_error_handler(_request: Request, _exc: Exception) -> JSONResponse:
@@ -41,6 +46,7 @@ def client() -> TestClient:
     # Add exception handlers
     app.add_exception_handler(BadRequestError, bad_request_handler)
     app.add_exception_handler(NotFoundError, not_found_handler)
+    app.add_exception_handler(UnprocessableContentError, unprocessable_content_handler)
     app.add_exception_handler(DatabaseError, database_error_handler)
 
     return TestClient(app)

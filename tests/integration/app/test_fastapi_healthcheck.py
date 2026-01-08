@@ -12,7 +12,9 @@ class TestFastAPIHealthcheck:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/health")
         assert response.status_code == 200
@@ -23,10 +25,12 @@ class TestFastAPIHealthcheck:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/health/malformed")
-        assert response.status_code == 400
+        assert response.status_code == 404
         assert (
-            response.text == '{"success":false,"status":400,"message":"Bad healthcheck endpoint"}'
+            response.text == '{"success":false,"status":404,"message":"Bad healthcheck endpoint"}'
         )

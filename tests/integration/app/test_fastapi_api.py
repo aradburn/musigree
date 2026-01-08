@@ -19,7 +19,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test getting entity details for an artist."""
         response = await client.get("/api/artist/details/2239")
@@ -92,7 +94,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test getting entity details for an artist."""
         response = await client.get("/api/artist/details/2239")
@@ -171,7 +175,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test getting entity details for a label."""
         response = await client.get("/api/label/details/1")
@@ -218,7 +224,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test getting entity details for a label."""
         response = await client.get("/api/label/details/1")
@@ -271,7 +279,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test entity details endpoint with invalid entity ID."""
         response = await client.get("/api/artist/details/999999999999")
@@ -282,7 +292,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test entity details endpoint with invalid entity ID."""
         response = await client.get("/api/artist/details/999999999999")
@@ -299,7 +311,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool,
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test entity details endpoint with invalid entity type."""
         response = await client.get("/api/invalidtype/details/1")
@@ -310,7 +324,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool,
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test entity details endpoint with non-numeric entity ID."""
         response = await client.get("/api/artist/details/abc")
@@ -321,7 +337,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test network endpoint with valid artist ID."""
         response = await client.get("/api/artist/network/2239")
@@ -540,7 +558,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test network endpoint with invalid artist ID."""
         response = await client.get("/api/artist/network/999999999999")
@@ -559,7 +579,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test network endpoint with valid label ID."""
         response = await client.get("/api/label/network/1")
@@ -593,7 +615,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test relations endpoint."""
         response = await client.get("/api/artist/relations/32613")
@@ -684,11 +708,26 @@ class TestFastAPIAPI:
         assert actual_str == expected_str
 
     @pytest.mark.asyncio
+    async def test_relations_not_found(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
+    ) -> None:
+        """Test relations endpoint."""
+        response = await client.get("/api/artist/relations/999999999")
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
     async def test_random(
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test random endpoint with valid label ID."""
         response = await client.get("/api/random")
@@ -699,7 +738,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test search endpoint with basic query."""
         response = await client.get("/api/search/Morris")
@@ -729,7 +770,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test search endpoint with basic query."""
         response = await client.get("/api/search/Morris")
@@ -765,7 +808,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test search endpoint with URL encoded query."""
         response = await client.get("/api/search/Chris%20Morris")
@@ -787,7 +832,9 @@ class TestFastAPIAPI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test search endpoint with URL encoded query."""
         response = await client.get("/api/search/Chris%20Morris")
@@ -811,11 +858,33 @@ class TestFastAPIAPI:
         assert actual == expected
 
     @pytest.mark.asyncio
+    async def test_search_not_found(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
+    ) -> None:
+        """Test search endpoint with URL encoded query."""
+        response = await client.get("/api/search/qwerty")
+        assert response.status_code == 200
+
+        actual = response.json()
+        expected: dict[str, list[dict[str, str]]] = {
+            "results": [
+            ],
+        }
+        assert actual == expected
+
+    @pytest.mark.asyncio
     async def test_roles_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         """Test roles endpoint."""
         response = await client.get("/api/roles")
