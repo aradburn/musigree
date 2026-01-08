@@ -14,25 +14,20 @@ repos:
             -   id: trailing-whitespace
     -   repo: https://github.com/astral-sh/ruff-pre-commit
         # Ruff version.
-        rev: v0.14.1
+        rev: v0.14.11
         hooks:
             # Run the linter.
             -   id: ruff-check
                 files: ^musigree/
+                args: [ --fix ]
             # Run the formatter.
             -   id: ruff-format
                 files: ^musigree/
     -   repo: https://github.com/astral-sh/uv-pre-commit
         # uv version.
-        rev: 0.9.3
+        rev: 0.9.22
         hooks:
             -   id: uv-lock
-    #    -   repo: https://github.com/thoughtworks/talisman
-    #        rev: 'v1.37.0'  # Update me!
-    #        hooks:
-    #            # both pre-commit and pre-push supported
-    #            # -   id: talisman-push
-    #            -   id: talisman-commit
     -   repo: local
         hooks:
             -   id: release
