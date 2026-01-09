@@ -346,7 +346,6 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = "123"
-        mock_entity_repository.schema_class.__name__ = "EntityTable"
 
         # Test
         result = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -355,7 +354,7 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result == 123
-        mock_cache.get.assert_called_once_with("EntityTable:EntityType.ARTIST-Test Artist:id")
+        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
     @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
@@ -369,7 +368,6 @@ class TestGetIdByEntityTypeAndEntityName:
         # which will fail. This test simulates a cache miss instead since null entries
         # can't be properly handled by the current implementation.
         mock_cache.get.return_value = None
-        mock_entity_repository.schema_class.__name__ = "EntityTable"
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
@@ -381,10 +379,10 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result is None
-        mock_cache.get.assert_called_once_with("EntityTable:EntityType.ARTIST-Test Artist:id")
+        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once()
         mock_cache.set.assert_called_once_with(
-            "EntityTable:EntityType.ARTIST-Test Artist:id", CACHE_ENTRY_IS_NULL
+            "entity:artist:Test Artist:id", CACHE_ENTRY_IS_NULL
         )
 
     @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
@@ -396,7 +394,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
         mock_entity_repository.get_id_by_entity_type_and_entity_name.return_value = 456
-        mock_entity_repository.schema_class.__name__ = "EntityTable"
 
         # Test
         result = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -405,11 +402,11 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result == 456
-        mock_cache.get.assert_called_once_with("EntityTable:EntityType.LABEL-Test Label:id")
+        mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
             EntityType.LABEL, "Test Label"
         )
-        mock_cache.set.assert_called_once_with("EntityTable:EntityType.LABEL-Test Label:id", "456")
+        mock_cache.set.assert_called_once_with("entity:label:Test Label:id", "456")
 
     @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_miss(
@@ -422,7 +419,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
-        mock_entity_repository.schema_class.__name__ = "EntityTable"
 
         # Test
         result = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -431,12 +427,12 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result is None
-        mock_cache.get.assert_called_once_with("EntityTable:EntityType.ARTIST-Nonexistent Artist:id")
+        mock_cache.get.assert_called_once_with("entity:artist:Nonexistent Artist:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
             EntityType.ARTIST, "Nonexistent Artist"
         )
         mock_cache.set.assert_called_once_with(
-            "EntityTable:EntityType.ARTIST-Nonexistent Artist:id", str(CACHE_ENTRY_IS_NULL)
+            "entity:artist:Nonexistent Artist:id", str(CACHE_ENTRY_IS_NULL)
         )
 
     @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
@@ -456,7 +452,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
-        mock_entity_repository.schema_class.__name__ = "EntityTable"
 
         # Test
         result = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -466,7 +461,7 @@ class TestGetIdByEntityTypeAndEntityName:
         # Assertions
         assert result is None
         mock_log.debug.assert_called_once_with(
-            "get_id_from_entity_type_and_entity_name key not found: EntityTable:EntityType.ARTIST-Nonexistent Artist:id"
+            "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
         )
 
 

@@ -158,8 +158,8 @@ class RuntimeEntityDataAccess:
 
         # Create the cache key.
         entity_key_str = CacheManager.create_cache_key(
-            entity_repository.schema_class.__name__,
-            f"{entity_type}-{entity_name}",
+            "entity",
+            f"{entity_type.name.lower()}:{entity_name}",
             "id",
         )
         # Get the value from the cache.
@@ -211,11 +211,7 @@ class RuntimeEntityDataAccess:
         cache = CacheManager.get_cache()
 
         # Create the cache key.
-        entity_key_str = CacheManager.create_cache_key(
-            entity_repository.schema_class.__name__,
-            str(id_),
-            "name",
-        )
+        entity_key_str = CacheManager.create_cache_key("entity", str(id_), "name")
 
         name: str | None = cache.get(entity_key_str)
         if name == CACHE_ENTRY_IS_NULL:

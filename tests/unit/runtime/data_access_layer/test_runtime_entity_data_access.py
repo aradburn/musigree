@@ -346,7 +346,6 @@ class TestGetIdByEntityTypeAndEntityName:
         # Setup
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = "123"
-        mock_entity_repository.schema_class.__name__ = "RuntimeEntityTable"
 
         # Test
         result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -355,7 +354,7 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result == 123
-        mock_cache.get.assert_called_once_with("RuntimeEntityTable:EntityType.ARTIST-Test Artist:id")
+        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
@@ -369,7 +368,6 @@ class TestGetIdByEntityTypeAndEntityName:
         # which will fail. This test simulates a cache miss instead since null entries
         # can't be properly handled by the current implementation.
         mock_cache.get.return_value = None
-        mock_entity_repository.schema_class.__name__ = "RuntimeEntityTable"
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
@@ -381,10 +379,10 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result is None
-        mock_cache.get.assert_called_once_with("RuntimeEntityTable:EntityType.ARTIST-Test Artist:id")
+        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once()
         mock_cache.set.assert_called_once_with(
-            "RuntimeEntityTable:EntityType.ARTIST-Test Artist:id", CACHE_ENTRY_IS_NULL
+            "entity:artist:Test Artist:id", CACHE_ENTRY_IS_NULL
         )
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
@@ -396,7 +394,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_get_cache.return_value = mock_cache
         mock_cache.get.return_value = None
         mock_entity_repository.get_id_by_entity_type_and_entity_name.return_value = 456
-        mock_entity_repository.schema_class.__name__ = "RuntimeEntityTable"
 
         # Test
         result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -405,11 +402,11 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result == 456
-        mock_cache.get.assert_called_once_with("RuntimeEntityTable:EntityType.LABEL-Test Label:id")
+        mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
             EntityType.LABEL, "Test Label"
         )
-        mock_cache.set.assert_called_once_with("RuntimeEntityTable:EntityType.LABEL-Test Label:id", "456")
+        mock_cache.set.assert_called_once_with("entity:label:Test Label:id", "456")
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_miss(
@@ -422,7 +419,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
-        mock_entity_repository.schema_class.__name__ = "RuntimeEntityTable"
 
         # Test
         result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -431,12 +427,12 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result is None
-        mock_cache.get.assert_called_once_with("RuntimeEntityTable:EntityType.LABEL-Test Label:id")
+        mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
         mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
             EntityType.LABEL, "Test Label"
         )
         mock_cache.set.assert_called_once_with(
-            "RuntimeEntityTable:EntityType.LABEL-Test Label:id", CACHE_ENTRY_IS_NULL
+            "entity:label:Test Label:id", CACHE_ENTRY_IS_NULL
         )
 
     @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
@@ -459,7 +455,6 @@ class TestGetIdByEntityTypeAndEntityName:
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
-        mock_entity_repository.schema_class.__name__ = "RuntimeEntityTable"
 
         # Test
         result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -469,7 +464,7 @@ class TestGetIdByEntityTypeAndEntityName:
         # Assertions
         assert result is None
         mock_log.debug.assert_called_once_with(
-            "get_id_from_entity_type_and_entity_name key not found: RuntimeEntityTable:EntityType.ARTIST-Nonexistent Artist:id"
+            "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
         )
 
     def test_cache_key_format(self) -> None:
@@ -480,12 +475,11 @@ class TestGetIdByEntityTypeAndEntityName:
 
         entity_name = "Test Entity"
         entity_type = EntityType.ARTIST
-        schema_class_name = "RuntimeEntityTable"
         expected_key = CacheManager.create_cache_key(
-            schema_class_name, f"{entity_type}-{entity_name}", "id"
+            "entity", f"{entity_type.name.lower()}:{entity_name}", "id"
         )
 
-        assert expected_key == "RuntimeEntityTable:EntityType.ARTIST-Test Entity:id"
+        assert expected_key == "entity:artist:Test Entity:id"
 
 
 class TestLogging:

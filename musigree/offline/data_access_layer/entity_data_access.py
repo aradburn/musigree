@@ -243,8 +243,8 @@ class EntityDataAccess:
 
         # Create the cache key.
         entity_key_str = CacheManager.create_cache_key(
-            entity_repository.schema_class.__name__,
-            f"{entity_type}-{entity_name}",
+            "entity",
+            f"{entity_type.name.lower()}:{entity_name}",
             "id",
         )
         # Get the value from the cache.
