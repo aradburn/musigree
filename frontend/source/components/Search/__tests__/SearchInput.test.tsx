@@ -232,7 +232,7 @@ describe("SearchInput", () => {
 
         // Type a short query (less than MIN_QUERY_LENGTH)
         const searchInput = screen.getByPlaceholderText("Search");
-        await user.type(searchInput, "art"); // Assuming MIN_QUERY_LENGTH > 3
+        await user.type(searchInput, "a"); // Assuming MIN_QUERY_LENGTH == 2
 
         // Ensure Overlay doesn't show by checking aria-expanded attribute
         expect(searchInput).toHaveAttribute("aria-expanded", "false");

@@ -95,7 +95,7 @@ export const LOADING = {
 
 // Typeahead Constants
 export const TYPEAHEAD = {
-    MIN_QUERY_LENGTH: 3,
+    MIN_QUERY_LENGTH: 2,
     MAX_RESULTS: 1000,
     API_ENDPOINT: "/api/search/%QUERY",
     QUERY_WILDCARD: "%QUERY",

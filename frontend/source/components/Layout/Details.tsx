@@ -25,7 +25,7 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
     const altNames = Array.isArray(nameVariations) ? nameVariations : [""];
     const altNamesStr = altNames.join(", ");
     const realName = entity?.metadata?.real_name;
-    const realNameStr = typeof realName === "string" ? realName : "";
+    const _realNameStr = typeof realName === "string" ? realName : "";
     const countriesStr = entity?.countries
         ? expandCommas(entity.countries)
         : "";
