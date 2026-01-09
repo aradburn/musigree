@@ -221,6 +221,7 @@ body {
 #roles-overlay {
     background-color: $mg-background-light-color !important;
     top: var(--navbar-height);
+    width: 25rem;
     height: calc(100vh - var(--navbar-height)) !important;
 }
 
