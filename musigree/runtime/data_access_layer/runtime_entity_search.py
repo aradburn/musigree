@@ -29,13 +29,11 @@ class RuntimeEntitySearch:
         token_repository: TokenRepository,
         search_string: str,
     ) -> dict[str, Any]:
-        normalised_search_string = normalise_search_content(search_string)
-
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "RuntimeDatabaseManager.runtime_database_helper is not set."
         )
         documents = await RuntimeEntitySearch.search_text_index(
-            entity_repository, token_repository, normalised_search_string
+            entity_repository, token_repository, search_string
         )
 
         sorted_documents = RuntimeEntitySearch.sort_search_results(search_string, documents)

@@ -40,6 +40,7 @@ from musigree.app.fastapi_dependencies import (
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
+from musigree.library.full_text_search.text_search_utils import normalise_search_content
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database.token_repository import TokenRepository
@@ -292,9 +293,12 @@ async def route__api__search(
         RuntimeEntitySearch,
     )
 
+    # Normalize first
+    normalised_search_string = normalise_search_content(search_string)
+
     # Try to get from cache first
     cache = CacheManager.get_cache()
-    cache_key_str = CacheManager.create_cache_hkey("api", f"search/{search_string}")
+    cache_key_str = CacheManager.create_cache_hkey("api", f"search/{normalised_search_string}")
     search_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
     if search_data is not None:
         return search_data
@@ -305,7 +309,7 @@ async def route__api__search(
             token_repository = TokenRepository()
 
             search_data = await RuntimeEntitySearch.search_entities(
-                entity_repository, token_repository, search_string
+                entity_repository, token_repository, normalised_search_string
             )
     except NotFoundError as _ex:
         raise NotFoundError(message="Entity name not found") from None
