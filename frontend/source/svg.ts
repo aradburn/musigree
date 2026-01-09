@@ -44,7 +44,7 @@ export const initSvg = (): void => {
     svgSelection.append("svg").attr("id", DOM_IDS.SVG);
 
     // Setup window dimensions on SVG element
-    setSvgSize(DOM_IDS.SVG_ID, false);
+    setSvgSize(DOM_IDS.SVG_ID);
 
     // Setup SVG common definitions
     setupSvgDefs(DOM_IDS.SVG_ID);
@@ -54,14 +54,7 @@ export const initSvg = (): void => {
  * Sets the size and viewport attributes of the main SVG element
  * Uses global musigreeManager.dimensions and musigreeManager.svgDimensions for sizing
  */
-export const setSvgSize = (
-    svgSelector: string,
-    isSidebarRightCollapsed: boolean,
-): void => {
-    console.log(
-        "setSvgSize isSidebarRightCollapsed: ",
-        isSidebarRightCollapsed,
-    );
+export const setSvgSize = (svgSelector: string): void => {
     try {
         const dpr = window.devicePixelRatio || 1;
         console.log("window devicePixelRatio: ", dpr);
@@ -77,9 +70,10 @@ export const setSvgSize = (
             return;
         }
 
-        const calculatedSvgContainerWidth = isSidebarRightCollapsed
-            ? window.innerWidth - convertRemToPixels(20)
-            : window.innerWidth - convertRemToPixels(45);
+        const calculatedSvgContainerWidth =
+            musigreeManager.isSidebarRightCollapsed
+                ? window.innerWidth - convertRemToPixels(20)
+                : window.innerWidth - convertRemToPixels(45);
         const smallSvgContainerHeight = window.innerHeight / 2.0;
         const largeSvgContainerHeight =
             window.innerHeight - navTopContainer.clientHeight;

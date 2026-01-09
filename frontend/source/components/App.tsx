@@ -18,6 +18,7 @@ import { FSM, DOM_IDS } from "../constants";
 import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
+import { musigreeManager } from "@/core/index.ts";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
@@ -105,8 +106,10 @@ const App: React.FC = (): React.ReactElement => {
         const newCollapsedState = !isSidebarRightCollapsed;
         setIsSidebarRightCollapsed(newCollapsedState);
 
+        musigreeManager.isSidebarRightCollapsed = newCollapsedState;
+
         // Setup window dimensions on SVG element
-        setSvgSize(DOM_IDS.SVG_ID, newCollapsedState);
+        setSvgSize(DOM_IDS.SVG_ID);
 
         resetNetworkTransform();
 
