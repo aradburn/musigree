@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 
 from sqlalchemy import Result, select, func
 
-from musigree.exceptions import UnprocessableError
+from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
@@ -58,8 +58,8 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
         value = result.scalar()
 
         if not isinstance(value, int):
-            raise UnprocessableError(
-                message=f"For some reason count function returned not an integer.Value: {value}",
+            raise DatabaseError(
+                message=f"Count function returned non integer value: {value}",
             )
 
         return value

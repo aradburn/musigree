@@ -4,8 +4,9 @@ from starlette import status
 from musigree.exceptions import (
     BaseError,
     BadRequestError,
-    UnprocessableError,
+    NotAcceptableError,
     NotFoundError,
+    UnprocessableContentError,
     AuthenticationError,
     AuthorizationError,
     DatabaseError,
@@ -57,7 +58,7 @@ def test_base_error_inheritance() -> None:
 def test_bad_request_error_default() -> None:
     """Test BadRequestError with default message."""
     error = BadRequestError()
-    assert error.message == "Bad request"
+    assert error.message == "Bad Request"
     assert error.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -76,24 +77,24 @@ def test_bad_request_error_inheritance() -> None:
     assert isinstance(error, Exception)
 
 
-def test_unprocessable_error_default() -> None:
-    """Test UnprocessableError with default message."""
-    error = UnprocessableError()
-    assert error.message == "Validation error"
+def test_not_acceptable_error_default() -> None:
+    """Test NotAcceptableError with default message."""
+    error = NotAcceptableError()
+    assert error.message == "Not Acceptable"
     assert error.status_code == status.HTTP_406_NOT_ACCEPTABLE
 
 
-def test_unprocessable_error_custom_message() -> None:
-    """Test UnprocessableError with custom message."""
+def test_not_acceptable_error_custom_message() -> None:
+    """Test NotAcceptableError with custom message."""
     custom_message = "Field validation failed"
-    error = UnprocessableError(message=custom_message)
+    error = NotAcceptableError(message=custom_message)
     assert error.message == custom_message
     assert error.status_code == status.HTTP_406_NOT_ACCEPTABLE
 
 
-def test_unprocessable_error_inheritance() -> None:
-    """Test UnprocessableError inherits from BaseError."""
-    error = UnprocessableError()
+def test_not_acceptable_error_inheritance() -> None:
+    """Test NotAcceptableError inherits from BaseError."""
+    error = NotAcceptableError()
     assert isinstance(error, BaseError)
     assert isinstance(error, Exception)
 
@@ -101,7 +102,7 @@ def test_unprocessable_error_inheritance() -> None:
 def test_not_found_error_default() -> None:
     """Test NotFoundError with default message."""
     error = NotFoundError()
-    assert error.message == "Not found"
+    assert error.message == "Not Found"
     assert error.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -120,10 +121,32 @@ def test_not_found_error_inheritance() -> None:
     assert isinstance(error, Exception)
 
 
+def test_unprocessable_content_error_default() -> None:
+    """Test UnprocessableContentError with default message."""
+    error = UnprocessableContentError()
+    assert error.message == "Unprocessable Content"
+    assert error.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_unprocessable_content_error_custom_message() -> None:
+    """Test UnprocessableContentError with custom message."""
+    custom_message = "Resource not found"
+    error = UnprocessableContentError(message=custom_message)
+    assert error.message == custom_message
+    assert error.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_unprocessable_content_error_inheritance() -> None:
+    """Test UnprocessableContentError inherits from BaseError."""
+    error = UnprocessableContentError()
+    assert isinstance(error, BaseError)
+    assert isinstance(error, Exception)
+
+
 def test_authentication_error_default() -> None:
     """Test AuthenticationError with default message."""
     error = AuthenticationError()
-    assert error.message == "Authentication error"
+    assert error.message == "Authentication Error"
     assert error.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -145,7 +168,7 @@ def test_authentication_error_inheritance() -> None:
 def test_authorization_error_default() -> None:
     """Test AuthorizationError with default message."""
     error = AuthorizationError()
-    assert error.message == "Authorization error"
+    assert error.message == "Authorization Error"
     assert error.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -167,7 +190,7 @@ def test_authorization_error_inheritance() -> None:
 def test_database_error_default() -> None:
     """Test DatabaseError with default message."""
     error = DatabaseError()
-    assert error.message == "Database error"
+    assert error.message == "Database Error"
     assert error.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
 
 
@@ -189,7 +212,7 @@ def test_database_error_inheritance() -> None:
 def test_process_error_default() -> None:
     """Test ProcessError with default message."""
     error = ProcessError()
-    assert error.message == "Background process error"
+    assert error.message == "Background Process Error"
     assert error.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
@@ -238,8 +261,9 @@ def test_all_exceptions_defined() -> None:
     expected_exceptions = [
         "BaseError",
         "BadRequestError",
-        "UnprocessableError",
+        "NotAcceptableError",
         "NotFoundError",
+        "UnprocessableContentError",
         "AuthenticationError",
         "AuthorizationError",
         "DatabaseError",
@@ -254,7 +278,7 @@ def test_status_code_uniqueness() -> None:
     """Test that different exception types have different status codes (where appropriate)."""
     error_status_pairs = [
         (BadRequestError(), status.HTTP_400_BAD_REQUEST),
-        (UnprocessableError(), status.HTTP_406_NOT_ACCEPTABLE),
+        (NotAcceptableError(), status.HTTP_406_NOT_ACCEPTABLE),
         (NotFoundError(), status.HTTP_404_NOT_FOUND),
         (AuthenticationError(), status.HTTP_401_UNAUTHORIZED),
         (AuthorizationError(), status.HTTP_403_FORBIDDEN),

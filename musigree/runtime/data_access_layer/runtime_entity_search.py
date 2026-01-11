@@ -1,10 +1,10 @@
 import logging
 import re
+from typing import Any
 
 import rapidfuzz
 
 from musigree.exceptions import DatabaseError
-from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import (
     LABEL_ENTITY_ID_OFFSET,
     to_entity_external_id,
@@ -18,7 +18,6 @@ from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeE
 from musigree.runtime.runtime_database.token_repository import TokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from musigree.utils import URLIFY_REGEX
 
 log = logging.getLogger(__name__)
 
@@ -29,28 +28,16 @@ class RuntimeEntitySearch:
         entity_repository: RuntimeEntityRepository,
         token_repository: TokenRepository,
         search_string: str,
-    ) -> dict[str, tuple[dict[str, str], ...]]:
-        cache = CacheManager.get_cache()
-
-        normalised_search_string = normalise_search_content(search_string)
-
-        search_query_url = URLIFY_REGEX.sub("+", normalised_search_string)
-        cache_key = f"musigree:/api/search/{search_query_url}"
-        result_data: dict[str, tuple[dict[str, str], ...]] = cache.get(cache_key)
-        if result_data is not None:
-            log.debug(f"{cache_key}: CACHED")
-            return result_data
-
+    ) -> dict[str, Any]:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "RuntimeDatabaseManager.runtime_database_helper is not set."
         )
         documents = await RuntimeEntitySearch.search_text_index(
-            entity_repository, token_repository, normalised_search_string
+            entity_repository, token_repository, search_string
         )
 
         sorted_documents = RuntimeEntitySearch.sort_search_results(search_string, documents)
 
-        # log.debug(f"{cache_key}: NOT CACHED")
         data: list[dict[str, str]] = []
         for document in sorted_documents:
             entity_id, entity_type = to_entity_external_id(document[0])
@@ -60,10 +47,8 @@ class RuntimeEntitySearch:
                 name=document[1],
             )
             data.append(datum)
-            log.debug(f"    {datum}")
+            # log.debug(f"    {datum}")
         result_data = {"results": tuple(data)}
-        # log.debug(f"  set cache_key: {cache_key} data: {data}")
-        cache.set(cache_key, result_data)
         return result_data
 
     @staticmethod

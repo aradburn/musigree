@@ -65,8 +65,7 @@ class TestFastAPIUI:
         assert call_args.kwargs["name"] == "index.html"
         context = call_args.kwargs["context"]
         assert context["title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
-        assert context[
-                   "og_title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
+        assert context["og_title"] == "Musigree - An Interactive Map of Artists, Bands & Labels"
         assert context["original_roles"] == UI_DEFAULT_ROLES
         assert context["original_year"] is None
 

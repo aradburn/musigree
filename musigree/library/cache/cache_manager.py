@@ -1,23 +1,13 @@
+import json
 import logging
-import os
-import pickle
-import tempfile
+from json import JSONDecodeError
 from typing import Any
 
-# Add Redis import with error handling
-try:
-    # noinspection PyUnresolvedReferences
-    import redis
-
-    # noinspection PyUnresolvedReferences
-    import fakeredis
-
-    REDIS_AVAILABLE = True
-except ImportError:
-    REDIS_AVAILABLE = False
+import redis
+import fakeredis
 
 from musigree.config import Configuration
-from musigree.constants import CacheType
+from musigree.constants import CacheType, CACHE_KEY_SEPARATOR
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +15,6 @@ __all__ = [
     "CacheManager",
     "BaseCache",
     "SimpleCache",
-    "FileSystemCache",
     "RedisCache",
     "CacheType",
 ]
@@ -34,16 +23,32 @@ __all__ = [
 class BaseCache:
     """Base cache class that defines the interface for all cache implementations."""
 
-    def get(self, key: str) -> Any:
+    def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         raise NotImplementedError
 
-    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
+    def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         raise NotImplementedError
 
-    def delete(self, key: str) -> None:
-        """Delete key from cache."""
+    def incr(self, key: str) -> None:
+        """Increment value in cache for the given key."""
+        raise NotImplementedError
+
+    def expire(self, key: str, timeout: int) -> None:
+        """Set the timeout for the given key."""
+        raise NotImplementedError
+
+    def ttl(self, key: str) -> int:
+        """Get the timeout for the given key."""
+        raise NotImplementedError
+
+    def hgetall(self, key: str) -> dict[str, Any] | None:
+        """Get hash value from cache for the given key."""
+        raise NotImplementedError
+
+    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+        """Set hash value in cache for the given key with optional timeout."""
         raise NotImplementedError
 
     def clear(self) -> None:
@@ -55,80 +60,47 @@ class SimpleCache(BaseCache):
     """Simple in-memory cache implementation."""
 
     def __init__(self, threshold: int = 1000000, default_timeout: int = 0):
-        self.cache: dict[str, Any] = {}
+        self.cache: dict[str, str] = {}
+        self.hcache: dict[str, Any] = {}
         self.threshold = threshold
         self.default_timeout = default_timeout
 
-    def get(self, key: str) -> Any:
+    def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         return self.cache.get(key)
 
-    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
+    def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         # In this simple implementation, we ignore timeout
         self.cache[key] = value
         # If cache exceeds threshold, clear oldest entries (not implemented)
 
-    def delete(self, key: str) -> None:
-        """Delete key from cache."""
-        if key in self.cache:
-            del self.cache[key]
+    def incr(self, key: str) -> None:
+        """Increment value in cache for the given key."""
+        raise NotImplementedError
+
+    def expire(self, key: str, timeout: int) -> None:
+        """Set the timeout for the given key."""
+        raise NotImplementedError
+
+    def ttl(self, key: str) -> int:
+        """Get the timeout for the given key."""
+        raise NotImplementedError
+
+    def hgetall(self, key: str) -> dict[str, Any] | None:
+        """Get value from cache for the given key."""
+        return self.hcache.get(key)
+
+    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+        """Set value in cache for the given key with optional timeout."""
+        # In this simple implementation, we ignore timeout
+        self.hcache[key] = value
+        # If cache exceeds threshold, clear oldest entries (not implemented)
 
     def clear(self) -> None:
         """Clear all cache entries."""
         self.cache.clear()
-
-
-class FileSystemCache(BaseCache):
-    """File system based cache implementation."""
-
-    def __init__(self, cache_dir: str, threshold: int = 1000000, default_timeout: int = 0):
-        self.cache_dir = cache_dir
-        self.threshold = threshold
-        self.default_timeout = default_timeout
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-
-    def _get_filename(self, key: str) -> str:
-        """Get filename for the given key."""
-        import hashlib
-
-        hashed_key = hashlib.md5(key.encode()).hexdigest()
-        return os.path.join(self.cache_dir, hashed_key)
-
-    def get(self, key: str) -> Any:
-        """Get value from cache for the given key."""
-        filename = self._get_filename(key)
-        if os.path.exists(filename):
-            try:
-                with open(filename, "rb") as f:
-                    return pickle.load(f)
-            except (IOError, pickle.PickleError):
-                return None
-        return None
-
-    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
-        """Set value in cache for the given key with optional timeout."""
-        filename = self._get_filename(key)
-        try:
-            with open(filename, "wb") as f:
-                # noinspection PyTypeChecker
-                pickle.dump(value, f, pickle.HIGHEST_PROTOCOL)
-        except (IOError, pickle.PickleError):
-            pass
-
-    def delete(self, key: str) -> None:
-        """Delete key from cache."""
-        filename = self._get_filename(key)
-        if os.path.exists(filename):
-            os.remove(filename)
-
-    def clear(self) -> None:
-        """Clear all cache entries."""
-        for filename in os.listdir(self.cache_dir):
-            file_path = os.path.join(self.cache_dir, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+        self.hcache.clear()
 
 
 class RedisCache(BaseCache):
@@ -141,8 +113,7 @@ class RedisCache(BaseCache):
         password: str | None = None,
         db: int = 0,
         default_timeout: int = 300,
-        key_prefix: str | None = None,
-    ):
+    ) -> None:
         """Initialize Redis cache.
 
         Args:
@@ -151,16 +122,9 @@ class RedisCache(BaseCache):
             password: Redis server password
             db: Redis database number
             default_timeout: Default cache timeout in seconds
-            key_prefix: Prefix for all keys in this cache
         """
         self.default_timeout = default_timeout
-        self.key_prefix = key_prefix or ""
         self._client: redis.Redis | fakeredis.FakeRedis | None = None
-
-        if not REDIS_AVAILABLE:
-            log.warning("Redis package not installed. Using FakeRedis instead.")
-            self._client = fakeredis.FakeRedis()
-            return
 
         try:
             self._client = redis.Redis(
@@ -183,62 +147,88 @@ class RedisCache(BaseCache):
             raise RuntimeError("Redis client not initialized")
         return self._client
 
-    def _make_key(self, key: str) -> str:
-        """Add prefix to key."""
-        return f"{self.key_prefix}{key}"
-
-    def get(self, key: str) -> Any:
+    def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         redis_client = self._get_redis_client()
-        key = self._make_key(key)
+        raw_value = redis_client.get(key)
 
-        try:
-            # Get the value from Redis
-            value = redis_client.get(key)
-
-            # Return None if the key doesn't exist
-            if value is None:
-                return None
-
-            # Convert to bytes if necessary (handles different Redis client implementations)
-            if not isinstance(value, bytes):
-                # This case should not happen but we handle it anyway
-                log.warning(f"Unexpected non-bytes value from Redis for key {key}")
-                return None
-
-            # Unpickle the value
-            return pickle.loads(value)
-        except Exception as e:
-            log.exception(f"Error getting key {key} from Redis cache: {e}")
+        # Return None if the key doesn't exist
+        if raw_value is None:
             return None
 
-    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
+        value = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else str(raw_value)
+
+        return value
+
+    def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         redis_client = self._get_redis_client()
-        key = self._make_key(key)
         timeout = timeout if timeout is not None else self.default_timeout
 
-        try:
-            # Pickle the value
-            value_bytes = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
+        # Set in Redis with or without timeout
+        if timeout > 0:
+            redis_client.setex(name=key, time=timeout, value=value)
+        else:
+            redis_client.set(name=key, value=value)
 
-            # Set in Redis with or without timeout
-            if timeout > 0:
-                redis_client.setex(name=key, time=timeout, value=value_bytes)
-            else:
-                redis_client.set(name=key, value=value_bytes)
-        except Exception as e:
-            log.exception(f"Error setting key {key} in Redis cache: {e}")
-
-    def delete(self, key: str) -> None:
-        """Delete key from cache."""
+    def incr(self, key: str) -> None:
+        """Increment value in cache for the given key."""
         redis_client = self._get_redis_client()
-        key = self._make_key(key)
+        redis_client.incrby(key, 1)
 
+    def expire(self, key: str, timeout: int) -> None:
+        """Set the timeout for the given key."""
+        redis_client = self._get_redis_client()
+        redis_client.expire(key, timeout)
+
+    def ttl(self, key: str) -> int:
+        """Get the timeout for the given key."""
+        redis_client = self._get_redis_client()
+        raw_value = redis_client.ttl(key)
+
+        # Return None if the key doesn't exist
+        if raw_value is None:
+            return -2
+
+        # Type guard: ensure we have a dict (not an Awaitable)
+        # Since this is a synchronous method, hgetall should return a dict
+        if not isinstance(raw_value, int):
+            return -2
+
+        return int(raw_value)
+
+    def hgetall(self, key: str) -> dict[str, Any] | None:
+        """Get hash value from cache for the given key."""
+        redis_client = self._get_redis_client()
+        raw_value = redis_client.get(key)
+
+        # Return None if the key doesn't exist
+        if raw_value is None:
+            return None
+
+        # Type guard: ensure we have a dict (not an Awaitable)
+        # Since this is a synchronous method, hgetall should return a dict
+        if not (isinstance(raw_value, bytes) or isinstance(raw_value, str)):
+            return None
+
+        json_value = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else str(raw_value)
+        result: dict[str, Any] | None
         try:
-            redis_client.delete(key)
-        except Exception as e:
-            log.exception(f"Error deleting key {key} from Redis cache: {e}")
+            result = json.loads(json_value)
+        except JSONDecodeError:
+            result = None
+        return result
+
+    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+        """Set value in cache for the given key with optional timeout."""
+        redis_client = self._get_redis_client()
+        timeout = timeout if timeout is not None else self.default_timeout
+        json_str = json.dumps(value)
+        # Set in Redis with or without timeout
+        if timeout > 0:
+            redis_client.setex(name=key, time=timeout, value=json_str)
+        else:
+            redis_client.set(name=key, value=json_str)
 
     def clear(self) -> None:
         """Clear all cache entries."""
@@ -291,19 +281,6 @@ class CacheManager:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
             log.info("Using memory cache")
 
-        elif cache_type == CacheType.FILESYSTEM:
-            file_cache_path = os.path.join(tempfile.gettempdir(), "musigree", "cache")
-            file_cache_threshold = 1024 * 1024 * 20
-            file_cache_timeout = 60 * 60 * 24 * 7
-            if not os.path.exists(file_cache_path):
-                os.makedirs(file_cache_path)
-            cls.cache = FileSystemCache(
-                file_cache_path,
-                default_timeout=file_cache_timeout,
-                threshold=file_cache_threshold,
-            )
-            log.info("Using filesystem cache")
-
         elif cache_type == CacheType.REDIS:
             try:
                 cls.cache = RedisCache(
@@ -312,7 +289,6 @@ class CacheManager:
                     password=None,
                     db=0,
                     default_timeout=60 * 60 * 24 * 7,
-                    key_prefix="musigree:",
                 )
                 log.info("Using Redis cache")
             except Exception as e:
@@ -355,3 +331,13 @@ class CacheManager:
         log.debug("Clearing cache")
         if cls.cache is not None:
             cls.cache.clear()
+
+    @staticmethod
+    def create_cache_key(domain_name: str, id_: str, field_name: str) -> str:
+        # Key is domain:id:field
+        return f"{domain_name}{CACHE_KEY_SEPARATOR}{id_}{CACHE_KEY_SEPARATOR}{field_name}"
+
+    @staticmethod
+    def create_cache_hkey(domain_name: str, id_: str) -> str:
+        # Key is domain:id
+        return f"{domain_name}{CACHE_KEY_SEPARATOR}{id_}"

@@ -123,7 +123,7 @@ describe("constants", () => {
 
     describe("TYPEAHEAD", () => {
         it("should export typeahead constants with correct values", () => {
-            expect(TYPEAHEAD.MIN_QUERY_LENGTH).toBe(4);
+            expect(TYPEAHEAD.MIN_QUERY_LENGTH).toBe(2);
             expect(TYPEAHEAD.MAX_RESULTS).toBe(1000);
             expect(TYPEAHEAD.API_ENDPOINT).toBe("/api/search/%QUERY");
             expect(TYPEAHEAD.QUERY_WILDCARD).toBe("%QUERY");

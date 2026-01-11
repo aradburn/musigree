@@ -12,7 +12,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
+        is_load_offline_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/")
         assert response.status_code == 200
@@ -22,7 +24,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
+        is_load_offline_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/artist/2239")
         assert response.status_code == 200
@@ -32,7 +36,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/artist/bad")
         assert response.status_code == 400
@@ -42,7 +48,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/artist/0")
         assert response.status_code == 404
@@ -52,7 +60,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/label/1")
         assert response.status_code == 200
@@ -62,7 +72,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/label/bad")
         assert response.status_code == 400
@@ -72,7 +84,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/label/2")
         assert response.status_code == 404
@@ -82,7 +96,9 @@ class TestFastAPIUI:
         self,
         offline_database_setup: AsyncGenerator[None, None],
         runtime_database_setup: AsyncGenerator[None, None],
-        client: AsyncClient, is_load_offline_data_required: bool, is_load_runtime_data_required: bool
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
     ) -> None:
         response = await client.get("/malformed")
         assert response.status_code == 404

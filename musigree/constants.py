@@ -85,7 +85,12 @@ class ThreadingModel(enum.Enum):
     THREAD = 2
 
 
+# Cache
 class CacheType(enum.Enum):
     MEMORY = 1
     FILESYSTEM = 2
     REDIS = 3
+
+
+CACHE_KEY_SEPARATOR = ":"
+CACHE_ENTRY_IS_NULL = "__NULL__"  # A string used to represent a null entry in the cache.

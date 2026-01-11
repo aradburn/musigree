@@ -25,6 +25,8 @@ describe("MusigreeManager", () => {
             expect(manager.dimensions).toEqual([0, 0]);
             expect(manager.svgDimensions).toEqual([0, 0]);
             expect(manager.selectedNodeKey).toBeNull();
+            expect(manager.isSidebarRightCollapsed).toBe(false);
+            expect(manager.isMobile).toBe(window.innerWidth < 768);
             expect(manager.arc).toBeDefined();
         });
 
@@ -33,11 +35,13 @@ describe("MusigreeManager", () => {
                 version: "3.0.0",
                 debug: true,
                 dpr: 2,
+                isMobile: true,
             };
             const manager = new MusigreeManager(config);
             expect(manager.version).toBe("3.0.0");
             expect(manager.debug).toBe(true);
             expect(manager.dpr).toBe(2);
+            expect(manager.isMobile).toBe(true);
         });
     });
 
@@ -77,6 +81,27 @@ describe("MusigreeManager", () => {
             expect(manager.selectedNodeKey).toBeNull();
             manager.selectedNodeKey = "node-123";
             expect(manager.selectedNodeKey).toBe("node-123");
+        });
+
+        it("should get and set isSidebarRightCollapsed", () => {
+            expect(manager.isSidebarRightCollapsed).toBe(false);
+            manager.isSidebarRightCollapsed = true;
+            expect(manager.isSidebarRightCollapsed).toBe(true);
+            manager.isSidebarRightCollapsed = false;
+            expect(manager.isSidebarRightCollapsed).toBe(false);
+        });
+
+        it("should get and set isMobile", () => {
+            const initialIsMobile = manager.isMobile;
+            manager.isMobile = true;
+            expect(manager.isMobile).toBe(true);
+            manager.isMobile = false;
+            expect(manager.isMobile).toBe(false);
+            // Verify we can toggle the value
+            manager.isMobile = !initialIsMobile;
+            expect(manager.isMobile).toBe(!initialIsMobile);
+            manager.isMobile = initialIsMobile;
+            expect(manager.isMobile).toBe(initialIsMobile);
         });
 
         it("should get and set arc", () => {
@@ -119,6 +144,10 @@ describe("MusigreeManager", () => {
             expect(musigreeManager.version).toBe("2.1.0");
             expect(typeof musigreeManager.debug).toBe("boolean");
             expect(typeof musigreeManager.dpr).toBe("number");
+            expect(typeof musigreeManager.isSidebarRightCollapsed).toBe(
+                "boolean",
+            );
+            expect(typeof musigreeManager.isMobile).toBe("boolean");
         });
 
         it("should be the same instance when imported multiple times", () => {

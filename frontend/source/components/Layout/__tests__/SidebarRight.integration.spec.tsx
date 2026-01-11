@@ -9,9 +9,16 @@ import type { EntityData } from "../../../entities";
 
 describe("SidebarRight + EntityProvider integration", () => {
     it("shows updated details after event dispatch", async () => {
+        const mockToggleCollapse = (): void => {
+            // Mock implementation for testing
+        };
+
         render(
             <EntityProvider>
-                <SidebarRight />
+                <SidebarRight
+                    isCollapsed={false}
+                    onToggleCollapse={mockToggleCollapse}
+                />
             </EntityProvider>,
         );
 

@@ -27,12 +27,56 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
     ];
 
     const parseProfile = (profileHtml: string): ReactNode => {
-        let isProcessingTag: boolean = false;
-        let currentTagName: string = "";
-        let currentTagAttributes: { [s: string]: string } = null;
-        let currentTagText: string = "";
-        const reactElements: ReactNode[] = [];
+        interface TagStackItem {
+            tagName: string; // lowercase for comparison
+            originalTagName: string; // original case for case sensitivity checks
+            attributes: { [s: string]: string } | null;
+            children: ReactNode[];
+            key: number;
+            ignoreContent: boolean;
+        }
+
+        const tagStack: TagStackItem[] = [];
+        const rootElements: ReactNode[] = [];
         let key: number = 0;
+
+        // Tags that should be completely ignored (including their text content)
+        const ignoredTags = ["script", "style"];
+
+        const createElement = (
+            tagName: string,
+            attributes: { [s: string]: string } | null,
+            children: ReactNode[],
+            elementKey: number,
+        ): ReactNode => {
+            const tagNameLower = tagName.toLowerCase();
+            // EntityLink is case-insensitive
+            if (tagNameLower === "entitylink") {
+                return (
+                    <EntityLink
+                        key={elementKey}
+                        entityKey={attributes?.entityKey}
+                        entityName={attributes?.entityName}
+                    />
+                );
+            }
+            // For other tags, only allow exact lowercase matches (case-sensitive)
+            // This ensures uppercase tags like <B> are ignored even if <b> is allowed
+            if (
+                tagName === tagNameLower &&
+                allowedTags.includes(tagNameLower)
+            ) {
+                return React.createElement(
+                    tagNameLower,
+                    { key: elementKey },
+                    ...children,
+                );
+            }
+            if (tagName === tagNameLower && tagNameLower === "br") {
+                return React.createElement(tagNameLower, { key: elementKey });
+            }
+            return null;
+        };
 
         const parser = new htmlparser2.Parser(
             {
@@ -42,82 +86,117 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
                 ): void {
                     /*
                      * This fires when a new tag is opened.
-                     *
-                     * If you don't need an aggregated `attributes` object,
-                     * have a look at the `onopentagname` and `onattribute` events.
+                     * Push the tag onto the stack to handle nesting.
+                     * Store both lowercase and original for case sensitivity checks.
                      */
-                    isProcessingTag = true;
-                    currentTagName = tagName;
-                    currentTagAttributes = tagAttributes;
+                    const tagNameLower = tagName.toLowerCase();
+                    const ignoreContent = ignoredTags.includes(tagNameLower);
+                    tagStack.push({
+                        tagName: tagNameLower, // Use lowercase for consistent comparison
+                        originalTagName: tagName, // Preserve original for case sensitivity
+                        attributes: tagAttributes,
+                        children: [],
+                        key: key++,
+                        ignoreContent,
+                    });
                 },
                 ontext(text: string): void {
                     /*
                      * Fires whenever a section of text was processed.
-                     *
-                     * Note that this can fire at any point within text and you might
-                     * have to stitch together multiple pieces.
+                     * Add text to the current tag's children, or to root if no tag is open.
+                     * Skip text if we're inside an ignored tag.
                      */
-                    if (isProcessingTag) {
-                        currentTagText = text;
+                    // Check if we're inside an ignored tag
+                    if (tagStack.length > 0) {
+                        const currentTag = tagStack[tagStack.length - 1];
+                        if (currentTag.ignoreContent) {
+                            // Ignore text content of script/style tags
+                            return;
+                        }
+                    }
+
+                    const textNode = (
+                        <React.Fragment key={key++}>{text}</React.Fragment>
+                    );
+
+                    if (tagStack.length > 0) {
+                        // Add text to the current tag's children
+                        const currentTag = tagStack[tagStack.length - 1];
+                        currentTag.children.push(textNode);
                     } else {
-                        const textNode = (
-                            <React.Fragment key={key}>{text}</React.Fragment>
-                        );
-                        reactElements.push(textNode);
-                        key++;
+                        // Add text to root elements
+                        rootElements.push(textNode);
                     }
                 },
-                onclosetag(tagName: string): void {
+                onclosetag(_tagName: string): void {
                     /*
                      * Fires when a tag is closed.
-                     *
-                     * You can rely on this event only firing when you have received an
-                     * equivalent opening tag before. Closing tags without corresponding
-                     * opening tags will be ignored.
+                     * Pop the tag from the stack, create the React element,
+                     * and add it to the parent tag or root elements.
                      */
-                    isProcessingTag = false;
-                    if (tagName === "EntityLink") {
-                        const element = (
-                            <EntityLink
-                                key={key}
-                                entityKey={currentTagAttributes?.entityKey}
-                                entityName={currentTagAttributes?.entityName}
-                            />
-                        );
-                        reactElements.push(element);
-                        key++;
-                    } else if (allowedTags.includes(tagName)) {
-                        const element = React.createElement(
-                            currentTagName,
-                            {
-                                key: key,
-                            },
-                            currentTagText,
-                        );
-                        reactElements.push(element);
-                        key++;
-                    } else if (tagName === "br") {
-                        const element = React.createElement(currentTagName, {
-                            key: key,
-                        });
-                        reactElements.push(element);
-                        key++;
+                    if (tagStack.length === 0) {
+                        return;
                     }
-                    currentTagName = "";
-                    currentTagAttributes = null;
-                    currentTagText = "";
+
+                    const closedTag = tagStack.pop();
+                    if (!closedTag) {
+                        return;
+                    }
+
+                    // Completely ignore script and style tags
+                    if (closedTag.ignoreContent) {
+                        return;
+                    }
+
+                    // Process the tag even if names don't match exactly
+                    // (handles edge cases with self-closing or malformed tags)
+                    // Use original tag name for case sensitivity checks
+                    const element = createElement(
+                        closedTag.originalTagName,
+                        closedTag.attributes,
+                        closedTag.children,
+                        closedTag.key,
+                    );
+
+                    if (element === null) {
+                        // For unsupported tags, preserve their text content
+                        // by adding children to the parent or root
+                        if (tagStack.length > 0) {
+                            const parentTag = tagStack[tagStack.length - 1];
+                            // Only add children if parent is not ignored
+                            if (!parentTag.ignoreContent) {
+                                parentTag.children.push(...closedTag.children);
+                            }
+                        } else {
+                            rootElements.push(...closedTag.children);
+                        }
+                        return;
+                    }
+
+                    if (tagStack.length > 0) {
+                        // Add element to parent tag's children
+                        const parentTag = tagStack[tagStack.length - 1];
+                        // Only add to parent if parent is not ignored
+                        if (!parentTag.ignoreContent) {
+                            parentTag.children.push(element);
+                        }
+                    } else {
+                        // Add element to root elements
+                        rootElements.push(element);
+                    }
                 },
             },
             {
                 lowerCaseTags: false,
                 lowerCaseAttributeNames: false,
+                recognizeSelfClosing: true,
             },
         );
 
         parser.write(profileHtml);
         parser.end();
 
-        return reactElements.length === 1 ? reactElements[0] : reactElements;
+        return rootElements.length === 1 ? rootElements[0] : rootElements;
     };
 
     return <React.Fragment>{parseProfile(profileHtml)}</React.Fragment>;

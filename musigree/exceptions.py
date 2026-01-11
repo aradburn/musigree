@@ -37,8 +37,9 @@ from starlette import status
 __all__ = (
     "BaseError",
     "BadRequestError",
-    "UnprocessableError",
+    "NotAcceptableError",
     "NotFoundError",
+    "UnprocessableContentError",
     "AuthenticationError",
     "AuthorizationError",
     "DatabaseError",
@@ -92,19 +93,19 @@ class BadRequestError(BaseError):
     a malformed or invalid request from the client.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Bad request") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Bad Request") -> None:
         """
         Initializes a BadRequestError instance.
 
         Args:
             *_: Unused positional arguments.
-            message (str, optional): The error message. Defaults to "Bad request".
+            message (str, optional): The error message. Defaults to "Bad Request".
         """
         super().__init__(message=message, status_code=status.HTTP_400_BAD_REQUEST)
         """Call the constructor of the parent class."""
 
 
-class UnprocessableError(BaseError):
+class NotAcceptableError(BaseError):
     """
     Represents an unprocessable entity error.
 
@@ -112,14 +113,14 @@ class UnprocessableError(BaseError):
     validation errors or other conditions, even if the request is well-formed.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Validation error") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Not Acceptable") -> None:
         """
-        Initializes an UnprocessableError instance.
+        Initializes an NotAcceptableError instance.
 
         Args:
             *_: Unused positional arguments.
             message (str, optional): The error message. Defaults to
-                "Validation error".
+                "Not Acceptable".
         """
         super().__init__(message=message, status_code=status.HTTP_406_NOT_ACCEPTABLE)
         """Call the constructor of the parent class."""
@@ -132,15 +133,34 @@ class NotFoundError(BaseError):
     This exception is raised when the requested resource could not be found.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Not found") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Not Found") -> None:
         """
         Initializes a NotFoundError instance.
 
         Args:
             *_: Unused positional arguments.
-            message (str, optional): The error message. Defaults to "Not found".
+            message (str, optional): The error message. Defaults to "Not Found".
         """
         super().__init__(message=message, status_code=status.HTTP_404_NOT_FOUND)
+        """Call the constructor of the parent class."""
+
+
+class UnprocessableContentError(BaseError):
+    """
+    Represents an unprocessable content error.
+
+    This exception is raised when the requested resource could not be found.
+    """
+
+    def __init__(self, *_: tuple[Any], message: str = "Unprocessable Content") -> None:
+        """
+        Initializes a UnprocessableContentError instance.
+
+        Args:
+            *_: Unused positional arguments.
+            message (str, optional): The error message. Defaults to "Unprocessable Content".
+        """
+        super().__init__(message=message, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
         """Call the constructor of the parent class."""
 
 
@@ -152,14 +172,14 @@ class AuthenticationError(BaseError):
     authentication credentials.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Authentication error") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Authentication Error") -> None:
         """
         Initializes an AuthenticationError instance.
 
         Args:
             *_: Unused positional arguments.
             message (str, optional): The error message. Defaults to
-                "Authentication error".
+                "Authentication Error".
         """
         super().__init__(
             message=message,
@@ -176,14 +196,14 @@ class AuthorizationError(BaseError):
     permission to perform the requested action.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Authorization error") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Authorization Error") -> None:
         """
         Initializes an AuthorizationError instance.
 
         Args:
             *_: Unused positional arguments.
             message (str, optional): The error message. Defaults to
-                "Authorization error".
+                "Authorization Error".
         """
         super().__init__(message=message, status_code=status.HTTP_403_FORBIDDEN)
         """Call the constructor of the parent class."""
@@ -196,14 +216,14 @@ class DatabaseError(BaseError):
     This exception is raised when there is an error related to the database.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Database error") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Database Error") -> None:
         """
         Initializes a DatabaseError instance.
 
         Args:
             *_: Unused positional arguments.
             message (str, optional): The error message. Defaults to
-                "Database error".
+                "Database Error".
         """
         super().__init__(message=message, status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
         """Call the constructor of the parent class."""
@@ -216,14 +236,14 @@ class ProcessError(BaseError):
     This exception is raised when an error occurs in a background process.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Background process error") -> None:
+    def __init__(self, *_: tuple[Any], message: str = "Background Process Error") -> None:
         """
         Initializes a ProcessError instance.
 
         Args:
             *_: Unused positional arguments.
             message (str, optional): The error message. Defaults to
-                "Background process error".
+                "Background Process Error".
         """
         super().__init__(message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         """Call the constructor of the parent class."""

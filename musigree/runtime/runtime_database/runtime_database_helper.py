@@ -29,7 +29,6 @@ from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from musigree.config import Configuration
 from musigree.exceptions import NotFoundError
-from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
@@ -104,6 +103,7 @@ class RuntimeDatabaseHelper(ABC):
 
     LINK_RATIO = 10
     """A ratio for link calculations."""
+
     # was 3
 
     @staticmethod
@@ -309,24 +309,6 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             dict: The network data.
         """
-        cache = CacheManager.get_cache()
-
-        assert entity_type in (EntityType.ARTIST, EntityType.LABEL)
-        template = "musigree:/api/{entity_type}/network/{entity_id}"
-        if on_mobile:
-            template += "/mobile"
-
-        cache_key = RelationGrapher.make_cache_key(
-            template,
-            entity_id,
-            entity_type,
-            roles=roles,
-        )
-        if cache_key is not None and len(cache_key) < 200:
-            log.debug(f"  get cache_key: {cache_key}")
-            cached_data = cache.get(cache_key)
-            if cached_data:
-                return cached_data  # type: ignore
 
         try:
             entity = await entity_repository.get_by_entity_id_and_entity_type(
@@ -350,8 +332,6 @@ class RuntimeDatabaseHelper(ABC):
             role_names=roles,
         )
         data = await relation_grapher.get_relation_graph(entity_repository, relation_repository)
-        if cache_key is not None and len(cache_key) < 200:
-            cache.set(cache_key, data)
         return data
 
     @staticmethod

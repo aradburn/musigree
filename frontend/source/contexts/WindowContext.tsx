@@ -79,6 +79,7 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
 
     // Handle window resize
     const handleResize = debounce((): void => {
+        console.log("WindowContext handleResize()");
         try {
             // Update dimensions state
             setState(calculateDimensions());

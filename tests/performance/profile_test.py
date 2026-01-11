@@ -79,7 +79,7 @@ def main() -> None:
     stats.print_callees(20)
 
     # Save detailed stats to file
-    stats_file = "test_profiling_stats2.txt"
+    stats_file = "test_profiling_stats2.dat"
     stats.dump_stats(stats_file)
     print(f"\nDetailed profiling results saved to: {stats_file}")
 

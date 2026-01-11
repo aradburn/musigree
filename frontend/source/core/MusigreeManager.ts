@@ -13,6 +13,8 @@ export interface MusigreeConfig {
     version?: string;
     /** Device pixel ratio override (mainly for testing) */
     dpr?: number;
+    /** Mobile device flag override (mainly for testing) */
+    isMobile?: boolean;
 }
 
 /**
@@ -32,6 +34,10 @@ export class MusigreeManager {
     private _svgDimensions: [number, number];
     /** Currently selected node key */
     private _selectedNodeKey: NodeKey;
+    /** Right sidebar collapsed state */
+    private _isSidebarRightCollapsed: boolean;
+    /** Mobile device flag */
+    private _isMobile: boolean;
     /** D3 arc generator for relations visualization */
     private _arc: d3.Arc<RelationsArcData, RelationsArcData>;
 
@@ -47,6 +53,11 @@ export class MusigreeManager {
         this._dimensions = [0, 0];
         this._svgDimensions = [0, 0];
         this._selectedNodeKey = null;
+        this._isSidebarRightCollapsed = false;
+        this._isMobile =
+            config.isMobile !== undefined
+                ? config.isMobile
+                : typeof window !== "undefined" && window.innerWidth < 768;
         this._arc = d3.arc<RelationsArcData, RelationsArcData>();
     }
 
@@ -136,6 +147,38 @@ export class MusigreeManager {
      */
     set selectedNodeKey(nodeKey: NodeKey) {
         this._selectedNodeKey = nodeKey;
+    }
+
+    /**
+     * Gets the right sidebar collapsed state
+     * @returns {boolean} Whether the right sidebar is collapsed
+     */
+    get isSidebarRightCollapsed(): boolean {
+        return this._isSidebarRightCollapsed;
+    }
+
+    /**
+     * Sets the right sidebar collapsed state
+     * @param {boolean} value - The new collapsed state
+     */
+    set isSidebarRightCollapsed(value: boolean) {
+        this._isSidebarRightCollapsed = value;
+    }
+
+    /**
+     * Gets the mobile device state
+     * @returns {boolean} Whether the device is mobile
+     */
+    get isMobile(): boolean {
+        return this._isMobile;
+    }
+
+    /**
+     * Sets the mobile device state
+     * @param {boolean} value - The new mobile state
+     */
+    set isMobile(value: boolean) {
+        this._isMobile = value;
     }
 
     /**

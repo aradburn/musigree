@@ -71,7 +71,9 @@ export const setSvgSize = (svgSelector: string): void => {
         }
 
         const calculatedSvgContainerWidth =
-            window.innerWidth - convertRemToPixels(45);
+            musigreeManager.isSidebarRightCollapsed
+                ? window.innerWidth - convertRemToPixels(20)
+                : window.innerWidth - convertRemToPixels(45);
         const smallSvgContainerHeight = window.innerHeight / 2.0;
         const largeSvgContainerHeight =
             window.innerHeight - navTopContainer.clientHeight;

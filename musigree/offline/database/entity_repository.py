@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import Result, select, update, Select, delete, func
 
 from musigree.constants import BULK_YIELD_SIZE
-from musigree.exceptions import NotFoundError, UnprocessableError
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.database.entity_table import EntityTable
@@ -95,8 +95,8 @@ class EntityRepository(BaseRepository[EntityTable]):
         value = result.scalar()
 
         if not isinstance(value, int):
-            raise UnprocessableError(
-                message=f"For some reason count function returned not an integer.Value: {value}",
+            raise DatabaseError(
+                message=f"Count function returned non integer value: {value}",
             )
 
         return value

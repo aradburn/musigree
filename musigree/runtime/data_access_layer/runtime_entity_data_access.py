@@ -1,7 +1,10 @@
 import logging
 from typing import cast, Any
 
-from musigree.exceptions import NotFoundError
+from sqlalchemy.exc import IntegrityError
+
+from musigree.constants import CACHE_ENTRY_IS_NULL
+from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.logging_config import LOGGING_TRACE
@@ -16,9 +19,6 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeEntityDataAccess:
-    CACHE_ENTRY_IS_NULL = "___"
-    CACHE_KEY_SEPARATOR = "_"
-
     @staticmethod
     def roles_to_relation_count(entity: RuntimeEntity, roles: list[str]) -> int:
         count = 0
@@ -140,32 +140,69 @@ class RuntimeEntityDataAccess:
         entity_type: EntityType,
         entity_name: str,
     ) -> int | None:
+        """
+        Retrieves the internal ID of an entity based on its type and name.
+
+        This method first checks the cache for the entity ID. If not found, it
+        queries the database and updates the cache.
+
+        Args:
+            entity_repository (RuntimeEntityRepository): The repository for entity database operations.
+            entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
+            entity_name (str): The name of the entity.
+
+        Returns:
+            int | None: The internal ID of the entity, or None if not found.
+        """
         cache = CacheManager.get_cache()
 
-        entity_key_str = f"{entity_name}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-
-        id_: int | None = cache.get(entity_key_str)
-        if id_ == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
+        # Create the cache key.
+        entity_key_str = CacheManager.create_cache_key(
+            "entity",
+            f"{entity_type.name.lower()}:{entity_name}",
+            "id",
+        )
+        # Get the value from the cache.
+        id_str: str | None = cache.get(entity_key_str)
+        id_: int | None = int(id_str) if id_str else None
+        # If cache entry was marked as null, return None.
+        if id_ == CACHE_ENTRY_IS_NULL:
             return None
 
         if id_ is None:
             try:
+                # Get the internal id from the db.
                 internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
-                # Store the internal id, not entity_id
-                cache.set(entity_key_str, internal_id)
-                id_ = internal_id
 
+                # Cache the internal id, not entity_id
+                cache.set(entity_key_str, str(internal_id))
+                id_ = internal_id
+            except IntegrityError:
+                # Handle potential database errors.
+                log.warning(
+                    f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}"
+                )
+                await entity_repository.rollback()
+            except DatabaseError:
+                # Handle potential database errors.
+                log.warning(
+                    f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}"
+                )
+                await entity_repository.rollback()
             except NotFoundError:
                 if LOGGING_TRACE:
                     log.debug(
                         f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
                     )
                 id_ = None
-                cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
+                # Mark the cache entry as null.
+                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
-        return id_
+        if id_ is None:
+            return None
+        return int(id_)
 
     @staticmethod
     async def get_entity_name_by_id(
@@ -173,22 +210,27 @@ class RuntimeEntityDataAccess:
     ) -> str | None:
         cache = CacheManager.get_cache()
 
-        entity_key_str = f"{id_}{RuntimeEntityDataAccess.CACHE_KEY_SEPARATOR}NAME"
+        # Create the cache key.
+        entity_key_str = CacheManager.create_cache_key("entity", str(id_), "name")
 
         name: str | None = cache.get(entity_key_str)
-        if name == RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL:
+        if name == CACHE_ENTRY_IS_NULL:
             return None
 
         if name is None:
             try:
                 name = await entity_repository.get_entity_name_by_id(id_)
-                cache.set(entity_key_str, name)
-
+                if name is not None:
+                    cache.set(entity_key_str, name)
+                else:
+                    # Mark the cache entry as null.
+                    cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
             except NotFoundError:
                 if LOGGING_TRACE:
                     log.debug(f"get_entity_name_by_id id not found: {id_}")
                 name = None
-                cache.set(entity_key_str, RuntimeEntityDataAccess.CACHE_ENTRY_IS_NULL)
+                # Mark the cache entry as null.
+                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         return name
 

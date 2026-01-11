@@ -97,9 +97,9 @@ class OfflineDatabaseManager:
             )
         )
 
-        # Set logging level for SqlAlchemy
+        # Logging level for SqlAlchemy set in logging_config
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-        logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
+        # logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
         # logging.getLogger("sqlalchemy.dialects.postgresql").setLevel(logging.DEBUG)
         # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
         # logging.getLogger("asyncio").setLevel(logging.DEBUG)

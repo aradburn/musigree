@@ -103,7 +103,7 @@ async def route__index(
     # elif year:
     #     og_url += f"?year={year}"
 
-    og_title = title
+    og_title = "Musigree - An Interactive Map of Artists, Bands & Labels"
     og_image = application_url + "/img/og_image.png"
 
     """Generate the URL for the current request with the selected roles."""
@@ -154,7 +154,7 @@ async def route__entity_type__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no network data is found for the given entity.
+        UnprocessableError: If no network data is found for the given entity.
     """
     from musigree.library.cache.role_cache import RoleCache
     from musigree.runtime.data_access_layer.role_entry import RoleEntry
@@ -172,21 +172,25 @@ async def route__entity_type__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
-    async with runtime_transaction():
-        entity_repository = RuntimeEntityRepository()
-        relation_repository = RuntimeRelationRepository()
-        network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
-            entity_repository,
-            relation_repository,
-            entity_id,
-            entity_type,
-            on_mobile=on_mobile,
-            roles=roles,
-        )
-    """Retrieve the network data for the entity."""
+    try:
+        # Retrieve the network data for the entity.
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            relation_repository = RuntimeRelationRepository()
+            network_data = await RuntimeDatabaseManager.runtime_database_helper.get_network(
+                entity_repository,
+                relation_repository,
+                entity_id,
+                entity_type,
+                on_mobile=on_mobile,
+                roles=roles,
+            )
+    except NotFoundError as _ex:
+        raise NotFoundError(message="Entity not found") from None
+
+    # Raise UnprocessableError if no network data is found.
     if network_data is None:
         raise NotFoundError(message="No Network Data")
-    """Raise NotFoundError if no network data is found."""
 
     network_json = json.dumps(
         network_data,
@@ -281,7 +285,7 @@ async def route__artist__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no network data is found for the given entity.
+        UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
         request, EntityType.ARTIST, entity_id, roles, year, on_mobile
@@ -315,7 +319,7 @@ async def route__label__entity_id(
 
     Raises:
         BadRequestError: If the entity type or entity ID is invalid.
-        NotFoundError: If no network data is found for the given entity.
+        UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
         request, EntityType.LABEL, entity_id, roles, year, on_mobile

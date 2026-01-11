@@ -42,7 +42,7 @@ def analyze_profile_stats(stats_file: str) -> None:
 
 def main() -> None:
     """Main function to analyze profiling results."""
-    stats_file = "test_profiling_stats2.txt"
+    stats_file = "test_profiling_stats2.dat"
 
     if not Path(stats_file).exists():
         print(f"Error: {stats_file} not found. Run the profiling script first.")

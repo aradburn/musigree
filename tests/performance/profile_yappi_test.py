@@ -99,7 +99,7 @@ def save_detailed_stats() -> None:
     func_stats = yappi.get_func_stats()
     func_stats.sort("ttot", "desc")
 
-    with open("yappi_function_stats.txt", "w") as f:
+    with open("yappi_function_stats.dat", "w") as f:
         f.write("YAPPI FUNCTION STATISTICS\n")
         f.write("=" * 80 + "\n\n")
 
@@ -119,7 +119,7 @@ def save_detailed_stats() -> None:
     # Save thread stats
     thread_stats = yappi.get_thread_stats()
 
-    with open("yappi_thread_stats.txt", "w") as f:
+    with open("yappi_thread_stats.dat", "w") as f:
         f.write("YAPPI THREAD STATISTICS\n")
         f.write("=" * 80 + "\n\n")
 
@@ -129,8 +129,8 @@ def save_detailed_stats() -> None:
             f.write("-" * 40 + "\n")
 
     print("\nDetailed statistics saved to:")
-    print("  - yappi_function_stats.txt")
-    print("  - yappi_thread_stats.txt")
+    print("  - yappi_function_stats.dat")
+    print("  - yappi_thread_stats.dat")
 
 
 def main() -> None:

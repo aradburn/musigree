@@ -28,7 +28,7 @@ import logging
 
 from sqlalchemy.exc import IntegrityError
 
-from musigree.constants import BULK_REPORTING_SIZE
+from musigree.constants import BULK_REPORTING_SIZE, CACHE_ENTRY_IS_NULL
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_label_internal_id
@@ -52,24 +52,6 @@ class EntityDataAccess:
 
     This class offers methods for resolving entity and release references, caching
     entity IDs, and managing the text search index.
-
-    Attributes:
-        CACHE_ENTRY_IS_NULL (str): A string used to represent a null entry in the cache.
-        CACHE_KEY_SEPARATOR (str): A string used to separate parts of a cache key.
-    """
-
-    CACHE_ENTRY_IS_NULL = "___"
-    """
-    A string used to represent a null entry in the cache.
-
-    This is used to indicate that an entity was looked up and not found, so
-    future lookups can be avoided.
-    """
-    CACHE_KEY_SEPARATOR = "_"
-    """
-    A string used to separate parts of a cache key.
-
-    This is used to create unique cache keys for different entity types and names.
     """
 
     @staticmethod
@@ -258,35 +240,41 @@ class EntityDataAccess:
             int | None: The internal ID of the entity, or None if not found.
         """
         cache = CacheManager.get_cache()
-        """Get an instance of the cache."""
 
-        entity_key_str = f"{entity_name}{EntityDataAccess.CACHE_KEY_SEPARATOR}{entity_type}"
-        """Create the cache key."""
-
-        id_ = cache.get(entity_key_str)
-        """Get the value from the cache."""
-        if id_ == EntityDataAccess.CACHE_ENTRY_IS_NULL:
+        # Create the cache key.
+        entity_key_str = CacheManager.create_cache_key(
+            "entity",
+            f"{entity_type.name.lower()}:{entity_name}",
+            "id",
+        )
+        # Get the value from the cache.
+        id_str: str | None = cache.get(entity_key_str)
+        # If cache entry was marked as null, return None.
+        if id_str == CACHE_ENTRY_IS_NULL:
             return None
-        """If cache entry was marked as null, return None."""
+        id_: int | None = int(id_str) if id_str is not None else None
 
         if id_ is None:
             try:
-                int_id = await entity_repository.get_id_by_entity_type_and_entity_name(
+                # Get the internal id from the db.
+                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
                     entity_type, entity_name
                 )
-                """Get the internal id from the db."""
-                # Store the internal id, not entity_id
-                cache.set(entity_key_str, int_id)
-                """Cache the internal id."""
-                id_ = int_id
+
+                # Cache the internal id, not entity_id
+                if internal_id is not None:
+                    cache.set(entity_key_str, str(internal_id))
+                else:
+                    cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                id_ = internal_id
             except IntegrityError:
-                """Handle potential database errors."""
+                # Handle potential database errors.
                 log.warning(
                     f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}"
                 )
                 await entity_repository.rollback()
             except DatabaseError:
-                """Handle potential database errors."""
+                # Handle potential database errors.
                 log.warning(
                     f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}"
                 )
@@ -297,12 +285,12 @@ class EntityDataAccess:
                         f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
                     )
                 id_ = None
-                cache.set(entity_key_str, EntityDataAccess.CACHE_ENTRY_IS_NULL)
-                """Mark the cache entry as null."""
+                # Mark the cache entry as null.
+                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         if id_ is None:
             return None
-        return int(id_)
+        return id_
 
     @staticmethod
     async def create_text_search_index(entity_repository: EntityRepository) -> TextSearchIndex:

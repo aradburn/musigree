@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
 
 from sqlalchemy import Result, select
 
@@ -87,10 +87,10 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         """
         # Try to get from cache first
         cache = CacheManager.get_cache()
-        role_key_str = f"ROLE-{name}"
-        role: RuntimeRole | None = cache.get(role_key_str)
-        if role:
-            return role
+        role_key_str = CacheManager.create_cache_hkey(RuntimeRoleTable.__tablename__, name)
+        role_dict: dict[str, Any] | None = cache.hgetall(role_key_str)
+        if role_dict is not None:
+            return RuntimeRole.model_validate(role_dict)
 
         # If not in cache, query database
         query = select(RuntimeRoleTable).where(RuntimeRoleTable.role_name == name)
@@ -102,7 +102,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         role = RuntimeRole.model_validate(instance)
 
         # Cache the result
-        cache.set(role_key_str, role)
+        cache.hset(role_key_str, instance)
 
         return role
 

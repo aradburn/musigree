@@ -5,7 +5,7 @@ import { useSearchApi, type SearchResult } from "../useSearchApi";
 // Mock constants used by the hook
 const MOCK_CONSTANTS = {
     TYPEAHEAD: {
-        MIN_QUERY_LENGTH: 4,
+        MIN_QUERY_LENGTH: 2,
         API_ENDPOINT: "/api/search/%QUERY",
         QUERY_WILDCARD: "%QUERY",
     },
@@ -46,7 +46,7 @@ describe("useSearchApi", () => {
 
     // Test for short query
     it("should return empty results when query is too short", () => {
-        const { result } = renderHook(() => useSearchApi("abc"));
+        const { result } = renderHook(() => useSearchApi("a"));
 
         expect(result.current.results).toEqual([]);
         expect(result.current.loading).toBe(false);

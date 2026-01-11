@@ -331,10 +331,19 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
             className="d-flex flex-column"
             backdropClassName="roles-backdrop"
         >
-            <Offcanvas.Header closeButton>
+            <Offcanvas.Header>
                 <div id="roles-title" className="offcanvas-title h4">
                     Roles
                 </div>
+                <button
+                    type="button"
+                    className="btn btn-link text-dark position-absolute end-0 ps-1 pe-3 py-1"
+                    onClick={handleClose}
+                    aria-label="Close sidebar"
+                    title="Close sidebar"
+                >
+                    <i className="bi bi-x-circle fs-3"></i>
+                </button>
             </Offcanvas.Header>
 
             <Offcanvas.Body className="flex-fill d-flex">

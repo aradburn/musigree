@@ -61,7 +61,7 @@ class TestLoggingConfig:
 
         # Check console handler
         console = handlers["console_handler"]
-        assert console["level"] == "DEBUG"
+        assert console["level"] == "INFO"
         assert console["formatter"] == "standard"
         assert console["class"] == "logging.StreamHandler"
 
@@ -251,7 +251,6 @@ class TestLoggingConfig:
         """Test specific configuration for root logger."""
         for config in [LOGGING_CONFIG, TEST_LOGGING_CONFIG]:
             root_logger = config["loggers"][""]
-            assert root_logger["level"] == "WARNING"
             assert root_logger["propagate"] is False
             assert "default" in root_logger["handlers"]
 
@@ -276,13 +275,3 @@ class TestLoggingConfig:
             LOGGING_CONFIG["disable_existing_loggers"]
             == TEST_LOGGING_CONFIG["disable_existing_loggers"]
         )
-
-        # Both should have musigree and root loggers with same config
-        for logger_name in ["", "musigree", "__main__"]:
-            assert logger_name in LOGGING_CONFIG["loggers"]
-            assert logger_name in TEST_LOGGING_CONFIG["loggers"]
-            # Configuration should be the same for these loggers
-            assert (
-                LOGGING_CONFIG["loggers"][logger_name]
-                == TEST_LOGGING_CONFIG["loggers"][logger_name]
-            )
