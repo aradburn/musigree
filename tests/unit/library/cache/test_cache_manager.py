@@ -249,6 +249,8 @@ class TestCacheManager:
         config.CACHE_TYPE = CacheType.REDIS
         config.REDIS_USERNAME = "test_user"
         config.REDIS_PASSWORD = "test_pass"
+        config.REDIS_HOST = "test_host"
+        config.REDIS_PORT = 8888
 
         mock_cache_instance = MagicMock()
         mock_cache_instance.ping = AsyncMock(return_value=True)
@@ -259,8 +261,8 @@ class TestCacheManager:
         mock_redis_cache.assert_called_once_with(
             username="test_user",
             password="test_pass",
-            host="localhost",
-            port=6379,
+            host="test_host",
+            port=8888,
             db=0,
             default_timeout=60 * 60 * 24 * 7,
         )
@@ -277,6 +279,8 @@ class TestCacheManager:
         config.CACHE_TYPE = CacheType.REDIS
         config.REDIS_USERNAME = "test_user"
         config.REDIS_PASSWORD = "test_pass"
+        config.REDIS_HOST = None
+        config.REDIS_PORT = None
 
         mock_redis_cache.side_effect = Exception("Redis connection failed")
         mock_simple_cache_instance = MagicMock()
