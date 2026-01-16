@@ -90,7 +90,7 @@ class TestRuntimeRoleRepository:
         }
 
         mock_cache = Mock()
-        mock_cache.hgetall.return_value = cached_role_dict
+        mock_cache.hgetall = AsyncMock(return_value=cached_role_dict)
         mock_get_cache.return_value = mock_cache
 
         with patch.object(RuntimeRole, "model_validate") as mock_validate:
@@ -125,7 +125,8 @@ class TestRuntimeRoleRepository:
         mock_instance.role_subcategory = "NONE"
 
         mock_cache = Mock()
-        mock_cache.hgetall.return_value = None  # Not in cache
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Not in cache
+        mock_cache.hset = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         mock_result = Mock(spec=Result)
@@ -161,7 +162,8 @@ class TestRuntimeRoleRepository:
         role_key_str = CacheManager.create_cache_hkey(RuntimeRoleTable.__tablename__, role_name)
 
         mock_cache = Mock()
-        mock_cache.hgetall.return_value = None  # Not in cache
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Not in cache
+        mock_cache.hset = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         mock_result = Mock(spec=Result)
@@ -190,7 +192,7 @@ class TestRuntimeRoleRepository:
         role_key_str = CacheManager.create_cache_hkey(RuntimeRoleTable.__tablename__, role_name)
 
         mock_cache = Mock()
-        mock_cache.hgetall.side_effect = Exception("Cache error")  # Cache fails
+        mock_cache.hgetall = AsyncMock(side_effect=Exception("Cache error"))  # Cache fails
         mock_get_cache.return_value = mock_cache
 
         # WHEN/THEN

@@ -101,7 +101,7 @@ class TestFastAPIIntegration:
             "OPTIONS",
             "/api/roles",
             headers={
-                "Origin": "http://error.com",
+                "Origin": "https://error.com",
                 "Access-Control-Request-Method": "GET",
             },
         )

@@ -81,7 +81,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -179,7 +180,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -275,7 +277,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -339,7 +342,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -398,7 +402,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -454,7 +459,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Mock search results
@@ -502,7 +508,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_search_entities.return_value = {"results": ()}
@@ -541,7 +548,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_search_entities.side_effect = Exception("Search index error")
@@ -574,7 +582,8 @@ class TestFastAPIRoutes:
         # Mock cache - return cached data for cache hit
         mock_cache = MagicMock()
         cached_data = {"results": ({"key": "artist-123", "name": "Cached Artist"},)}
-        mock_cache.hgetall.return_value = cached_data
+        mock_cache.hgetall = AsyncMock(return_value=cached_data)
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Mock the runtime transaction context manager (should not be used on cache hit)
@@ -620,7 +629,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Mock search results
@@ -668,7 +678,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -741,7 +752,8 @@ class TestFastAPIRoutes:
             "genres": [],
             "styles": [],
         }
-        mock_cache.hgetall.return_value = cached_data
+        mock_cache.hgetall = AsyncMock(return_value=cached_data)
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Mock the runtime transaction context manager (should not be used on cache hit)
@@ -784,7 +796,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -889,7 +902,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -931,7 +945,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -987,7 +1002,8 @@ class TestFastAPIRoutes:
         # Mock cache - return cached data for cache hit
         mock_cache = MagicMock()
         cached_data = {"relations": [{"id": "1", "type": "artist"}]}
-        mock_cache.hgetall.return_value = cached_data
+        mock_cache.hgetall = AsyncMock(return_value=cached_data)
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Act
@@ -1030,7 +1046,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1096,7 +1113,8 @@ class TestFastAPIRoutes:
         # Mock cache - return cached data for cache hit
         mock_cache = MagicMock()
         cached_data = {"graph": {"nodes": [{"id": "1"}], "edges": [{"from": "1", "to": "2"}]}}
-        mock_cache.hgetall.return_value = cached_data
+        mock_cache.hgetall = AsyncMock(return_value=cached_data)
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Act
@@ -1139,7 +1157,8 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1190,8 +1209,10 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache for rate limiter
         mock_cache = MagicMock()
-        mock_cache.get.return_value = None  # No rate limit hit
-        mock_cache.ttl.return_value = 60
+        mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
+        mock_cache.ttl = AsyncMock(return_value=60)
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         expected_data = {"roles": ["vocals", "guitar", "drums"]}
@@ -1222,8 +1243,10 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache for rate limiter
         mock_cache = MagicMock()
-        mock_cache.get.return_value = None  # No rate limit hit
-        mock_cache.ttl.return_value = 60
+        mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
+        mock_cache.ttl = AsyncMock(return_value=60)
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1268,8 +1291,10 @@ class TestFastAPIRoutes:
         # Arrange
         # Mock cache for rate limiter
         mock_cache = MagicMock()
-        mock_cache.get.return_value = None  # No rate limit hit
-        mock_cache.ttl.return_value = 60
+        mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
+        mock_cache.ttl = AsyncMock(return_value=60)
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1405,7 +1430,8 @@ class TestAdditionalEndpointScenarios:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1484,7 +1510,8 @@ class TestAdditionalEndpointScenarios:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1532,7 +1559,8 @@ class TestAdditionalEndpointScenarios:
         # Arrange
         # Mock cache - return empty dict (edge case - should be treated as cache hit)
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = {}  # Empty dict, not None
+        mock_cache.hgetall = AsyncMock(return_value={})  # Empty dict, not None
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         # Act
@@ -1573,7 +1601,8 @@ class TestAdditionalEndpointScenarios:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -1640,7 +1669,8 @@ class TestAdditionalEndpointScenarios:
         # Arrange
         # Mock cache - return None for cache miss
         mock_cache = MagicMock()
-        mock_cache.hgetall.return_value = None  # Force a cache miss
+        mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
+        mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()

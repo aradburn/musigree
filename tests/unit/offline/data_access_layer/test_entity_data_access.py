@@ -336,7 +336,10 @@ class TestGetIdByEntityTypeAndEntityName:
     @pytest.fixture
     def mock_cache(self) -> Mock:
         """Fixture for mock cache."""
-        return Mock()
+        cache = Mock()
+        cache.get = AsyncMock()
+        cache.set = AsyncMock()
+        return cache
 
     @patch("musigree.offline.data_access_layer.entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_hit(
@@ -345,7 +348,7 @@ class TestGetIdByEntityTypeAndEntityName:
         """Test get_id_by_entity_type_and_entity_name with cache hit."""
         # Setup
         mock_get_cache.return_value = mock_cache
-        mock_cache.get.return_value = "123"
+        mock_cache.get = AsyncMock(return_value="123")
 
         # Test
         result = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
@@ -367,7 +370,8 @@ class TestGetIdByEntityTypeAndEntityName:
         # The cache stores CACHE_ENTRY_IS_NULL as a string, but the code tries to convert to int
         # which will fail. This test simulates a cache miss instead since null entries
         # can't be properly handled by the current implementation.
-        mock_cache.get.return_value = None
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
@@ -392,7 +396,8 @@ class TestGetIdByEntityTypeAndEntityName:
         """Test get_id_by_entity_type_and_entity_name with cache miss but database hit."""
         # Setup
         mock_get_cache.return_value = mock_cache
-        mock_cache.get.return_value = None
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
         mock_entity_repository.get_id_by_entity_type_and_entity_name.return_value = 456
 
         # Test
@@ -415,7 +420,8 @@ class TestGetIdByEntityTypeAndEntityName:
         """Test get_id_by_entity_type_and_entity_name with both cache and database miss."""
         # Setup
         mock_get_cache.return_value = mock_cache
-        mock_cache.get.return_value = None
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )
@@ -448,7 +454,8 @@ class TestGetIdByEntityTypeAndEntityName:
         """Test get_id_by_entity_type_and_entity_name with logging enabled for not found."""
         # Setup
         mock_get_cache.return_value = mock_cache
-        mock_cache.get.return_value = None
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
         mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
             message="Entity not found"
         )

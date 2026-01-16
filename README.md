@@ -1,9 +1,11 @@
 Musigree
 ========
 
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Faradburn%2Fmusigree%2Fmain%2Fpyproject.toml&query=%24.project.version&label=Version&colorB=blue)
+
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=fff)](#)
 ![GitHub License](https://img.shields.io/github/license/aradburn/musigree)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https://raw.githubusercontent.com/aradburn/musigree/main/pyproject.toml)
-![GitHub Tag](https://img.shields.io/github/v/tag/aradburn/musigree)
 
 Interactive visualization of the **Discogs** database
 

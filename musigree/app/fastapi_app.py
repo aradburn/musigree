@@ -283,7 +283,7 @@ async def shutdown_application() -> None:
     setup_logging()
     log.info("######## APPLICATION SHUTDOWN BEGIN ########")
     await RuntimeDatabaseManager.shutdown_database()
-    CacheManager.shutdown_cache()
+    await CacheManager.shutdown_cache()
     shutdown_logging()
     log.info("######## APPLICATION SHUTDOWN END ########")
 
@@ -310,7 +310,7 @@ async def init_app(config: Configuration) -> None:
         sys.exit()
     else:
         log.debug("Clearing cache")
-        CacheManager.clear()
+        await CacheManager.clear()
 
     # Setup Database
     await RuntimeDatabaseManager.setup_database(config)

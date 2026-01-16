@@ -205,10 +205,10 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
                 # await get_redis_client().incr(key, 1)
                 # if current_requests == 0:
                 #     await get_redis_client().expire(key, period)
-                cache.incr(cache_key)
+                await cache.incr(cache_key)
                 # Set expiration if this is a new key
                 if current_requests == 0:
-                    cache.expire(cache_key, period)
+                    await cache.expire(cache_key, period)
             except Exception as e:
                 log.warning(f"Redis incr/expire error in rate limiter: {e}")
                 # Continue without incrementing - graceful degradation

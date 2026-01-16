@@ -1,13 +1,14 @@
 import datetime
+import enum
 import time
 from collections.abc import AsyncGenerator
+from functools import partial
 from typing import Any
 from unittest.mock import patch, MagicMock
 
 import pytest
 import requests
 from sqlalchemy.orm import DeclarativeBase
-from functools import partial
 
 from musigree import utils
 from musigree.constants import (
@@ -17,10 +18,6 @@ from musigree.constants import (
     DISCOGS_MASTERS_TYPE,
 )
 from musigree.library.fields.entity_type import EntityType
-import enum
-
-import pytest
-
 from musigree.utils import (
     SkipFilter,
     normalize_dict,

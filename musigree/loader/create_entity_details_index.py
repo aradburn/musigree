@@ -35,7 +35,7 @@ async def create_entity_details_index(_config: Configuration) -> None:
         sys.exit()
     else:
         log.debug("Clearing cache")
-        CacheManager.clear()
+        await CacheManager.clear()
 
     await OfflineDatabaseManager.setup_database(_config)
 

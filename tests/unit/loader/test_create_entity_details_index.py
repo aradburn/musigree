@@ -40,7 +40,7 @@ class TestCreateEntityDetailsIndex:
         mock_offline_db_manager.setup_database = AsyncMock()
         mock_offline_db_manager.shutdown_database = MagicMock()
         mock_cache_manager.shutdown_cache = MagicMock()
-        mock_cache_manager.clear = MagicMock()
+        mock_cache_manager.clear = AsyncMock()
 
         mock_loader_instance = MagicMock()
         mock_loader_instance.loader_create_entity_details_index = AsyncMock()
@@ -53,7 +53,7 @@ class TestCreateEntityDetailsIndex:
         mock_setup_logging.assert_called_once()
         mock_cache_manager.setup_cache.assert_called_once_with(mock_config)
         mock_cache_manager.get_cache.assert_called_once()
-        mock_cache_manager.clear.assert_called_once()
+        mock_cache_manager.clear.assert_awaited_once()
         mock_offline_db_manager.setup_database.assert_called_once_with(mock_config)
 
         # Check atexit registrations
@@ -117,6 +117,7 @@ class TestCreateEntityDetailsIndex:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.clear = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
 
         mock_loader_instance = MagicMock()
