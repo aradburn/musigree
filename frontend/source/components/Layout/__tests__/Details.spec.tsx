@@ -7,7 +7,7 @@ import type { EntityData } from "../../../entities";
 
 describe("Details", () => {
     it("renders placeholder when no entity", () => {
-        render(<Details entity={null} />);
+        render(<Details entity={null} isMobile={false} />);
         expect(screen.getByText(/Details/i)).toBeInTheDocument();
     });
 
@@ -24,7 +24,7 @@ describe("Details", () => {
             styles: "House",
         };
 
-        render(<Details entity={entity} />);
+        render(<Details entity={entity} isMobile={false} />);
 
         expect(screen.getByText("Test Artist")).toBeInTheDocument();
         expect(screen.getByText("Artist")).toBeInTheDocument();

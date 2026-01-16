@@ -41,6 +41,7 @@ describe("useWindow", () => {
                 dpr: 2,
                 dimensions: [1024, 768],
                 svgDimensions: [2048, 1536],
+                isMobile: false,
             },
             handleResize: vi.fn(),
         };
