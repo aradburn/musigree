@@ -5,6 +5,7 @@ import { Navbar, Container, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { SearchInput } from "../Search";
 import { FSM } from "../../constants";
 import { version } from "../../version";
+import { useWindow } from "../../contexts/useWindow";
 
 interface HeaderProps {
     onShowHelp?: () => void;
@@ -14,6 +15,8 @@ interface HeaderProps {
  * Header UI component.
  */
 export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
+    const { state: windowState } = useWindow();
+
     const handleRandom = (e: React.MouseEvent<HTMLDivElement>): void => {
         e.preventDefault();
         // Dispatch the REQUEST_RANDOM event to trigger the FSM transition
@@ -22,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
         });
         document.dispatchEvent(event);
     };
+    const containerClassName = windowState.isMobile ? "ps-0" : "";
 
     return (
         <Navbar
@@ -30,26 +34,26 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
             expand="lg"
             className="text-body p-0"
         >
-            <Container fluid>
+            <Container fluid className={containerClassName}>
                 {/* Brand section */}
-                <div className="px-2 py-0 col-lg-2 col-md-2 col-sm-1 col-1 order-1 order-md-1">
-                    <div className="d-flex flex-row navbar-brand px-0 py-0">
-                        <span className="text-body px-sm-2 px-0 py-0">
+                <div className="px-0 px-md-2 py-0 col-lg-2 col-md-2 col-sm-2 col-2 order-1 order-md-1">
+                    <div className="d-flex flex-row navbar-brand align-items-center px-0 py-0">
+                        <span className="text-body px-sm-2 px-1 py-0">
                             <i className="navbar-brand-icon bi bi-snow3"></i>
                         </span>
 
-                        <h3 className="text-body flex-grow-0 px-1 py-0 mb-0 collapse navbar-collapse">
+                        <h3 className="text-body flex-grow-0 d-lg-block d-none px-0 px-lg-2 py-0 mb-0">
                             MUSIGREE
                         </h3>
 
-                        <h6 className="text-body mb-0 collapse navbar-collapse">
+                        <h6 className="text-body mb-0 d-xl-block d-none">
                             &nbsp;v{version}
                         </h6>
                     </div>
                 </div>
 
                 {/* Navbar title section */}
-                <div className="navbar-title flex-grow-1 d-flex justify-content-center px-2 py-0 h-100 d-inline-block col-lg-5 col-md-5 col-sm-10 col-10 order-2 order-md-2">
+                <div className="navbar-title flex-grow-1 d-flex justify-content-center px-sm-2 px-0 py-0 h-100 d-inline-block col-lg-5 col-md-5 col-sm-9 col-9 order-2 order-md-2">
                     <span id="navbar-title"></span>
                 </div>
 

@@ -2,15 +2,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { WindowProvider, WindowContext } from "../WindowContext";
+import { WindowProvider } from "../WindowContext";
+import { WindowContext } from "../windowContextInstance";
 import { INIT, SVG } from "../../constants";
 import { resetNetworkTransform } from "../../network/init";
 import { ResizeEvent } from "../../network/events";
 import { musigreeManager } from "../../core";
 
 // Mock dependencies
-vi.mock("../../utils", () => ({
-    debounce: vi.fn((fn) => fn),
+vi.mock("debounce", () => ({
+    default: vi.fn((fn) => fn),
 }));
 
 vi.mock("../../core", () => ({
@@ -18,6 +19,7 @@ vi.mock("../../core", () => ({
         dpr: 1,
         dimensions: [0, 0],
         svgDimensions: [0, 0],
+        setIsMobileGetter: vi.fn(),
     },
 }));
 
@@ -25,7 +27,7 @@ vi.mock("../../network/init", () => ({
     resetNetworkTransform: vi.fn(),
 }));
 
-vi.mock("../../svg", () => ({
+vi.mock("@/svg", () => ({
     setSvgSize: vi.fn(),
 }));
 
@@ -61,6 +63,10 @@ describe("WindowContext", () => {
         window.dispatchEvent = vi.fn();
         Object.defineProperty(window, "devicePixelRatio", {
             value: 2,
+            configurable: true,
+        });
+        Object.defineProperty(window, "innerWidth", {
+            value: 1024,
             configurable: true,
         });
 
@@ -99,6 +105,7 @@ describe("WindowContext", () => {
         window.dispatchEvent = originalDispatchEvent;
         Object.defineProperty(window, "devicePixelRatio", {
             value: originalDevicePixelRatio,
+            configurable: true,
         });
         console.error = originalConsoleError;
 
@@ -139,6 +146,7 @@ describe("WindowContext", () => {
                 1024 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
                 768 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
             ],
+            isMobile: false,
         });
 
         // Check that it adds the resize event listener
@@ -218,6 +226,7 @@ describe("WindowContext", () => {
                     800 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
                     600 * SVG.VIEWPORT_SIZE_MULTIPLIER * 2,
                 ],
+                isMobile: false,
             });
         });
 
@@ -253,6 +262,7 @@ describe("WindowContext", () => {
             dpr: 2,
             dimensions: [0, 0],
             svgDimensions: [0, 0],
+            isMobile: false,
         });
     });
 

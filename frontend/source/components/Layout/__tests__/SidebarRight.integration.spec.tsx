@@ -17,6 +17,7 @@ describe("SidebarRight + EntityProvider integration", () => {
             <EntityProvider>
                 <SidebarRight
                     isCollapsed={false}
+                    isMobile={false}
                     onToggleCollapse={mockToggleCollapse}
                 />
             </EntityProvider>,
