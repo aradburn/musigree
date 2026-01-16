@@ -141,6 +141,7 @@ class RedisCache(BaseCache):
                 redis_url = f"redis://{username}:{password}@{host}:{port}/{db}"
             else:
                 redis_url = f"redis://{host}:{port}/{db}"
+            log.info(f"Redis server: {redis_url}")
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
             # self._client = aioredis.Redis(
@@ -150,9 +151,7 @@ class RedisCache(BaseCache):
             #     db=db,
             #     auto_close_connection_pool=True,
             # )
-            # Test connection
-            self._client.ping()
-            log.info("Successfully connected to Redis server")
+
         except Exception as e:
             log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
             self._client = fakeredis.FakeRedis()
@@ -318,6 +317,9 @@ class CacheManager:
                     db=0,
                     default_timeout=60 * 60 * 24 * 7,
                 )
+                # Test connection
+                # await self._client.ping()
+                # log.info("Successfully connected to Redis server")
                 log.info("Using Redis cache")
             except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
