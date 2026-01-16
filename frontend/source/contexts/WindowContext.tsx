@@ -8,7 +8,7 @@ import { ResizeEvent } from "../network/events";
 import { resetNetworkTransform } from "../network/init";
 import { setSvgSize } from "@/svg";
 import { WindowContext } from "./windowContextInstance";
-import type { WindowState, WindowContextProps } from "./windowContextInstance";
+import type { WindowState } from "./windowContextInstance";
 
 // Initial state (with placeholder values that will be updated in useEffect)
 const initialState: WindowState = {

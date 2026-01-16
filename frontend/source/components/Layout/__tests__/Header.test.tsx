@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { Header } from "../Header";
 import { FSM } from "../../../constants";
+import { WindowProvider } from "../../../contexts/WindowContext";
 
 // Mock SearchInput component
 vi.mock("../../Search", () => ({
@@ -12,6 +13,38 @@ vi.mock("../../Search", () => ({
             {placeholder}
         </div>
     )),
+}));
+
+// Mock dependencies for WindowProvider
+vi.mock("debounce", () => ({
+    default: vi.fn((fn) => fn),
+}));
+
+vi.mock("../../../core", () => ({
+    musigreeManager: {
+        dpr: 1,
+        dimensions: [0, 0],
+        svgDimensions: [0, 0],
+        setIsMobileGetter: vi.fn(),
+    },
+}));
+
+vi.mock("../../../network/init", () => ({
+    resetNetworkTransform: vi.fn(),
+}));
+
+vi.mock("@/svg", () => ({
+    setSvgSize: vi.fn(),
+}));
+
+vi.mock("../../../network/events", () => ({
+    ResizeEvent: vi.fn().mockImplementation(function () {
+        return {
+            type: "musigree:resize",
+            bubbles: true,
+            detail: {},
+        };
+    }),
 }));
 
 // We need to mock react-bootstrap to handle OverlayTrigger and Tooltip
@@ -45,18 +78,86 @@ vi.mock("react-bootstrap", () => {
 });
 
 describe("Header Component", () => {
+    // Setup mocks for window and document
+    const originalAddEventListener = window.addEventListener;
+    const originalRemoveEventListener = window.removeEventListener;
+    const originalDispatchEvent = window.dispatchEvent;
+    const originalDevicePixelRatio = window.devicePixelRatio;
+    const originalConsoleError = console.error;
+    const mockSvgContainer = document.createElement("div");
+    mockSvgContainer.id = "svg-container-fluid";
+    mockSvgContainer.style.width = "1024px";
+    mockSvgContainer.style.height = "768px";
+
     // Setup and teardown
     beforeEach(() => {
+        // Reset mocks
+        vi.clearAllMocks();
+
+        // Mock window methods
+        window.addEventListener = vi.fn();
+        window.removeEventListener = vi.fn();
+        window.dispatchEvent = vi.fn();
+        Object.defineProperty(window, "devicePixelRatio", {
+            value: 2,
+            configurable: true,
+        });
+        Object.defineProperty(window, "innerWidth", {
+            value: 1024,
+            configurable: true,
+        });
+
+        // Mock console.error
+        console.error = vi.fn();
+
+        // Mock document.getElementById
+        vi.spyOn(document, "getElementById").mockImplementation((id) => {
+            if (id === "svg-container-fluid") {
+                return mockSvgContainer;
+            }
+            return null;
+        });
+
+        // Mock getBoundingClientRect for SVG container
+        mockSvgContainer.getBoundingClientRect = vi.fn().mockReturnValue({
+            width: 1024,
+            height: 768,
+        });
+
+        // Mock clientWidth and clientHeight with configurable: true
+        Object.defineProperty(mockSvgContainer, "clientWidth", {
+            value: 1024,
+            configurable: true,
+        });
+        Object.defineProperty(mockSvgContainer, "clientHeight", {
+            value: 768,
+            configurable: true,
+        });
+
         // Mock document.dispatchEvent
         vi.spyOn(document, "dispatchEvent").mockImplementation(vi.fn());
     });
 
     afterEach(() => {
+        // Restore original methods
+        window.addEventListener = originalAddEventListener;
+        window.removeEventListener = originalRemoveEventListener;
+        window.dispatchEvent = originalDispatchEvent;
+        Object.defineProperty(window, "devicePixelRatio", {
+            value: originalDevicePixelRatio,
+            configurable: true,
+        });
+        console.error = originalConsoleError;
+
         vi.restoreAllMocks();
     });
 
     it("renders correctly with all elements", () => {
-        const { container } = render(<Header />);
+        const { container } = render(
+            <WindowProvider>
+                <Header />
+            </WindowProvider>,
+        );
 
         // Debug output to see what's rendered
         // console.log(container.innerHTML);
@@ -80,7 +181,11 @@ describe("Header Component", () => {
     it("calls onShowHelp callback when help button is clicked", async () => {
         const mockOnShowHelp = vi.fn();
         const user = userEvent.setup();
-        render(<Header onShowHelp={mockOnShowHelp} />);
+        render(
+            <WindowProvider>
+                <Header onShowHelp={mockOnShowHelp} />
+            </WindowProvider>,
+        );
 
         // Find the help button by its text and closest div with role="button"
         const helpText = screen.getByText("HELP");
@@ -94,7 +199,11 @@ describe("Header Component", () => {
 
     it("dispatches REQUEST_RANDOM event when random button is clicked", async () => {
         const user = userEvent.setup();
-        render(<Header />);
+        render(
+            <WindowProvider>
+                <Header />
+            </WindowProvider>,
+        );
 
         // Find the random button by its text and closest div with role="button"
         const randomText = screen.getByText("RANDOM");
@@ -113,7 +222,11 @@ describe("Header Component", () => {
     });
 
     it("renders tooltips correctly", () => {
-        render(<Header />);
+        render(
+            <WindowProvider>
+                <Header />
+            </WindowProvider>,
+        );
 
         // Check tooltip contents
         const tooltipContents = screen.getAllByTestId("tooltip-content");
