@@ -28,7 +28,7 @@ async def create_entity_details_index(_config: Configuration) -> None:
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
 
     # Setup Cache
-    CacheManager.setup_cache(_config)
+    await CacheManager.setup_cache(_config)
     cache = CacheManager.get_cache()
     if cache is None:
         log.error("Cache not set")

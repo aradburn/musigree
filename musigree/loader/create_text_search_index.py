@@ -55,14 +55,14 @@ def create_text_search_index() -> None:
 
     atexit.register(shutdown_loader)
 
-    # Setup Cache
-    CacheManager.setup_cache(offline_config)
-    cache = CacheManager.get_cache()
-    if cache is None:
-        log.error("Cache not set")
-        sys.exit()
-
     with asyncio.Runner() as runner:
+        # Setup Cache
+        runner.run(CacheManager.setup_cache(offline_config))
+        cache = CacheManager.get_cache()
+        if cache is None:
+            log.error("Cache not set")
+            sys.exit()
+
         log.debug("Clearing cache")
         runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))

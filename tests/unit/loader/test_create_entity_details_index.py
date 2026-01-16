@@ -37,6 +37,7 @@ class TestCreateEntityDetailsIndex:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_cache = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
         mock_offline_db_manager.shutdown_database = MagicMock()
         mock_cache_manager.shutdown_cache = MagicMock()
@@ -51,7 +52,7 @@ class TestCreateEntityDetailsIndex:
 
         # Assert
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_cache.assert_called_once_with(mock_config)
+        mock_cache_manager.setup_cache.assert_awaited_once_with(mock_config)
         mock_cache_manager.get_cache.assert_called_once()
         mock_cache_manager.clear.assert_awaited_once()
         mock_offline_db_manager.setup_database.assert_called_once_with(mock_config)
@@ -84,6 +85,7 @@ class TestCreateEntityDetailsIndex:
         """Test behavior when cache is not set."""
         # Arrange
         mock_cache_manager.get_cache.return_value = None
+        mock_cache_manager.setup_cache = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
 
         # Mock sys.exit to raise SystemExit instead of just recording the call
@@ -95,7 +97,7 @@ class TestCreateEntityDetailsIndex:
 
         # Assert calls that should have happened before sys.exit()
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_cache.assert_called_once_with(mock_config)
+        mock_cache_manager.setup_cache.assert_awaited_once_with(mock_config)
         mock_cache_manager.get_cache.assert_called_once()
         mock_sys.exit.assert_called_once()
         # Should not call database setup when cache is not set
@@ -117,6 +119,7 @@ class TestCreateEntityDetailsIndex:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_cache = AsyncMock()
         mock_cache_manager.clear = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
 

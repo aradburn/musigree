@@ -49,7 +49,7 @@ async def offline_database_setup(
     log.info("Setting up offline database for tests")
 
     # Set up cache manager
-    CacheManager.setup_cache(offline_config)
+    await CacheManager.setup_cache(offline_config)
 
     # Set up database
     try:
@@ -153,7 +153,7 @@ async def runtime_database_setup(
     log.info("Setting up runtime database for tests")
 
     # Set up cache manager
-    CacheManager.setup_cache(runtime_config)
+    await CacheManager.setup_cache(runtime_config)
 
     # Set up database
     try:

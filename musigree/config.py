@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
@@ -108,28 +107,28 @@ class PostgresProductionConfiguration(Configuration):
     REDIS_HOST: str | None = Field(default=None, description="Redis host from environment variable")
     REDIS_PORT: int | None = Field(default=None, description="Redis port from environment variable")
 
-    def model_post_init(self, __context: Any) -> None:
-        """Set values from environment variables if not provided in constructor."""
-        if self.POSTGRES_DATABASE_USERNAME is None:
-            self.POSTGRES_DATABASE_USERNAME = os.getenv("MUSIGREE_DATABASE_USERNAME")
-        if self.POSTGRES_DATABASE_PASSWORD is None:
-            self.POSTGRES_DATABASE_PASSWORD = os.getenv("MUSIGREE_DATABASE_PASSWORD")
-        if self.POSTGRES_DATABASE_HOST is None:
-            self.POSTGRES_DATABASE_HOST = os.getenv("MUSIGREE_DATABASE_HOST")
-        if self.POSTGRES_DATABASE_PORT is None:
-            port_str = os.getenv("MUSIGREE_DATABASE_PORT")
-            self.POSTGRES_DATABASE_PORT = int(port_str) if port_str else None
-        if self.POSTGRES_OFFLINE_DATABASE_NAME is None:
-            self.POSTGRES_OFFLINE_DATABASE_NAME = os.getenv("MUSIGREE_DATABASE_NAME")
-        # if self.REDIS_USERNAME is None:
-        #     self.REDIS_USERNAME = os.getenv("REDIS_USERNAME")
-        # if self.REDIS_PASSWORD is None:
-        #     self.REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
-        # if self.REDIS_HOST is None:
-        #     self.REDIS_HOST = os.getenv("REDIS_HOST")
-        # if self.REDIS_PORT is None:
-        #     port_str = os.getenv("REDIS_PORT")
-        #     self.REDIS_PORT = int(port_str) if port_str else None
+    # def model_post_init(self, __context: Any) -> None:
+    #     """Set values from environment variables if not provided in constructor."""
+    #     if self.POSTGRES_DATABASE_USERNAME is None:
+    #         self.POSTGRES_DATABASE_USERNAME = os.getenv("MUSIGREE_DATABASE_USERNAME")
+    #     if self.POSTGRES_DATABASE_PASSWORD is None:
+    #         self.POSTGRES_DATABASE_PASSWORD = os.getenv("MUSIGREE_DATABASE_PASSWORD")
+    #     if self.POSTGRES_DATABASE_HOST is None:
+    #         self.POSTGRES_DATABASE_HOST = os.getenv("MUSIGREE_DATABASE_HOST")
+    #     if self.POSTGRES_DATABASE_PORT is None:
+    #         port_str = os.getenv("MUSIGREE_DATABASE_PORT")
+    #         self.POSTGRES_DATABASE_PORT = int(port_str) if port_str else None
+    #     if self.POSTGRES_OFFLINE_DATABASE_NAME is None:
+    #         self.POSTGRES_OFFLINE_DATABASE_NAME = os.getenv("MUSIGREE_DATABASE_NAME")
+    #     # if self.REDIS_USERNAME is None:
+    #     #     self.REDIS_USERNAME = os.getenv("REDIS_USERNAME")
+    #     # if self.REDIS_PASSWORD is None:
+    #     #     self.REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+    #     # if self.REDIS_HOST is None:
+    #     #     self.REDIS_HOST = os.getenv("REDIS_HOST")
+    #     # if self.REDIS_PORT is None:
+    #     #     port_str = os.getenv("REDIS_PORT")
+    #     #     self.REDIS_PORT = int(port_str) if port_str else None
 
 
 class PostgresDevelopmentConfiguration(Configuration):

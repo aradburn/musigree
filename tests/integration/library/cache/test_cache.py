@@ -21,7 +21,7 @@ class TestCache:
 
     @pytest.mark.asyncio
     async def test_01(self) -> None:
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -31,7 +31,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_02(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -49,7 +49,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_03(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -76,7 +76,7 @@ class TestCache:
 
     @pytest.mark.asyncio
     async def test_04(self) -> None:
-        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
+        await CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -86,7 +86,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_05(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
+        await CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -104,7 +104,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_06(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteDevelopmentConfiguration())
+        await CacheManager.setup_cache(SqliteDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -122,7 +122,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_07(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -141,7 +141,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_08(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -154,7 +154,7 @@ class TestCache:
 
     @pytest.mark.asyncio
     async def test_postgres_01(self) -> None:
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -164,7 +164,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_02(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -182,7 +182,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_03(self) -> None:
         cache_key = "test_key"
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
 
         cache = CacheManager.get_cache()
 
@@ -207,7 +207,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_get_nonexistent_key(self) -> None:
         """Test getting a non-existent key returns None."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -217,7 +217,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_hgetall_nonexistent_key(self) -> None:
         """Test getting a non-existent hash key returns None."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -227,7 +227,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_clear_cache(self) -> None:
         """Test clearing the cache removes all entries."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -248,7 +248,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_cache_manager_clear(self) -> None:
         """Test CacheManager.clear method."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -276,7 +276,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_shutdown_cache_clears_cache(self) -> None:
         """Test that shutdown_cache clears the cache."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -318,7 +318,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_set_with_timeout(self) -> None:
         """Test set method with timeout parameter."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -330,7 +330,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_hset_with_timeout(self) -> None:
         """Test hset method with timeout parameter."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -343,7 +343,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_incr_redis(self) -> None:
         """Test incr method with Redis cache."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -361,7 +361,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_expire_redis(self) -> None:
         """Test expire method with Redis cache."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -375,7 +375,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_ttl_redis(self) -> None:
         """Test ttl method with Redis cache."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -398,7 +398,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_multiple_operations_sequence(self) -> None:
         """Test multiple cache operations in sequence."""
-        CacheManager.setup_cache(SqliteTestConfiguration())
+        await CacheManager.setup_cache(SqliteTestConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -427,7 +427,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_clear(self) -> None:
         """Test clear with Postgres configuration."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -442,7 +442,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_multiple_hash_operations(self) -> None:
         """Test multiple hash operations with Postgres configuration."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -468,7 +468,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_set_get_various_types(self) -> None:
         """Test set/get with various value types using Postgres configuration."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
@@ -490,7 +490,7 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_postgres_hash_complex_data(self) -> None:
         """Test hash operations with complex nested data structures."""
-        CacheManager.setup_cache(PostgresDevelopmentConfiguration())
+        await CacheManager.setup_cache(PostgresDevelopmentConfiguration())
         cache = CacheManager.get_cache()
         assert cache is not None
 
