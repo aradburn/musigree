@@ -248,7 +248,7 @@ class EntityDataAccess:
             "id",
         )
         # Get the value from the cache.
-        id_str: str | None = cache.get(entity_key_str)
+        id_str: str | None = await cache.get(entity_key_str)
         # If cache entry was marked as null, return None.
         if id_str == CACHE_ENTRY_IS_NULL:
             return None
@@ -263,9 +263,9 @@ class EntityDataAccess:
 
                 # Cache the internal id, not entity_id
                 if internal_id is not None:
-                    cache.set(entity_key_str, str(internal_id))
+                    await cache.set(entity_key_str, str(internal_id))
                 else:
-                    cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                    await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
                 id_ = internal_id
             except IntegrityError:
                 # Handle potential database errors.
@@ -286,7 +286,7 @@ class EntityDataAccess:
                     )
                 id_ = None
                 # Mark the cache entry as null.
-                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         if id_ is None:
             return None

@@ -88,8 +88,7 @@ class ThreadingModel(enum.Enum):
 # Cache
 class CacheType(enum.Enum):
     MEMORY = 1
-    FILESYSTEM = 2
-    REDIS = 3
+    REDIS = 2
 
 
 CACHE_KEY_SEPARATOR = ":"

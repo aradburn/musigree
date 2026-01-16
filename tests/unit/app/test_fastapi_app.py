@@ -294,6 +294,7 @@ class TestInitApp:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.clear = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
@@ -304,7 +305,7 @@ class TestInitApp:
         # Note: setup_logging is called in create_app, not init_app
         mock_cache_manager.setup_cache.assert_called_once_with(test_config)
         mock_cache_manager.get_cache.assert_called_once()
-        mock_cache_manager.clear.assert_called_once()
+        mock_cache_manager.clear.assert_awaited_once()
         mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
         mock_role_data_access.load_all_roles_into_cache.assert_called_once()
         mock_asyncio_atexit.register.assert_called_once()
@@ -332,6 +333,7 @@ class TestInitApp:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.clear = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
@@ -361,6 +363,7 @@ class TestShutdownApplication:
         """Test successful application shutdown."""
         # Arrange
         mock_runtime_db_manager.shutdown_database = AsyncMock()
+        mock_cache_manager.shutdown_cache = AsyncMock()
 
         # Act
         await shutdown_application()
@@ -368,7 +371,7 @@ class TestShutdownApplication:
         # Assert
         mock_setup_logging.assert_called_once()
         mock_runtime_db_manager.shutdown_database.assert_called_once()
-        mock_cache_manager.shutdown_cache.assert_called_once()
+        mock_cache_manager.shutdown_cache.assert_awaited_once()
         mock_shutdown_logging.assert_called_once()
 
 

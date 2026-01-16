@@ -88,7 +88,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         # Try to get from cache first
         cache = CacheManager.get_cache()
         role_key_str = CacheManager.create_cache_hkey(RuntimeRoleTable.__tablename__, name)
-        role_dict: dict[str, Any] | None = cache.hgetall(role_key_str)
+        role_dict: dict[str, Any] | None = await cache.hgetall(role_key_str)
         if role_dict is not None:
             return RuntimeRole.model_validate(role_dict)
 
@@ -102,7 +102,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         role = RuntimeRole.model_validate(instance)
 
         # Cache the result
-        cache.hset(role_key_str, instance)
+        await cache.hset(role_key_str, instance)
 
         return role
 

@@ -8,7 +8,7 @@ year range parsing, role filtering, Redis client management, and rate limiting f
 
 import time
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from fastapi import Request, Response
 
 from musigree.app.fastapi_dependencies import (
@@ -236,8 +236,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter allows request within limit."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "5"  # Current requests
         mock_cache.ttl.return_value = 30
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -263,8 +266,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter raises RateLimitError when limit exceeded."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "10"  # Current requests equal to limit
         mock_cache.ttl.return_value = 30
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -282,8 +288,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles None value from cache."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = None
         mock_cache.ttl.return_value = 60
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -302,8 +311,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles bytes value from cache."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = b"3"  # Bytes value (defensive check in implementation)
         mock_cache.ttl.return_value = 45
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -319,9 +331,12 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles invalid cache value types gracefully."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         # Simulate a value that can't be converted to int
         mock_cache.get.return_value = "invalid_number"
         mock_cache.ttl.return_value = 60
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -338,8 +353,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles cache get exception gracefully."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.side_effect = Exception("Cache connection error")
         mock_cache.ttl.return_value = 60
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -356,8 +374,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles cache TTL exception gracefully."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "1"
         mock_cache.ttl.side_effect = Exception("Cache TTL error")
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -376,9 +397,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles cache incr exception gracefully."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "1"
         mock_cache.ttl.return_value = 30
-        mock_cache.incr.side_effect = Exception("Cache incr error")
+        mock_cache.incr = AsyncMock(side_effect=Exception("Cache incr error"))
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -398,8 +421,11 @@ class TestRateLimiter:
 
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
+            # Note: get and ttl are called without await in the implementation
             mock_cache.get.return_value = None
             mock_cache.ttl.return_value = 60
+            mock_cache.incr = AsyncMock()
+            mock_cache.expire = AsyncMock()
             mock_get_cache.return_value = mock_cache
 
             limiter = rate_limiter(max_requests=10, period=60)
@@ -422,8 +448,11 @@ class TestRateLimiter:
 
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
+            # Note: get and ttl are called without await in the implementation
             mock_cache.get.return_value = None
             mock_cache.ttl.return_value = 60
+            mock_cache.incr = AsyncMock()
+            mock_cache.expire = AsyncMock()
             mock_get_cache.return_value = mock_cache
 
             limiter = rate_limiter(max_requests=10, period=60)
@@ -441,8 +470,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter uses valid TTL from cache."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "2"
         mock_cache.ttl.return_value = 45  # Valid positive TTL
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -461,8 +493,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter uses period for invalid TTL values."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "2"
         mock_cache.ttl.return_value = -1  # Invalid TTL
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -481,8 +516,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter handles None TTL from cache."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "2"
         mock_cache.ttl.return_value = None  # None TTL
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -501,8 +539,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter increments request count correctly."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "3"
         mock_cache.ttl.return_value = 30
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -520,8 +561,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter sets expiration for new cache keys."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = None  # New key
         mock_cache.ttl.return_value = None
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -539,8 +583,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter enforces limit exactly at the boundary."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "9"  # One less than limit
         mock_cache.ttl.return_value = 30
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)
@@ -558,8 +605,11 @@ class TestRateLimiter:
     ) -> None:
         """Test that rate limiter raises error when limit is exceeded."""
         mock_cache = MagicMock()
+        # Note: get and ttl are called without await in the implementation
         mock_cache.get.return_value = "11"  # Exceeds limit
         mock_cache.ttl.return_value = 30
+        mock_cache.incr = AsyncMock()
+        mock_cache.expire = AsyncMock()
         mock_get_cache.return_value = mock_cache
 
         limiter = rate_limiter(max_requests=10, period=60)

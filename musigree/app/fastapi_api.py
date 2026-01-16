@@ -92,7 +92,7 @@ async def route__api__entity_type__details__entity_id(
     cache_key_str = CacheManager.create_cache_hkey(
         "api", f"{entity_type.name.lower()}/details/{entity_id}"
     )
-    entity_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    entity_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if entity_data is not None:
         return entity_data
     try:
@@ -118,7 +118,7 @@ async def route__api__entity_type__details__entity_id(
     }
 
     # Cache the result
-    cache.hset(cache_key_str, entity_data)
+    await cache.hset(cache_key_str, entity_data)
 
     return entity_data
 
@@ -171,7 +171,7 @@ async def route__api__entity_type__network__entity_id(
     cache_key_str = CacheManager.create_cache_hkey(
         "api", f"{entity_type.name.lower()}/network/{entity_id}"
     )
-    network_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    network_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if network_data is not None:
         return network_data
 
@@ -194,7 +194,7 @@ async def route__api__entity_type__network__entity_id(
         raise NotFoundError(message="No Data")
 
     # Cache the result
-    cache.hset(cache_key_str, network_data)
+    await cache.hset(cache_key_str, network_data)
 
     return network_data
 
@@ -241,7 +241,7 @@ async def route__api__entity_type__relations__entity_id(
     cache_key_str = CacheManager.create_cache_hkey(
         "api", f"{entity_type.name.lower()}/relations/{entity_id}"
     )
-    relations_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    relations_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if relations_data is not None:
         return relations_data
     try:
@@ -262,7 +262,7 @@ async def route__api__entity_type__relations__entity_id(
         raise NotFoundError(message="No Relations Data")
 
     # Cache the result
-    cache.hset(cache_key_str, relations_data)
+    await cache.hset(cache_key_str, relations_data)
 
     return relations_data
 
@@ -299,7 +299,7 @@ async def route__api__search(
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey("api", f"search/{normalised_search_string}")
-    search_data: dict[str, Any] | None = cache.hgetall(cache_key_str)
+    search_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if search_data is not None:
         return search_data
 
@@ -315,7 +315,7 @@ async def route__api__search(
         raise NotFoundError(message="Entity name not found") from None
 
     # Cache the result
-    cache.hset(cache_key_str, search_data)
+    await cache.hset(cache_key_str, search_data)
 
     return search_data
 

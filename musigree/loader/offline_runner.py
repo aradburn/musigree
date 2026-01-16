@@ -33,7 +33,7 @@ async def run_offline_loading_process(
         sys.exit()
     else:
         log.debug("Clearing cache")
-        CacheManager.clear()
+        await CacheManager.clear()
 
     await OfflineDatabaseManager.setup_database(_config)
 

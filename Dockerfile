@@ -59,6 +59,10 @@ ENV NODE_ENV=production
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app" \
     PYTHONUNBUFFERED=1
+ENV REDIS_HOST=${REDIS_HOST}
+ENV REDIS_PORT=${REDIS_PORT}
+ENV REDIS_USERNAME=${REDIS_USERNAME}
+ENV REDIS_PASSWORD=${REDIS_PASSWORD}
 
 # Add metadata labels
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \

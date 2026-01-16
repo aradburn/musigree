@@ -163,7 +163,7 @@ class RuntimeEntityDataAccess:
             "id",
         )
         # Get the value from the cache.
-        id_str: str | None = cache.get(entity_key_str)
+        id_str: str | None = await cache.get(entity_key_str)
         id_: int | None = int(id_str) if id_str else None
         # If cache entry was marked as null, return None.
         if id_ == CACHE_ENTRY_IS_NULL:
@@ -177,7 +177,7 @@ class RuntimeEntityDataAccess:
                 )
 
                 # Cache the internal id, not entity_id
-                cache.set(entity_key_str, str(internal_id))
+                await cache.set(entity_key_str, str(internal_id))
                 id_ = internal_id
             except IntegrityError:
                 # Handle potential database errors.
@@ -198,7 +198,7 @@ class RuntimeEntityDataAccess:
                     )
                 id_ = None
                 # Mark the cache entry as null.
-                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         if id_ is None:
             return None
@@ -213,7 +213,7 @@ class RuntimeEntityDataAccess:
         # Create the cache key.
         entity_key_str = CacheManager.create_cache_key("entity", str(id_), "name")
 
-        name: str | None = cache.get(entity_key_str)
+        name: str | None = await cache.get(entity_key_str)
         if name == CACHE_ENTRY_IS_NULL:
             return None
 
@@ -221,16 +221,16 @@ class RuntimeEntityDataAccess:
             try:
                 name = await entity_repository.get_entity_name_by_id(id_)
                 if name is not None:
-                    cache.set(entity_key_str, name)
+                    await cache.set(entity_key_str, name)
                 else:
                     # Mark the cache entry as null.
-                    cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                    await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
             except NotFoundError:
                 if LOGGING_TRACE:
                     log.debug(f"get_entity_name_by_id id not found: {id_}")
                 name = None
                 # Mark the cache entry as null.
-                cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+                await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         return name
 

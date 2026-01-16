@@ -210,8 +210,7 @@ def shutdown_offline_loader() -> None:
     with asyncio.Runner() as runner:
         runner.run(OfflineDatabaseManager.shutdown_database())
         runner.run(RuntimeDatabaseManager.shutdown_database())
-
-    CacheManager.shutdown_cache()
+        runner.run(CacheManager.shutdown_cache())
     shutdown_logging()
     log.info("######## OFFLINE LOADER SHUTDOWN DONE ########")
 
@@ -246,11 +245,10 @@ def offline_loader_main() -> None:
     if cache is None:
         log.error("Cache not set")
         sys.exit()
-    else:
-        log.debug("Clearing cache")
-        CacheManager.clear()
 
     with asyncio.Runner() as runner:
+        log.debug("Clearing cache")
+        runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))
         runner.close()
 

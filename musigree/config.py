@@ -41,7 +41,7 @@ class Configuration(BaseSettings):
     DATABASE: DatabaseType = DatabaseType.SQLITE
     APPLICATION_ROOT: str = "http://localhost"
     THREADING_MODEL: ThreadingModel = ThreadingModel.THREAD
-    CACHE_TYPE: CacheType = CacheType.FILESYSTEM
+    CACHE_TYPE: CacheType = CacheType.MEMORY
 
     # PostgreSQL settings
     POSTGRES_DATABASE_USERNAME: str | None = None
@@ -58,6 +58,12 @@ class Configuration(BaseSettings):
     SQLITE_OFFLINE_DATABASE_NAME: Path | None = None
     SQLITE_RUNTIME_DATABASE_NAME: Path | None = None
 
+    # Redis settings
+    REDIS_USERNAME: str | None = None
+    REDIS_PASSWORD: str | None = None
+    REDIS_HOST: str | None = None
+    REDIS_PORT: int | None = None
+
 
 class PostgresProductionConfiguration(Configuration):
     """Production configuration for PostgreSQL database."""
@@ -69,7 +75,7 @@ class PostgresProductionConfiguration(Configuration):
     DATABASE: DatabaseType = DatabaseType.POSTGRES
     APPLICATION_ROOT: str = "https://musigree.azurewebsites.net/"
     THREADING_MODEL: ThreadingModel = ThreadingModel.PROCESS
-    CACHE_TYPE: CacheType = CacheType.FILESYSTEM
+    CACHE_TYPE: CacheType = CacheType.REDIS
 
     # Use default None values for tests, but prefer env vars when available
     # (modify Field default with default_factory to use os.getenv at runtime)
@@ -91,6 +97,16 @@ class PostgresProductionConfiguration(Configuration):
         default=None,
         description="PostgreSQL offline database name from environment variable",
     )
+    REDIS_USERNAME: str | None = Field(
+        default=None,
+        description="Redis username from environment variable",
+    )
+    REDIS_PASSWORD: str | None = Field(
+        default=None,
+        description="Redis password from environment variable",
+    )
+    REDIS_HOST: str | None = Field(default=None, description="Redis host from environment variable")
+    REDIS_PORT: int | None = Field(default=None, description="Redis port from environment variable")
 
     def model_post_init(self, __context: Any) -> None:
         """Set values from environment variables if not provided in constructor."""
@@ -105,6 +121,15 @@ class PostgresProductionConfiguration(Configuration):
             self.POSTGRES_DATABASE_PORT = int(port_str) if port_str else None
         if self.POSTGRES_OFFLINE_DATABASE_NAME is None:
             self.POSTGRES_OFFLINE_DATABASE_NAME = os.getenv("MUSIGREE_DATABASE_NAME")
+        if self.REDIS_USERNAME is None:
+            self.REDIS_USERNAME = os.getenv("REDIS_USERNAME")
+        if self.REDIS_PASSWORD is None:
+            self.REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+        if self.REDIS_HOST is None:
+            self.REDIS_HOST = os.getenv("REDIS_HOST")
+        if self.REDIS_PORT is None:
+            port_str = os.getenv("REDIS_PORT")
+            self.REDIS_PORT = int(port_str) if port_str else None
 
 
 class PostgresDevelopmentConfiguration(Configuration):
@@ -125,6 +150,10 @@ class PostgresDevelopmentConfiguration(Configuration):
     POSTGRES_DATABASE_HOST: str = "localhost"
     POSTGRES_DATABASE_PORT: int = 5432
     POSTGRES_OFFLINE_DATABASE_NAME: str = "musigree_dev"
+    REDIS_USERNAME: str = ""
+    REDIS_PASSWORD: str = ""
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
 
 class PostgresTestConfiguration(Configuration):
@@ -176,6 +205,30 @@ class SqliteProductionConfiguration(Configuration):
     SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
     SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
 
+    # Redis cache
+    REDIS_USERNAME: str | None = Field(
+        default=None,
+        description="Redis username from environment variable",
+    )
+    REDIS_PASSWORD: str | None = Field(
+        default=None,
+        description="Redis password from environment variable",
+    )
+    REDIS_HOST: str | None = Field(default=None, description="Redis host from environment variable")
+    REDIS_PORT: int | None = Field(default=None, description="Redis port from environment variable")
+
+    def model_post_init(self, __context: Any) -> None:
+        """Set values from environment variables if not provided in constructor."""
+        if self.REDIS_USERNAME is None:
+            self.REDIS_USERNAME = os.getenv("REDIS_USERNAME")
+        if self.REDIS_PASSWORD is None:
+            self.REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+        if self.REDIS_HOST is None:
+            self.REDIS_HOST = os.getenv("REDIS_HOST")
+        if self.REDIS_PORT is None:
+            port_str = os.getenv("REDIS_PORT")
+            self.REDIS_PORT = int(port_str) if port_str else None
+
 
 class SqliteDevelopmentConfiguration(Configuration):
     """Development configuration for SQLite database."""
@@ -192,6 +245,12 @@ class SqliteDevelopmentConfiguration(Configuration):
     # SQLite settings
     SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_dev.db"
     SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_dev.db"
+
+    # Redis cache settings
+    REDIS_USERNAME: str = ""
+    REDIS_PASSWORD: str = ""
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
 
 class SqliteTestConfiguration(Configuration):

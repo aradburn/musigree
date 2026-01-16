@@ -3,8 +3,8 @@ import logging
 from json import JSONDecodeError
 from typing import Any
 
-import redis
 import fakeredis
+from redis import asyncio as aioredis
 
 from musigree.config import Configuration
 from musigree.constants import CacheType, CACHE_KEY_SEPARATOR
@@ -23,36 +23,40 @@ __all__ = [
 class BaseCache:
     """Base cache class that defines the interface for all cache implementations."""
 
-    def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         raise NotImplementedError
 
-    def set(self, key: str, value: str, timeout: int | None = None) -> None:
+    async def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         raise NotImplementedError
 
-    def incr(self, key: str) -> None:
+    async def incr(self, key: str) -> None:
         """Increment value in cache for the given key."""
         raise NotImplementedError
 
-    def expire(self, key: str, timeout: int) -> None:
+    async def expire(self, key: str, timeout: int) -> None:
         """Set the timeout for the given key."""
         raise NotImplementedError
 
-    def ttl(self, key: str) -> int:
+    async def ttl(self, key: str) -> int:
         """Get the timeout for the given key."""
         raise NotImplementedError
 
-    def hgetall(self, key: str) -> dict[str, Any] | None:
+    async def hgetall(self, key: str) -> dict[str, Any] | None:
         """Get hash value from cache for the given key."""
         raise NotImplementedError
 
-    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+    async def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
         """Set hash value in cache for the given key with optional timeout."""
         raise NotImplementedError
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Clear all cache entries."""
+        raise NotImplementedError
+
+    async def close(self) -> None:
+        """Close the cache."""
         raise NotImplementedError
 
 
@@ -65,40 +69,45 @@ class SimpleCache(BaseCache):
         self.threshold = threshold
         self.default_timeout = default_timeout
 
-    def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         return self.cache.get(key)
 
-    def set(self, key: str, value: str, timeout: int | None = None) -> None:
+    async def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         # In this simple implementation, we ignore timeout
         self.cache[key] = value
         # If cache exceeds threshold, clear oldest entries (not implemented)
 
-    def incr(self, key: str) -> None:
+    async def incr(self, key: str) -> None:
         """Increment value in cache for the given key."""
         raise NotImplementedError
 
-    def expire(self, key: str, timeout: int) -> None:
+    async def expire(self, key: str, timeout: int) -> None:
         """Set the timeout for the given key."""
         raise NotImplementedError
 
-    def ttl(self, key: str) -> int:
+    async def ttl(self, key: str) -> int:
         """Get the timeout for the given key."""
         raise NotImplementedError
 
-    def hgetall(self, key: str) -> dict[str, Any] | None:
+    async def hgetall(self, key: str) -> dict[str, Any] | None:
         """Get value from cache for the given key."""
         return self.hcache.get(key)
 
-    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+    async def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         # In this simple implementation, we ignore timeout
         self.hcache[key] = value
         # If cache exceeds threshold, clear oldest entries (not implemented)
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Clear all cache entries."""
+        self.cache.clear()
+        self.hcache.clear()
+
+    async def close(self) -> None:
+        """Close the cache."""
         self.cache.clear()
         self.hcache.clear()
 
@@ -108,9 +117,10 @@ class RedisCache(BaseCache):
 
     def __init__(
         self,
+        username: str | None = None,
+        password: str | None = None,
         host: str = "localhost",
         port: int = 6379,
-        password: str | None = None,
         db: int = 0,
         default_timeout: int = 300,
     ) -> None:
@@ -124,16 +134,22 @@ class RedisCache(BaseCache):
             default_timeout: Default cache timeout in seconds
         """
         self.default_timeout = default_timeout
-        self._client: redis.Redis | fakeredis.FakeRedis | None = None
+        self._client: aioredis.Redis | fakeredis.FakeRedis | None = None
 
         try:
-            self._client = redis.Redis(
-                host=host,
-                port=port,
-                password=password,
-                db=db,
-                socket_timeout=1,
-            )
+            if username is not None and password is not None:
+                redis_url = f"redis://{username}:{password}@{host}:{port}/{db}"
+            else:
+                redis_url = f"redis://{host}:{port}/{db}"
+            pool = aioredis.ConnectionPool.from_url(redis_url)
+            self._client = aioredis.Redis.from_pool(pool)
+            # self._client = aioredis.Redis(
+            #     host=host,
+            #     port=port,
+            #     password=password,
+            #     db=db,
+            #     auto_close_connection_pool=True,
+            # )
             # Test connection
             self._client.ping()
             log.info("Successfully connected to Redis server")
@@ -141,16 +157,16 @@ class RedisCache(BaseCache):
             log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
             self._client = fakeredis.FakeRedis()
 
-    def _get_redis_client(self) -> Any | fakeredis.FakeRedis:
+    def _get_redis_client(self) -> aioredis.Redis | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
         return self._client
 
-    def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
         redis_client = self._get_redis_client()
-        raw_value = redis_client.get(key)
+        raw_value = await redis_client.get(key)
 
         # Return None if the key doesn't exist
         if raw_value is None:
@@ -160,31 +176,31 @@ class RedisCache(BaseCache):
 
         return value
 
-    def set(self, key: str, value: str, timeout: int | None = None) -> None:
+    async def set(self, key: str, value: str, timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         redis_client = self._get_redis_client()
         timeout = timeout if timeout is not None else self.default_timeout
 
         # Set in Redis with or without timeout
         if timeout > 0:
-            redis_client.setex(name=key, time=timeout, value=value)
+            await redis_client.setex(name=key, time=timeout, value=value)
         else:
-            redis_client.set(name=key, value=value)
+            await redis_client.set(name=key, value=value)
 
-    def incr(self, key: str) -> None:
+    async def incr(self, key: str) -> None:
         """Increment value in cache for the given key."""
         redis_client = self._get_redis_client()
-        redis_client.incrby(key, 1)
+        await redis_client.incrby(key, 1)
 
-    def expire(self, key: str, timeout: int) -> None:
+    async def expire(self, key: str, timeout: int) -> None:
         """Set the timeout for the given key."""
         redis_client = self._get_redis_client()
-        redis_client.expire(key, timeout)
+        await redis_client.expire(key, timeout)
 
-    def ttl(self, key: str) -> int:
+    async def ttl(self, key: str) -> int:
         """Get the timeout for the given key."""
         redis_client = self._get_redis_client()
-        raw_value = redis_client.ttl(key)
+        raw_value = await redis_client.ttl(key)
 
         # Return None if the key doesn't exist
         if raw_value is None:
@@ -197,10 +213,10 @@ class RedisCache(BaseCache):
 
         return int(raw_value)
 
-    def hgetall(self, key: str) -> dict[str, Any] | None:
+    async def hgetall(self, key: str) -> dict[str, Any] | None:
         """Get hash value from cache for the given key."""
         redis_client = self._get_redis_client()
-        raw_value = redis_client.get(key)
+        raw_value = await redis_client.get(key)
 
         # Return None if the key doesn't exist
         if raw_value is None:
@@ -219,25 +235,36 @@ class RedisCache(BaseCache):
             result = None
         return result
 
-    def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
+    async def hset(self, key: str, value: dict[str, Any], timeout: int | None = None) -> None:
         """Set value in cache for the given key with optional timeout."""
         redis_client = self._get_redis_client()
         timeout = timeout if timeout is not None else self.default_timeout
         json_str = json.dumps(value)
         # Set in Redis with or without timeout
         if timeout > 0:
-            redis_client.setex(name=key, time=timeout, value=json_str)
+            await redis_client.setex(name=key, time=timeout, value=json_str)
         else:
-            redis_client.set(name=key, value=json_str)
+            await redis_client.set(name=key, value=json_str)
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         """Clear all cache entries."""
         redis_client = self._get_redis_client()
 
         try:
             # Simply flush the entire database
             # This is the most reliable approach across different Redis client implementations
-            redis_client.flushdb()
+            await redis_client.flushdb()
+        except Exception as e:
+            log.exception(f"Error clearing Redis cache: {e}")
+
+    async def close(self) -> None:
+        """Close the cache."""
+        redis_client = self._get_redis_client()
+
+        try:
+            # Simply flush the entire database
+            # This is the most reliable approach across different Redis client implementations
+            await redis_client.flushdb()
         except Exception as e:
             log.exception(f"Error clearing Redis cache: {e}")
 
@@ -284,9 +311,10 @@ class CacheManager:
         elif cache_type == CacheType.REDIS:
             try:
                 cls.cache = RedisCache(
+                    username=None if config.REDIS_USERNAME == "" else config.REDIS_USERNAME,
+                    password=None if config.REDIS_PASSWORD == "" else config.REDIS_PASSWORD,
                     host="localhost",
                     port=6379,
-                    password=None,
                     db=0,
                     default_timeout=60 * 60 * 24 * 7,
                 )
@@ -300,7 +328,7 @@ class CacheManager:
             raise ValueError("Invalid CACHE_TYPE in configuration")
 
     @classmethod
-    def shutdown_cache(cls) -> None:
+    async def shutdown_cache(cls) -> None:
         """
         Clears and shuts down the cache.
 
@@ -308,7 +336,8 @@ class CacheManager:
         releasing any resources held by the cache.
         """
         if cls.cache is not None:
-            cls.cache.clear()
+            await cls.cache.clear()
+            await cls.cache.close()
         log.info("Shutdown cache")
 
     @classmethod
@@ -324,13 +353,13 @@ class CacheManager:
         return cls.cache
 
     @classmethod
-    def clear(cls) -> None:
+    async def clear(cls) -> None:
         """
         Clears all data from the cache.
         """
         log.debug("Clearing cache")
         if cls.cache is not None:
-            cls.cache.clear()
+            await cls.cache.clear()
 
     @staticmethod
     def create_cache_key(domain_name: str, id_: str, field_name: str) -> str:
