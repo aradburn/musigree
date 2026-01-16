@@ -325,8 +325,8 @@ class CacheManager:
                 cls.cache = RedisCache(
                     username=None if config.REDIS_USERNAME == "" else config.REDIS_USERNAME,
                     password=None if config.REDIS_PASSWORD == "" else config.REDIS_PASSWORD,
-                    host="localhost",
-                    port=6379,
+                    host="localhost" if config.REDIS_HOST is None else config.REDIS_HOST,
+                    port=6379 if config.REDIS_PORT is None else config.REDIS_PORT,
                     db=0,
                     default_timeout=60 * 60 * 24 * 7,
                 )
