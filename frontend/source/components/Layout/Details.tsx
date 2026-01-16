@@ -13,10 +13,15 @@ import {
 import DOMPurify from "dompurify";
 import { Profile } from "./Profile";
 
+interface DetailsProps {
+    entity?: EntityData;
+    isMobile: boolean;
+}
+
 /**
  * Details component provides a panel display for details.
  */
-export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
+export const Details: React.FC<DetailsProps> = ({ entity, isMobile }) => {
     const hasEntity = Boolean(entity);
     const hasAliases = entity?.entities?.aliases;
     const aliases = hasAliases ? Object.keys(entity?.entities?.aliases) : [""];
@@ -46,17 +51,19 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
         ? metadataUrls.filter((url): url is string => typeof url === "string")
         : [];
     const urls = [discogs_url, ...metadataUrlsArray];
+    const dtClassName = isMobile ? "col-12 ms-3 mt-3" : "col-3 mt-2";
+    const ddClassName = isMobile ? "col-12 ms-3 mt-3" : "col-9 mt-2";
     const urlListItems = Array.isArray(urls)
         ? urls
               .filter((url): url is string => typeof url === "string")
               .map((url, i) => (
                   <React.Fragment key={i}>
-                      <dt className="col-3">
+                      <dt className={dtClassName}>
                           <span className={createExternalLinkBadgeClass(url)}>
                               {createExternalLinkBadgeText(url)}
                           </span>
                       </dt>
-                      <dd className="col-9">
+                      <dd className={ddClassName}>
                           <a
                               href={DOMPurify.sanitize(url)}
                               className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
@@ -85,8 +92,8 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
                 <dl className="d-flex flex-wrap">
                     {aliasesStr ? (
                         <>
-                            <dt className="col-3">Aliases</dt>
-                            <dd className="col-9">{aliasesStr}</dd>
+                            <dt className={dtClassName}>Aliases</dt>
+                            <dd className={ddClassName}>{aliasesStr}</dd>
                         </>
                     ) : null}
 
@@ -97,54 +104,54 @@ export const Details: React.FC<{ entity?: EntityData }> = ({ entity }) => {
 
                     {altNamesStr ? (
                         <>
-                            <dt className="col-3">Alt Names</dt>
-                            <dd className="col-9">{altNamesStr}</dd>
+                            <dt className={dtClassName}>Alt Names</dt>
+                            <dd className={ddClassName}>{altNamesStr}</dd>
                         </>
                     ) : null}
 
-                    <dt className="col-3">Type</dt>
-                    <dd className="col-9">
+                    <dt className={dtClassName}>Type</dt>
+                    <dd className={ddClassName}>
                         {hasEntity ? capitalCase(entity?.type) : "-"}
                     </dd>
 
                     {countriesStr ? (
                         <>
-                            <dt className="col-3">Countries</dt>
-                            <dd className="col-9">{countriesStr}</dd>
+                            <dt className={dtClassName}>Countries</dt>
+                            <dd className={ddClassName}>{countriesStr}</dd>
                         </>
                     ) : null}
 
                     {genresStr ? (
                         <>
-                            <dt className="col-3">Genres</dt>
-                            <dd className="col-9">{genresStr}</dd>
+                            <dt className={dtClassName}>Genres</dt>
+                            <dd className={ddClassName}>{genresStr}</dd>
                         </>
                     ) : null}
 
                     {stylesStr ? (
                         <>
-                            <dt className="col-3">Styles</dt>
-                            <dd className="col-9">{stylesStr}</dd>
+                            <dt className={dtClassName}>Styles</dt>
+                            <dd className={ddClassName}>{stylesStr}</dd>
                         </>
                     ) : null}
 
                     {profileStr ? (
                         <>
-                            <dt className="col-3">Profile</dt>
-                            <dd className="col-9">
+                            <dt className={dtClassName}>Profile</dt>
+                            <dd className={ddClassName}>
                                 <Profile profileHtml={profileStr}></Profile>
                             </dd>
                         </>
                     ) : null}
 
-                    <dt className="col-11 mb-2">External Links</dt>
-                    <dd className="col-1"></dd>
+                    <dt className={dtClassName}>External Links</dt>
+                    <dd className={ddClassName}></dd>
                     {Array.isArray(urls) && urls.length > 0 ? (
                         <React.Fragment>{urlListItems}</React.Fragment>
                     ) : (
                         <React.Fragment>
-                            <dt className="col-3"></dt>
-                            <dd className="col-9">-</dd>
+                            <dt className="col-3 mt-3"></dt>
+                            <dd className="col-9 mt-3">-</dd>
                         </React.Fragment>
                     )}
                 </dl>

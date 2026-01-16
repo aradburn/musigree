@@ -2,7 +2,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { WindowProvider, WindowContext } from "../WindowContext";
+import { WindowProvider } from "../WindowContext";
+import { WindowContext } from "../windowContextInstance";
 import { INIT, SVG } from "../../constants";
 import { resetNetworkTransform } from "../../network/init";
 import { ResizeEvent } from "../../network/events";

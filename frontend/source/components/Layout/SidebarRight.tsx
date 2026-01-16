@@ -5,6 +5,7 @@ import { useEntity } from "../../contexts/useEntity";
 
 interface SidebarRightProps {
     isCollapsed: boolean;
+    isMobile: boolean;
     onToggleCollapse: () => void;
 }
 
@@ -14,6 +15,7 @@ interface SidebarRightProps {
  */
 export const SidebarRight: React.FC<SidebarRightProps> = ({
     isCollapsed,
+    isMobile,
     onToggleCollapse,
 }) => {
     const { state } = useEntity();
@@ -37,20 +39,23 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
     return (
         <div className="p-2 d-flex h-sm-100">
             <div className="flex-fill ms-auto d-flex gap-2 flex-column text-dark">
-                <div className="d-flex justify-content-end mt-0 me-3 position-absolute end-0">
-                    <button
-                        type="button"
-                        className="btn btn-link text-dark ps-1 pe-2 pt-0 pb-1"
-                        onClick={onToggleCollapse}
-                        aria-label="Close sidebar"
-                        title="Close sidebar"
-                    >
-                        <i className="bi bi-x-circle fs-3"></i>
-                    </button>
-                </div>
+                {!isMobile ? (
+                    <div className="d-flex justify-content-end mt-0 me-3 position-absolute end-0">
+                        <button
+                            type="button"
+                            className="btn btn-link text-dark ps-1 pe-2 pt-0 pb-1"
+                            onClick={onToggleCollapse}
+                            aria-label="Close sidebar"
+                            title="Close sidebar"
+                        >
+                            <i className="bi bi-x-circle fs-3"></i>
+                        </button>
+                    </div>
+                ) : null}
+
                 <div className="flex-fill overflow-x-hidden overflow-y-auto">
                     {/* Details panel */}
-                    <Details entity={state.entity} />
+                    <Details entity={state.entity} isMobile={isMobile} />
                 </div>
                 <div className="flex-shrink-0">
                     {/*<Advert*/}

@@ -38,6 +38,8 @@ export class MusigreeManager {
     private _isSidebarRightCollapsed: boolean;
     /** Mobile device flag */
     private _isMobile: boolean;
+    /** Getter function to retrieve isMobile from WindowContext */
+    private _isMobileGetter: (() => boolean) | null = null;
     /** D3 arc generator for relations visualization */
     private _arc: d3.Arc<RelationsArcData, RelationsArcData>;
 
@@ -167,10 +169,11 @@ export class MusigreeManager {
 
     /**
      * Gets the mobile device state
+     * Uses the WindowContext getter if available, otherwise falls back to stored value
      * @returns {boolean} Whether the device is mobile
      */
     get isMobile(): boolean {
-        return this._isMobile;
+        return this._isMobileGetter ? this._isMobileGetter() : this._isMobile;
     }
 
     /**
@@ -179,6 +182,14 @@ export class MusigreeManager {
      */
     set isMobile(value: boolean) {
         this._isMobile = value;
+    }
+
+    /**
+     * Sets the getter function to retrieve isMobile from WindowContext
+     * @param {() => boolean} getter - Function that returns the current isMobile value from WindowContext
+     */
+    setIsMobileGetter(getter: () => boolean): void {
+        this._isMobileGetter = getter;
     }
 
     /**

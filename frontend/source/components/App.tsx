@@ -12,6 +12,7 @@ import { LoadingAnimation } from "./Visualization";
 import { RolesOverlay } from "./Overlays/RolesOverlay";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
+import { useWindow } from "../contexts/useWindow";
 import { LoadingProvider } from "../contexts/LoadingContext";
 import { EntityProvider } from "../contexts/EntityContext";
 import { FSM, DOM_IDS } from "../constants";
@@ -24,16 +25,17 @@ import { musigreeManager } from "@/core/index.ts";
 // We're just importing the TreeConfig type for our internal usage
 
 /**
- * Main App component that serves as the container for the React application.
- * During migration, this will gradually replace the existing jQuery-based UI.
+ * Inner App component that uses WindowContext
+ * This component is inside WindowProvider and can use the useWindow hook
  */
-const App: React.FC = (): React.ReactElement => {
+const AppContent: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
     const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
     const [_isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
     const [rolesConfig, setRolesConfig] = useState<TreeConfig>();
     const [isSidebarRightCollapsed, setIsSidebarRightCollapsed] =
         useState<boolean>(false);
+    const { state: windowState } = useWindow();
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {
@@ -118,71 +120,75 @@ const App: React.FC = (): React.ReactElement => {
     };
 
     return (
-        <WindowProvider>
-            <NetworkProvider>
-                <LoadingProvider>
-                    <EntityProvider>
-                        <Container
-                            fluid
-                            className="d-flex flex-column h-sm-100"
-                        >
-                            <Row>
-                                <Header onShowHelp={handleShowHelp} />
-                            </Row>
+        <NetworkProvider>
+            <LoadingProvider>
+                <EntityProvider>
+                    <Container fluid className="d-flex flex-column h-sm-100">
+                        <Row>
+                            <Header onShowHelp={handleShowHelp} />
+                        </Row>
 
-                            <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
-                                <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
-                                    <div className="flex-sm-column flex-row h-sm-100">
-                                        {/* sidebar left panel */}
-                                        <SidebarLeft />
-                                    </div>
+                        <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
+                            <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
+                                <div className="flex-sm-column flex-row h-sm-100">
+                                    {/* sidebar left panel */}
+                                    <SidebarLeft />
                                 </div>
+                            </div>
 
-                                <div className="main-container flex-sm-fill p-0 order-sm-2 order-1">
-                                    <div className="flex-sm-column flex-row h-sm-100">
-                                        <NetworkView />
-                                        <LoadingAnimation />
-                                    </div>
+                            <div className="main-container flex-sm-fill p-0 order-sm-2 order-1">
+                                <div className="flex-sm-column flex-row h-sm-100">
+                                    <NetworkView />
+                                    <LoadingAnimation />
                                 </div>
+                            </div>
 
-                                <div
-                                    className={`${
-                                        isSidebarRightCollapsed
-                                            ? "sidebar-right-container-collapsed"
-                                            : "sidebar-right-container"
-                                    } p-0 order-sm-3 order-2`}
-                                >
-                                    <div className="flex-sm-column flex-row h-sm-100">
-                                        {/* sidebar right panel */}
-                                        <SidebarRight
-                                            isCollapsed={
-                                                isSidebarRightCollapsed
-                                            }
-                                            onToggleCollapse={
-                                                handleToggleSidebarRight
-                                            }
-                                        />
-                                    </div>
+                            <div
+                                className={`${
+                                    isSidebarRightCollapsed
+                                        ? "sidebar-right-container-collapsed"
+                                        : "sidebar-right-container"
+                                } p-0 order-sm-3 order-2`}
+                            >
+                                <div className="flex-sm-column flex-row h-sm-100">
+                                    {/* sidebar right panel */}
+                                    <SidebarRight
+                                        isCollapsed={isSidebarRightCollapsed}
+                                        isMobile={windowState.isMobile}
+                                        onToggleCollapse={
+                                            handleToggleSidebarRight
+                                        }
+                                    />
                                 </div>
+                            </div>
 
-                                {/* Use the React components for overlays */}
-                                <RolesOverlay
-                                    roles={rolesConfig}
-                                    show={showRolesOverlay}
-                                    onHide={(): void =>
-                                        setShowRolesOverlay(false)
-                                    }
-                                />
-                            </Row>
-
-                            <HelpModal
-                                show={showHelpModal}
-                                onHide={handleHideHelp}
+                            {/* Use the React components for overlays */}
+                            <RolesOverlay
+                                roles={rolesConfig}
+                                show={showRolesOverlay}
+                                onHide={(): void => setShowRolesOverlay(false)}
                             />
-                        </Container>
-                    </EntityProvider>
-                </LoadingProvider>
-            </NetworkProvider>
+                        </Row>
+
+                        <HelpModal
+                            show={showHelpModal}
+                            onHide={handleHideHelp}
+                        />
+                    </Container>
+                </EntityProvider>
+            </LoadingProvider>
+        </NetworkProvider>
+    );
+};
+
+/**
+ * Main App component that serves as the container for the React application.
+ * During migration, this will gradually replace the existing jQuery-based UI.
+ */
+const App: React.FC = (): React.ReactElement => {
+    return (
+        <WindowProvider>
+            <AppContent />
         </WindowProvider>
     );
 };

@@ -7,6 +7,7 @@ export interface WindowState {
     dpr: number;
     dimensions: [number, number];
     svgDimensions: [number, number];
+    isMobile: boolean;
 }
 
 // Context interface

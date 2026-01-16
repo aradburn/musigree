@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { createContext, useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import debounce from "debounce";
 import { DOM_IDS, INIT, SVG } from "../constants";
@@ -7,21 +7,8 @@ import { musigreeManager } from "../core";
 import { ResizeEvent } from "../network/events";
 import { resetNetworkTransform } from "../network/init";
 import { setSvgSize } from "@/svg";
-
-// Define the state interface
-interface WindowState {
-    width: number;
-    height: number;
-    dpr: number;
-    dimensions: [number, number];
-    svgDimensions: [number, number];
-}
-
-// Context interface
-interface WindowContextProps {
-    state: WindowState;
-    handleResize: () => void;
-}
+import { WindowContext } from "./windowContextInstance";
+import type { WindowState, WindowContextProps } from "./windowContextInstance";
 
 // Initial state (with placeholder values that will be updated in useEffect)
 const initialState: WindowState = {
@@ -30,10 +17,10 @@ const initialState: WindowState = {
     dpr: 1,
     dimensions: [0, 0],
     svgDimensions: [0, 0],
+    isMobile: false,
 };
 
-// Create the context
-const WindowContext = createContext<WindowContextProps | undefined>(undefined);
+// WindowContext is imported from windowContextInstance.ts
 
 // Provider component
 interface WindowProviderProps {
@@ -42,6 +29,7 @@ interface WindowProviderProps {
 
 export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
     const [state, setState] = useState<WindowState>(initialState);
+    const stateRef = useRef<WindowState>(state);
 
     // Calculate window and SVG dimensions
     const calculateDimensions = (): WindowState => {
@@ -62,11 +50,13 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             dimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
             dimensions[1] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
         ];
+        const isMobile = window.innerWidth < 768;
 
         // Update the musigreeManager with the new dimensions
         musigreeManager.dpr = dpr;
         musigreeManager.dimensions = dimensions;
         musigreeManager.svgDimensions = svgDimensions;
+        // Note: isMobile is now retrieved from WindowContext via getter function
 
         return {
             width,
@@ -74,6 +64,7 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             dpr,
             dimensions,
             svgDimensions,
+            isMobile,
         };
     };
 
@@ -82,7 +73,9 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         console.log("WindowContext handleResize()");
         try {
             // Update dimensions state
-            setState(calculateDimensions());
+            const newState = calculateDimensions();
+            setState(newState);
+            stateRef.current = newState;
 
             // Setup window dimensions on SVG element
             setSvgSize(DOM_IDS.SVG_ID);
@@ -105,7 +98,12 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
     // Initialize dimensions on mount and set up resize listener
     useEffect(() => {
         // Calculate initial dimensions
-        setState(calculateDimensions());
+        const initialState = calculateDimensions();
+        setState(initialState);
+        stateRef.current = initialState;
+
+        // Register getter function to retrieve isMobile from WindowContext state
+        musigreeManager.setIsMobileGetter(() => stateRef.current.isMobile);
 
         // Add resize event listener
         window.addEventListener("resize", handleResize as () => void);
@@ -116,6 +114,11 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         };
     }, []);
 
+    // Update state ref whenever state changes
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
+
     return (
         <WindowContext.Provider value={{ state, handleResize }}>
             {children}
@@ -123,5 +126,4 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
     );
 };
 
-// Make context available for useWindow hook
-export { WindowContext };
+// WindowContext is already exported from windowContextInstance.ts
