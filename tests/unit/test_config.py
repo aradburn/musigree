@@ -68,13 +68,13 @@ def test_pydantic_postgres_dev_config() -> None:
 def test_pydantic_env_override() -> None:
     """Test that environment variables can override the pydantic-settings."""
     # Save original env vars if they exist
-    orig_username = os.environ.get("MUSIGREE_POSTGRES_DATABASE_USERNAME")
-    orig_password = os.environ.get("MUSIGREE_POSTGRES_DATABASE_PASSWORD")
+    orig_username = os.environ.get("POSTGRES_DATABASE_USERNAME")
+    orig_password = os.environ.get("POSTGRES_DATABASE_PASSWORD")
 
     try:
         # Set test environment variables
-        os.environ["MUSIGREE_POSTGRES_DATABASE_USERNAME"] = "test_user"
-        os.environ["MUSIGREE_POSTGRES_DATABASE_PASSWORD"] = "test_pass"
+        os.environ["POSTGRES_DATABASE_USERNAME"] = "test_user"
+        os.environ["POSTGRES_DATABASE_PASSWORD"] = "test_pass"
 
         # Create a new config instance to pick up the env vars
         config = PostgresDevelopmentConfiguration()
@@ -86,14 +86,14 @@ def test_pydantic_env_override() -> None:
     finally:
         # Restore original env vars or remove test ones
         if orig_username:
-            os.environ["MUSIGREE_POSTGRES_DATABASE_USERNAME"] = orig_username
+            os.environ["POSTGRES_DATABASE_USERNAME"] = orig_username
         else:
-            os.environ.pop("MUSIGREE_POSTGRES_DATABASE_USERNAME", None)
+            os.environ.pop("POSTGRES_DATABASE_USERNAME", None)
 
         if orig_password:
-            os.environ["MUSIGREE_POSTGRES_DATABASE_PASSWORD"] = orig_password
+            os.environ["POSTGRES_DATABASE_PASSWORD"] = orig_password
         else:
-            os.environ.pop("MUSIGREE_POSTGRES_DATABASE_PASSWORD", None)
+            os.environ.pop("POSTGRES_DATABASE_PASSWORD", None)
 
 
 def test_sqlite_test_configuration() -> None:

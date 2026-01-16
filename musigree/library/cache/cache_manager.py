@@ -1,5 +1,6 @@
 import json
 import logging
+from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
 
@@ -57,6 +58,10 @@ class BaseCache:
 
     async def close(self) -> None:
         """Close the cache."""
+        raise NotImplementedError
+
+    async def ping(self) -> bool:
+        """Ping the cache."""
         raise NotImplementedError
 
 
@@ -141,6 +146,7 @@ class RedisCache(BaseCache):
                 redis_url = f"redis://{username}:{password}@{host}:{port}/{db}"
             else:
                 redis_url = f"redis://{host}:{port}/{db}"
+            log.info(f"Redis server: {redis_url}")
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
             # self._client = aioredis.Redis(
@@ -150,9 +156,7 @@ class RedisCache(BaseCache):
             #     db=db,
             #     auto_close_connection_pool=True,
             # )
-            # Test connection
-            self._client.ping()
-            log.info("Successfully connected to Redis server")
+
         except Exception as e:
             log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
             self._client = fakeredis.FakeRedis()
@@ -162,6 +166,14 @@ class RedisCache(BaseCache):
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
         return self._client
+
+    async def ping(self) -> bool:
+        """Ping the server."""
+        redis_client = self._get_redis_client()
+        ping_result = redis_client.ping()
+        if isinstance(ping_result, Awaitable):
+            return await ping_result
+        return bool(ping_result)
 
     async def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
@@ -283,7 +295,7 @@ class CacheManager:
     cache: BaseCache | None = None
 
     @classmethod
-    def setup_cache(cls, config: Configuration) -> None:
+    async def setup_cache(cls, config: Configuration) -> None:
         """
         Initializes the cache based on the provided configuration.
 
@@ -319,6 +331,12 @@ class CacheManager:
                     default_timeout=60 * 60 * 24 * 7,
                 )
                 log.info("Using Redis cache")
+
+                # Test connection
+                ping_result = await cls.cache.ping()
+                if ping_result:
+                    log.info("Successfully connected to Redis server")
+
             except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)

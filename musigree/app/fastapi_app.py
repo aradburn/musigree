@@ -303,7 +303,7 @@ async def init_app(config: Configuration) -> None:
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
     # Setup cache
-    CacheManager.setup_cache(config)
+    await CacheManager.setup_cache(config)
     cache = CacheManager.get_cache()
     if cache is None:
         log.error("Cache not set")

@@ -26,7 +26,7 @@ async def run_offline_loading_process(
     log.info("Using PostgresDevelopmentConfiguration")
 
     # Setup Cache
-    CacheManager.setup_cache(_config)
+    await CacheManager.setup_cache(_config)
     cache = CacheManager.get_cache()
     if cache is None:
         log.error("Cache not set")

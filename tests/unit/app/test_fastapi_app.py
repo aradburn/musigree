@@ -294,6 +294,7 @@ class TestInitApp:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_cache = AsyncMock()
         mock_cache_manager.clear = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
@@ -303,7 +304,7 @@ class TestInitApp:
 
         # Assert
         # Note: setup_logging is called in create_app, not init_app
-        mock_cache_manager.setup_cache.assert_called_once_with(test_config)
+        mock_cache_manager.setup_cache.assert_awaited_once_with(test_config)
         mock_cache_manager.get_cache.assert_called_once()
         mock_cache_manager.clear.assert_awaited_once()
         mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
@@ -333,6 +334,7 @@ class TestInitApp:
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_cache = AsyncMock()
         mock_cache_manager.clear = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
