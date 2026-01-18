@@ -24,6 +24,7 @@ import {
 import { musigreeManager, networkManager } from "../../core/singletons";
 import { RequestNetworkEvent } from "../../network/events";
 import { FSM, INIT } from "../../constants";
+import * as analyticsModule from "../../analytics";
 
 // Create a type for private methods we need to spy on
 type MusigreeFSMPrivate = {
@@ -203,6 +204,16 @@ vi.mock("../../messages", () => ({
     showMessage: vi.fn(),
 }));
 
+vi.mock("../../analytics", () => ({
+    track: vi.fn(),
+    identify: vi.fn(),
+    analytics: {
+        track: vi.fn(),
+        identify: vi.fn(),
+        getProvider: vi.fn().mockReturnValue("umami"),
+    },
+}));
+
 // Define the DocumentMock type to avoid 'global' reference issues
 type DocumentMock = {
     getElementById: ReturnType<typeof vi.fn>;
@@ -224,9 +235,6 @@ type WindowMock = {
     dgNetwork?: APINetworkDataResponse;
     dispatchEvent: ReturnType<typeof vi.fn>;
     document: DocumentMock;
-    umami: {
-        track: ReturnType<typeof vi.fn>;
-    };
 };
 
 // Create document mock
@@ -272,9 +280,6 @@ const windowMock: WindowMock = {
     dgNetwork: undefined,
     dispatchEvent: vi.fn(),
     document: documentMock,
-    umami: {
-        track: vi.fn(),
-    },
 };
 
 // Mock global objects

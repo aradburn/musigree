@@ -157,9 +157,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         try:
             # Get current requests (handle Redis byte response)
             current_requests = 0
-            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
-            # redis_value = await get_redis_client().get(key)
-            redis_value = cache.get(cache_key)
+            redis_value = await cache.get(cache_key)
             if redis_value:
                 # Convert bytes to string and then to int
                 try:
@@ -181,9 +179,8 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
 
         # Get TTL and handle Redis response
         try:
-            # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
             # ttl_raw = await get_redis_client().ttl(key)
-            ttl_raw = cache.ttl(cache_key)
+            ttl_raw = await cache.ttl(cache_key)
             ttl_value = period
 
             # If TTL is a valid positive number, use it
@@ -201,10 +198,6 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         if remaining > 0:
             # Increment the request count
             try:
-                # TODO: ASYNC IMPROVEMENT - Use await with aioredis:
-                # await get_redis_client().incr(key, 1)
-                # if current_requests == 0:
-                #     await get_redis_client().expire(key, period)
                 await cache.incr(cache_key)
                 # Set expiration if this is a new key
                 if current_requests == 0:
