@@ -730,7 +730,7 @@ wheels = [
 
 [[package]]
 name = "musigree"
-version = "1.0.57"
+version = "1.0.58"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },

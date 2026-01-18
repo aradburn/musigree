@@ -49,6 +49,7 @@ import {
 } from "./AbstractFSM";
 import type { APINetworkDataResponse } from "../api";
 import { getSelectedRoles } from "../roles";
+import { track } from "../analytics";
 
 // Extend the Window interface to include the dgNetwork property
 declare global {
@@ -65,14 +66,6 @@ declare global {
                 };
                 getInstance(element: Element): { hide(): void } | null;
             };
-        };
-        umami?: {
-            track: (event: string, data?: object) => void;
-            // Add other umami functions like identify, trackView if needed
-            identify?: (
-                userId: string,
-                userData?: Record<string, unknown>,
-            ) => void;
         };
     }
 }
@@ -513,7 +506,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             this.pushState(networkData.center.key, params);
 
             // Track the current page
-            window.umami.track("network", { key: networkData.center });
+            track("network", { key: networkData.center });
         }
 
         console.log("FSM received-network convertNetworkDataToSimData");

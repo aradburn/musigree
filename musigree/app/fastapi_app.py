@@ -129,6 +129,8 @@ def create_app(config: Configuration) -> FastAPI:
             "https://www.musigree.com",
             "https://musigree.com",
             "https://umami.musigree.com",
+            "https://swetrix.org/swetrix.js",
+            "https://cdn.jsdelivr.net/gh/Swetrix/",
         ]
         log.info("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -159,6 +161,8 @@ def create_app(config: Configuration) -> FastAPI:
             "http://127.0.0.1:5000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8080",
+            "https://swetrix.org/swetrix.js",
+            "https://cdn.jsdelivr.net/gh/Swetrix/",
         ]
         log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")

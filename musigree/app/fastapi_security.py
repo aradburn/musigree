@@ -122,14 +122,14 @@ class SecurityHeadersMiddleware:
                             security_headers[b"content-security-policy-report-only"] = (
                                 b"frame-ancestors 'self';"
                                 b"default-src 'self';"
-                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ ;"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ ;"
                                 b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
                                 b"object-src 'none';"
                                 b"frame-src 'self';"
                                 b"child-src 'self';"
-                                b"img-src 'self' data: https://umami.musigree.com/ ;"
+                                b"img-src 'self' data: https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
                                 b"font-src 'self';"
-                                b"connect-src 'self' https://umami.musigree.com/ ;"
+                                b"connect-src 'self' https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
                                 b"manifest-src 'self';"
                                 b"base-uri 'self';"
                                 b"form-action 'self';"
@@ -140,14 +140,14 @@ class SecurityHeadersMiddleware:
                             security_headers[b"content-security-policy"] = (
                                 b"frame-ancestors 'self';"
                                 b"default-src 'self';"
-                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ ;"
+                                b"script-src 'self' 'unsafe-inline' https://umami.musigree.com/ https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ ;"
                                 b"style-src 'self' 'unsafe-inline' 'unsafe-hashes';"
                                 b"object-src 'none';"
                                 b"frame-src 'self';"
                                 b"child-src 'self';"
-                                b"img-src 'self' data: https://umami.musigree.com/ ;"
+                                b"img-src 'self' data: https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
                                 b"font-src 'self';"
-                                b"connect-src 'self' https://umami.musigree.com/ ;"
+                                b"connect-src 'self' https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
                                 b"manifest-src 'self';"
                                 b"base-uri 'self';"
                                 b"form-action 'self';"
@@ -162,9 +162,9 @@ class SecurityHeadersMiddleware:
                     # More permissive CSP for development
                     security_headers[b"content-security-policy"] = (
                         b"default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; "
-                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:5173 https://umami.musigree.com/ ;"
-                        b"connect-src 'self' http://localhost:* ws://localhost:* https://umami.musigree.com/ ;"
-                        b"img-src 'self' data: https: http://localhost:5173 https://umami.musigree.com/ ;"
+                        b"script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:5173 https://umami.musigree.com/ https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ ;"
+                        b"connect-src 'self' http://localhost:* ws://localhost:* https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
+                        b"img-src 'self' data: https: http://localhost:5173 https://umami.musigree.com/ https://swetrix-api.musigree.com/ ;"
                     )
 
                 # Merge security headers with existing headers
