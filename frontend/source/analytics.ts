@@ -18,6 +18,8 @@ interface SwetrixProvider {
         profileId?: string;
         meta?: Record<string, unknown>;
     }) => void;
+    trackViews: () => void;
+    init: (projectId: string, meta?: Record<string, unknown>) => void;
 }
 
 /**
@@ -37,6 +39,14 @@ function detectProvider(): AnalyticsProvider {
 
         // Check for Swetrix
         if (window.swetrix && typeof window.swetrix.track === "function") {
+            if (typeof window.swetrix.init === "function") {
+                window.swetrix.init("UlCB72ACQWVr", {
+                    devMode: true,
+                    apiURL: "https://swetrix-api.musigree.com/log",
+                });
+                window.swetrix.trackViews();
+                console.log("Analytics started");
+            }
             return "swetrix";
         }
     }
