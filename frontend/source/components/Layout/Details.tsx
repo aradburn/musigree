@@ -52,8 +52,9 @@ export const Details: React.FC<DetailsProps> = ({ entity, isMobile }) => {
         : [];
     const urls = [discogs_url, ...metadataUrlsArray];
     const dtClassName = isMobile ? "col-12 ms-3 mt-3" : "col-3 mt-2";
-    const ddClassName = isMobile ? "col-12 ms-3 mt-3" : "col-9 mt-2";
+    const ddClassName = isMobile ? "col-12 mx-3 mt-2 pe-3" : "col-9 mt-2";
     const dtFullWidthClassName = isMobile ? "col-12 ms-3 mt-3" : "col-12 mt-2";
+    const ddFullWidthClassName = isMobile ? "d-none" : "d-none";
     const urlListItems = Array.isArray(urls)
         ? urls
               .filter((url): url is string => typeof url === "string")
@@ -146,7 +147,7 @@ export const Details: React.FC<DetailsProps> = ({ entity, isMobile }) => {
                     ) : null}
 
                     <dt className={dtFullWidthClassName}>External Links</dt>
-                    <dd className={ddClassName}></dd>
+                    <dd className={ddFullWidthClassName}></dd>
                     {Array.isArray(urls) && urls.length > 0 ? (
                         <React.Fragment>{urlListItems}</React.Fragment>
                     ) : (
