@@ -38,7 +38,7 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import PreflightLoggerMiddleware, CustomCORSPreflightMiddleware
-from musigree.app.fastapi_security import setup_security_middleware
+from musigree.app.fastapi_csp import setup_csp_middleware
 from musigree.config import Configuration
 from musigree.constants import (
     TEMPLATES_DIR,
@@ -173,8 +173,8 @@ def create_app(config: Configuration) -> FastAPI:
             allow_headers=["*"],
         )
 
-    # Setup security middleware (should be added after CORS)
-    setup_security_middleware(app, config)
+    # Setup Content Security Policy middleware (should be added after CORS)
+    setup_csp_middleware(app, config)
 
     # noinspection PyTypeChecker
     app.add_middleware(GZipMiddleware, minimum_size=1000)
