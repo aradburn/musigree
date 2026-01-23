@@ -93,3 +93,16 @@ class CacheType(enum.Enum):
 
 CACHE_KEY_SEPARATOR = ":"
 CACHE_ENTRY_IS_NULL = "__NULL__"  # A string used to represent a null entry in the cache.
+
+
+# CSP Secury Headers
+class CSPSetting(enum.Enum):
+    REPORT_ONLY = 1
+    REPORT_SECURE = 2
+    ENFORCE_CSP = 3
+
+
+# Analytics
+class AnalyticsType(enum.Enum):
+    UMAMI = 1
+    SWETRIX = 2
