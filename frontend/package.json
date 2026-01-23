@@ -2,7 +2,7 @@
     "name": "musigree",
     "description": "Social Graphing for the Discogs Database",
     "private": true,
-    "version": "1.0.58",
+    "version": "1.0.59",
     "type": "module",
     "author": {
         "name": "Andy Radburn",
