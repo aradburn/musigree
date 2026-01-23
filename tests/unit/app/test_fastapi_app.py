@@ -31,10 +31,10 @@ class TestCreateApp:
         return SqliteTestConfiguration()
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_basic_structure(
         self,
-        mock_setup_security: Mock,
+        mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
@@ -53,14 +53,14 @@ class TestCreateApp:
         assert app.description == "Musigree API for exploring music relationships"  # type: ignore
         assert app.version == "1.0.0"  # type: ignore
 
-        # Verify security middleware was set up
-        mock_setup_security.assert_called_once_with(app, test_config)
+        # Verify CSP middleware was set up
+        mock_setup_csp.assert_called_once_with(app, test_config)
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_production_cors(
         self,
-        _mock_setup_security: Mock,
+        _mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
     ) -> None:
         """Test CORS configuration in production mode."""
@@ -81,10 +81,10 @@ class TestCreateApp:
         assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_development_cors(
         self,
-        _mock_setup_security: Mock,
+        _mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
@@ -105,10 +105,10 @@ class TestCreateApp:
         assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_routers_included(
         self,
-        _mock_setup_security: Mock,
+        _mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
@@ -138,10 +138,10 @@ class TestExceptionHandlers:
 
     @pytest.fixture
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def app(
         self,
-        _mock_setup_security: Mock,
+        _mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> FastAPI:
@@ -424,10 +424,10 @@ class TestIntegrationScenarios:
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_security_middleware")
+    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     async def test_exception_handlers_integration(
         self,
-        _mock_setup_security: Mock,
+        _mock_setup_csp: Mock,
         mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
