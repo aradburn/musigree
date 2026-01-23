@@ -17,10 +17,22 @@ export default defineConfig({
         },
         extensions: [".js", ".jsx", ".ts", ".tsx", ".json", ".woff", ".woff2"],
     },
-    plugins: [react(), removeConsole()],
+    plugins: [
+        react(),
+        removeConsole(),
+        {
+            name: 'remove-sourcemaps',
+            transform(code) {
+                return {
+                    code,
+                    map: { mappings: '' }
+                }
+            }
+        }
+    ],
     build: {
         cssCodeSplit: false,
-        sourcemap: true,
+        sourcemap: false,
         outDir: path.join(__dirname, "./dist/"),
         manifest: "manifest.json",
         rollupOptions: {
@@ -36,7 +48,7 @@ export default defineConfig({
         },
         emptyOutDir: true,
         copyPublicDir: false,
-        assetsInlineLimit: 0,
+        assetsInlineLimit: 0, // Disable inlining for stricter CSP
     },
     test: {
         environment: "jsdom",
@@ -69,9 +81,6 @@ export default defineConfig({
             },
         },
     },
-//     optimizeDeps: {
-//         include: [],
-//     },
     server: {
         origin: 'http://localhost:5173',
         host: 'localhost',
@@ -89,7 +98,12 @@ export default defineConfig({
             "X-Content-Type-Options": "nosniff", // Protects from improper scripts runnings
             "X-Frame-Options": "DENY", // Stops your site being used as an iframe
             "X-XSS-Protection": "1; mode=block", // Gives XSS protection to legacy browsers
-            "Content-Security-Policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: http://localhost:5173; font-src 'self' data: http://localhost:5173",
+            "Content-Security-Policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: http://localhost:5173;" +
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: http://localhost:5173;" +
+                "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' data: ws: http://localhost:5173;" +
+                "style-src 'self' 'unsafe-inline' data: ws: http://localhost:5173;" +
+                "style-src-elem 'self' 'unsafe-inline' data: ws: http://localhost:5173;" +
+                " font-src 'self' data: http://localhost:5173",
         },
         proxy: {
             "/api": {
