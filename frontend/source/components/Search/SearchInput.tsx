@@ -143,6 +143,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     </span>
 
                     <Form.Control
+                        id="musigree-search"
                         className="rounded-0 px-2 py-1"
                         ref={inputRef}
                         type="search"

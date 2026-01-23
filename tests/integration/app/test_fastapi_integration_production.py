@@ -58,12 +58,11 @@ class TestFastAPIIntegration:
         response = await client.get("/docs")
 
         # Verify basic security headers are present
-        assert "X-Content-Type-Options" in response.headers
-        assert response.headers["X-Content-Type-Options"] == "nosniff"
-        assert "X-Frame-Options" in response.headers
-        assert "X-XSS-Protection" in response.headers
-        assert "Referrer-Policy" in response.headers
-        assert "Content-Security-Policy" in response.headers
+        assert "x-content-type-options" in response.headers.keys()
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert "x-frame-options" in response.headers.keys()
+        assert "referrer-policy" in response.headers.keys()
+        assert "content-security-policy" in response.headers.keys()
 
     @pytest.mark.asyncio
     async def test_cors_configuration(

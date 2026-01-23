@@ -25,7 +25,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
         });
         document.dispatchEvent(event);
     };
-    const containerClassName = windowState.isMobile ? "ps-0" : "";
+    const containerClassName = windowState.isMobile ? "px-1" : "";
 
     return (
         <Navbar

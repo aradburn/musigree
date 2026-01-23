@@ -14,6 +14,7 @@ from musigree.constants import (
     DatabaseType,
     ThreadingModel,
     CacheType,
+    AnalyticsType,
 )
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class Configuration(BaseSettings):
     APPLICATION_ROOT: str = "http://localhost"
     THREADING_MODEL: ThreadingModel = ThreadingModel.THREAD
     CACHE_TYPE: CacheType = CacheType.MEMORY
+    ANALTICS_TYPE: AnalyticsType = AnalyticsType.SWETRIX
 
     # PostgreSQL settings
     POSTGRES_DATABASE_USERNAME: str | None = None

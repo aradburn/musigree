@@ -29,7 +29,8 @@
         "jsxImportSource": "react",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "strict": false
+        "strict": false,
+        "sourceMap": false
     },
     "include": [
         "source/**/*.ts",
