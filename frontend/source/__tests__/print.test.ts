@@ -239,7 +239,7 @@ describe("Print SVG", () => {
 
         expect(showMessage).toHaveBeenCalledWith(
             "Saving image to disk, please wait...",
-            "dark",
+            "primary",
         );
 
         // Simulate image loading
