@@ -47,6 +47,7 @@ from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import PreflightLoggerMiddleware, CustomCORSPreflightMiddleware
 from musigree.app.fastapi_csp import setup_csp_middleware
+from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration
 from musigree.constants import (
     TEMPLATES_DIR,
@@ -188,7 +189,9 @@ def create_app(config: Configuration) -> FastAPI:
     app.add_middleware(ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
 
     # HSTS
-    app.add_middleware(HSTS, Option={"max-age": 300, "includeSubDomains": True, "preload": True})
+    app.add_middleware(
+        HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
+    )
 
     # X-Content-Type-Options
     app.add_middleware(XContentTypeOptions)
@@ -202,14 +205,27 @@ def create_app(config: Configuration) -> FastAPI:
     app.add_middleware(CrossOriginOpenerPolicy, Option="same-origin")
     app.add_middleware(CrossOriginResourcePolicy, Option="same-site")
 
+    # Permissions Policy
+    app.add_middleware(
+        PermissionsPolicy,
+        Option={
+            "accelerometer": [],
+            "camera": [],
+            "display-capture": ["*"],
+            "geolocation": [],
+            "gyroscope": [],
+            "magnetometer": [],
+            "microphone": [],
+            "payment": [],
+            "screen-wake-lock": [],
+            "usb": [],
+        },
+    )
+
     # TODO
     # Privacy and anti-tracking headers
     # b"sec-gpc": b"1",
     # b"dnt": b"1",
-    # Permissions policy (previously Feature-Policy)
-    # b"permissions-policy": b"geolocation=(), camera=(), microphone=(), interest-cohort=(), "
-    # b"accelerometer=(), gyroscope=(), magnetometer=(), usb=(), "
-    # b"screen-wake-lock=(), payment=()",
 
     # noinspection PyTypeChecker
     app.add_middleware(GZipMiddleware, minimum_size=1000)

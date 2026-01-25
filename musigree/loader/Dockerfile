@@ -1,22 +1,4 @@
-# Stage 1: ----- Build the React Vite frontend -----
-FROM node:24-alpine AS frontend-builder
-
-WORKDIR /app/frontend
-
-# Copy dependency files first for better layer caching
-COPY frontend/package.json frontend/package-lock.json ./
-
-# Install dependencies with cache mount
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
-
-# Copy frontend source code
-COPY frontend .
-
-# Build the frontend
-RUN npm run build
-
-# Stage 2: ----- Build the Python backend -----
+# Stage 1: ----- Build the Python loader -----
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS backend-builder
 
 # Install the project into `/app`
@@ -66,12 +48,12 @@ ENV REDIS_PASSWORD=${REDIS_PASSWORD}
 
 # Add metadata labels
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
-      org.opencontainers.image.title="musigree" \
-      org.opencontainers.image.description="Interactive visualization of the Discogs database" \
-      org.opencontainers.image.version="1.0.60" \
+      org.opencontainers.image.title="musigree-loader" \
+      org.opencontainers.image.description="Loads the Discogs database" \
+      org.opencontainers.image.version="1.0.59" \
       org.opencontainers.image.source="https://github.com/aradburn/musigree" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.created="2026-01-25T17:04:29Z" \
+      org.opencontainers.image.created="2026-01-23T17:17:59Z" \
       org.opencontainers.image.revision="" \
       security.scan.enabled="true"
 
@@ -102,12 +84,6 @@ COPY --from=backend-builder --chown=nonroot:nonroot /app/README.md /app/README.m
 COPY --from=backend-builder --chown=nonroot:nonroot /app/health.py /app/health.py
 COPY --from=backend-builder --chown=nonroot:nonroot /app/musigree /app/musigree
 
-# Copy the frontend static files
-COPY --from=frontend-builder --chown=nonroot:nonroot --chmod=755 /app/frontend/public /app/frontend/public
-COPY --from=frontend-builder --chown=nonroot:nonroot --chmod=755 /app/frontend/templates /app/frontend/templates
-# Copy the production built react app frontend
-COPY --from=frontend-builder --chown=nonroot:nonroot --chmod=755 /app/frontend/dist /app/frontend/dist
-
 # Place executables in the environment at the front of the path
 # The venv contains Python and all dependencies
 ENV PATH="/app/.venv/bin:$PATH"
@@ -128,17 +104,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD ["python", "health.py"]
 
 # Run the application with gunicorn
-CMD ["gunicorn", \
-     "--workers", "4", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:5000", \
-     "--worker-connections", "1000", \
-     "--timeout", "120", \
-     "--keep-alive", "5", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "100", \
-     "--graceful-timeout", "30", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "--log-level", "info", \
-     "musigree.app.fastapi_prod_app:app"]
+CMD ["uv", "run", "offline_loader.py"]

@@ -3,8 +3,9 @@ import atexit
 import logging
 import sys
 
+from sqlalchemy.exc import OperationalError
+
 from musigree.config import (
-    PostgresDevelopmentConfiguration,
     SqliteDevelopmentConfiguration,
 )
 from musigree.constants import (
@@ -35,9 +36,18 @@ def shutdown_loader() -> None:
     setup_logging()
     log.info("######## RUNTIME LOADER SHUTDOWN START ########")
     with asyncio.Runner() as runner:
-        runner.run(OfflineDatabaseManager.shutdown_database())
-        runner.run(RuntimeDatabaseManager.shutdown_database())
+        try:
+            runner.run(OfflineDatabaseManager.shutdown_database())
+        except OperationalError:
+            pass
+
+        try:
+            runner.run(RuntimeDatabaseManager.shutdown_database())
+        except OperationalError:
+            pass
+
         runner.run(CacheManager.shutdown_cache())
+
     log.info("######## RUNTIME LOADER SHUTDOWN DONE ########")
     shutdown_logging()
 
@@ -48,7 +58,7 @@ def create_text_search_index() -> None:
 
     log_banner()
 
-    offline_config = PostgresDevelopmentConfiguration()
+    offline_config = SqliteDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")

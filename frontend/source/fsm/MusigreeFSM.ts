@@ -506,7 +506,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             this.pushState(networkData.center.key, params);
 
             // Track the current page
-            track("network", { key: networkData.center });
+            track("network", { key: networkData.center.key });
         }
 
         console.log("FSM received-network convertNetworkDataToSimData");

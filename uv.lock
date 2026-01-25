@@ -730,7 +730,7 @@ wheels = [
 
 [[package]]
 name = "musigree"
-version = "1.0.59"
+version = "1.0.60"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -755,7 +755,6 @@ dependencies = [
     { name = "secweb" },
     { name = "sortedcontainers" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "starlette" },
     { name = "toolz" },
     { name = "tornado" },
     { name = "types-python-dateutil" },
@@ -814,7 +813,6 @@ requires-dist = [
     { name = "secweb", specifier = "==1.30.10" },
     { name = "sortedcontainers", specifier = "==2.4.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.46" },
-    { name = "starlette", specifier = "==0.50.0" },
     { name = "toolz", specifier = "==1.1.0" },
     { name = "tornado", specifier = "==6.5.4" },
     { name = "types-python-dateutil", specifier = ">=2.9.0.20251108" },
