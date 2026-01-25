@@ -16,17 +16,17 @@ log = logging.getLogger(__name__)
 
 
 async def run_offline_loading_process(
-    _config: Configuration, process: Coroutine[Any, Any, None]
+    config: Configuration, process: Coroutine[Any, Any, None]
 ) -> None:
-    """Create entity_details index asynchronously."""
+    """Create loader asynchronously."""
     setup_logging()
 
     log_banner()
 
-    log.info("Using PostgresDevelopmentConfiguration")
+    log.info(f"Using {config.__class__.__name__}")
 
     # Setup Cache
-    await CacheManager.setup_cache(_config)
+    await CacheManager.setup_cache(config)
     cache = CacheManager.get_cache()
     if cache is None:
         log.error("Cache not set")
@@ -35,7 +35,7 @@ async def run_offline_loading_process(
         log.debug("Clearing cache")
         await CacheManager.clear()
 
-    await OfflineDatabaseManager.setup_database(_config)
+    await OfflineDatabaseManager.setup_database(config)
 
     # Note reverse order (last in first out), logging is the last to be shutdown
     # atexit.register(shutdown_logging)
