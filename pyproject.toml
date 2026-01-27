@@ -32,7 +32,7 @@ dependencies = [
     "toolz==1.1.0",
     "Unidecode==1.4.0",
     "python-dotenv==1.2.1",
-    "gunicorn==24.0.0",
+    "gunicorn==24.1.1",
     "uvicorn==0.40.0",
     "httpx==0.28.1",
     "jinja2==3.1.6",
