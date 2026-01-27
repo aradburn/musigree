@@ -498,3 +498,587 @@ class TestLogging:
 
         assert isinstance(log, logging.Logger)
         assert log.name == "musigree.runtime.data_access_layer.runtime_entity_data_access"
+
+
+class TestProcessProfileLinks:
+    """Test class for process_profile_links method."""
+
+    @pytest.fixture
+    def mock_entity_repository(self) -> AsyncMock:
+        """Fixture for mock entity repository."""
+        return AsyncMock()
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_empty_profile(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with empty profile."""
+        profile = ""
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == ""
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_no_links(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with profile containing no links."""
+        profile = "This is a profile with no links."
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_artist_id_only(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with [a12345] format - need to get name."""
+        profile = "Check out [a12345] for great music."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Carl Craig",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [a12345=Carl Craig] for great music."
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_called_once_with(
+            12345, EntityType.ARTIST
+        )
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_label_id_only(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with [l7890] format - need to get name."""
+        profile = "Released on [l7890]."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Released on [l7890=Planet E]."
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_called_once_with(
+            7890, EntityType.LABEL
+        )
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_artist_name_only(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [a=Artist Name] format - need to get id."""
+        profile = "Label owner: [a=Carl Craig]."
+        mock_find_entity_id.return_value = 871
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Label owner: [a871=Carl Craig]."
+        mock_find_entity_id.assert_called_once()
+        # Verify it was called with correct parameters (entity_repository, token_repository, entity_type, entity_name)
+        call_args = mock_find_entity_id.call_args[0]
+        assert call_args[0] == mock_entity_repository
+        assert call_args[2] == EntityType.ARTIST
+        assert call_args[3] == "Carl Craig"
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_label_name_only(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [l=Label Name] format - need to get id."""
+        profile = "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [l=Planet E]."
+        mock_find_entity_id.return_value = 7890
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [l7890=Planet E]."
+        mock_find_entity_id.assert_called_once()
+        # Verify it was called with correct parameters (entity_repository, token_repository, entity_type, entity_name)
+        call_args = mock_find_entity_id.call_args[0]
+        assert call_args[0] == mock_entity_repository
+        assert call_args[2] == EntityType.LABEL
+        assert call_args[3] == "Planet E"
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_already_complete(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with [prefixid=Name] format - already complete."""
+        profile = "Check out [a12345=Carl Craig] and [l7890=Planet E]."
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_multiple_links(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with multiple links of different types."""
+        profile = "Label owner: [a=Carl Craig]. Released on [l7890]. Also check [a12345]."
+
+        mock_artist1 = RuntimeEntity(
+            id=1,
+            entity_id=871,
+            entity_type=EntityType.ARTIST,
+            entity_name="Carl Craig",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_label = RuntimeEntity(
+            id=2,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_artist2 = RuntimeEntity(
+            id=3,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Jeff Mills",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+
+        mock_find_entity_id.return_value = 871
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = [mock_label, mock_artist2]
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]. Also check [a12345=Jeff Mills]."
+        assert mock_find_entity_id.call_count == 1
+        assert mock_entity_repository.get_by_entity_id_and_entity_type.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_entity_not_found_by_id(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links when entity is not found by id."""
+        profile = "Check out [a99999]."
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
+            message="Entity not found"
+        )
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original if not found
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_called_once_with(
+            99999, EntityType.ARTIST
+        )
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_entity_id_not_found_by_name(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links when entity_id is not found by name."""
+        profile = "Check out [a=Nonexistent Artist]."
+        mock_find_entity_id.return_value = None
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original if not found
+        mock_find_entity_id.assert_called_once()
+        # Verify it was called with correct parameters
+        call_args = mock_find_entity_id.call_args[0]
+        assert call_args[0] == mock_entity_repository
+        assert call_args[2] == EntityType.ARTIST
+        assert call_args[3] == "Nonexistent Artist"
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.LOGGING_TRACE", True)
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.log")
+    async def test_process_profile_links_entity_not_found_with_logging(
+        self, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links logs when entity not found and logging is enabled."""
+        profile = "Check out [a99999]."
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
+            message="Entity not found"
+        )
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_log.debug.assert_any_call("process_profile_links: entity not found for a99999")
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.LOGGING_TRACE", True)
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.log")
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_entity_id_not_found_with_logging(
+        self, mock_find_entity_id: AsyncMock, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links logs when entity_id not found and logging is enabled."""
+        profile = "Check out [a=Nonexistent Artist]."
+        mock_find_entity_id.return_value = None
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_log.debug.assert_any_call(
+            "process_profile_links: entity_id not found for a=Nonexistent Artist"
+        )
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_unknown_prefix(self, mock_entity_repository: AsyncMock) -> None:
+        """Test process_profile_links with unknown prefix (not 'a' or 'l')."""
+        profile = "Check out [x12345]."
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original for unknown prefix
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_complex_profile(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with complex profile containing multiple link types."""
+        profile = (
+            "Classic Techno label from Detroit, USA.\r\n"
+            "[b]Label owner:[/b] [a=Carl Craig].\r\n"
+            "Released on [l7890].\r\n"
+            "Also check [a12345=Jeff Mills] and [l=Planet E]."
+        )
+
+        mock_label1 = RuntimeEntity(
+            id=2,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+
+        # First call: find_entity_id_by_entity_type_and_entity_name for [a=Carl Craig] -> returns 871
+        # Second call: get_by_entity_id_and_entity_type for [l7890] -> returns mock_label1
+        # Third call: find_entity_id_by_entity_type_and_entity_name for [l=Planet E] -> returns 7890
+        mock_find_entity_id.side_effect = [871, 7890]
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_label1
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        expected = (
+            "Classic Techno label from Detroit, USA.\r\n"
+            "[b]Label owner:[/b] [a871=Carl Craig].\r\n"
+            "Released on [l7890=Planet E].\r\n"
+            "Also check [a12345=Jeff Mills] and [l7890=Planet E]."
+        )
+        assert result == expected
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_name_with_special_characters(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with entity name containing special characters."""
+        profile = "Check out [a=Artist & The Band]."
+        mock_find_entity_id.return_value = 123
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [a123=Artist & The Band]."
+        mock_find_entity_id.assert_called_once()
+        # Verify it was called with correct parameters
+        call_args = mock_find_entity_id.call_args[0]
+        assert call_args[0] == mock_entity_repository
+        assert call_args[2] == EntityType.ARTIST
+        assert call_args[3] == "Artist & The Band"
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_process_profile_links_name_with_brackets(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with entity name that might contain brackets."""
+        # Note: The regex pattern uses [^\]]+ which means it stops at the first ]
+        # So [a=Name with ] bracket] would only match "Name with "
+        profile = "Check out [a=Simple Name]."
+        mock_find_entity_id.return_value = 456
+
+        result = await RuntimeEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [a456=Simple Name]."
+
+
+class TestGetByEntityIdAndEntityType:
+    """Test class for get_by_entity_id_and_entity_type method."""
+
+    @pytest.fixture
+    def mock_entity_repository(self) -> AsyncMock:
+        """Fixture for mock entity repository."""
+        return AsyncMock()
+
+    @pytest.mark.asyncio
+    async def test_get_by_entity_id_and_entity_type_no_profile(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with entity having no profile."""
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.ARTIST
+        )
+
+        assert result == mock_entity
+        assert result.entity_metadata == {}
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_called_once_with(
+            12345, EntityType.ARTIST
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_by_entity_id_and_entity_type_empty_profile(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with entity having empty profile."""
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={"profile": ""},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.ARTIST
+        )
+
+        assert result == mock_entity
+        assert result.entity_metadata["profile"] == ""
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_get_by_entity_id_and_entity_type_profile_with_links(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type processes profile links."""
+        profile = "Label owner: [a=Carl Craig]."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.LABEL,
+            entity_name="Test Label",
+            relation_counts={},
+            entity_metadata={"profile": profile},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+        mock_find_entity_id.return_value = 871
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.LABEL
+        )
+
+        assert result.entity_metadata["profile"] == "Label owner: [a871=Carl Craig]."
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_called_once_with(
+            12345, EntityType.LABEL
+        )
+        mock_find_entity_id.assert_called_once()
+        # Verify it was called with correct parameters
+        call_args = mock_find_entity_id.call_args[0]
+        assert call_args[0] == mock_entity_repository
+        assert call_args[2] == EntityType.ARTIST
+        assert call_args[3] == "Carl Craig"
+
+    @pytest.mark.asyncio
+    async def test_get_by_entity_id_and_entity_type_profile_already_complete(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with profile containing complete links."""
+        profile = "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.LABEL,
+            entity_name="Test Label",
+            relation_counts={},
+            entity_metadata={"profile": profile},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.LABEL
+        )
+
+        assert result.entity_metadata["profile"] == profile  # Should remain unchanged
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.RuntimeEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
+    async def test_get_by_entity_id_and_entity_type_profile_multiple_links(
+        self, mock_find_entity_id: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with profile containing multiple links."""
+        profile = "Label owner: [a=Carl Craig]. Released on [l7890]."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.LABEL,
+            entity_name="Test Label",
+            relation_counts={},
+            entity_metadata={"profile": profile},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_label = RuntimeEntity(
+            id=2,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = [mock_entity, mock_label]
+        mock_find_entity_id.return_value = 871
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.LABEL
+        )
+
+        assert result.entity_metadata["profile"] == "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]."
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.log")
+    async def test_get_by_entity_id_and_entity_type_logs_profile(
+        self, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type logs profile when present."""
+        profile = "Test profile text."
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={"profile": profile},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.ARTIST
+        )
+
+        mock_log.debug.assert_any_call(f"profile: {profile}")
+
+    @pytest.mark.asyncio
+    async def test_get_by_entity_id_and_entity_type_profile_none(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with profile set to None."""
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={"profile": None},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.ARTIST
+        )
+
+        assert result == mock_entity
+        assert result.entity_metadata["profile"] is None
+
+    @pytest.mark.asyncio
+    async def test_get_by_entity_id_and_entity_type_profile_missing_key(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test get_by_entity_id_and_entity_type with profile key missing from metadata."""
+        mock_entity = RuntimeEntity(
+            id=1,
+            entity_id=12345,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={"other_key": "value"},
+            entities={},
+            countries=None,
+            genres=None,
+            styles=None,
+        )
+        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
+
+        result = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+            mock_entity_repository, 12345, EntityType.ARTIST
+        )
+
+        assert result == mock_entity
+        # get() with default "" should return "" when key is missing
+        assert "profile" not in result.entity_metadata or result.entity_metadata.get("profile", "") == ""
