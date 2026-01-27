@@ -41,6 +41,7 @@ from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_utils import normalise_search_content
+from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database.token_repository import TokenRepository
@@ -98,8 +99,8 @@ async def route__api__entity_type__details__entity_id(
     try:
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
-            entity = await entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
+            entity = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
+                entity_repository, entity_id, entity_type
             )
     except NotFoundError:
         raise NotFoundError(message="Entity details not found") from None

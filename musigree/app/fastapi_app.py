@@ -364,7 +364,7 @@ async def init_app(config: Configuration) -> None:
         log.error("Cache not set")
         sys.exit()
     else:
-        log.debug("Clearing cache")
+        log.info("Clearing cache")
         await CacheManager.clear()
 
     # Setup Database
