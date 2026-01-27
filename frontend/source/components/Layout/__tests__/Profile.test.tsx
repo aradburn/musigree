@@ -133,7 +133,7 @@ describe("Profile", () => {
             );
             const link = screen.getByText("Test Artist");
             expect(link).toBeInTheDocument();
-            expect(link).toHaveAttribute("href", "a-12345");
+            expect(link).toHaveAttribute("href", "/a/12345");
         });
 
         it("renders multiple EntityLinks", () => {
@@ -185,7 +185,7 @@ describe("Profile", () => {
             );
             const link = screen.getByRole("link");
             expect(link).toBeInTheDocument();
-            expect(link).toHaveAttribute("href", "a-12345");
+            expect(link).toHaveAttribute("href", "/a/12345");
         });
     });
 

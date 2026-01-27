@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import React from "react";
 import * as htmlparser2 from "htmlparser2";
 import { EntityLink } from "./EntityLink";
+import { API } from "../../constants";
 
 interface ProfileProps {
     profileHtml: string;
@@ -51,12 +52,31 @@ export const Profile: React.FC<ProfileProps> = ({ profileHtml }) => {
         ): ReactNode => {
             const tagNameLower = tagName.toLowerCase();
             // EntityLink is case-insensitive
-            if (tagNameLower === "entitylink") {
+            if (attributes && tagNameLower === "entitylink") {
+                let url = "";
+                if (attributes.entityKey) {
+                    const parts = attributes.entityKey.split("-");
+                    if (parts.length >= 2) {
+                        const firstPart = parts[0];
+                        const restParts = parts.slice(1);
+                        if (
+                            firstPart !== undefined &&
+                            firstPart.length > 0 &&
+                            restParts.length > 0
+                        ) {
+                            const entityType: string = firstPart;
+                            const entityId: string = restParts.join("-");
+
+                            url = API.ENDPOINTS.UI(entityType, entityId);
+                        }
+                    }
+                }
                 return (
                     <EntityLink
                         key={elementKey}
-                        entityKey={attributes?.entityKey}
-                        entityName={attributes?.entityName}
+                        entityKey={attributes?.entityKey || ""}
+                        entityName={attributes?.entityName || ""}
+                        url={url}
                     />
                 );
             }

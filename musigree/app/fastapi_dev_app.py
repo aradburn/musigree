@@ -19,6 +19,8 @@ FastAPI application instance. The `load_tables` method in
 database with initial data.
 """
 
+import logging
+
 import uvicorn
 from fastapi import FastAPI
 
@@ -46,6 +48,9 @@ def create_development_app() -> FastAPI:
     suitable for development use.
     """
     _app = create_app(runtime_config)
+
+    logging.getHandlerByName("console_handler").setLevel("DEBUG")
+
     """
     FastAPI application instance.
 
@@ -69,4 +74,4 @@ if __name__ == "__main__":
 
     # Run the Uvicorn development server, which listens for incoming HTTP
     # requests and serves the Musigree application.
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="debug")

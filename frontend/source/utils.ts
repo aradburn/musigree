@@ -193,85 +193,37 @@ export const expandProfileURLs = (str: string): string => {
     );
 };
 
-export const expandArtistLinkReferences = (str: string): string => {
-    // Converts a text ref [a12345] into the referred to artist name
-    const regexp = /\[[aA]\d+]/g;
+export const expandLinkReferences = (str: string): string => {
+    // Converts a text ref [a12345=Artist Name]  or [l12345=Label Name] into am entity link with
+    // the referred to artist name using createEntityLink(entity_key, name)
+    // Multiple refs are handled
+    const regexp = /\[([aAlL])(\d+)=(.*?)]/g;
     const matches = Array.from(str.matchAll(regexp));
     let expanded = String(str);
     for (const match of matches) {
-        if (match[0]) {
-            const entity_key = "artist-" + match[0].slice(2, -1);
-            const value = networkManager.data.nodeMap.get(entity_key);
-            const name = value?.name ?? match[0];
+        if (match[0] && match[1] && match[2] && match[3]) {
+            const prefix = match[1].toLowerCase();
+            const entityId = match[2];
+            const providedName = match[3];
+            const entityType = prefix === "a" ? "artist" : "label";
+            const entityKey = `${entityType}-${entityId}`;
+            const value = networkManager.data.nodeMap.get(entityKey);
+            // Use the name from nodeMap if available, otherwise use the provided name
+            const name = value?.name ?? providedName;
             expanded = expanded.replace(
                 match[0],
-                createEntityLink(entity_key, name),
+                createEntityLink(entityKey, name),
             );
         }
     }
     return expanded;
-};
-
-export const expandLabelLinkReferences = (str: string): string => {
-    // Converts a text ref [l12345] into the referred to label name
-    const regexp = /\[[lL]\d+]/g;
-    const matches = Array.from(str.matchAll(regexp));
-    let expanded = String(str);
-    for (const match of matches) {
-        if (match[0]) {
-            const entity_key = "label-" + match[0].slice(2, -1);
-            const value = networkManager.data.nodeMap.get(entity_key);
-            const name = value?.name ?? match[0];
-            expanded = expanded.replace(
-                match[0],
-                createEntityLink(entity_key, name),
-            );
-        }
-    }
-    return expanded;
-};
-
-export const expandArtistTextReferences = (str: string): string => {
-    // Converts an artist reference [a=Some Artist Name Here] into a badge
-    const regexp = /\[[aA]=(.*?)]/g;
-    const matches = Array.from(str.matchAll(regexp));
-    let expanded = String(str);
-    for (const match of matches) {
-        if (match[0]) {
-            let entity_key: string = null;
-            const entity_name = match[0].slice(3, -1);
-            for (const [key, value] of networkManager.data.nodeMap) {
-                if (value?.name === entity_name) {
-                    entity_key = key;
-                }
-            }
-            expanded = expanded.replace(
-                match[0],
-                createEntityLink(entity_key, entity_name),
-            );
-        }
-    }
-    return expanded;
-    //     const pattern = /\[[aA]=(.*?)]/g;
-    //     return str.replace(pattern, (_match, name: string) => createEntityLink(null, name));
-};
-
-export const expandLabelTextReferences = (str: string): string => {
-    // Converts a label reference [l=Some Label Name Here] into a badge
-    const pattern = /\[[lL]=(.*?)]/g;
-    return str.replace(pattern, (_match, name: string) =>
-        createEntityLink(null, name),
-    );
 };
 
 export const expandProfileReferences = (str: string): string => {
     // Performs multiple conversions in sequence
     str = expandCommas(str);
     str = expandProfileURLs(str);
-    str = expandArtistLinkReferences(str);
-    str = expandLabelLinkReferences(str);
-    str = expandArtistTextReferences(str);
-    str = expandLabelTextReferences(str);
+    str = expandLinkReferences(str);
     str = expandBold(str);
     str = expandStrong(str);
     str = expandItalic(str);

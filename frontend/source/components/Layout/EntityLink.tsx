@@ -5,6 +5,7 @@ import { RequestNetworkEvent } from "@/network/events";
 interface EntityLinkProps {
     entityKey: string;
     entityName: string;
+    url: string;
 }
 
 /**
@@ -13,6 +14,7 @@ interface EntityLinkProps {
 export const EntityLink: React.FC<EntityLinkProps> = ({
     entityKey,
     entityName,
+    url,
 }) => {
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>): void => {
         e.preventDefault();
@@ -25,7 +27,7 @@ export const EntityLink: React.FC<EntityLinkProps> = ({
 
     return (
         <a
-            href={entityKey}
+            href={url}
             className="entity-link badge p-1 text-black bg-success-subtle bg-opacity-40 bg-gradient"
             onClick={handleClick}
         >

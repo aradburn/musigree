@@ -17,14 +17,24 @@ describe("EntityLink", () => {
 
     describe("Rendering", () => {
         it("renders correctly with entityName", () => {
-            render(<EntityLink entityKey="a-12345" entityName="Test Artist" />);
+            render(
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
+            );
 
             expect(screen.getByText("Test Artist")).toBeInTheDocument();
         });
 
         it("renders as an anchor element", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a");
@@ -33,16 +43,24 @@ describe("EntityLink", () => {
 
         it("has correct href attribute", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a");
-            expect(link).toHaveAttribute("href", "a-12345");
+            expect(link).toHaveAttribute("href", "/artist/a-12345");
         });
 
         it("applies correct CSS classes", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a");
@@ -61,7 +79,11 @@ describe("EntityLink", () => {
     describe("Click Handler", () => {
         it("prevents default navigation when clicked", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;
@@ -86,7 +108,11 @@ describe("EntityLink", () => {
 
         it("dispatches RequestNetworkEvent when entityKey is valid", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;
@@ -106,7 +132,11 @@ describe("EntityLink", () => {
 
         it("does not dispatch event when entityKey is empty string", () => {
             const { container } = render(
-                <EntityLink entityKey="" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey=""
+                    entityName="Test Artist"
+                    url="/artist/"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;
@@ -117,7 +147,11 @@ describe("EntityLink", () => {
 
         it("does not dispatch event when entityKey is 'null' string", () => {
             const { container } = render(
-                <EntityLink entityKey="null" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="null"
+                    entityName="Test Artist"
+                    url="/artist/null"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;
@@ -128,14 +162,14 @@ describe("EntityLink", () => {
 
         it("dispatches event with correct entityKey for different entity types", () => {
             const testCases = [
-                { key: "a-12345", name: "Artist" },
-                { key: "l-67890", name: "Label" },
-                { key: "r-11111", name: "Release" },
+                { key: "a-12345", name: "Artist", url: "/artist/a-12345" },
+                { key: "l-67890", name: "Label", url: "/label/l-67890" },
+                { key: "r-11111", name: "Release", url: "/release/r-11111" },
             ];
 
-            testCases.forEach(({ key, name }) => {
+            testCases.forEach(({ key, name, url }) => {
                 const { container, unmount } = render(
-                    <EntityLink entityKey={key} entityName={name} />,
+                    <EntityLink entityKey={key} entityName={name} url={url} />,
                 );
 
                 const link = container.querySelector("a") as HTMLAnchorElement;
@@ -154,7 +188,11 @@ describe("EntityLink", () => {
 
         it("always sets pushHistory to true", () => {
             const { container } = render(
-                <EntityLink entityKey="a-12345" entityName="Test Artist" />,
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName="Test Artist"
+                    url="/artist/a-12345"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;
@@ -171,6 +209,7 @@ describe("EntityLink", () => {
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Artist & The Band (feat. Guest)"
+                    url="/artist/a-12345"
                 />,
             );
 
@@ -181,14 +220,24 @@ describe("EntityLink", () => {
 
         it("handles long entityName", () => {
             const longName = "A".repeat(100);
-            render(<EntityLink entityKey="a-12345" entityName={longName} />);
+            render(
+                <EntityLink
+                    entityKey="a-12345"
+                    entityName={longName}
+                    url="/artist/a-12345"
+                />,
+            );
 
             expect(screen.getByText(longName)).toBeInTheDocument();
         });
 
         it("handles entityKey with special characters", () => {
             const { container } = render(
-                <EntityLink entityKey="a-123_45-abc" entityName="Test" />,
+                <EntityLink
+                    entityKey="a-123_45-abc"
+                    entityName="Test"
+                    url="/artist/a-123_45-abc"
+                />,
             );
 
             const link = container.querySelector("a") as HTMLAnchorElement;

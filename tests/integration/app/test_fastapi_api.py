@@ -200,7 +200,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n",
+                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -255,7 +255,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n",
+                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",

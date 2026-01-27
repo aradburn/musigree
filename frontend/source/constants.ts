@@ -180,6 +180,8 @@ export const API = {
             `/api/${entityType}/relations/${entityId}`,
         ENTITY: (entityType: string, entityId: string): string =>
             `/api/${entityType}/details/${entityId}`,
+        UI: (entityType: string, entityId: string): string =>
+            `/${entityType}/${entityId}`,
     },
     RANDOM_MAX: 1000000,
 };

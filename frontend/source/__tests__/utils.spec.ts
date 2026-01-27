@@ -35,10 +35,7 @@ import {
     expandUnderline,
     expandLineBreaks,
     expandProfileURLs,
-    expandArtistLinkReferences,
-    expandLabelLinkReferences,
-    expandArtistTextReferences,
-    expandLabelTextReferences,
+    expandLinkReferences,
     expandProfileReferences,
     sanitizedData,
 } from "../utils";
@@ -813,31 +810,40 @@ describe("Utility Functions", () => {
         });
     });
 
-    describe("expandArtistLinkReferences", () => {
+    describe("expandLinkReferences", () => {
         beforeEach(() => {
             getMockNodeMap().clear();
         });
 
-        it("should replace [a123] with EntityLink component containing artist name from nodeMap", () => {
+        it("should replace [a123=Artist Name] with EntityLink component using name from nodeMap if available", () => {
             const mockNode: Partial<SimNode> = {
-                name: "Artist Name",
+                name: "Artist Name From Map",
                 key: "artist-123",
             };
             getMockNodeMap().set("artist-123", mockNode as SimNode);
 
-            const result = expandArtistLinkReferences("Check out [a123]");
-            expect(result).toContain("Artist Name");
+            const result = expandLinkReferences("Check out [a123=Provided Name]");
+            expect(result).toContain("Artist Name From Map");
             expect(result).toContain('entityKey="artist-123"');
+            expect(result).toContain("<EntityLink");
+            expect(result).not.toContain("Provided Name");
+        });
+
+        it("should replace [a123=Artist Name] with EntityLink component using provided name if not in nodeMap", () => {
+            const result = expandLinkReferences("Check out [a999=Unknown Artist]");
+            expect(result).toContain("Unknown Artist");
+            expect(result).toContain('entityKey="artist-999"');
+            expect(result).toContain('entityName="Unknown Artist"');
             expect(result).toContain("<EntityLink");
         });
 
         it("should handle multiple artist references", () => {
-            const mockNode1: Partial<SimNode> = { name: "Artist One" };
-            const mockNode2: Partial<SimNode> = { name: "Artist Two" };
+            const mockNode1: Partial<SimNode> = { name: "Artist One", key: "artist-123" };
+            const mockNode2: Partial<SimNode> = { name: "Artist Two", key: "artist-456" };
             getMockNodeMap().set("artist-123", mockNode1 as SimNode);
             getMockNodeMap().set("artist-456", mockNode2 as SimNode);
 
-            const result = expandArtistLinkReferences("[a123] and [a456]");
+            const result = expandLinkReferences("[a123=First] and [a456=Second]");
             expect(result).toContain("Artist One");
             expect(result).toContain("Artist Two");
             expect(result).toContain('entityKey="artist-123"');
@@ -845,72 +851,26 @@ describe("Utility Functions", () => {
             expect((result.match(/<EntityLink/g) || []).length).toBe(2);
         });
 
-        it("should create EntityLink with reference as name if artist not found", () => {
-            const result = expandArtistLinkReferences("Check out [a999]");
-            expect(result).toContain("[a999]");
-            expect(result).toContain('entityKey="artist-999"');
-            expect(result).toContain('entityName="[a999]"');
-            expect(result).toContain("<EntityLink");
-        });
-
-        it("should handle empty string", () => {
-            expect(expandArtistLinkReferences("")).toBe("");
-        });
-
-        it("should handle string without artist references", () => {
-            expect(expandArtistLinkReferences("plain text")).toBe("plain text");
-        });
-
-        it("should handle case-insensitive artist references", () => {
+        it("should handle label references [l123=Label Name]", () => {
             const mockNode: Partial<SimNode> = {
-                name: "Artist Name",
-                key: "artist-123",
-            };
-            getMockNodeMap().set("artist-123", mockNode as SimNode);
-
-            const result = expandArtistLinkReferences("Check out [A123]");
-            expect(result).toContain("Artist Name");
-            expect(result).toContain('entityKey="artist-123"');
-        });
-
-        it("should handle artist reference with multiple digits", () => {
-            const mockNode: Partial<SimNode> = {
-                name: "Artist",
-                key: "artist-12345",
-            };
-            getMockNodeMap().set("artist-12345", mockNode as SimNode);
-
-            const result = expandArtistLinkReferences("Check out [a12345]");
-            expect(result).toContain("Artist");
-            expect(result).toContain('entityKey="artist-12345"');
-        });
-    });
-
-    describe("expandLabelLinkReferences", () => {
-        beforeEach(() => {
-            getMockNodeMap().clear();
-        });
-
-        it("should replace [l123] with EntityLink component containing label name from nodeMap", () => {
-            const mockNode: Partial<SimNode> = {
-                name: "Label Name",
+                name: "Label Name From Map",
                 key: "label-123",
             };
             getMockNodeMap().set("label-123", mockNode as SimNode);
 
-            const result = expandLabelLinkReferences("Check out [l123]");
-            expect(result).toContain("Label Name");
+            const result = expandLinkReferences("Check out [l123=Provided Label]");
+            expect(result).toContain("Label Name From Map");
             expect(result).toContain('entityKey="label-123"');
             expect(result).toContain("<EntityLink");
         });
 
         it("should handle multiple label references", () => {
-            const mockNode1: Partial<SimNode> = { name: "Label One" };
-            const mockNode2: Partial<SimNode> = { name: "Label Two" };
+            const mockNode1: Partial<SimNode> = { name: "Label One", key: "label-123" };
+            const mockNode2: Partial<SimNode> = { name: "Label Two", key: "label-456" };
             getMockNodeMap().set("label-123", mockNode1 as SimNode);
             getMockNodeMap().set("label-456", mockNode2 as SimNode);
 
-            const result = expandLabelLinkReferences("[l123] and [l456]");
+            const result = expandLinkReferences("[l123=First] and [l456=Second]");
             expect(result).toContain("Label One");
             expect(result).toContain("Label Two");
             expect(result).toContain('entityKey="label-123"');
@@ -918,143 +878,55 @@ describe("Utility Functions", () => {
             expect((result.match(/<EntityLink/g) || []).length).toBe(2);
         });
 
-        it("should create EntityLink with reference as name if label not found", () => {
-            const result = expandLabelLinkReferences("Check out [l999]");
-            expect(result).toContain("[l999]");
-            expect(result).toContain('entityKey="label-999"');
-            expect(result).toContain('entityName="[l999]"');
-            expect(result).toContain("<EntityLink");
-        });
-
-        it("should handle empty string", () => {
-            expect(expandLabelLinkReferences("")).toBe("");
-        });
-
-        it("should handle string without label references", () => {
-            expect(expandLabelLinkReferences("plain text")).toBe("plain text");
-        });
-
-        it("should handle case-insensitive label references", () => {
-            const mockNode: Partial<SimNode> = {
-                name: "Label Name",
-                key: "label-123",
-            };
-            getMockNodeMap().set("label-123", mockNode as SimNode);
-
-            const result = expandLabelLinkReferences("Check out [L123]");
-            expect(result).toContain("Label Name");
-            expect(result).toContain('entityKey="label-123"');
-        });
-
-        it("should handle label reference with multiple digits", () => {
-            const mockNode: Partial<SimNode> = {
-                name: "Label",
-                key: "label-99999",
-            };
-            getMockNodeMap().set("label-99999", mockNode as SimNode);
-
-            const result = expandLabelLinkReferences("Check out [l99999]");
-            expect(result).toContain("Label");
-            expect(result).toContain('entityKey="label-99999"');
-        });
-    });
-
-    describe("expandArtistTextReferences", () => {
-        beforeEach(() => {
-            getMockNodeMap().clear();
-        });
-
-        it("should convert [a=Artist Name] to EntityLink component", () => {
-            const result = expandArtistTextReferences("[a=Artist Name]");
-            expect(result).toContain("Artist Name");
-            expect(result).toContain("<EntityLink");
-            expect(result).toContain('entityName="Artist Name"');
-        });
-
-        it("should handle multiple artist text references", () => {
-            const result = expandArtistTextReferences(
-                "[a=First Artist] and [a=Second Artist]",
-            );
-            expect(result).toContain("First Artist");
-            expect(result).toContain("Second Artist");
-            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
-        });
-
-        it("should use found entityKey if artist name matches nodeMap entry", () => {
+        it("should handle case-insensitive references", () => {
             const mockNode: Partial<SimNode> = {
                 name: "Artist Name",
                 key: "artist-123",
             };
             getMockNodeMap().set("artist-123", mockNode as SimNode);
 
-            const result = expandArtistTextReferences("[a=Artist Name]");
+            const result = expandLinkReferences("Check out [A123=Test]");
+            expect(result).toContain("Artist Name");
             expect(result).toContain('entityKey="artist-123"');
-            expect(result).toContain('entityName="Artist Name"');
         });
 
-        it("should use null entityKey if artist name not found in nodeMap", () => {
-            const result = expandArtistTextReferences("[a=Unknown Artist]");
-            expect(result).toContain('entityKey="null"');
-            expect(result).toContain('entityName="Unknown Artist"');
-        });
+        it("should handle references with multiple digits", () => {
+            const mockNode: Partial<SimNode> = {
+                name: "Artist",
+                key: "artist-12345",
+            };
+            getMockNodeMap().set("artist-12345", mockNode as SimNode);
 
-        it("should not modify strings without artist text references", () => {
-            expect(expandArtistTextReferences("plain text")).toBe("plain text");
+            const result = expandLinkReferences("Check out [a12345=Test]");
+            expect(result).toContain("Artist");
+            expect(result).toContain('entityKey="artist-12345"');
         });
 
         it("should handle empty string", () => {
-            expect(expandArtistTextReferences("")).toBe("");
+            expect(expandLinkReferences("")).toBe("");
         });
 
-        it("should handle case-insensitive artist text references", () => {
-            const result = expandArtistTextReferences("[A=Artist Name]");
-            expect(result).toContain("Artist Name");
-            expect(result).toContain("<EntityLink");
+        it("should handle string without link references", () => {
+            expect(expandLinkReferences("plain text")).toBe("plain text");
         });
 
-        it("should handle artist text reference with special characters", () => {
-            const result = expandArtistTextReferences("[a=Artist & Name]");
+        it("should handle references with special characters in name", () => {
+            const result = expandLinkReferences("[a123=Artist & Name]");
             expect(result).toContain("Artist & Name");
             expect(result).toContain('entityName="Artist & Name"');
         });
-    });
 
-    describe("expandLabelTextReferences", () => {
-        it("should convert [l=Label Name] to EntityLink component", () => {
-            const result = expandLabelTextReferences("[l=Label Name]");
-            expect(result).toContain("Label Name");
-            expect(result).toContain("<EntityLink");
-            expect(result).toContain('entityName="Label Name"');
-            expect(result).toContain('entityKey="null"');
-        });
+        it("should handle mixed artist and label references", () => {
+            const mockArtist: Partial<SimNode> = { name: "Artist", key: "artist-1" };
+            const mockLabel: Partial<SimNode> = { name: "Label", key: "label-2" };
+            getMockNodeMap().set("artist-1", mockArtist as SimNode);
+            getMockNodeMap().set("label-2", mockLabel as SimNode);
 
-        it("should handle multiple label text references", () => {
-            const result = expandLabelTextReferences(
-                "[l=First Label] and [l=Second Label]",
-            );
-            expect(result).toContain("First Label");
-            expect(result).toContain("Second Label");
-            expect((result.match(/<EntityLink/g) || []).length).toBe(2);
-        });
-
-        it("should handle case-insensitive label references", () => {
-            const result = expandLabelTextReferences("[L=Label Name]");
-            expect(result).toContain("Label Name");
-            expect(result).toContain("<EntityLink");
-        });
-
-        it("should not modify strings without label text references", () => {
-            expect(expandLabelTextReferences("plain text")).toBe("plain text");
-        });
-
-        it("should handle empty string", () => {
-            expect(expandLabelTextReferences("")).toBe("");
-        });
-
-        it("should handle label text reference with special characters", () => {
-            const result = expandLabelTextReferences("[l=Label & Name]");
-            expect(result).toContain("Label & Name");
-            expect(result).toContain('entityName="Label & Name"');
+            const result = expandLinkReferences("[a1=Test] and [l2=Test]");
+            expect(result).toContain("Artist");
+            expect(result).toContain("Label");
+            expect(result).toContain('entityKey="artist-1"');
+            expect(result).toContain('entityKey="label-2"');
         });
     });
 
@@ -1064,18 +936,16 @@ describe("Utility Functions", () => {
         });
 
         it("should perform all expansions in sequence", () => {
-            const mockNode: Partial<SimNode> = { name: "Test Artist" };
+            const mockNode: Partial<SimNode> = { name: "Test Artist", key: "artist-123" };
             getMockNodeMap().set("artist-123", mockNode as SimNode);
 
             const input =
-                "[a123] [a=Text Artist] [i]italic[/i] word1,word2 [url=http://test.com]Link[/url]";
+                "[a123=Text Artist] [i]italic[/i] word1,word2 [url=http://test.com]Link[/url]";
             const result = expandProfileReferences(input);
 
             // Check artist link reference was expanded to EntityLink
             expect(result).toContain("Test Artist");
             expect(result).toContain('entityKey="artist-123"');
-            // Check artist text reference was converted to EntityLink
-            expect(result).toContain("Text Artist");
             expect(result).toContain("<EntityLink");
             // Check italics were expanded
             expect(result).toContain("<i>italic</i>");
@@ -1086,11 +956,11 @@ describe("Utility Functions", () => {
         });
 
         it("should handle complex nested patterns", () => {
-            const mockNode: Partial<SimNode> = { name: "Artist" };
+            const mockNode: Partial<SimNode> = { name: "Artist", key: "artist-1" };
             getMockNodeMap().set("artist-1", mockNode as SimNode);
 
             const input =
-                "[a1] [b]bold[/b] [i]italic[/i] [url=http://test.com]Link[/url]";
+                "[a1=Test] [b]bold[/b] [i]italic[/i] [url=http://test.com]Link[/url]";
             const result = expandProfileReferences(input);
 
             expect(result).toContain("Artist");
