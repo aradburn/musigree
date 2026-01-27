@@ -68,10 +68,10 @@ ENV REDIS_PASSWORD=${REDIS_PASSWORD}
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
       org.opencontainers.image.title="musigree" \
       org.opencontainers.image.description="Interactive visualization of the Discogs database" \
-      org.opencontainers.image.version="1.0.60" \
+      org.opencontainers.image.version="1.0.61" \
       org.opencontainers.image.source="https://github.com/aradburn/musigree" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.created="2026-01-25T17:04:29Z" \
+      org.opencontainers.image.created="2026-01-27T01:56:56Z" \
       org.opencontainers.image.revision="" \
       security.scan.enabled="true"
 
