@@ -1,7 +1,7 @@
 """
-Unit tests for the ReleaseDataAccess class.
+Unit tests for the OfflineReleaseDataAccess class.
 
-This module contains comprehensive unit tests for the ReleaseDataAccess class,
+This module contains comprehensive unit tests for the OfflineReleaseDataAccess class,
 which provides data access functionality for releases in the Musigree offline system.
 It tests the creation and population of EntityDetailsIndex from release data.
 """
@@ -11,8 +11,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 
@@ -31,7 +31,7 @@ async def async_batch_iterator(items: list) -> AsyncGenerator[list, None]:
 class TestCreateEntityDetailsIndex:
     """Test class for create_entity_details_index method."""
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_empty_repository(
         self, mock_entity_details_index_class: Mock
@@ -45,13 +45,13 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_single_release_with_country(
         self, mock_entity_details_index_class: Mock
@@ -74,7 +74,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -83,7 +83,7 @@ class TestCreateEntityDetailsIndex:
         assert mock_index.index_country.call_count == 2
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_single_release_with_genres(
         self, mock_entity_details_index_class: Mock
@@ -106,7 +106,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -118,7 +118,7 @@ class TestCreateEntityDetailsIndex:
         assert mock_index.index_genre.call_count == 4
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_single_release_with_styles(
         self, mock_entity_details_index_class: Mock
@@ -141,7 +141,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -153,7 +153,7 @@ class TestCreateEntityDetailsIndex:
         assert mock_index.index_style.call_count == 4
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_release_without_id_in_artists(
         self, mock_entity_details_index_class: Mock
@@ -176,7 +176,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -184,7 +184,7 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_country.assert_called_once_with("label1", "US")
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_release_without_id_in_labels(
         self, mock_entity_details_index_class: Mock
@@ -207,7 +207,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -215,7 +215,7 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_country.assert_called_once_with("artist1", "US")
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_non_list_artists(
         self, mock_entity_details_index_class: Mock
@@ -238,7 +238,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -246,7 +246,7 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_country.assert_called_once_with("label1", "US")
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_non_list_labels(
         self, mock_entity_details_index_class: Mock
@@ -269,7 +269,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -277,7 +277,7 @@ class TestCreateEntityDetailsIndex:
         mock_index.index_country.assert_called_once_with("artist1", "US")
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_bulk_reporting(
         self, mock_entity_details_index_class: Mock
@@ -309,8 +309,8 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        with patch("musigree.offline.data_access_layer.release_data_access.log") as mock_log:
-            result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        with patch("musigree.offline.data_access_layer.offline_release_data_access.log") as mock_log:
+            result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
@@ -318,7 +318,7 @@ class TestCreateEntityDetailsIndex:
         assert mock_log.debug.call_count >= 2
         assert result == mock_index
 
-    @patch("musigree.offline.data_access_layer.release_data_access.EntityDetailsIndex")
+    @patch("musigree.offline.data_access_layer.offline_release_data_access.EntityDetailsIndex")
     @pytest.mark.asyncio
     async def test_create_entity_details_index_complete_release_data(
         self, mock_entity_details_index_class: Mock
@@ -344,7 +344,7 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        result = await ReleaseDataAccess.create_entity_details_index(mock_repository)
+        result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions
         mock_entity_details_index_class.assert_called_once()
