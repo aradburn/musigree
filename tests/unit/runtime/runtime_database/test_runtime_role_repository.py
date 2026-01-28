@@ -1,13 +1,14 @@
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from sqlalchemy import Result
+
 from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
 from musigree.runtime.runtime_database.runtime_role_table import RuntimeRoleTable
-from musigree.runtime.runtime_domain.role import RuntimeRole
+from musigree.runtime.runtime_domain.runtime_role import RuntimeRole
 
 
 class TestRuntimeRoleRepository:

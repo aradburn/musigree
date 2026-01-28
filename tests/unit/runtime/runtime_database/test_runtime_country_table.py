@@ -1,10 +1,10 @@
 from sqlalchemy import inspect
 
-from musigree.runtime.runtime_database.country_table import CountryTable
+from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
 
 
-class TestCountryTable:
-    """Unit tests for CountryTable class."""
+class TestRuntimeCountryTable:
+    """Unit tests for RuntimeCountryTable class."""
 
     def test_init_with_valid_entries(self) -> None:
         """Test initialization with valid column entries."""
@@ -16,7 +16,7 @@ class TestCountryTable:
         }
 
         # WHEN
-        country_table = CountryTable(**entries)
+        country_table = RuntimeCountryTable(**entries)
 
         # THEN
         assert country_table.id == 1
@@ -29,15 +29,15 @@ class TestCountryTable:
         entries: dict = {}
 
         # WHEN
-        country_table = CountryTable(**entries)
+        country_table = RuntimeCountryTable(**entries)
 
         # THEN
-        assert isinstance(country_table, CountryTable)
+        assert isinstance(country_table, RuntimeCountryTable)
 
     def test_tablename(self) -> None:
         """Test that the table name is correctly set."""
         # GIVEN/WHEN
-        table_name = CountryTable.__tablename__
+        table_name = RuntimeCountryTable.__tablename__
 
         # THEN
         assert table_name == "country"
@@ -48,16 +48,16 @@ class TestCountryTable:
         expected_columns = {"id", "country_name"}
 
         # WHEN
-        columns = set(column.name for column in inspect(CountryTable).columns)
+        columns = set(column.name for column in inspect(RuntimeCountryTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)
 
     def test_repr(self) -> None:
-        """Test string representation of CountryTable instance."""
+        """Test string representation of RuntimeCountryTable instance."""
         # GIVEN
         country_input = {"id": 1, "country_name": "United Kingdom"}
-        country_table = CountryTable(**country_input)
+        country_table = RuntimeCountryTable(**country_input)
 
         # WHEN
         repr_str = repr(country_table)

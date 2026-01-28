@@ -2,28 +2,28 @@ from typing import Any
 
 from sqlalchemy import inspect
 
-from musigree.runtime.runtime_database.style_table import StyleTable
+from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 
 
-class TestStyleTable:
-    """Unit tests for StyleTable class."""
+class TestRuntimeGenreTable:
+    """Unit tests for RuntimeGenreTable class."""
 
     def test_init_with_valid_entries(self) -> None:
         """Test initialization with valid column entries."""
         # GIVEN
         entries = {
             "id": 1,
-            "style_name": "Electronic",
+            "genre_name": "Electronic",
             "invalid_column": "should_be_ignored",
         }
 
         # WHEN
-        style_table = StyleTable(**entries)
+        genre_table = RuntimeGenreTable(**entries)
 
         # THEN
-        assert style_table.id == 1
-        assert style_table.style_name == "Electronic"
-        assert not hasattr(style_table, "invalid_column")
+        assert genre_table.id == 1
+        assert genre_table.genre_name == "Electronic"
+        assert not hasattr(genre_table, "invalid_column")
 
     def test_init_with_empty_entries(self) -> None:
         """Test initialization with empty entries dictionary."""
@@ -31,38 +31,38 @@ class TestStyleTable:
         entries: dict[str, Any] = {}
 
         # WHEN
-        style_table = StyleTable(**entries)
+        genre_table = RuntimeGenreTable(**entries)
 
         # THEN
-        assert isinstance(style_table, StyleTable)
+        assert isinstance(genre_table, RuntimeGenreTable)
 
     def test_tablename(self) -> None:
         """Test that the table name is correctly set."""
         # GIVEN/WHEN
-        table_name = StyleTable.__tablename__
+        table_name = RuntimeGenreTable.__tablename__
 
         # THEN
-        assert table_name == "style"
+        assert table_name == "genre"
 
     def test_columns_exist(self) -> None:
         """Test that expected columns exist in the table."""
         # GIVEN
-        expected_columns = {"id", "style_name"}
+        expected_columns = {"id", "genre_name"}
 
         # WHEN
-        columns = set(column.name for column in inspect(StyleTable).columns)
+        columns = set(column.name for column in inspect(RuntimeGenreTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)
 
     def test_repr(self) -> None:
-        """Test string representation of StyleTable instance."""
+        """Test string representation of RuntimeGenreTable instance."""
         # GIVEN
-        style_input = {"id": 1, "style_name": "Rock"}
-        style_table = StyleTable(**style_input)
+        genre_input = {"id": 1, "genre_name": "Rock"}
+        genre_table = RuntimeGenreTable(**genre_input)
 
         # WHEN
-        repr_str = repr(style_table)
+        repr_str = repr(genre_table)
 
         # THEN
         assert isinstance(repr_str, str)
