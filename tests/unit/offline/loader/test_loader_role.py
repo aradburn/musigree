@@ -12,14 +12,14 @@ from unittest.mock import AsyncMock, Mock, patch, mock_open
 
 import pytest
 
-from musigree.offline.domain.role import RoleUncommitted
 from musigree.offline.loader.loader_role import LoaderRole
+from musigree.offline.offline_domain.role import RoleUncommitted
 
 
 class TestLoaderRole:
     """Test class for LoaderRole."""
 
-    @patch("musigree.offline.loader.loader_role.RoleDataAccess.load_all_roles_into_cache")
+    @patch("musigree.offline.loader.loader_role.OfflineRoleDataAccess.load_all_roles_into_cache")
     @patch.object(LoaderRole, "save_roles")
     @patch.object(LoaderRole, "load_wikipedia_instruments")
     @patch.object(LoaderRole, "load_hornbostel_sachs_instruments")
