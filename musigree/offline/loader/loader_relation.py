@@ -42,12 +42,12 @@ from typing import Any, Callable
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.worker_relation_pass_one import (
     process_relation_pass_one_worker,
 )
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
