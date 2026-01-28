@@ -8,8 +8,8 @@ import pytest
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.relation_grapher import RelationGrapher
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
 
 class TestRelationGrapher:
