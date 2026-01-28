@@ -42,11 +42,11 @@ from sqlalchemy.exc import DataError
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
