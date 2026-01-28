@@ -1,7 +1,7 @@
 """
 This module provides data access functionality for releases within the Musigree offline system.
 
-It defines the `ReleaseDataAccess` class, which offers methods for creating
+It defines the `OfflineReleaseDataAccess` class, which offers methods for creating
 and managing an `EntityDetailsIndex`. This index stores detailed information
 about entities, such as their countries, genres, and styles, derived from
 release data. It is designed to be used during the offline data loading
@@ -14,11 +14,11 @@ Key functionalities include:
     - Logging the progress of indexing and printing index details and sizes.
     - Interacting with `ReleaseRepository` for release data.
 
-The `ReleaseDataAccess` class interacts with `ReleaseRepository` for
-database operations and `EntityDetailsIndex` for managing the detailed entity
+The `OfflineReleaseDataAccess` class interacts with `ReleaseRepository` for
+offline_database operations and `EntityDetailsIndex` for managing the detailed entity
 index. It uses `LoaderBase` to report the progress of bulk operations.
 
-The `Release` class from `musigree.offline.domain` is used to represent releases.
+The `Release` class from `musigree.offline.offline_domain` is used to represent releases.
 `EntityDetailsIndex` from `musigree.library.full_text_search` is used to manage
 the index.
 """
@@ -27,16 +27,16 @@ import logging
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 """
-The logger for the ReleaseDataAccess module.
+The logger for the OfflineReleaseDataAccess module.
 """
 
 
-class ReleaseDataAccess:
+class OfflineReleaseDataAccess:
     """
     Provides data access functionality for releases within the Musigree offline system.
 
