@@ -34,7 +34,7 @@ class RuntimeDatabaseManager:
     async def setup_database(cls, config: Configuration) -> None:
         RuntimeDatabaseManager._threading_model = config.THREADING_MODEL
 
-        # Based on configuration, use a different database.
+        # Based on configuration, use a different runtime_database.
         # noinspection PyUnreachableCode
         if config.DATABASE == DatabaseType.POSTGRES:
             from musigree.runtime.postgres.runtime_postgres_helper import RuntimePostgresHelper
@@ -47,7 +47,7 @@ class RuntimeDatabaseManager:
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
-            raise ValueError("Configuration Error: Unknown database type")
+            raise ValueError("Configuration Error: Unknown runtime_database type")
 
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
@@ -84,12 +84,12 @@ class RuntimeDatabaseManager:
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
         # logging.getLogger("sqlalchemy.engine").setLevel(logging.WARN)
 
-        # Check database connection
+        # Check runtime_database connection
         await RuntimeDatabaseManager.runtime_database_helper.check_connection(config, async_engine)
 
     @classmethod
     async def shutdown_database(cls) -> None:
-        log.info("Shutting down database connections")
+        log.info("Shutting down runtime_database connections")
 
         await close_all_sessions()
 
@@ -105,9 +105,9 @@ class RuntimeDatabaseManager:
     @classmethod
     def reinitialize_runtime_database_async_engine(cls, loop: AbstractEventLoop) -> None:
         """
-        Initializes the database connection for a new process.
+        Initializes the runtime_database connection for a new process.
 
-        Ensures that the parent process's database connections are not touched in
+        Ensures that the parent process's runtime_database connections are not touched in
         the new connection pool.
         """
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
@@ -126,9 +126,9 @@ class RuntimeDatabaseManager:
     @classmethod
     def dispose_runtime_database_async_engine(cls, loop: AbstractEventLoop) -> None:
         """
-        Closes the database connection for a new process.
+        Closes the runtime_database connection for a new process.
 
-        Ensures that the parent process's database connections are not touched in
+        Ensures that the parent process's runtime_database connections are not touched in
         the new connection pool.
         """
         if RuntimeDatabaseManager.get_concurrency_count() > 1:
