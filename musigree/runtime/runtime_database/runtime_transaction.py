@@ -1,19 +1,19 @@
 """
-This module provides a context manager for managing database transactions in the runtime environment.
+This module provides a context manager for managing runtime_database transactions in the runtime environment.
 
 It defines the `runtime_transaction` context manager, which is used to
-encapsulate database operations within a transaction. This ensures that
+encapsulate runtime_database operations within a transaction. This ensures that
 either all operations within the transaction succeed, or none do, maintaining
 data integrity.
 
 Key functionalities include:
-    - Creating a new database session at the start of the transaction.
-    - Setting the database session in a context variable for use within the transaction.
+    - Creating a new runtime_database session at the start of the transaction.
+    - Setting the runtime_database session in a context variable for use within the transaction.
     - Committing the transaction if all operations are successful.
     - Rolling back the transaction if any errors occur.
-    - Handling common database errors, such as integrity errors and invalid
+    - Handling common runtime_database errors, such as integrity errors and invalid
       request errors.
-    - Closing the database session at the end of the transaction.
+    - Closing the runtime_database session at the end of the transaction.
 """
 
 import logging
@@ -35,20 +35,20 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
     """
-    Async context manager for handling runtime database transactions.
+    Async context manager for handling runtime runtime_database transactions.
 
-    This context manager provides a runtime database session and automatically
+    This context manager provides a runtime runtime_database session and automatically
     handles transaction commit and rollback operations. It ensures that all
-    database operations within the context are executed within a single
+    runtime_database operations within the context are executed within a single
     transaction.
 
     Usage:
         async with runtime_transaction() as session:
-            # Perform database operations using the session
+            # Perform runtime_database operations using the session
             pass
 
     Yields:
-        AsyncSession: An async database session for performing operations.
+        AsyncSession: An async runtime_database session for performing operations.
 
     Raises:
         DatabaseError: If any error occurs during the transaction, including
@@ -56,7 +56,7 @@ async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
             or if `session.commit()` raises an error.
     """
     session: AsyncSession = await get_runtime_session()
-    """Get a new runtime database session."""
+    """Get a new runtime runtime_database session."""
     old_token = CTX_RUNTIME_SESSION.set(session)
     """Set the new session to the context manager."""
 
@@ -69,7 +69,7 @@ async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
         # NOTE: If any sort of issues are occurred in the code
         #       they are handled on the BaseCRUD level and raised
         #       as a DatabseError.
-        #       If the DatabseError is handled within domain/application
+        #       If the DatabseError is handled within offline_domain/application
         #       levels it is possible that `await session.commit()`
         #       would raise an error.
         log.error(f"Rolling back changes. {error}")

@@ -10,7 +10,7 @@ from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 class RuntimeRoleTable(RuntimeBase):
     """
-    Represents the 'runtime_role' table in the database.
+    Represents the 'runtime_role' table in the runtime_database.
 
     This table stores information about roles in the Musigree runtime system.
     Each role has a name, a main category, and a subcategory. This table is
@@ -18,7 +18,7 @@ class RuntimeRoleTable(RuntimeBase):
     operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the runtime role.
         role_name (Mapped[str]): The name of the role (e.g., 'Producer',
@@ -36,7 +36,7 @@ class RuntimeRoleTable(RuntimeBase):
     """
 
     __tablename__ = "runtime_role"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 

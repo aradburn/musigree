@@ -10,23 +10,23 @@ from musigree.runtime.runtime_database import RuntimeRoleTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
-from musigree.runtime.runtime_domain.role import RuntimeRole
+from musigree.runtime.runtime_domain.runtime_role import RuntimeRole
 
 log = logging.getLogger(__name__)
 
 
 class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
     """
-    Repository for managing RuntimeRole objects in the runtime database.
+    Repository for managing RuntimeRole objects in the runtime runtime_database.
 
     This class provides async methods for interacting with the RuntimeRoleTable
-    in the runtime database, including creating, retrieving roles by ID or
+    in the runtime runtime_database, including creating, retrieving roles by ID or
     name, and getting all roles. It also utilizes a cache to optimize
     retrieval of roles by name.
 
     Inherits from:
         RuntimeBaseRepository[RuntimeRoleTable]: Provides the basic runtime
-            database interaction functionality.
+            runtime_database interaction functionality.
 
     Attributes:
         schema_class (Type[RuntimeRoleTable]): The SQLAlchemy table class for runtime roles.
@@ -37,7 +37,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
 
     async def all(self) -> AsyncGenerator[RuntimeRole, None]:
         """
-        Retrieves all roles from the runtime database.
+        Retrieves all roles from the runtime runtime_database.
 
         Yields:
             AsyncGenerator[RuntimeRole]: An async iterator yielding each role.
@@ -92,7 +92,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         if role_dict is not None:
             return RuntimeRole.model_validate(role_dict)
 
-        # If not in cache, query database
+        # If not in cache, query runtime_database
         query = select(RuntimeRoleTable).where(RuntimeRoleTable.role_name == name)
         result: Result = await self.execute(query)
 
@@ -108,7 +108,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
 
     async def create(self, role: RuntimeRole) -> RuntimeRole:
         """
-        Creates a new role in the runtime database.
+        Creates a new role in the runtime runtime_database.
 
         Args:
             role: The RuntimeRole object to create.

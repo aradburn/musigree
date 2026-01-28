@@ -1,6 +1,6 @@
 """
 This module defines the `RuntimeEntityRepository` class, which is responsible for
-managing `RuntimeEntity` objects in the runtime database.
+managing `RuntimeEntity` objects in the runtime runtime_database.
 
 It provides async methods for performing various operations on entities, such as
 creating, retrieving, updating, and deleting entities. It also supports
@@ -16,7 +16,7 @@ Key functionalities include:
     - Searching for entities based on various criteria.
 
 The `RuntimeEntityRepository` interacts with the `RuntimeEntityTable` in the
-database to persist and retrieve entity data. It utilizes SQLAlchemy for database
+runtime_database to persist and retrieve entity data. It utilizes SQLAlchemy for runtime_database
 operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
@@ -33,23 +33,23 @@ from musigree.runtime.runtime_database import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
-from musigree.runtime.runtime_domain.entity import RuntimeEntity, RuntimeEntityDB
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, RuntimeEntityDB
 
 log = logging.getLogger(__name__)
 
 
 class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
     """
-    Repository for managing `RuntimeEntity` objects in the runtime database.
+    Repository for managing `RuntimeEntity` objects in the runtime runtime_database.
 
     This class provides async methods for interacting with the `RuntimeEntityTable`
-    in the runtime database, including creating, retrieving, updating, and
+    in the runtime runtime_database, including creating, retrieving, updating, and
     deleting entities. It supports various query operations, such as finding
     entities by ID, entity ID and type, or a list of entity keys.
 
     Inherits from:
         RuntimeBaseRepository[RuntimeEntityTable]: Provides the basic runtime
-            database interaction functionality.
+            runtime_database interaction functionality.
 
     Attributes:
         schema_class (Type[RuntimeEntityTable]): The SQLAlchemy table class
@@ -110,7 +110,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             int: The number of entities of the specified type.
 
         Raises:
-            UnprocessableError: If the database query returns a non-integer value.
+            UnprocessableError: If the runtime_database query returns a non-integer value.
         """
         query = (
             select(func.count())
@@ -129,7 +129,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
     async def all(self) -> AsyncGenerator[RuntimeEntity, None]:
         """
-        Retrieves all entities from the runtime database.
+        Retrieves all entities from the runtime runtime_database.
 
         Yields:
             AsyncGenerator[RuntimeEntity]: An async iterator yielding each entity.
@@ -141,7 +141,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
     async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str], None]:
         """
-        Retrieves all entity IDs and names from the runtime database.
+        Retrieves all entity IDs and names from the runtime runtime_database.
 
         Yields:
             AsyncGenerator[tuple[int, str]]: An async iterator yielding each
@@ -312,7 +312,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
         """
-        Creates a new entity in the runtime database.
+        Creates a new entity in the runtime runtime_database.
 
         Args:
             entity: The `RuntimeEntity` object to create.
@@ -357,7 +357,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         payload: dict[str, Any],
     ) -> None:
         """
-        Updates an existing entity in the database.
+        Updates an existing entity in the runtime_database.
 
         Args:
             id_: The internal ID of the entity to update.

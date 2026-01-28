@@ -17,17 +17,17 @@ log = logging.getLogger(__name__)
 
 class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     """
-    Base class for creating repositories that interact with the runtime database.
+    Base class for creating repositories that interact with the runtime runtime_database.
 
-    This class provides a generic interface for common async database operations, such as
-    creating, retrieving, updating, and deleting data. It simplifies database
+    This class provides a generic interface for common async runtime_database operations, such as
+    creating, retrieving, updating, and deleting data. It simplifies runtime_database
     interactions and enforces type safety through the use of generics.
 
-    It inherits from `RuntimeSession` to manage async database sessions and transactions.
+    It inherits from `RuntimeSession` to manage async runtime_database sessions and transactions.
 
     Attributes:
         schema_class (Type[RuntimeConcreteTable]): The SQLAlchemy schema class
-            representing the database table that this repository interacts with.
+            representing the runtime_database table that this repository interacts with.
             This attribute must be set in subclasses.
 
     Type parameters:
@@ -46,7 +46,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         """
         Initializes the RuntimeBaseRepository instance.
 
-        This method initializes the async database session through the parent class
+        This method initializes the async runtime_database session through the parent class
         `RuntimeSession` and ensures that the `schema_class` attribute is set.
 
         Raises:
@@ -61,7 +61,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         """
         Updates an existing instance of the model in the related table.
 
-        This method updates a single record in the database based on the
+        This method updates a single record in the runtime_database based on the
         provided key-value pair and updates the record with data from the
         payload.
 
@@ -96,7 +96,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def _get(self, key: str, value: Any) -> RuntimeConcreteTable:
         """
-        Retrieves a single record from the database based on the provided filter.
+        Retrieves a single record from the runtime_database based on the provided filter.
 
         Args:
             key (str): The name of the column to filter the query.
@@ -119,13 +119,13 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def count(self) -> int:
         """
-        Counts the total number of records in the associated database table.
+        Counts the total number of records in the associated runtime_database table.
 
         Returns:
             int: The total count of records.
 
         Raises:
-            UnprocessableError: If the database query returns a non-integer value.
+            UnprocessableError: If the runtime_database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
         result: Result = await self.execute(query)
@@ -140,7 +140,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def _first(self, by: str = "id") -> RuntimeConcreteTable:
         """
-        Retrieves the first record from the database table based on a sorting criteria.
+        Retrieves the first record from the runtime_database table based on a sorting criteria.
 
         Args:
             by (str): The name of the column to order the results by.
@@ -161,7 +161,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def _last(self, by: str = "id") -> RuntimeConcreteTable:
         """
-        Retrieves the last record from the database table based on a sorting criteria.
+        Retrieves the last record from the runtime_database table based on a sorting criteria.
 
         Args:
             by (str): The name of the column to order the results by.
@@ -182,7 +182,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def _save(self, payload: dict[str, Any]) -> RuntimeConcreteTable:
         """
-        Saves a new record to the database.
+        Saves a new record to the runtime_database.
 
         Args:
             payload (dict[str, Any]): A dictionary containing the data to save.
@@ -204,7 +204,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
-        Saves multiple new records to the database in a single operation.
+        Saves multiple new records to the runtime_database in a single operation.
 
         Args:
             payloads (list[dict[str, Any]]): A list of dictionaries, where
@@ -222,11 +222,11 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def _all(self) -> AsyncGenerator[RuntimeConcreteTable, None]:
         """
-        Retrieves all records from the database table.
+        Retrieves all records from the runtime_database table.
 
         Yields:
             AsyncGenerator[RuntimeConcreteTable]: An async iterator that yields each
-                database row as an object.
+                runtime_database row as an object.
         """
         result: Result = await self.execute(select(self.schema_class))
         schemas = result.scalars().all()
@@ -236,7 +236,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
 
     async def delete(self, id_: int) -> None:
         """
-        Deletes a record from the database table by its ID.
+        Deletes a record from the runtime_database table by its ID.
 
         Args:
             id_ (int): The ID of the record to delete.

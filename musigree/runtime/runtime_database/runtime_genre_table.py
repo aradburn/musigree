@@ -7,42 +7,42 @@ from musigree import utils
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
-class CountryTable(RuntimeBase):
+class RuntimeGenreTable(RuntimeBase):
     """
-    Represents the 'country' table in the database.
+    Represents the 'genre' table in the runtime_database.
 
-    This table stores information about countries in the Musigree runtime system.
-    Each country has a name. This table is
-    designed for efficient lookup and management of countries during runtime
+    This table stores information about genres in the Musigree runtime system.
+    Each genre has a name. This table is
+    designed for efficient lookup and management of genres during runtime
     operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
-            integer representing the unique identifier for the runtime country.
-        country_name (Mapped[str]): The name of the country (e.g., 'UK', 'England'). This column is indexed for faster lookups.
+            integer representing the unique identifier for the runtime genre.
+        genre_name (Mapped[str]): The name of the genre (e.g., 'Electronic', 'Rock'). This column is indexed for faster lookups.
     """
 
-    __tablename__ = "country"
-    """The name of the table in the database."""
+    __tablename__ = "genre"
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 
     id: Mapped[int] = mapped_column(primary_key=True)
     """
     The primary key of the table, an auto-incrementing integer representing
-    the unique identifier for the runtime country.
+    the unique identifier for the runtime genre.
     """
-    country_name: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
+    genre_name: Mapped[str] = mapped_column(String, index=True, unique=True, nullable=False)
     """
-    The name of the country (e.g., 'UK', 'France'). Indexed for faster lookup.
+    The name of the genre (e.g., 'Electronic', 'Rock'). Indexed for faster lookup.
     """
 
     def __init__(self, **entries: Any) -> None:
         """
-        Initializes a CountryTable instance.
+        Initializes a RuntimeGenreTable instance.
 
-        This constructor allows for the initialization of a `CountryTable`
+        This constructor allows for the initialization of a `RuntimeGenreTable`
         object with keyword arguments that match the table's columns. It
         ensures that only valid column names are used during initialization.
 
@@ -50,13 +50,13 @@ class CountryTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in inspect(CountryTable).columns])
+        column_names = set([column.name for column in inspect(RuntimeGenreTable).columns])
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the CountryTable instance.
+        Returns a string representation of the RuntimeGenreTable instance.
 
         The string is a normalized dictionary representation of the object's
         data, skipping no keys.

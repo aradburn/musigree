@@ -7,9 +7,9 @@ from musigree import utils
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 
-class StyleTable(RuntimeBase):
+class RuntimeStyleTable(RuntimeBase):
     """
-    Represents the 'style' table in the database.
+    Represents the 'style' table in the runtime_database.
 
     This table stores information about styles in the Musigree runtime system.
     Each style has a name. This table is
@@ -17,14 +17,14 @@ class StyleTable(RuntimeBase):
     operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the runtime style.
         style_name (Mapped[str]): The name of the style (e.g., 'Electronic', 'Rock'). This column is indexed for faster lookups.
     """
 
     __tablename__ = "style"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 
@@ -40,9 +40,9 @@ class StyleTable(RuntimeBase):
 
     def __init__(self, **entries: Any) -> None:
         """
-        Initializes a StyleTable instance.
+        Initializes a RuntimeStyleTable instance.
 
-        This constructor allows for the initialization of a `StyleTable`
+        This constructor allows for the initialization of a `RuntimeStyleTable`
         object with keyword arguments that match the table's columns. It
         ensures that only valid column names are used during initialization.
 
@@ -50,13 +50,13 @@ class StyleTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in inspect(StyleTable).columns])
+        column_names = set([column.name for column in inspect(RuntimeStyleTable).columns])
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the StyleTable instance.
+        Returns a string representation of the RuntimeStyleTable instance.
 
         The string is a normalized dictionary representation of the object's
         data, skipping no keys.

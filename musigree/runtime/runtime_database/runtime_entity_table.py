@@ -10,7 +10,7 @@ from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 
 class RuntimeEntityTable(RuntimeBase):
     """
-    Represents the 'runtime_entity' table in the database.
+    Represents the 'runtime_entity' table in the runtime_database.
 
     This table stores information about entities within the Musigree system,
     such as artists and labels, optimized for runtime operations. It includes
@@ -18,7 +18,7 @@ class RuntimeEntityTable(RuntimeBase):
     relationships to other entities.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key, a unique identifier for the runtime entity.
         entity_id (Mapped[int]): The external ID of the entity (e.g., from Discogs).
         entity_type (Mapped[EntityType]): The type of the entity (e.g., ARTIST, LABEL).
@@ -39,7 +39,7 @@ class RuntimeEntityTable(RuntimeBase):
     """
 
     __tablename__ = "runtime_entity"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 
