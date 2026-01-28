@@ -68,11 +68,11 @@ from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 """
