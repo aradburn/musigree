@@ -8,11 +8,11 @@ from musigree import utils
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -20,8 +20,8 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_domain.entity import to_runtime_entity_dict, RuntimeEntity
-from musigree.runtime.runtime_domain.relation import (
+from musigree.runtime.runtime_domain.runtime_entity import to_runtime_entity_dict, RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationInternal,
     RuntimeRelationUncommitted,
     RuntimeRelation,
@@ -43,13 +43,13 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
         """Test creating a relation in the repository.
 
         Args:
-            runtime_database_setup: Pytest fixture for database setup.
+            runtime_database_setup: Pytest fixture for runtime_database setup.
             offline_config: Pytest fixture for configuration.
         """
         # GIVEN
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            entity_details_index = await ReleaseDataAccess.create_entity_details_index(
+            entity_details_index = await OfflineReleaseDataAccess.create_entity_details_index(
                 offline_release_repository
             )
         await TransferManager.transfer_role()

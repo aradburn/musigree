@@ -1,7 +1,7 @@
 from typing import AsyncGenerator
 
-import pytest
 import pydantic
+import pytest
 
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
@@ -12,7 +12,7 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from tests.conftest import AbstractDatabaseTest
 
 
