@@ -5,9 +5,9 @@ import pytest
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_repository import RelationRepository
+from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -37,7 +37,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -81,7 +81,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -125,7 +125,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -169,7 +169,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -205,7 +205,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -314,7 +314,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )
@@ -355,7 +355,7 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             relation_repository = RelationRepository()
-            relation = await RelationDataAccess.get_relation_by_key(
+            relation = await OfflineRelationDataAccess.get_relation_by_key(
                 relation_repository,
                 key,
             )

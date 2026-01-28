@@ -4,17 +4,17 @@ import pytest
 
 from musigree import utils
 from musigree.exceptions import NotFoundError
+from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
-from musigree.library.fields.entity_type import EntityType
 from tests.conftest import AbstractDatabaseTest
 
 
 # noinspection HttpUrlsUsage
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
-class TestLoaderEntityPassThree(AbstractDatabaseTest):
+class TestLoaderEntityPassFour(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_loader_entity_pass_three(
+    async def test_loader_entity_pass_four(
         self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN

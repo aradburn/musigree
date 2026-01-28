@@ -5,8 +5,8 @@ import pytest
 from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
 
 

@@ -2,8 +2,8 @@ from typing import AsyncGenerator
 
 import pytest
 
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from tests.conftest import AbstractDatabaseTest
 
 
