@@ -55,11 +55,11 @@ import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.release_table import ReleaseTable
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ async def worker_pass_two_single(
     """
     release = await release_repository.get_by_id(release_id)
     """Retrieve the release."""
-    changed = await EntityDataAccess.resolve_release_references(entity_repository, release)
+    changed = await OfflineEntityDataAccess.resolve_release_references(entity_repository, release)
     """Resolve entity references."""
 
     if changed:
