@@ -8,13 +8,13 @@ from rapidfuzz import process
 from musigree.library.cache.role_cache import RoleCache
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
-from musigree.offline.database.role_repository import RoleRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.role_repository import RoleRepository
 
 log = logging.getLogger(__name__)
 
 
-class RoleDataAccess:
+class OfflineRoleDataAccess:
     @staticmethod
     def role_name_lookup(role_name: str) -> tuple[str, int] | None:
         if role_name in RoleCache.role_name_set:
@@ -55,7 +55,7 @@ class RoleDataAccess:
             queued_role_name: str = queue.popleft()
 
             # find if we have a match
-            found_role_name = RoleDataAccess.find_role_inner(queued_role_name)
+            found_role_name = OfflineRoleDataAccess.find_role_inner(queued_role_name)
             if found_role_name is not None:
                 if found_role_name[1] > top_score:
                     top_candidate = found_role_name[0]
@@ -96,13 +96,13 @@ class RoleDataAccess:
         if role_name is None or role_name == "":
             return None
 
-        role_name = RoleDataAccess.substitute_role_alternatives(role_name)
+        role_name = OfflineRoleDataAccess.substitute_role_alternatives(role_name)
 
-        lookup_result = RoleDataAccess.role_name_lookup(role_name)
+        lookup_result = OfflineRoleDataAccess.role_name_lookup(role_name)
         if lookup_result is not None:
             return lookup_result
 
-        top_role_name = RoleDataAccess.role_name_fuzzy_lookup(role_name)
+        top_role_name = OfflineRoleDataAccess.role_name_fuzzy_lookup(role_name)
         if top_role_name is not None:
             return top_role_name
 
