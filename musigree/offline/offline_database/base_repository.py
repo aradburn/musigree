@@ -9,19 +9,19 @@ __all__ = ("BaseRepository",)
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.offline.database.base_table import ConcreteTable
-from musigree.offline.database.offline_session import OfflineSession
+from musigree.offline.offline_database.base_table import ConcreteTable
+from musigree.offline.offline_database.offline_session import OfflineSession
 
 log = logging.getLogger(__name__)
 
 
 class BaseRepository(OfflineSession, Generic[ConcreteTable]):
     """
-    This class implements the base interface for working with a database and provides
-    a set of common async database operations. It's designed to be subclassed by more specific
-    repository classes, allowing for type-safe interactions with the database.
+    This class implements the base interface for working with a runtime_database and provides
+    a set of common async runtime_database operations. It's designed to be subclassed by more specific
+    repository classes, allowing for type-safe interactions with the runtime_database.
 
-    The Session class implements the async database interaction layer.
+    The Session class implements the async runtime_database interaction layer.
 
     Attributes:
         schema_class (Type[ConcreteTable]): The SQLAlchemy table class that this
@@ -47,7 +47,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         Updates an existing instance of the model in the related table.
 
         If some data is not present in the payload, then the corresponding
-        values in the database will be updated to NULL.
+        values in the runtime_database will be updated to NULL.
 
         Args:
             key: The name of the column to filter by.
@@ -55,10 +55,10 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             payload: A dictionary of column names and their new values.
 
         Returns:
-            ConcreteTable: The updated database row as an object.
+            ConcreteTable: The updated runtime_database row as an object.
 
         Raises:
-            DatabaseError: If there is an error during the database operation.
+            DatabaseError: If there is an error during the runtime_database operation.
         """
 
         try:
@@ -80,14 +80,14 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
     async def _get(self, key: str, value: Any) -> ConcreteTable:
         """
-        Retrieves a single record from the database that matches the given criteria.
+        Retrieves a single record from the runtime_database that matches the given criteria.
 
         Args:
             key: The name of the column to filter by.
             value: The value to filter by.
 
         Returns:
-            ConcreteTable: The matching database row as an object.
+            ConcreteTable: The matching runtime_database row as an object.
 
         Raises:
             NotFoundError: If no matching record is found.
@@ -125,16 +125,16 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
     async def _save(self, payload: dict[str, Any]) -> ConcreteTable:
         """
-        Saves a new record to the database.
+        Saves a new record to the runtime_database.
 
         Args:
             payload: A dictionary of column names and their values.
 
         Returns:
-            ConcreteTable: The newly created database row as an object.
+            ConcreteTable: The newly created runtime_database row as an object.
 
         Raises:
-            DatabaseError: If there is an error during the database operation.
+            DatabaseError: If there is an error during the runtime_database operation.
         """
         try:
             schema = self.schema_class(**payload)
@@ -147,14 +147,14 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
     async def save_all(self, payloads: list[dict[str, Any]]) -> None:
         """
-        Saves multiple new records to the database in a single transaction.
+        Saves multiple new records to the runtime_database in a single transaction.
 
         Args:
             payloads: A list of dictionaries, each containing column names and
                 their values for a single record.
 
         Raises:
-            DatabaseError: If there is an error during the database operation.
+            DatabaseError: If there is an error during the runtime_database operation.
         """
         try:
             await self._session.execute(
@@ -170,7 +170,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
 
         Yields:
             AsyncGenerator[ConcreteTable]: An async iterator that yields each
-                database row as an object.
+                runtime_database row as an object.
         """
         query = select(self.schema_class)
         result: Result = await self.execute(query)

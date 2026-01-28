@@ -7,24 +7,24 @@ from sqlalchemy import Result, select, update, Select, delete, func
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 
 
 class EntityRepository(BaseRepository[EntityTable]):
     """
-    Repository for managing Entity objects in the database.
+    Repository for managing Entity objects in the runtime_database.
 
     This class provides async methods for interacting with the EntityTable in the
-    database, including creating, retrieving, updating, and deleting entities.
+    runtime_database, including creating, retrieving, updating, and deleting entities.
     It also supports various query operations, such as finding entities by ID,
     type, name, or search content.
 
     Inherits from:
-        BaseRepository[EntityTable]: Provides the basic async database interaction
+        BaseRepository[EntityTable]: Provides the basic async runtime_database interaction
             functionality.
 
     Attributes:
@@ -103,7 +103,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     async def all(self) -> AsyncGenerator[list[Entity], None]:
         """
-        Retrieves all entities from the database.
+        Retrieves all entities from the runtime_database.
 
         Yields:
             AsyncGenerator[Entity]: An async iterator yielding each entity.
@@ -119,7 +119,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     async def all_ids_and_names(self) -> AsyncGenerator[list[tuple[int, str]], None]:
         """
-        Retrieves all entity IDs and names from the database.
+        Retrieves all entity IDs and names from the runtime_database.
 
         Yields:
             AsyncGenerator[tuple[int, str]]: An async iterator yielding tuples of
@@ -173,7 +173,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     async def get_ids(self) -> Sequence[int]:
         """
-        Retrieves all entity IDs from the database.
+        Retrieves all entity IDs from the runtime_database.
 
         Returns:
             Sequence[int]: A sequence of all entity IDs.
@@ -271,18 +271,20 @@ class EntityRepository(BaseRepository[EntityTable]):
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
-    # async def get_batched_ids(self, num_in_batch: int) -> Iterator[list[int]]:
-    #     """
-    #     Retrieves all entity IDs in batches.
-    #
-    #     Args:
-    #         num_in_batch: The number of IDs in each batch.
-    #
-    #     Returns:
-    #         List[List[int]]: A list of batches, where each batch is a list of entity IDs.
-    #     """
-    #     ids = await self.get_ids()
-    #     return utils.batched(iter(ids), num_in_batch)
+    async def get_entity_name_by_id(self, id_: int) -> str | None:
+        """
+        Retrieves an entity name by its id.
+
+        Args:
+            id_: The id of the entity.
+
+        Returns:
+            str | None: The entity name, or None if not found.
+        """
+        result = await self._session.execute(
+            select(EntityTable.entity_name).where(EntityTable.id == id_)
+        )
+        return result.scalar_one_or_none()
 
     async def find_by_search_content(self, search_string: str) -> list[Entity]:
         """
@@ -299,7 +301,7 @@ class EntityRepository(BaseRepository[EntityTable]):
 
     async def create(self, entity: Entity) -> Entity:
         """
-        Creates a new entity in the database.
+        Creates a new entity in the runtime_database.
 
         Args:
             entity: The entity to create.
@@ -339,7 +341,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         payload: dict[str, Any],
     ) -> None:
         """
-        Updates an existing entity in the database.
+        Updates an existing entity in the runtime_database.
 
         Args:
             id_: The ID of the entity to update.

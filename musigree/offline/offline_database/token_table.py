@@ -4,25 +4,25 @@ from sqlalchemy import String, inspect, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
+from musigree.offline.offline_database.base_table import OfflineBase
 
 
-class TokenTable(RuntimeBase):
+class TokenTable(OfflineBase):
     """
-    Represents the 'token' table in the database.
+    Represents the 'token' table in the offline_database.
 
-    This table stores information about tokens in the Musigree runtime system.
+    This table stores information about tokens in the Musigree offline system.
     Each token is part of an entity's name. This table is
-    designed for efficient lookup and management of tokens during runtime operations.
+    designed for efficient lookup and management of tokens during offline operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the offline_database.
         token (Mapped[str]): The token. This column is indexed for faster lookups.
         id (Mapped[int]): The id of the entity containign this token as part of the entity's name.
     """
 
     __tablename__ = "token"
-    """The name of the table in the database."""
+    """The name of the table in the offline_database."""
 
     # COLUMNS
     id: Mapped[int] = mapped_column(primary_key=True)

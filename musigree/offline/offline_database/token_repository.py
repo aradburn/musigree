@@ -5,37 +5,34 @@ from typing import AsyncGenerator
 from sqlalchemy import Result, select, func
 
 from musigree.exceptions import DatabaseError
-from musigree.runtime.runtime_database.runtime_base_repository import (
-    RuntimeBaseRepository,
-)
-from musigree.runtime.runtime_database.token_table import TokenTable
-from musigree.runtime.runtime_domain.token import Token
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.token_table import TokenTable
+from musigree.offline.offline_domain.token import Token
 
 log = logging.getLogger(__name__)
 
 
-class TokenRepository(RuntimeBaseRepository[TokenTable]):
+class TokenRepository(BaseRepository[TokenTable]):
     """
-    Repository for managing Token objects in the runtime database.
+    Repository for managing Token objects in the offline_database.
 
     This class provides async methods for interacting with the TokenTable
-    in the runtime database, including creating, retrieving tokens by ID or
+    in the offline_database, including creating, retrieving tokens by ID or
     name, and getting all tokens.
 
     Inherits from:
-        RuntimeBaseRepository[TokenTable]: Provides the basic runtime
-            database interaction functionality.
+        BaseRepository[TokenTable]: Provides the basic offline_database interaction functionality.
 
     Attributes:
-        schema_class (Type[TokenTable]): The SQLAlchemy table class for runtime tokens.
+        schema_class (Type[TokenTable]): The SQLAlchemy table class for offline tokens.
     """
 
     schema_class = TokenTable
-    """The SQLAlchemy table class for runtime tokens."""
+    """The SQLAlchemy table class for offline tokens."""
 
     async def all(self) -> AsyncGenerator[Token, None]:
         """
-        Retrieves all tokens from the runtime database.
+        Retrieves all tokens from the offline_database.
 
         Yields:
             AsyncGenerator[Token]: An async iterator yielding each token.
@@ -45,13 +42,13 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
 
     async def count(self) -> int:
         """
-        Counts the total number of records in the associated database table.
+        Counts the total number of records in the associated offline_database table.
 
         Returns:
             int: The total count of records.
 
         Raises:
-            UnprocessableError: If the database query returns a non-integer value.
+            UnprocessableError: If the offline_database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
         result: Result = await self.execute(query)
@@ -100,7 +97,7 @@ class TokenRepository(RuntimeBaseRepository[TokenTable]):
 
     async def create(self, token: Token) -> Token:
         """
-        Creates a new token in the runtime database.
+        Creates a new token in the offline_database.
 
         Args:
             token: The Token object to create.

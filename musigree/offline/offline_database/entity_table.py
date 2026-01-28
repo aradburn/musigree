@@ -2,14 +2,14 @@ from sqlalchemy import String, Index, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import OfflineBase
+from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.int_enum import IntEnum
 
 
 class EntityTable(OfflineBase):
     """
-    Represents the 'entity' table in the database.
+    Represents the 'entity' table in the runtime_database.
 
     This table stores information about entities in the Musigree system,
     including artists and labels. It contains various attributes such as
@@ -17,7 +17,7 @@ class EntityTable(OfflineBase):
     and content used for search operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing integer.
         entity_id (Mapped[int]): The external ID of the entity (e.g., from Discogs).
         entity_type (Mapped[EntityType]): The type of the entity (Artist or Label).

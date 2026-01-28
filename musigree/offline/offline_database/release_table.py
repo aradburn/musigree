@@ -2,12 +2,12 @@ from sqlalchemy import String, Integer, Date, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import OfflineBase
+from musigree.offline.offline_database.base_table import OfflineBase
 
 
 class ReleaseTable(OfflineBase):
     """
-    Represents the 'release' table in the database.
+    Represents the 'release' table in the runtime_database.
 
     This table stores information about music releases, including details
     such as artists, companies, country of origin, extra artists, formats,
@@ -15,7 +15,7 @@ class ReleaseTable(OfflineBase):
     and tracklist.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         release_id (Mapped[int]): The primary key of the table, representing the
             unique identifier for the release.
         artists (Mapped[dict | list]): Information about the artists involved
@@ -46,7 +46,7 @@ class ReleaseTable(OfflineBase):
     """
 
     __tablename__ = "release"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 

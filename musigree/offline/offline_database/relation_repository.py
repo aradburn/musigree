@@ -6,9 +6,9 @@ from sqlalchemy import Result, select, Select, delete
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.relation_table import RelationTable
-from musigree.offline.domain.relation import (
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.relation_table import RelationTable
+from musigree.offline.offline_domain.relation import (
     RelationUncommitted,
     RelationDB,
     RelationInternal,
@@ -19,15 +19,15 @@ log = logging.getLogger(__name__)
 
 class RelationRepository(BaseRepository[RelationTable]):
     """
-    Repository for managing Relation objects in the database.
+    Repository for managing Relation objects in the runtime_database.
 
     This class provides async methods for interacting with the RelationTable in the
-    database, including creating, retrieving, and deleting relations. It supports
+    runtime_database, including creating, retrieving, and deleting relations. It supports
     various query operations, such as finding relations by ID, key, or associated
     entity. It also includes bulk creation and deletion capabilities.
 
     Inherits from:
-        BaseRepository[RelationTable]: Provides the basic async database interaction
+        BaseRepository[RelationTable]: Provides the basic async runtime_database interaction
             functionality.
 
     Attributes:
@@ -79,7 +79,7 @@ class RelationRepository(BaseRepository[RelationTable]):
 
     async def all(self) -> AsyncGenerator[list[RelationDB], None]:
         """
-        Retrieves all relations from the database.
+        Retrieves all relations from the runtime_database.
 
         Yields:
             AsyncGenerator[RelationDB]: An async iterator yielding each relation.
@@ -263,7 +263,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         self, relation: RelationUncommitted, on_conflict_do_nothing: bool = False
     ) -> None:
         """
-        Creates a new relation in the database.
+        Creates a new relation in the runtime_database.
 
         Args:
             relation: The RelationUncommitted object to create.
@@ -297,7 +297,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         self, relations: list[RelationUncommitted], on_conflict_do_nothing: bool = False
     ) -> None:
         """
-        Creates multiple relations in the database in bulk.
+        Creates multiple relations in the runtime_database in bulk.
 
         Args:
             relations: A list of RelationUncommitted objects to create.

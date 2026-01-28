@@ -8,37 +8,37 @@ from sqlalchemy.sql.ddl import DropTable
 from sqlalchemy.sql.dml import Insert
 
 from musigree.config import Configuration
-from musigree.offline.database.base_table import OfflineBase, ConcreteTable
+from musigree.offline.offline_database.base_table import OfflineBase, ConcreteTable
 
 log = logging.getLogger(__name__)
 
 
 class OfflineDatabaseHelper(ABC):
     """
-    Abstract base class for managing offline database operations.
+    Abstract base class for managing offline runtime_database operations.
 
-    This class provides a blueprint for interacting with the offline database,
+    This class provides a blueprint for interacting with the offline runtime_database,
     including setting up connections, creating and dropping tables, loading data,
     and managing vacuum operations. It also defines constants for graph query limitations.
 
     Attributes:
-        offline_async_engine (Engine | None): The SQLAlchemy engine for the offline database.
-        offline_async_session_factory (async_sessionmaker | None): The session factory for the offline database.
+        offline_async_engine (Engine | None): The SQLAlchemy engine for the offline runtime_database.
+        offline_async_session_factory (async_sessionmaker | None): The session factory for the offline runtime_database.
     """
 
     offline_async_engine: AsyncEngine | None = None
-    """The SQLAlchemy engine for the offline database."""
+    """The SQLAlchemy engine for the offline runtime_database."""
     offline_async_session_factory: async_sessionmaker | None = None
-    """The session factory for the offline database."""
+    """The session factory for the offline runtime_database."""
 
     @staticmethod
     @abstractmethod
     async def setup_database(config: Configuration) -> AsyncEngine:
         """
-        Abstract method to set up the database connection.
+        Abstract method to set up the runtime_database connection.
 
         Args:
-            config: The database configuration.
+            config: The runtime_database configuration.
 
         Returns:
             Engine: The SQLAlchemy engine.
@@ -49,7 +49,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     async def shutdown_database() -> None:
         """
-        Abstract method to shut down the database connection.
+        Abstract method to shut down the runtime_database connection.
         """
         pass
 
@@ -57,10 +57,10 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
-        Abstract method to check the database connection.
+        Abstract method to check the runtime_database connection.
 
         Args:
-            config: The database configuration.
+            config: The runtime_database configuration.
             engine: The SQLAlchemy engine.
         """
         pass
@@ -69,7 +69,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     async def create_tables(cls, tables: list[str]) -> None:
         """
-        Creates tables in the database.
+        Creates tables in the runtime_database.
 
         Args:
             tables: A list of table names to create. If None, all tables are created.
@@ -107,7 +107,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     async def drop_tables(cls, tables: list[str]) -> None:
         """
-        Drops tables from the database.
+        Drops tables from the runtime_database.
 
         Args:
             tables: A list of table names to drop. If None, all tables are dropped.
@@ -150,7 +150,7 @@ class OfflineDatabaseHelper(ABC):
             table_name: The name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
-            engine: The SQLAlchemy engine connected to the database.
+            engine: The SQLAlchemy engine connected to the runtime_database.
         """
         pass
 

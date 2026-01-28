@@ -1,7 +1,7 @@
 """
-This module provides a context manager for managing database transactions in the offline environment.
+This module provides a context manager for managing runtime_database transactions in the offline environment.
 
-It ensures that database operations are performed within a transaction,
+It ensures that runtime_database operations are performed within a transaction,
 and that transactions are committed or rolled back appropriately based on the
 success or failure of the operations.
 """
@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError, MultipleResultsF
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_session import (
+from musigree.offline.offline_database.offline_session import (
     get_offline_session,
     CTX_OFFLINE_SESSION,
 )
@@ -25,20 +25,20 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
     """
-    Async context manager for handling offline database transactions.
+    Async context manager for handling offline runtime_database transactions.
 
-    This context manager provides an offline database session and automatically
+    This context manager provides an offline runtime_database session and automatically
     handles transaction commit and rollback operations. It ensures that all
-    database operations within the context are executed within a single
+    runtime_database operations within the context are executed within a single
     transaction.
 
     Usage:
         async with offline_transaction() as session:
-            # Perform database operations using the session
+            # Perform runtime_database operations using the session
             pass
 
     Yields:
-        AsyncSession: An async database session for performing operations.
+        AsyncSession: An async runtime_database session for performing operations.
 
     Raises:
         DatabaseError: If any error occurs during the transaction, including
@@ -46,7 +46,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
             or if `session.commit()` raises an error.
     """
     session: AsyncSession = await get_offline_session()
-    """Get a new offline database session."""
+    """Get a new offline runtime_database session."""
     old_token = CTX_OFFLINE_SESSION.set(session)
     """Set the new session to the context manager."""
 
@@ -61,7 +61,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         # NOTE: If any sort of issues are occurred in the code
         #       they are handled on the BaseCRUD level and raised
         #       as a DatabseError.
-        #       If the DatabseError is handled within domain/application
+        #       If the DatabseError is handled within offline_domain/application
         #       levels it is possible that `await session.commit()`
         #       would raise an error.
         log.error(f"DatabaseError: Rolling back changes. {error}")

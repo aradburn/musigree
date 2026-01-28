@@ -2,13 +2,13 @@ from sqlalchemy import String, Enum, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import OfflineBase
+from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.library.fields.role_type import RoleType
 
 
 class RoleTable(OfflineBase):
     """
-    Represents the 'role' table in the database.
+    Represents the 'role' table in the runtime_database.
 
     This table stores information about the different roles that entities can
     have in the Musigree system, such as 'Producer', 'Remixer', or 'Label Manager'.
@@ -16,7 +16,7 @@ class RoleTable(OfflineBase):
     structured way of classifying relationships between entities.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the role.
         role_name (Mapped[str]): The name of the role (e.g., 'Producer', 'Remixer').
@@ -29,7 +29,7 @@ class RoleTable(OfflineBase):
     """
 
     __tablename__ = "role"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 

@@ -7,12 +7,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.database.base_table import OfflineBase
+from musigree.offline.offline_database.base_table import OfflineBase
 
 
 class RelationTable(OfflineBase):
     """
-    Represents the 'relation' table in the database.
+    Represents the 'relation' table in the runtime_database.
 
     This table stores information about the relationships between entities
     in the Musigree system. Each row in the table represents a directed
@@ -20,7 +20,7 @@ class RelationTable(OfflineBase):
     predicate (role) describing the nature of the relation.
 
     Attributes:
-        __tablename__ (str): The name of the table in the database.
+        __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing integer.
         subject (Mapped[int]): The ID of the subject entity in the relation.
         predicate (Mapped[int]): The ID of the role (predicate) defining the relation.
@@ -30,7 +30,7 @@ class RelationTable(OfflineBase):
     """
 
     __tablename__ = "relation"
-    """The name of the table in the database."""
+    """The name of the table in the runtime_database."""
 
     # COLUMNS
 

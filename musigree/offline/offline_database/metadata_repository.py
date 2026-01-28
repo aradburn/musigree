@@ -4,22 +4,22 @@ from typing import Any, AsyncGenerator
 from sqlalchemy import Result, select, update
 
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.metadata_table import MetadataTable
-from musigree.offline.domain.metadata import Metadata, MetadataUncommitted
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.metadata_table import MetadataTable
+from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 
 log = logging.getLogger(__name__)
 
 
 class MetadataRepository(BaseRepository[MetadataTable]):
     """
-    Repository for managing Metadata objects in the database.
+    Repository for managing Metadata objects in the runtime_database.
 
     This class provides async methods for interacting with the MetadataTable in the
-    database, including creating, retrieving, and managing metadata.
+    runtime_database, including creating, retrieving, and managing metadata.
 
     Inherits from:
-        BaseRepository[MetadataTable]: Provides the basic async database interaction
+        BaseRepository[MetadataTable]: Provides the basic async runtime_database interaction
             functionality.
 
     Attributes:
@@ -33,7 +33,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
 
     async def all(self) -> AsyncGenerator[Metadata, None]:
         """
-        Retrieves all metadata from the database.
+        Retrieves all metadata from the runtime_database.
 
         Yields:
             AsyncGenerator[Metadata]: An async iterator yielding each metadata.
@@ -81,7 +81,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
 
     async def create(self, metadata: MetadataUncommitted) -> Metadata:
         """
-        Creates a new Metadata object in the database.
+        Creates a new Metadata object in the runtime_database.
 
         Args:
             metadata: The MetadataUncommitted object to create.
@@ -114,7 +114,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         payload: dict[str, Any],
     ) -> Metadata:
         """
-        Updates an existing Metadata object in the database.
+        Updates an existing Metadata object in the runtime_database.
 
         Args:
             payload: A dictionary containing the fields to update and their new values.

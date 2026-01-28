@@ -5,22 +5,22 @@ from sqlalchemy import select, Result, update, delete
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.release_table import ReleaseTable
-from musigree.offline.domain.release import Release
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.release_table import ReleaseTable
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 
 
 class ReleaseRepository(BaseRepository[ReleaseTable]):
     """
-    Repository for managing Release objects in the database.
+    Repository for managing Release objects in the runtime_database.
 
     This class provides async methods for interacting with the ReleaseTable in the
-    database, including creating, retrieving, and managing releases.
+    runtime_database, including creating, retrieving, and managing releases.
 
     Inherits from:
-        BaseRepository[ReleaseTable]: Provides the basic async database interaction
+        BaseRepository[ReleaseTable]: Provides the basic async runtime_database interaction
             functionality.
 
     Attributes:
@@ -32,7 +32,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
 
     async def all(self) -> AsyncGenerator[list[Release], None]:
         """
-        Retrieves all releases from the database.
+        Retrieves all releases from the runtime_database.
 
         Yields:
             AsyncGenerator[Release]: An async iterator yielding each release.
@@ -82,7 +82,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
 
     async def create(self, release: Release) -> Release:
         """
-        Creates a new release in the database.
+        Creates a new release in the runtime_database.
 
         Args:
             release: The Release object to create.
@@ -95,7 +95,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
 
     async def get_ids(self) -> Sequence[int]:
         """
-        Retrieves all release IDs from the database.
+        Retrieves all release IDs from the runtime_database.
 
         Returns:
             Sequence[int]: A sequence of all release IDs.
@@ -110,7 +110,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         payload: dict[str, Any],
     ) -> None:
         """
-        Updates an existing release in the database.
+        Updates an existing release in the runtime_database.
 
         Args:
             release_id: The ID of the release to update.

@@ -4,22 +4,22 @@ from typing import AsyncGenerator
 from sqlalchemy import select, Result
 
 from musigree.exceptions import NotFoundError
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.role_table import RoleTable
-from musigree.offline.domain.role import Role, RoleUncommitted
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.role_table import RoleTable
+from musigree.offline.offline_domain.role import Role, RoleUncommitted
 
 log = logging.getLogger(__name__)
 
 
 class RoleRepository(BaseRepository[RoleTable]):
     """
-    Repository for managing Role objects in the database.
+    Repository for managing Role objects in the runtime_database.
 
     This class provides async methods for interacting with the RoleTable in the
-    database, including creating, retrieving, and managing roles.
+    runtime_database, including creating, retrieving, and managing roles.
 
     Inherits from:
-        BaseRepository[RoleTable]: Provides the basic async database interaction
+        BaseRepository[RoleTable]: Provides the basic async runtime_database interaction
             functionality.
 
     Attributes:
@@ -31,7 +31,7 @@ class RoleRepository(BaseRepository[RoleTable]):
 
     async def all(self) -> AsyncGenerator[Role, None]:
         """
-        Retrieves all roles from the database.
+        Retrieves all roles from the runtime_database.
 
         Yields:
             AsyncGenerator[Role]: An async iterator yielding each role.
@@ -82,7 +82,7 @@ class RoleRepository(BaseRepository[RoleTable]):
 
     async def create(self, role: RoleUncommitted) -> Role:
         """
-        Creates a new role in the database.
+        Creates a new role in the runtime_database.
 
         Args:
             role: The RoleUncommitted object to create.
@@ -97,7 +97,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         self, roles: list[RoleUncommitted], on_conflict_do_nothing: bool = False
     ) -> None:
         """
-        Creates multiple relations in the database in bulk.
+        Creates multiple relations in the runtime_database in bulk.
 
         Args:
             roles: A list of RoleUncommitted objects to create.

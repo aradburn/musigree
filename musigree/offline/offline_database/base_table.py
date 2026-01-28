@@ -9,7 +9,7 @@ class OfflineBase(DeclarativeBase):
 
     This class serves as the base for defining SQLAlchemy declarative models.
     By inheriting from this class, model classes gain the necessary functionality
-    for mapping to database tables.
+    for mapping to runtime_database tables.
 
     Usage:
         Create your model classes by inheriting from this `Base` class.

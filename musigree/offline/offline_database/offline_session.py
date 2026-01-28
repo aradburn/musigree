@@ -1,9 +1,9 @@
 """
 This module defines the OfflineSession class and related utilities for managing
-database sessions in the offline data loading and processing context.
+runtime_database sessions in the offline data loading and processing context.
 
 It provides a mechanism for creating and managing SQLAlchemy async sessions,
-handling database errors, and using context variables to manage sessions in
+handling runtime_database errors, and using context variables to manage sessions in
 concurrent environments.
 """
 
@@ -19,7 +19,7 @@ from musigree.exceptions import DatabaseError
 
 CTX_OFFLINE_SESSION: ContextVar[AsyncSession] = ContextVar("offline_session")
 """
-A ContextVar to store the active offline database async session.
+A ContextVar to store the active offline runtime_database async session.
 
 This allows for managing the session within a specific context, ensuring that
 each coroutine or thread has its own session.
@@ -28,11 +28,11 @@ each coroutine or thread has its own session.
 
 async def get_offline_session() -> AsyncSession:
     """
-    Creates a new async session to execute SQL queries against the offline database.
+    Creates a new async session to execute SQL queries against the offline runtime_database.
 
     This function retrieves the session factory from the OfflineDatabaseManager
     and creates a new async session. If concurrency is detected (more than one thread
-    or process accessing the database), it uses an `async_scoped_session` to ensure
+    or process accessing the runtime_database), it uses an `async_scoped_session` to ensure
     thread-safety. Otherwise, it creates a regular async session.
 
     Returns:
@@ -75,9 +75,9 @@ async def get_offline_session() -> AsyncSession:
 
 class OfflineSession:
     """
-    The basic class to perform database operations within an async session.
+    The basic class to perform runtime_database operations within an async session.
 
-    This class provides an interface for interacting with the database within a
+    This class provides an interface for interacting with the runtime_database within a
     session context. It handles async session management, query execution, and error
     handling.
     """
