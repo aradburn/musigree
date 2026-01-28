@@ -9,7 +9,7 @@ import pytest
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
-from musigree.runtime.runtime_domain.role import (
+from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTree,
     RuntimeRoleJSTreeWrapper,
 )
