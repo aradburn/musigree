@@ -44,9 +44,9 @@ import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_repository import RelationRepository
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
