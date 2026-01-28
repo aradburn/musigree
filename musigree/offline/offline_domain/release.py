@@ -1,5 +1,5 @@
 """
-This module defines the domain object for representing a music release in the Musigree system.
+This module defines the offline_domain object for representing a music release in the Musigree system.
 
 It provides the `Release` class, which encapsulates all the information related
 to a particular music release, such as its unique identifier, artists,
@@ -8,7 +8,7 @@ companies, country of origin, genres, labels, and tracklist.
 Key functionalities include:
     - Representing a music release with comprehensive details.
     - Providing a structured way to access release information.
-    - Defining methods for converting between domain and database representations.
+    - Defining methods for converting between offline_domain and runtime_database representations.
 """
 
 __all__ = [
@@ -94,26 +94,26 @@ class Release(InternalDomainObject):
 
     def to_domain(self) -> Self:
         """
-        Converts the release to its domain representation.
+        Converts the release to its offline_domain representation.
 
-        In this implementation, the domain and database representations are
+        In this implementation, the offline_domain and runtime_database representations are
         the same, so this method returns the instance itself.
 
         Returns:
-            Self: The domain representation of the release.
+            Self: The offline_domain representation of the release.
         """
         # Domain and Database entities are the same
         return self
 
     def to_db(self) -> Self:
         """
-        Converts the release to its database representation.
+        Converts the release to its runtime_database representation.
 
-        In this implementation, the domain and database representations are
+        In this implementation, the offline_domain and runtime_database representations are
         the same, so this method returns the instance itself.
 
         Returns:
-            Self: The database representation of the release.
+            Self: The runtime_database representation of the release.
         """
         # Domain and Database entities are the same
         return self

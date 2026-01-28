@@ -1,5 +1,5 @@
 """
-This module defines the Entity domain object and related utilities.
+This module defines the Entity offline_domain object and related utilities.
 
 It provides the `Entity` class, which represents entities such as artists and
 labels in the Musigree system. It also includes a base class `_EntityBase`
@@ -9,7 +9,7 @@ Key functionalities include:
     - Representing entities with attributes like ID, type, name, metadata, etc.
     - Generating unique entity keys for identification.
     - Determining the size of entities (e.g., number of members for artists).
-    - Converting entities between domain and database representations.
+    - Converting entities between offline_domain and runtime_database representations.
 """
 
 __all__ = [
@@ -20,6 +20,7 @@ import logging
 from typing import Self, Any
 
 from pydantic import field_serializer
+
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
 
@@ -28,25 +29,25 @@ log = logging.getLogger(__name__)
 
 class _EntityBase(InternalDomainObject):
     """
-    Base class for entities in the domain.
+    Base class for entities in the offline_domain.
 
     This class defines the common attributes and methods shared by all
     entities in the Musigree system, such as artists and labels. It
     provides functionalities for generating unique entity keys, determining
-    entity size, and converting between domain and database representations.
+    entity size, and converting between offline_domain and runtime_database representations.
 
     Attributes:
         entity_id (int): The unique identifier for the entity. This is the
             external ID, from discogs.
         entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
         entity_name (str): The name of the entity.
-        relation_counts (dict | list): The counts of relations associated with
+        relation_counts (dict): The counts of relations associated with
             the entity. This might include the number of releases,
             collaborations, etc.
-        entity_metadata (dict | list): Metadata associated with the entity.
+        entity_metadata (dict): Metadata associated with the entity.
             This could be any additional information not covered by other
             attributes.
-        entities (dict | list): Related entities. For example, an artist might
+        entities (dict): Related entities. For example, an artist might
             have a list of members, or a label might have a list of sublabels.
         search_content (str): Content used for searching the entity. This is a
             preprocessed string that can be used for full-text search operations.
@@ -55,9 +56,9 @@ class _EntityBase(InternalDomainObject):
     entity_id: int
     entity_type: EntityType
     entity_name: str
-    relation_counts: dict[str, Any] | list[str]
-    entity_metadata: dict[str, Any] | list[str]
-    entities: dict[str, Any] | list[str]
+    relation_counts: dict[str, Any]
+    entity_metadata: dict[str, Any]
+    entities: dict[str, Any]
     search_content: str
 
     @field_serializer("entity_type", when_used="json")
@@ -143,25 +144,25 @@ class _EntityBase(InternalDomainObject):
 
     def to_domain(self) -> Self:
         """
-        Converts the entity to its domain representation.
+        Converts the entity to its offline_domain representation.
 
         This method is intended to be overridden in subclasses to perform
         any necessary conversions.
 
         Returns:
-            Self: The domain representation of the entity.
+            Self: The offline_domain representation of the entity.
         """
         return self
 
     def to_db(self) -> Self:
         """
-        Converts the entity to its database representation.
+        Converts the entity to its runtime_database representation.
 
         This method is intended to be overridden in subclasses to perform
         any necessary conversions.
 
         Returns:
-            Self: The database representation of the entity.
+            Self: The runtime_database representation of the entity.
         """
         return self
 
@@ -174,7 +175,7 @@ class Entity(_EntityBase):
     inheriting common attributes and methods from `_EntityBase`.
 
     Attributes:
-        id (int): The internal, unique identifier for the entity in the database.
+        id (int): The internal, unique identifier for the entity in the runtime_database.
                 This is different from `entity_id` which is external id from discogs.
     """
 

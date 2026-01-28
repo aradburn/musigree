@@ -1,5 +1,5 @@
 """
-This module defines domain objects related to musical instruments, specifically
+This module defines offline_domain objects related to musical instruments, specifically
 the `Instrument` class and the `HornbostelSachs` class for instrument classification.
 
 It provides a structured way to represent and categorize musical instruments

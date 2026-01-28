@@ -1,5 +1,5 @@
 """
-This module defines the domain objects for handling metadata within the Musigree system.
+This module defines the offline_domain objects for handling metadata within the Musigree system.
 
 It provides the `MetadataUncommitted` and `Metadata` classes for representing
 metadata entries. The module also includes a base class `_MetadataBase` that
@@ -8,10 +8,10 @@ defines common attributes and methods for all metadata entities.
 Key functionalities include:
     - Representing metadata with a key, value, and timestamp.
     - Providing a separate class for metadata before it's committed to the
-      database (`MetadataUncommitted`).
+      runtime_database (`MetadataUncommitted`).
     - Managing metadata with an ID and version information after it's stored
-      in the database (`Metadata`).
-    - Converting metadata objects between domain and database representations.
+      in the runtime_database (`Metadata`).
+    - Converting metadata objects between offline_domain and runtime_database representations.
 """
 
 __all__ = [
@@ -55,11 +55,11 @@ class _MetadataBase(InternalDomainObject):
 
 class MetadataUncommitted(_MetadataBase):
     """
-    Schema used for creating an instance without an ID before it is persisted into the database.
+    Schema used for creating an instance without an ID before it is persisted into the runtime_database.
 
-    This class represents metadata that has not yet been stored in the database.
+    This class represents metadata that has not yet been stored in the runtime_database.
     It inherits attributes from `_MetadataBase` and is used as a data structure
-    for new metadata entries before they are assigned a unique ID by the database.
+    for new metadata entries before they are assigned a unique ID by the runtime_database.
     """
 
     pass
@@ -69,13 +69,13 @@ class Metadata(_MetadataBase):
     """
     Metadata entity that includes an ID and version information.
 
-    This class represents metadata that has been stored in the database. It
+    This class represents metadata that has been stored in the runtime_database. It
     inherits attributes from `_MetadataBase` and adds a unique ID and version
-    information to track the metadata entry in the database.
+    information to track the metadata entry in the runtime_database.
 
     Attributes:
         metadata_id (int): The unique identifier for the metadata. This is
-            assigned by the database when the metadata is stored.
+            assigned by the runtime_database when the metadata is stored.
         version_id (int): The version of the metadata, default is 1. This
             can be used to track updates to the metadata over time.
     """
@@ -87,26 +87,26 @@ class Metadata(_MetadataBase):
 
     def to_domain(self) -> Self:
         """
-        Converts the metadata to its domain representation.
+        Converts the metadata to its offline_domain representation.
 
-        This method currently returns itself, indicating that the database
-        representation is the same as the domain representation. It could be
+        This method currently returns itself, indicating that the runtime_database
+        representation is the same as the offline_domain representation. It could be
         overridden in the future if a more complex conversion is needed.
 
         Returns:
-            Self: The domain representation of the metadata.
+            Self: The offline_domain representation of the metadata.
         """
         return self
 
     def to_db(self) -> Self:
         """
-        Converts the metadata to its database representation.
+        Converts the metadata to its runtime_database representation.
 
-        This method currently returns itself, indicating that the domain
-        representation is the same as the database representation. It could
+        This method currently returns itself, indicating that the offline_domain
+        representation is the same as the runtime_database representation. It could
         be overridden in the future if a more complex conversion is needed.
 
         Returns:
-            Self: The database representation of the metadata.
+            Self: The runtime_database representation of the metadata.
         """
         return self

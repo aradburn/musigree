@@ -1,14 +1,14 @@
 """
-This module defines the domain objects for representing roles within the Musigree system.
+This module defines the offline_domain objects for representing roles within the Musigree system.
 
 It provides classes for handling roles, including their representation before
-database persistence (`RoleUncommitted`) and after database persistence (`Role`).
+runtime_database persistence (`RoleUncommitted`) and after runtime_database persistence (`Role`).
 
 Key functionalities include:
     - Representing roles with attributes like name, category, and subcategory.
     - Providing a separate class for roles before they are committed to the
-      database (`RoleUncommitted`).
-    - Managing roles with an ID after they are stored in the database (`Role`).
+      runtime_database (`RoleUncommitted`).
+    - Managing roles with an ID after they are stored in the runtime_database (`Role`).
     - Categorizing roles using the `RoleType` enumeration for main categories and
       subcategories.
 """
@@ -56,10 +56,10 @@ class _RoleBase(InternalDomainObject):
 
 class RoleUncommitted(_RoleBase):
     """
-    Represents a role before it is persisted into the database.
+    Represents a role before it is persisted into the runtime_database.
 
     This class is used to hold the data for a new role before it is
-    assigned an ID and stored in the database. It inherits attributes
+    assigned an ID and stored in the runtime_database. It inherits attributes
     from `_RoleBase`.
     """
 
@@ -68,14 +68,14 @@ class RoleUncommitted(_RoleBase):
 
 class Role(_RoleBase):
     """
-    Represents a role after it has been stored in the database.
+    Represents a role after it has been stored in the runtime_database.
 
     This class reflects the internal representation of a role in the
-    database, with an ID, name, category and subcategory.
+    runtime_database, with an ID, name, category and subcategory.
 
     Attributes:
         id (int): The unique identifier for the role. This is assigned by
-            the database when the role is stored.
+            the runtime_database when the role is stored.
     """
 
     id: int

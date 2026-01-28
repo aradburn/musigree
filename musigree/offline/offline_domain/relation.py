@@ -1,16 +1,16 @@
 """
-This module defines the domain objects for representing relationships between entities in the Musigree system.
+This module defines the offline_domain objects for representing relationships between entities in the Musigree system.
 
 It provides classes for handling relations, including their representation in
-various stages, such as before database persistence (`RelationUncommitted`),
-after database persistence (`RelationDB`, `RelationInternal`), and for public
+various stages, such as before runtime_database persistence (`RelationUncommitted`),
+after runtime_database persistence (`RelationDB`, `RelationInternal`), and for public
 consumption (`Relation`, `RelationResult`).
 
 Key functionalities include:
     - Representing relations with attributes like subject, object, and role.
     - Providing a separate class for relations before they are committed to
-      the database (`RelationUncommitted`).
-    - Managing relations with an ID after they are stored in the database
+      the runtime_database (`RelationUncommitted`).
+    - Managing relations with an ID after they are stored in the runtime_database
       (`RelationDB`, `RelationInternal`).
     - Exposing a simplified, public-facing representation of relations
       (`Relation`) with entity IDs and types.
@@ -50,10 +50,10 @@ class _RelationBase(InternalDomainObject):
 
 class RelationUncommitted(_RelationBase):
     """
-    Represents a relation before it is persisted into the database.
+    Represents a relation before it is persisted into the runtime_database.
 
     This class is used to hold the data for a new relation before it is
-    assigned an ID and stored in the database.
+    assigned an ID and stored in the runtime_database.
 
     Attributes:
         subject (int): The subject entity ID.
@@ -91,10 +91,10 @@ class RelationUncommitted(_RelationBase):
 
 class RelationDB(_RelationBase):
     """
-    Represents a relation as stored in the database.
+    Represents a relation as stored in the runtime_database.
 
     This class reflects the internal representation of a relation in the
-    database, with an ID, subject, predicate (role ID), and object.
+    runtime_database, with an ID, subject, predicate (role ID), and object.
 
     Attributes:
         id (int): The unique identifier for the relation.
@@ -135,7 +135,7 @@ class RelationDB(_RelationBase):
 
 class Relation(_RelationBase):
     """
-    Represents a relation in the domain, exposed publicly.
+    Represents a relation in the offline_domain, exposed publicly.
 
     This class is used for public-facing representations of relations. It
     provides entity IDs and types for both ends of the relation, along with
@@ -272,7 +272,7 @@ class Relation(_RelationBase):
 
 class RelationInternal(_RelationBase):
     """
-    Represents a relation internally, after retrieval from the database.
+    Represents a relation internally, after retrieval from the runtime_database.
 
     This class is used for internal representations of relations. It
     includes subject, role, and object IDs, and provides methods to convert
