@@ -1,9 +1,9 @@
-"""Unit tests for offline entity domain model."""
+"""Unit tests for offline entity offline_domain model."""
 
 import pytest
 
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_domain.entity import Entity
 
 
 class TestEntity:
@@ -109,7 +109,7 @@ class TestEntity:
             entity_name="Test Artist",
             relation_counts={},
             entity_metadata={},
-            entities=["Member1", "Member2"],
+            entities={"members": ["Member1", "Member2"]},
             search_content="test artist content",
         )
 
@@ -129,21 +129,6 @@ class TestEntity:
         )
 
         assert entity.size == 2
-
-    def test_size_property_label_with_list_entities(self) -> None:
-        """Test size property for label with list entities."""
-        entity = Entity(
-            id=1,
-            entity_id=456,
-            entity_type=EntityType.LABEL,
-            entity_name="Test Label",
-            relation_counts={},
-            entity_metadata={},
-            entities=["Sublabel1"],
-            search_content="test label content",
-        )
-
-        assert entity.size == 1
 
     def test_size_property_empty_entities(self) -> None:
         """Test size property with empty entities."""

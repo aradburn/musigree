@@ -1,7 +1,7 @@
 """
-Unit tests for the offline.domain.role module.
+Unit tests for the offline.offline_domain.role module.
 
-This module contains comprehensive unit tests for the role domain objects,
+This module contains comprehensive unit tests for the role offline_domain objects,
 including RoleUncommitted and Role classes.
 """
 
@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from musigree.library.fields.role_type import RoleType
 
 # noinspection PyProtectedMember
-from musigree.offline.domain.role import (
+from musigree.offline.offline_domain.role import (
     _RoleBase,
     RoleUncommitted,
     Role,
@@ -105,7 +105,7 @@ class TestRoleUncommitted:
         assert hasattr(role, "role_name")
         assert hasattr(role, "role_category")
 
-        # Should not have database-specific fields
+        # Should not have runtime_database-specific fields
         assert not hasattr(role, "id")
 
     def test_role_uncommitted_validation(self) -> None:
@@ -287,7 +287,7 @@ class TestRoleComparison:
             role_subcategory_name="Production",
         )
 
-        # Simulate saving to database (would add ID)
+        # Simulate saving to runtime_database (would add ID)
         committed = Role(
             role_name=uncommitted.role_name,
             role_category=uncommitted.role_category,

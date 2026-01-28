@@ -1,7 +1,7 @@
 """
-Unit tests for the offline.domain.metadata module.
+Unit tests for the offline.offline_domain.metadata module.
 
-This module contains comprehensive unit tests for the metadata domain objects,
+This module contains comprehensive unit tests for the metadata offline_domain objects,
 including MetadataUncommitted and Metadata classes.
 """
 
@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 # noinspection PyProtectedMember
-from musigree.offline.domain.metadata import (
+from musigree.offline.offline_domain.metadata import (
     _MetadataBase,
     MetadataUncommitted,
     Metadata,
@@ -99,7 +99,7 @@ class TestMetadataUncommitted:
         assert hasattr(metadata, "metadata_value")
         assert hasattr(metadata, "metadata_timestamp")
 
-        # Test that it doesn't have database-specific fields
+        # Test that it doesn't have runtime_database-specific fields
         assert not hasattr(metadata, "metadata_id")
         assert not hasattr(metadata, "version_id")
 
@@ -313,7 +313,7 @@ class TestMetadataComparison:
             metadata_timestamp=timestamp,
         )
 
-        # Simulate saving to database (would add ID)
+        # Simulate saving to runtime_database (would add ID)
         committed = Metadata(
             metadata_key=uncommitted.metadata_key,
             metadata_value=uncommitted.metadata_value,
