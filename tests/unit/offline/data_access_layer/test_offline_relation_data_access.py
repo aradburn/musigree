@@ -8,13 +8,13 @@ import pytest
 
 from musigree.config import SqliteTestConfiguration, Configuration
 from musigree.library.fields.role_type import RoleType
-from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.domain.relation import Relation
-from musigree.offline.domain.release import Release
+from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.offline_domain.relation import Relation
+from musigree.offline.offline_domain.release import Release
 
 
-class TestRelationDataAccess:
-    """Test cases for RelationDataAccess class."""
+class TestOfflineRelationDataAccess:
+    """Test cases for OfflineRelationDataAccess class."""
 
     @pytest.fixture
     def test_config(self) -> Configuration:
@@ -55,9 +55,9 @@ class TestRelationDataAccess:
             ],
         )
 
-    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
+    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
     @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
+        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
     )
     def test_from_release_basic(
         self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
@@ -68,7 +68,7 @@ class TestRelationDataAccess:
         mock_find_role.return_value = "producer"
 
         # Act
-        result = RelationDataAccess.from_release(sample_release)
+        result = OfflineRelationDataAccess.from_release(sample_release)
 
         # Assert
         assert isinstance(result, list)
@@ -76,9 +76,9 @@ class TestRelationDataAccess:
         mock_normalise_roles.assert_called()
         mock_find_role.assert_called()
 
-    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
+    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
     @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
+        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
     )
     def test_from_release_compilation(
         self,
@@ -92,7 +92,7 @@ class TestRelationDataAccess:
         mock_find_role.return_value = "producer"
 
         # Act
-        result = RelationDataAccess.from_release(compilation_release)
+        result = OfflineRelationDataAccess.from_release(compilation_release)
 
         # Assert
         assert isinstance(result, list)
@@ -102,7 +102,7 @@ class TestRelationDataAccess:
     def test_get_release_setup_normal_release(self, sample_release: Release) -> None:
         """Test get_release_setup for normal release."""
         # Act
-        artist_ids, label_ids, is_compilation = RelationDataAccess.get_release_setup(sample_release)
+        artist_ids, label_ids, is_compilation = OfflineRelationDataAccess.get_release_setup(sample_release)
 
         # Assert
         assert isinstance(artist_ids, set)
@@ -115,7 +115,7 @@ class TestRelationDataAccess:
     def test_get_release_setup_compilation_release(self, compilation_release: Release) -> None:
         """Test get_release_setup for compilation release."""
         # Act
-        artist_ids, label_ids, is_compilation = RelationDataAccess.get_release_setup(
+        artist_ids, label_ids, is_compilation = OfflineRelationDataAccess.get_release_setup(
             compilation_release
         )
 
@@ -136,7 +136,7 @@ class TestRelationDataAccess:
         is_compilation = False
 
         # Act
-        result = RelationDataAccess.get_artist_label_relations(
+        result = OfflineRelationDataAccess.get_artist_label_relations(
             artist_ids, label_ids, is_compilation
         )
 
@@ -158,7 +158,7 @@ class TestRelationDataAccess:
         is_compilation = True
 
         # Act
-        result = RelationDataAccess.get_artist_label_relations(
+        result = OfflineRelationDataAccess.get_artist_label_relations(
             artist_ids, label_ids, is_compilation
         )
 
@@ -174,7 +174,7 @@ class TestRelationDataAccess:
         triples = [(1, "producer", 2), (3, "vocals", 4)]
 
         # Act
-        result = RelationDataAccess.from_triples(triples)
+        result = OfflineRelationDataAccess.from_triples(triples)
 
         # Assert
         assert isinstance(result, list)
@@ -191,7 +191,7 @@ class TestRelationDataAccess:
         triples = [(1, "producer", 2)]
 
         # Act
-        result = RelationDataAccess.from_triples(triples, release=sample_release)
+        result = OfflineRelationDataAccess.from_triples(triples, release=sample_release)
 
         # Assert
         assert isinstance(result, list)
@@ -223,7 +223,7 @@ class TestRelationDataAccess:
         mock_relation_repo.find_by_key.return_value = [mock_relation_internal]
 
         # Act
-        result = await RelationDataAccess.get_relation_by_key(
+        result = await OfflineRelationDataAccess.get_relation_by_key(
             relation_repository=mock_relation_repo,
             key=mock_key,
         )
@@ -246,7 +246,7 @@ class TestRelationDataAccess:
     #     }
     #
     #     # Act
-    #     result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
+    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
     #
     #     # Assert
     #     assert result is not None
@@ -260,7 +260,7 @@ class TestRelationDataAccess:
     #     invalid_dict = {"incomplete": "data"}
     #
     #     # Act
-    #     result = RelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
+    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
     #
     #     # Assert
     #     assert result is None
@@ -285,7 +285,7 @@ class TestRelationDataAccess:
     #     ]
     #
     #     # Act
-    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
+    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
     #
     #     # Assert
     #     assert isinstance(result, list)
@@ -293,9 +293,9 @@ class TestRelationDataAccess:
     #     assert all("entity_one_id" in item for item in result)
     #     assert all("entity_two_id" in item for item in result)
 
-    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
+    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
     @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
+        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
     )
     def test_from_release_with_aggregate_roles(
         self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
@@ -308,16 +308,16 @@ class TestRelationDataAccess:
         # Mock RoleType.aggregate_roles to include "producer"
         with patch.object(RoleType, "aggregate_roles", {"producer"}):
             # Act
-            result = RelationDataAccess.from_release(sample_release)
+            result = OfflineRelationDataAccess.from_release(sample_release)
 
             # Assert
             assert isinstance(result, list)
             mock_normalise_roles.assert_called()
             mock_find_role.assert_called()
 
-    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
+    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
     @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
+        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
     )
     def test_from_release_with_track_data(
         self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
@@ -328,7 +328,7 @@ class TestRelationDataAccess:
         mock_find_role.return_value = "vocals"
 
         # Act
-        result = RelationDataAccess.from_release(sample_release)
+        result = OfflineRelationDataAccess.from_release(sample_release)
 
         # Assert
         assert isinstance(result, list)
@@ -350,7 +350,7 @@ class TestRelationDataAccess:
         )
 
         # Act
-        result = RelationDataAccess.from_release(empty_release)
+        result = OfflineRelationDataAccess.from_release(empty_release)
 
         # Assert
         assert isinstance(result, list)
@@ -370,15 +370,15 @@ class TestRelationDataAccess:
         )
 
         # Act
-        result = RelationDataAccess.from_release(release_with_nones)
+        result = OfflineRelationDataAccess.from_release(release_with_nones)
 
         # Assert
         assert isinstance(result, list)
         # Should handle None values gracefully without crashing
 
-    @patch("musigree.offline.data_access_layer.relation_data_access.RoleDataAccess.find_role")
+    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
     @patch(
-        "musigree.offline.data_access_layer.relation_data_access.RoleDataUtils.normalise_role_names"
+        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
     )
     def test_from_release_no_role_found(
         self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
@@ -389,7 +389,7 @@ class TestRelationDataAccess:
         mock_find_role.return_value = None  # No role found
 
         # Act
-        result = RelationDataAccess.from_release(sample_release)
+        result = OfflineRelationDataAccess.from_release(sample_release)
 
         # Assert
         assert isinstance(result, list)
@@ -399,28 +399,28 @@ class TestRelationDataAccess:
 
 
 class TestRelationDataAccessEdgeCases:
-    """Test edge cases for RelationDataAccess."""
+    """Test edge cases for OfflineRelationDataAccess."""
 
     def test_from_triples_empty_list(self) -> None:
         """Test from_triples with empty list."""
         triples: list[tuple[int, str, int]] = []  # Empty list of triples
-        result = RelationDataAccess.from_triples(triples)
+        result = OfflineRelationDataAccess.from_triples(triples)
         assert result == []
 
     def test_from_triples_duplicate_triples(self) -> None:
         """Test from_triples with duplicate triples."""
         triples = [(1, "producer", 2), (1, "producer", 2)]  # Duplicate
-        result = RelationDataAccess.from_triples(triples)
+        result = OfflineRelationDataAccess.from_triples(triples)
         assert len(result) == 1  # Should only have one unique relation
 
     def test_get_artist_label_relations_empty_sets(self) -> None:
         """Test get_artist_label_relations with empty sets."""
-        result = RelationDataAccess.get_artist_label_relations(set(), set(), False)
+        result = OfflineRelationDataAccess.get_artist_label_relations(set(), set(), False)
         assert result == set()
 
     # def test_relation_internal_dicts_to_relation_external_dicts_empty_list(self):
     #     """Test converting empty list of internal relation dicts."""
-    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts([])
+    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts([])
     #     assert result == []
 
     # def test_relation_internal_dicts_to_relation_external_dicts_all_invalid(self):
@@ -429,6 +429,6 @@ class TestRelationDataAccessEdgeCases:
     #         {"invalid": "data"},
     #         {"also": "invalid"},
     #     ]
-    #     result = RelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
+    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
     #     assert isinstance(result, list)
     #     assert len(result) == 0
