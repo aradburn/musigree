@@ -5,9 +5,9 @@ import pytest
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.relation import Relation
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_domain.relation import Relation
 from tests.conftest import AbstractDatabaseTest
 
 

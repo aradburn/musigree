@@ -8,18 +8,18 @@ from musigree import utils
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, ROLES_DATA, INSTRUMENTS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.domain.relation import (
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
+from musigree.offline.loader.loader_role import LoaderRole
+from musigree.offline.loader.loader_utils import LoaderUtils
+from musigree.offline.loader.parser_entity import ParserEntity
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_domain.relation import (
     Relation,
     RelationInternal,
     RelationUncommitted,
 )
-from musigree.offline.loader.loader_role import LoaderRole
-from musigree.offline.loader.loader_utils import LoaderUtils
-from musigree.offline.loader.parser_entity import ParserEntity
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -34,7 +34,7 @@ class TestRepositoryRelation(AbstractDatabaseTest):
         """Test creating a relation in the repository.
 
         Args:
-            offline_database_setup: Pytest fixture for database setup.
+            offline_database_setup: Pytest fixture for runtime_database setup.
             offline_config: Pytest fixture for configuration.
         """
         # GIVEN
@@ -42,7 +42,7 @@ class TestRepositoryRelation(AbstractDatabaseTest):
             offline_config.DATA_DIR / ROLES_DATA,
             offline_config.DATA_DIR / INSTRUMENTS_DATA,
         )
-        await RoleDataAccess.load_all_roles_into_cache()
+        await OfflineRoleDataAccess.load_all_roles_into_cache()
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         iterator = LoaderUtils.get_iterator(

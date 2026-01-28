@@ -6,9 +6,9 @@ from typing import AsyncGenerator
 import pytest
 
 from musigree import utils
-from musigree.offline.database.metadata_repository import MetadataRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.metadata import Metadata, MetadataUncommitted
+from musigree.offline.offline_database.metadata_repository import MetadataRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -21,7 +21,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
         """Test creating metadata in the repository.
 
         Args:
-            offline_database_setup: Pytest fixture for database setup.
+            offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
         timestamp = datetime.datetime(year=2024, month=6, day=1)
@@ -59,7 +59,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
         """Test retrieving metadata by key from the repository.
 
         Args:
-            offline_database_setup: Pytest fixture for database setup.
+            offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
         timestamp = datetime.datetime(year=2024, month=6, day=1)

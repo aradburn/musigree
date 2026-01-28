@@ -3,8 +3,8 @@ from typing import AsyncGenerator
 import pytest
 
 from musigree import utils
-from musigree.offline.database.role_repository import RoleRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.role_repository import RoleRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
 
 

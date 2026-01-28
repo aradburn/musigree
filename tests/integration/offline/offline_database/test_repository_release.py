@@ -4,8 +4,8 @@ import pytest
 
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
 from tests.conftest import AbstractDatabaseTest
