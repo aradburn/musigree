@@ -30,10 +30,10 @@ import logging
 from pathlib import Path
 from typing import Self, Any, Generator
 
-from musigree.offline.domain.entity import Entity
-from musigree.offline.domain.release import Release
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_utils import ParserUtils
+from musigree.offline.offline_domain.entity import Entity
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
