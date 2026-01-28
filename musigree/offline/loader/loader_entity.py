@@ -3,19 +3,16 @@ from pathlib import Path
 from typing import Callable, Any
 
 from musigree import utils
-from musigree.constants import BULK_INSERT_BATCH_SIZE
+from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_REPORTING_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_entity import ParserEntity
 from musigree.offline.loader.worker_entity_deleter import delete_entities_worker
 from musigree.offline.loader.worker_entity_inserter import insert_entities_worker
+from musigree.offline.loader.worker_entity_pass_four import process_entity_pass_four_worker
 from musigree.offline.loader.worker_entity_pass_three import (
     process_entity_pass_three_worker,
 )
@@ -23,7 +20,13 @@ from musigree.offline.loader.worker_entity_pass_two import (
     process_entity_pass_two_worker,
 )
 from musigree.offline.loader.worker_entity_updater import update_entities_worker
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.token import Token
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
@@ -112,6 +115,12 @@ class LoaderEntity(LoaderBase):
         await cls.loader_start_workers(process_entity_pass_three_worker)
 
     @classmethod
+    # @timeit
+    async def loader_entity_pass_four(cls) -> None:
+        log.debug("loader entity pass four")
+        await cls.loader_start_workers(process_entity_pass_four_worker)
+
+    @classmethod
     async def loader_start_workers(cls, worker_function: Callable) -> None:
         async with offline_transaction():
             entity_repository = EntityRepository()
@@ -143,7 +152,9 @@ class LoaderEntity(LoaderBase):
 
         async with offline_transaction():
             entity_repository = EntityRepository()
-            text_search_index = await EntityDataAccess.create_text_search_index(entity_repository)
+            text_search_index = await OfflineEntityDataAccess.create_text_search_index(
+                entity_repository
+            )
         return text_search_index
 
     @classmethod
@@ -161,8 +172,32 @@ class LoaderEntity(LoaderBase):
         log.debug("Running loader create entity details index")
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            entity_details_index = await ReleaseDataAccess.create_entity_details_index(
+            entity_details_index = await OfflineReleaseDataAccess.create_entity_details_index(
                 offline_release_repository
             )
 
         return entity_details_index
+
+    @classmethod
+    async def loader_create_text_search_tokens(cls, text_search_path: Path) -> None:
+        log.debug("loader entity create text search tokens")
+
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        # OfflineDatabaseManager.runtime_database_helper.text_search_index = text_search_index
+
+        inserted_count = 0
+        total_count = 0
+
+        for _token, entity_ids in text_search_index.token_index.items():
+            total_count += len(entity_ids)
+
+        async with offline_transaction():
+            token_repository = TokenRepository()
+            for token, entity_ids in text_search_index.token_index.items():
+                for entity_id in entity_ids:
+                    token_entry = Token(token=token, entity_id=entity_id)
+                    await token_repository.create(token_entry)
+                    inserted_count += 1
+                    if inserted_count % BULK_REPORTING_SIZE == 0:
+                        """Log every BULK_REPORTING_SIZE."""
+                        log.debug(f"text search processed {inserted_count} of {total_count}")
