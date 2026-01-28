@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from musigree.library.fields.role_type import RoleType
-from musigree.runtime.runtime_domain.role import (
+from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTree,
     RuntimeRoleJSTreeWrapper,
 )
@@ -36,6 +36,7 @@ class RoleCache:
     role_id_to_role_name_lookup: dict[int, str] = {}
     role_jstree: RuntimeRoleJSTree = RuntimeRoleJSTree()
     role_category_to_role_name_lookup: dict[str, list[str]] = {}
+
     # role_categories: Set[str] = set()
 
     @staticmethod
