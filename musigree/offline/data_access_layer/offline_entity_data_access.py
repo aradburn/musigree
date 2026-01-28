@@ -1,7 +1,7 @@
 """
 This module provides data access functionality for entities within the Musigree offline system.
 
-It defines the `EntityDataAccess` class, which offers methods for resolving
+It defines the `OfflineEntityDataAccess` class, which offers methods for resolving
 entity and release references, caching entity IDs, and managing the text search
 index. It is designed to be used during the offline data loading process.
 
@@ -15,16 +15,17 @@ Key functionalities include:
     - Handling cases where entities are not found in the database.
     - Logging of debug and error messages during the data access operations.
 
-The `EntityDataAccess` class interacts with `EntityRepository` for database
+The `OfflineEntityDataAccess` class interacts with `EntityRepository` for database
 operations and `CacheManager` for caching. It also uses `TextSearchIndex` for
 text search functionality and `LoaderBase` for bulk reporting.
 
-The `Entity` and `Release` classes from `musigree.offline.domain` are used
+The `Entity` and `Release` classes from `musigree.offline.offline_domain` are used
 to represent entities and releases, respectively. `EntityType` is used to
 represent the different types of entities.
 """
 
 import logging
+import re
 
 from sqlalchemy.exc import IntegrityError
 
@@ -34,19 +35,22 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_label_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
+from musigree.library.full_text_search.text_search_utils import normalise_search_content
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.domain.entity import Entity
-from musigree.offline.domain.release import Release
+from musigree.offline.data_access_layer.offline_entity_search import OfflineEntitySearch
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.token_repository import TokenRepository
+from musigree.offline.offline_domain.entity import Entity
+from musigree.offline.offline_domain.release import Release
 
 # TODO tidy up
 log = logging.getLogger(__name__)
 """
-The logger for the EntityDataAccess module.
+The logger for the OfflineEntityDataAccess module.
 """
 
 
-class EntityDataAccess:
+class OfflineEntityDataAccess:
     """
     Provides data access functionality for entities within the Musigree offline system.
 
@@ -87,7 +91,7 @@ class EntityDataAccess:
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:
@@ -102,7 +106,7 @@ class EntityDataAccess:
                 if section not in entity.entities:
                     continue
                 for entity_name in entity.entities[section].keys():
-                    id_ = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
+                    id_ = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
                         entity_repository, entity.entity_type, entity_name
                     )
                     if id_:
@@ -134,7 +138,7 @@ class EntityDataAccess:
         # for entry in release.artists:
         #     entity_type = EntityType.ARTIST
         #     entity_id = entry["id"]
-        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #     id_ = OfflineEntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
         #         entity_repository, entity_type, entity_id
         #     )
         #     if id_:
@@ -146,7 +150,7 @@ class EntityDataAccess:
         # for entry in release.extra_artists:
         #     entity_type = EntityType.ARTIST
         #     entity_id = entry["id"]
-        #     id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #     id_ = OfflineEntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
         #         entity_repository, entity_type, entity_id
         #     )
         #     if id_:
@@ -161,7 +165,7 @@ class EntityDataAccess:
         #         for artist_entry in artists_list:
         #             entity_type = EntityType.ARTIST
         #             entity_id = artist_entry["id"]
-        #             id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #             id_ = OfflineEntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
         #                 entity_repository, entity_type, entity_id
         #             )
         #             if id_:
@@ -174,7 +178,7 @@ class EntityDataAccess:
         #         for extra_artist_entry in extra_artists_list:
         #             entity_type = EntityType.ARTIST
         #             entity_id = extra_artist_entry["id"]
-        #             id_ = EntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
+        #             id_ = OfflineEntityDataAccess.get_internal_id_by_entity_type_and_entity_id(
         #                 entity_repository, entity_type, entity_id
         #             )
         #             if id_:
@@ -316,3 +320,208 @@ class EntityDataAccess:
         index.reduce_list_to_set()
         index.print_sizes()
         return index
+
+    @staticmethod
+    async def find_entity_id_by_entity_type_and_entity_name(
+        entity_repository: EntityRepository,
+        token_repository: TokenRepository,
+        entity_type: EntityType,
+        entity_name: str,
+    ) -> int | None:
+        # Normalize first
+        normalised_entity_name = normalise_search_content(entity_name)
+
+        # Try to get from cache first
+        cache = CacheManager.get_cache()
+        cache_key_str = CacheManager.create_cache_hkey("entity", f"name/{normalised_entity_name}")
+        entity_id_str: str | None = await cache.get(cache_key_str)
+        if entity_id_str == CACHE_ENTRY_IS_NULL:
+            return None
+        if entity_id_str is not None:
+            return int(entity_id_str)
+
+        # Not found in search results so far
+        entity_id_str = CACHE_ENTRY_IS_NULL
+
+        try:
+            search_data = await OfflineEntitySearch.search_entities(
+                entity_repository, token_repository, normalised_entity_name
+            )
+            for result_entry in search_data["results"]:
+                result_dict: dict[str, str] = dict(result_entry)
+                key = result_dict["key"]
+                name = result_dict["name"]
+                key_parts = key.split("-")
+                candidate_entity_type = EntityType.from_str(key_parts[0])
+
+                if candidate_entity_type == entity_type and entity_name == name:
+                    entity_id_str = key_parts[1]
+                    break
+
+        except NotFoundError as _ex:
+            entity_id_str = CACHE_ENTRY_IS_NULL
+
+        # Cache the result
+        await cache.set(cache_key_str, entity_id_str)
+
+        if entity_id_str == CACHE_ENTRY_IS_NULL:
+            return None
+
+        return int(entity_id_str)
+
+    @staticmethod
+    async def process_profile_links(entity_repository: EntityRepository, profile: str) -> str:
+        # Process all embedded profile links to add either missing entity_id or entity_name
+        # There maybe multiple links
+        # [a12345] -> [a12345=Artist Name]
+        # [a=Artist Name] -> [a12345=Artist Name]
+        # [l7890] -> [l7890=Label Name]
+        # [l=Label Name] -> [l7890=Label Name]
+        # [l7890=Label Name]
+        # e.g. "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n" ->
+        #      "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"
+        # id -> name = entity_repository.get_entity_name_by_id()
+        # name -> id = entity_repository.get_entity_id_by_entity_type_and_entity_name()
+
+        # Map prefix to EntityType
+        prefix_to_type = {
+            "a": EntityType.ARTIST,
+            "l": EntityType.LABEL,
+        }
+
+        # Pattern to match: [prefixid], [prefix=Name], or [prefixid=Name]
+        # prefix is a single letter (a or l), id is digits, Name can contain any characters except ]
+        pattern = r"\[([al])(\d*)(?:=([^\]]+))?\]"
+
+        async def process_match(match: re.Match[str]) -> str:
+            prefix = match.group(1)
+            entity_id: int | None
+            entity_id_str = match.group(2)  # Can be empty
+            entity_name = match.group(3)  # Can be None
+
+            entity_type = prefix_to_type.get(prefix)
+            if entity_type is None:
+                # Unknown prefix, return original
+                return match.group(0)
+
+            # Case 1: [prefixid=Name] - already complete, return as is
+            if entity_id_str and entity_name:
+                return match.group(0)
+
+            # Case 2: [prefixid] - need to get name
+            if entity_id_str and not entity_name:
+                try:
+                    entity_id = int(entity_id_str)
+                    log.debug(f"entity_id: {entity_id}")
+                    log.debug(f"entity_type: {entity_type}")
+
+                    entity = await entity_repository.get_by_entity_id_and_entity_type(
+                        entity_id, entity_type
+                    )
+                    return f"[{prefix}{entity_id}={entity.entity_name}]"
+                except NotFoundError:
+                    if LOGGING_TRACE:
+                        log.debug(
+                            f"process_profile_links: entity not found for {prefix}{entity_id_str}"
+                        )
+                    # Return original if entity not found
+                    return match.group(0)
+
+            # Case 3: [prefix=Name] - need to get entity_id
+            if not entity_id_str and entity_name:
+                log.debug(f"entity_type: {entity_type}")
+                log.debug(f"entity_name: {entity_name}")
+
+                token_repository = TokenRepository()
+
+                candidate_entity_id = (
+                    await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                        entity_repository,
+                        token_repository,
+                        entity_type,
+                        entity_name,
+                    )
+                )
+                # entity_id = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                #     entity_type, entity_name
+                # )
+                if candidate_entity_id is not None:
+                    return f"[{prefix}{candidate_entity_id}={entity_name}]"
+                else:
+                    if LOGGING_TRACE:
+                        log.debug(
+                            f"process_profile_links: entity_id not found for {prefix}={entity_name}"
+                        )
+                    # Return original if entity_id not found
+                    return match.group(0)
+
+            # Fallback: return original
+            return match.group(0)
+
+        # Find all matches and process them sequentially
+        matches = list(re.finditer(pattern, profile))
+        if not matches:
+            return profile
+
+        # Process all matches first to get replacements, then apply from end to start
+        # to preserve indices when replacing
+        replacements: list[tuple[re.Match[str], str]] = []
+        for match in matches:
+            log.debug(f"match1: {match}")
+            replacement = await process_match(match)
+            log.debug(f"replacement1: {replacement}")
+            replacements.append((match, replacement))
+
+        # Apply replacements from end to start to preserve indices
+        result = profile
+        for match, replacement in reversed(replacements):
+            log.debug(f"match2: {match}")
+            log.debug(f"replacement2: {replacement}")
+            result = result[: match.start()] + replacement + result[match.end() :]
+
+        return result
+
+    @staticmethod
+    async def get_by_entity_id_and_entity_type(
+        entity_repository: EntityRepository, entity_id: int, entity_type: EntityType
+    ) -> Entity:
+        entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
+        if entity is not None and entity.entity_metadata is not None:
+            profile: str | None = entity.entity_metadata.get("profile", "")
+            log.debug(f"profile: {profile}")
+            if profile is not None and profile:
+                log.debug(f"profile: {profile}")
+                updated_profile = await OfflineEntityDataAccess.process_profile_links(
+                    entity_repository, profile
+                )
+                entity.entity_metadata["profile"] = updated_profile
+                log.debug(f"updated_profile: {updated_profile}")
+        return entity
+
+    @staticmethod
+    async def get_entity_name_by_id(entity_repository: EntityRepository, id_: int) -> str | None:
+        cache = CacheManager.get_cache()
+
+        # Create the cache key.
+        entity_key_str = CacheManager.create_cache_key("entity", str(id_), "name")
+
+        name: str | None = await cache.get(entity_key_str)
+        if name == CACHE_ENTRY_IS_NULL:
+            return None
+
+        if name is None:
+            try:
+                name = await entity_repository.get_entity_name_by_id(id_)
+                if name is not None:
+                    await cache.set(entity_key_str, name)
+                else:
+                    # Mark the cache entry as null.
+                    await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+            except NotFoundError:
+                if LOGGING_TRACE:
+                    log.debug(f"get_entity_name_by_id id not found: {id_}")
+                name = None
+                # Mark the cache entry as null.
+                await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
+
+        return name
