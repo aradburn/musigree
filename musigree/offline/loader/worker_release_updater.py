@@ -58,12 +58,12 @@ from deepdiff import DeepDiff
 
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_id import to_entity_label_internal_id
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.release_table import ReleaseTable
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.release import Release
 from musigree.logging_config import LOGGING_TRACE
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
