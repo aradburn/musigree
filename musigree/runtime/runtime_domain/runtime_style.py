@@ -1,12 +1,12 @@
 """
-This module defines the domain objects for representing styles in the Musigree runtime system.
+This module defines the offline_domain objects for representing styles in the Musigree runtime system.
 
-It provides the `Style` class for handling unique style names. These names are not official names and can be whatever the entry in the Discogs database is.
+It provides the `RuntimeStyle` class for handling unique style names. These names are not official names and can be whatever the entry in the Discogs runtime_database is.
 
 """
 
 __all__ = [
-    "Style",
+    "RuntimeStyle",
 ]
 
 import logging
@@ -16,9 +16,9 @@ from musigree.library.domain.base import InternalDomainObject
 log = logging.getLogger(__name__)
 
 
-class Style(InternalDomainObject):
+class RuntimeStyle(InternalDomainObject):
     """
-    Represents a Style name.
+    Represents a RuntimeStyle name.
 
     This class represents an entity within the Musigree system during runtime,
     encapsulating its properties and relationships.

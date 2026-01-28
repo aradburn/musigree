@@ -1,18 +1,18 @@
 """
-This module defines the domain objects for representing entities in the Musigree runtime system.
+This module defines the offline_domain objects for representing entities in the Musigree runtime system.
 
 It provides the `RuntimeEntity` and `RuntimeEntityDB` classes for handling
 entities, their attributes, and their representation in different stages, such
-as before and after database persistence.
+as before and after runtime_database persistence.
 
 Key functionalities include:
     - Representing entities with attributes like ID, external ID, type, name,
       relation counts, metadata, and related entities.
-    - Providing a separate class for the database representation of entities
+    - Providing a separate class for the runtime_database representation of entities
       (`RuntimeEntityDB`).
     - Managing entity attributes like aliases, groups, members, countries,
       genres, and styles.
-    - Converting entities between domain and database representations
+    - Converting entities between offline_domain and runtime_database representations
       (`RuntimeEntity.to_db`, `RuntimeEntityDB.to_domain`).
     - Generating JSON-compatible entity keys.
     - Calculating entity size based on related members or sublabels.
@@ -31,7 +31,7 @@ from pydantic import Field, field_serializer
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_domain.entity import Entity
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
@@ -155,14 +155,14 @@ class RuntimeEntity(InternalDomainObject):
 
     def to_db(self) -> "RuntimeEntityDB":
         """
-        Converts the runtime entity to its database representation.
+        Converts the runtime entity to its runtime_database representation.
 
         This method prepares the `RuntimeEntity` instance for storage in the
-        database by transforming its attributes into the format expected by
-        the database schema (`RuntimeEntityDB`).
+        runtime_database by transforming its attributes into the format expected by
+        the runtime_database schema (`RuntimeEntityDB`).
 
         Returns:
-            RuntimeEntityDB: The database representation of the runtime entity.
+            RuntimeEntityDB: The runtime_database representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
         entities: dict = entity_dict.get("entities", {})
@@ -192,9 +192,9 @@ class RuntimeEntity(InternalDomainObject):
 
 class RuntimeEntityDB(InternalDomainObject):
     """
-    Represents a runtime entity in the database.
+    Represents a runtime entity in the runtime_database.
 
-    This class represents an entity as it is stored in the runtime database,
+    This class represents an entity as it is stored in the runtime runtime_database,
     including its attributes and relationships.
 
     Attributes:
@@ -246,14 +246,14 @@ class RuntimeEntityDB(InternalDomainObject):
 
     def to_domain(self) -> RuntimeEntity:
         """
-        Converts the runtime entity from its database representation to its domain representation.
+        Converts the runtime entity from its runtime_database representation to its offline_domain representation.
 
         This method transforms the `RuntimeEntityDB` instance into a
         `RuntimeEntity` instance, making it suitable for use within the
-        application's domain logic.
+        application's offline_domain logic.
 
         Returns:
-            RuntimeEntity: The domain representation of the runtime entity.
+            RuntimeEntity: The offline_domain representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
         aliases: dict = entity_dict.pop("aliases", {})

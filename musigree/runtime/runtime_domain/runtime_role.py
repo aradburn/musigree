@@ -1,5 +1,5 @@
 """
-This module defines the domain objects and data structures for representing roles
+This module defines the offline_domain objects and data structures for representing roles
 and their hierarchical organization within the Musigree runtime system,
 specifically for use with JSTree.
 

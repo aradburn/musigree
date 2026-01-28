@@ -1,16 +1,16 @@
 """
-This module defines the domain objects for representing relations in the Musigree runtime system.
+This module defines the offline_domain objects for representing relations in the Musigree runtime system.
 
 It provides classes for handling relations, including their representation in
-various stages, such as before database persistence (`RuntimeRelationUncommitted`),
-after database persistence (`RuntimeRelationDB`, `RuntimeRelationInternal`),
+various stages, such as before runtime_database persistence (`RuntimeRelationUncommitted`),
+after runtime_database persistence (`RuntimeRelationDB`, `RuntimeRelationInternal`),
 and for public consumption (`RuntimeRelation`, `RuntimeRelationResult`).
 
 Key functionalities include:
     - Representing relations with attributes like subject, object, and role.
     - Providing a separate class for relations before they are committed to
-      the database (`RuntimeRelationUncommitted`).
-    - Managing relations with an ID after they are stored in the database
+      the runtime_database (`RuntimeRelationUncommitted`).
+    - Managing relations with an ID after they are stored in the runtime_database
       (`RuntimeRelationDB`, `RuntimeRelationInternal`).
     - Exposing a simplified, public-facing representation of relations
       (`RuntimeRelation`) with entity IDs and types.
@@ -40,7 +40,7 @@ from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.domain.relation import RelationDB
+from musigree.offline.offline_domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -55,10 +55,10 @@ class _RuntimeRelationBase(InternalDomainObject):
 
 class RuntimeRelationUncommitted(_RuntimeRelationBase):
     """
-    Represents a relation before it is persisted into the database.
+    Represents a relation before it is persisted into the runtime_database.
 
     This class is used to hold the data for a new relation before it is
-    assigned an ID and stored in the database.
+    assigned an ID and stored in the runtime_database.
 
     Attributes:
         subject (int): The ID of the subject entity.
@@ -98,10 +98,10 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
 
 class RuntimeRelationDB(_RuntimeRelationBase):
     """
-    Represents a relation as stored in the database.
+    Represents a relation as stored in the runtime_database.
 
     This class reflects the internal representation of a relation in the
-    database, with an ID, subject, predicate (role ID), and object.
+    runtime_database, with an ID, subject, predicate (role ID), and object.
 
     Attributes:
         id (int): The unique identifier for the relation.
@@ -143,7 +143,7 @@ class RuntimeRelationDB(_RuntimeRelationBase):
 
 class RuntimeRelation(_RuntimeRelationBase):
     """
-    Represents a relation in the domain, exposed publicly.
+    Represents a relation in the offline_domain, exposed publicly.
 
     This class is used for public-facing representations of relations. It
     provides entity IDs and types for both ends of the relation, along with
@@ -255,14 +255,14 @@ class RuntimeRelation(_RuntimeRelationBase):
 
     def to_db(self) -> "RuntimeRelationDB":
         """
-        Converts the runtime relation to its database representation.
+        Converts the runtime relation to its runtime_database representation.
 
         This method prepares the `RuntimeRelation` instance for storage in the
-        database by transforming its attributes into the format expected by
-        the database schema (`RuntimeRelationDB`).
+        runtime_database by transforming its attributes into the format expected by
+        the runtime_database schema (`RuntimeRelationDB`).
 
         Returns:
-            RuntimeRelationDB: The database representation of the runtime relation.
+            RuntimeRelationDB: The runtime_database representation of the runtime relation.
         """
         relation_dict: dict = self.model_dump()
         return RuntimeRelationDB.model_validate(relation_dict)
@@ -335,7 +335,7 @@ class RuntimeRelationResult(RuntimeRelation):
 
 class RuntimeRelationInternal(_RuntimeRelationBase):
     """
-    Represents a relation internally, after retrieval from the database.
+    Represents a relation internally, after retrieval from the runtime_database.
 
     This class is used for internal representations of relations. It
     includes subject, role, and object IDs.

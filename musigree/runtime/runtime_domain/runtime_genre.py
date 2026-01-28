@@ -1,12 +1,12 @@
 """
-This module defines the domain objects for representing genres in the Musigree runtime system.
+This module defines the offline_domain objects for representing genres in the Musigree runtime system.
 
-It provides the `Genre` class for handling unique genre names. These names are not official names and can be whatever the entry in the Discogs database is.
+It provides the `RuntimeGenre` class for handling unique genre names. These names are not official names and can be whatever the entry in the Discogs runtime_database is.
 
 """
 
 __all__ = [
-    "Genre",
+    "RuntimeGenre",
 ]
 
 import logging
@@ -16,9 +16,9 @@ from musigree.library.domain.base import InternalDomainObject
 log = logging.getLogger(__name__)
 
 
-class Genre(InternalDomainObject):
+class RuntimeGenre(InternalDomainObject):
     """
-    Represents a Genre name.
+    Represents a RuntimeGenre name.
 
     This class represents an entity within the Musigree system during runtime,
     encapsulating its properties and relationships.
