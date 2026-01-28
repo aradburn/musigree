@@ -8,13 +8,13 @@ from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.relation import RelationUncommitted
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_domain.relation import RelationUncommitted
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -40,8 +40,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            actual = RelationDataAccess.from_release(release_document)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            actual = OfflineRelationDataAccess.from_release(release_document)
 
         # THEN
         expected = [
@@ -192,8 +192,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            actual = RelationDataAccess.from_release(release_document)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
             RelationUncommitted(
@@ -363,8 +363,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            actual = RelationDataAccess.from_release(release_document)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
             RelationUncommitted(
@@ -695,8 +695,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            actual = RelationDataAccess.from_release(release_document)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
             RelationUncommitted(
@@ -1370,8 +1370,8 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release_document)
-            actual = RelationDataAccess.from_release(release_document)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
             RelationUncommitted(
