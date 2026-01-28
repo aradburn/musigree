@@ -1,4 +1,4 @@
-from tests.integration.offline.database.test_repository_entity import (
+from tests.integration.offline.offline_database.test_repository_entity import (
     TestRepositoryEntity,
 )
 
