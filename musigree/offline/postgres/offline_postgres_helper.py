@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
-from musigree.offline.database.offline_database_helper import (
+from musigree.offline.offline_database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
 )
