@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.domain.entity import Entity
-from musigree.offline.domain.release import Release
+from musigree.offline.offline_domain.entity import Entity
+from musigree.offline.offline_domain.release import Release
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
 from musigree.offline.loader.parser_release import ParserRelease
