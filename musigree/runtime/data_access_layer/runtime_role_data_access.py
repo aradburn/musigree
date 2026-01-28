@@ -2,12 +2,12 @@
 This module defines the `RuntimeRoleDataAccess` class, which provides data
 access methods for roles in the Musigree runtime system.
 
-It handles the loading of all roles from the runtime database, building a
+It handles the loading of all roles from the runtime runtime_database, building a
 role tree for UI components, and managing role-related caches for efficient
 lookups.
 
 Key functionalities include:
-    - **`load_all_roles`**: Loads all roles from the runtime database and
+    - **`load_all_roles`**: Loads all roles from the runtime runtime_database and
       populates the `RoleCache` with various role-related mappings,
       such as role ID to name, role ID to category, and role name to ID.
     - **`build_role_tree`**: Constructs a hierarchical tree structure of
@@ -19,7 +19,7 @@ Key functionalities include:
     - **Role Tree**: Creates the `jstree` for UI by using the
       `RuntimeRoleJSTreeEntry` and `RuntimeRoleJSTreeState`.
     - **Database Interaction**: Interacts with `RuntimeRoleRepository` for
-      database operations related to roles.
+      runtime_database operations related to roles.
     - **UI default Roles**: Use `UI_DEFAULT_ROLES` to set the selected state
     of the roles.
     - **Logging**: Includes logging statements for debugging and tracking
@@ -28,11 +28,11 @@ Key functionalities include:
 The `RuntimeRoleDataAccess` class interacts with the following components:
     - `RoleCache`: For caching role data.
     - `RoleType`: For managing role categories and subcategories.
-    - `RuntimeRoleRepository`: For database operations related to roles.
+    - `RuntimeRoleRepository`: For runtime_database operations related to roles.
     - `RuntimeRole`: For representing a role in the runtime system.
     - `RuntimeRoleJSTreeState`: For representing a state in the jstree.
     - `RuntimeRoleJSTreeEntry`: For representing an entry in the jstree.
-    - `runtime_transaction`: A decorator for managing database transactions.
+    - `runtime_transaction`: A decorator for managing runtime_database transactions.
     - `logging`: For logging operations.
     - `UI_DEFAULT_ROLES`: For managing the default selected roles.
     - `LOGGING_TRACE`: to check if the trace logging is activated.
@@ -51,7 +51,7 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_domain.role import (
+from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRole,
     RuntimeRoleJSTreeState,
     RuntimeRoleJSTreeEntry,
@@ -67,7 +67,7 @@ class RuntimeRoleDataAccess:
     """
     Provides data access methods for roles in the Musigree runtime system.
 
-    This class handles loading roles from the runtime database, building a role
+    This class handles loading roles from the runtime runtime_database, building a role
     tree, and managing role-related caches.
     """
 
@@ -163,9 +163,9 @@ class RuntimeRoleDataAccess:
     @classmethod
     async def load_all_roles_into_cache(cls) -> None:
         """
-        Loads all roles from the runtime database and populates the RoleCache.
+        Loads all roles from the runtime runtime_database and populates the RoleCache.
 
-        This method retrieves all roles from the runtime database, then
+        This method retrieves all roles from the runtime runtime_database, then
         populates the `RoleCache` with various mappings, including:
             - role ID to role name
             - role ID to role category
@@ -190,7 +190,7 @@ class RuntimeRoleDataAccess:
         """Clear the cache."""
 
         async with runtime_transaction():
-            """Ensure that database operations are performed within a transaction."""
+            """Ensure that runtime_database operations are performed within a transaction."""
             role_repository = RuntimeRoleRepository()
             """Get the instance of the `RuntimeRoleRepository`."""
             roles = role_repository.all()

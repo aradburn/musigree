@@ -17,8 +17,8 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
-from musigree.runtime.runtime_domain.relation import RuntimeRelationResult
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
 
@@ -121,8 +121,8 @@ class RelationGrapher:
         or analysis.
 
         Args:
-            entity_repository: Repository for entity database operations.
-            relation_repository: Repository for relation database operations.
+            entity_repository: Repository for entity runtime_database operations.
+            relation_repository: Repository for relation runtime_database operations.
 
         Returns:
             dict: A dictionary containing the network structure with:

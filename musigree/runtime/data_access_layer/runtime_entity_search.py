@@ -15,9 +15,9 @@ from musigree.library.full_text_search.text_search_utils import (
 )
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
-from musigree.runtime.runtime_database.token_repository import TokenRepository
+from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class RuntimeEntitySearch:
     @staticmethod
     async def search_entities(
         entity_repository: RuntimeEntityRepository,
-        token_repository: TokenRepository,
+        token_repository: RuntimeTokenRepository,
         search_string: str,
     ) -> dict[str, Any]:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
@@ -103,11 +103,11 @@ class RuntimeEntitySearch:
     @staticmethod
     async def search_text_index(
         entity_repository: RuntimeEntityRepository,
-        token_repository: TokenRepository,
+        token_repository: RuntimeTokenRepository,
         search_text: str,
     ) -> list[tuple[int, str]]:
         """
-        Searches the database for documents matching the query.
+        Searches the runtime_database for documents matching the query.
 
         This method returns documents that contain all of the query terms, and
         ranks them based on their relevance to the query.
@@ -147,7 +147,7 @@ class RuntimeEntitySearch:
 
     @staticmethod
     async def get_lists_of_ids_from_token_db(
-        token_repository: TokenRepository, analyzed_query: list[str]
+        token_repository: RuntimeTokenRepository, analyzed_query: list[str]
     ) -> list[set[int]]:
         """
         Retrieves the sets of document IDs for each token in a query.
@@ -167,7 +167,9 @@ class RuntimeEntitySearch:
         return result_ids_list
 
     @staticmethod
-    async def get_ids_from_token_db(token_repository: TokenRepository, token: str) -> set[int]:
+    async def get_ids_from_token_db(
+        token_repository: RuntimeTokenRepository, token: str
+    ) -> set[int]:
         result_set: set[int] = set[int]()
         try:
             """Attempt to get the entity ids for the token."""
@@ -175,7 +177,7 @@ class RuntimeEntitySearch:
             result_set = set[int](token_ids)
 
         except DatabaseError:
-            """Handle potential database errors."""
+            """Handle potential runtime_database errors."""
             log.error("Error in text_search data access")
 
         return result_set

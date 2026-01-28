@@ -44,7 +44,7 @@ The module utilizes
 from typing import Any
 
 from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 
 class TrellisNode:
