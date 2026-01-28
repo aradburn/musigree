@@ -62,9 +62,6 @@ from typing import Any, Callable
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.release_table import ReleaseTable
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.loader.worker_release_deleter import delete_releases_worker
@@ -73,6 +70,9 @@ from musigree.offline.loader.worker_release_pass_two import (
     process_release_pass_two_worker,
 )
 from musigree.offline.loader.worker_release_updater import update_releases_worker
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
