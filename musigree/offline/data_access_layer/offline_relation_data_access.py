@@ -1,7 +1,7 @@
 """
 This module provides data access functionality for relations within the Musigree offline system.
 
-It defines the `RelationDataAccess` class, which offers methods for extracting
+It defines the `OfflineRelationDataAccess` class, which offers methods for extracting
 relations from `Release` objects, determining relationships between artists and
 labels, handling compilations, and converting between different relation
 representations. It is designed to be used during the offline data loading
@@ -14,14 +14,14 @@ Key functionalities include:
       compilations differently.
     - Identifying and handling compilation releases, where various artists
       are credited on individual tracks.
-    - Normalizing role names using `RoleDataAccess` to ensure consistency.
+    - Normalizing role names using `OfflineRoleDataAccess` to ensure consistency.
     - Converting relations between internal and external representations.
     - Finding relations based on a key (subject, role, object).
 
-The `RelationDataAccess` class interacts with `RoleDataAccess` for role
+The `OfflineRelationDataAccess` class interacts with `OfflineRoleDataAccess` for role
 normalization and lookup, `EntityRepository` for entity operations, and
 `RelationRepository` for relation operations. It uses `Relation`,
-`RelationInternal`, and `Release` from `musigree.offline.domain` for
+`RelationInternal`, and `Release` from `musigree.offline.offline_domain` for
 representing relation and release data, and `RoleType` for managing role
 types.
 
@@ -33,19 +33,19 @@ import logging
 from typing import Any
 
 from musigree.library.fields.role_type import RoleType
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.domain.relation import Relation, RelationUncommitted
-from musigree.offline.domain.release import Release
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_domain.relation import Relation, RelationUncommitted
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
-The logger for the RelationDataAccess module.
+The logger for the OfflineRelationDataAccess module.
 """
 
 
-class RelationDataAccess:
+class OfflineRelationDataAccess:
     """
     Provides data access functionality for relations within the Musigree offline system.
 
@@ -101,7 +101,7 @@ class RelationDataAccess:
                         role_str_list = RoleDataUtils.normalise_role_names(input_role_str)
                         """Normalize the role names."""
                         for role_str in role_str_list:
-                            role_name = RoleDataAccess.find_role(role_str)
+                            role_name = OfflineRoleDataAccess.find_role(role_str)
                             """Find the normalized role name."""
                             if role_name is not None:
                                 if role_name in RoleType.aggregate_roles:
@@ -125,7 +125,7 @@ class RelationDataAccess:
                 company_role_strs_list = RoleDataUtils.normalise_role_names(company_role_str)
                 """Normalize the role names."""
                 for role_str in company_role_strs_list:
-                    role_name = RoleDataAccess.find_role(role_str)
+                    role_name = OfflineRoleDataAccess.find_role(role_str)
                     """Find the normalized role name."""
                     if role_name is not None:
                         if "id" in company:
@@ -148,7 +148,7 @@ class RelationDataAccess:
                     track_role_strs_list = RoleDataUtils.normalise_role_names(track_role_str)
                     """Normalize the role names."""
                     for role_str in track_role_strs_list:
-                        role_name = RoleDataAccess.find_role(role_str)
+                        role_name = OfflineRoleDataAccess.find_role(role_str)
                         """Find the normalized role name."""
                         if role_name is not None:
                             if "id" in credit:
