@@ -2,7 +2,7 @@
 Unit tests for the MetadataRepository class.
 
 This module tests the MetadataRepository class which manages Metadata objects
-in the offline database.
+in the offline runtime_database.
 """
 
 from typing import AsyncGenerator
@@ -13,9 +13,9 @@ from datetime import datetime
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.offline.database.metadata_repository import MetadataRepository
-from musigree.offline.database.metadata_table import MetadataTable
-from musigree.offline.domain.metadata import Metadata, MetadataUncommitted
+from musigree.offline.offline_database.metadata_repository import MetadataRepository
+from musigree.offline.offline_database.metadata_table import MetadataTable
+from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 
 
 class TestMetadataRepository:
@@ -70,7 +70,6 @@ class TestMetadataRepository:
         """Test successful all() method execution."""
         # Arrange
         with patch.object(metadata_repository, "_all") as mock_all:
-
             async def mock_async_iterator() -> AsyncGenerator[MetadataTable, None]:
                 yield mock_metadata_table
 
@@ -271,7 +270,7 @@ class TestMetadataRepository:
         metadata_repository: MetadataRepository,
         mock_metadata_uncommitted: MetadataUncommitted,
     ) -> None:
-        """Test create execution with database error."""
+        """Test create execution with runtime_database error."""
         # Arrange
         with patch.object(metadata_repository, "_save") as mock_save:
             mock_save.side_effect = DatabaseError(message="Save failed")
@@ -284,7 +283,7 @@ class TestMetadataRepository:
     async def test_update_with_database_error(
         self, metadata_repository: MetadataRepository
     ) -> None:
-        """Test update execution with database error."""
+        """Test update execution with runtime_database error."""
         # Arrange
         payload = {"metadata_value": "updated_value"}
         mock_session = AsyncMock()

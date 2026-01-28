@@ -2,7 +2,7 @@
 Unit tests for the RelationRepository class.
 
 This module tests the RelationRepository class which manages Relation objects
-in the offline database, including CRUD operations and specialized queries.
+in the offline_database, including CRUD operations and specialized queries.
 """
 
 from unittest.mock import AsyncMock, Mock, patch, PropertyMock
@@ -12,9 +12,9 @@ from sqlalchemy import Result, select
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.relation_table import RelationTable
-from musigree.offline.domain.relation import (
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_database.relation_table import RelationTable
+from musigree.offline.offline_domain.relation import (
     RelationUncommitted,
     RelationDB,
     RelationInternal,
@@ -276,7 +276,7 @@ class TestRelationRepository:
                 mock_manager.offline_database_helper = mock_database_helper
 
                 with patch(
-                    "musigree.offline.database.relation_repository.RoleCache"
+                    "musigree.offline.offline_database.relation_repository.RoleCache"
                 ) as mock_role_cache:
                     mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
 
@@ -312,7 +312,7 @@ class TestRelationRepository:
                 mock_manager.offline_database_helper = mock_database_helper
 
                 with patch(
-                    "musigree.offline.database.relation_repository.RoleCache"
+                    "musigree.offline.offline_database.relation_repository.RoleCache"
                 ) as mock_role_cache:
                     mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
 
@@ -360,7 +360,7 @@ class TestRelationRepository:
             mock_get_all.return_value = []
 
             with patch(
-                "musigree.offline.database.relation_repository.RoleCache"
+                "musigree.offline.offline_database.relation_repository.RoleCache"
             ) as mock_role_cache:
                 mock_role_cache.role_name_to_role_id_lookup = {"performer": 1}
 
@@ -376,7 +376,7 @@ class TestRelationRepository:
         relation_repository: RelationRepository,
         mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
-        """Test create when database helper is not initialized."""
+        """Test create when offline_database helper is not initialized."""
         # Arrange
         with patch(
             "musigree.offline.offline_database_manager.OfflineDatabaseManager"
@@ -393,7 +393,7 @@ class TestRelationRepository:
         relation_repository: RelationRepository,
         mock_relation_uncommitted: RelationUncommitted,
     ) -> None:
-        """Test create_bulk when database helper is not initialized."""
+        """Test create_bulk when offline_database helper is not initialized."""
         # Arrange
         relations = [mock_relation_uncommitted]
 

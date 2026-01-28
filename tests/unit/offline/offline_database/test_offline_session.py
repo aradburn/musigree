@@ -5,8 +5,8 @@ This module contains comprehensive unit tests for the offline session management
 including session creation, context variable management, and the OfflineSession class.
 """
 
-from unittest.mock import AsyncMock, Mock, patch
 from contextvars import ContextVar
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from sqlalchemy import text
@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_session import (
+from musigree.offline.offline_database.offline_session import (
     get_offline_session,
     OfflineSession,
     CTX_OFFLINE_SESSION,
@@ -100,7 +100,7 @@ class TestOfflineSession:
         """Fixture for mock async session."""
         return AsyncMock(spec=AsyncSession)
 
-    @patch("musigree.offline.database.offline_session.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_session.CTX_OFFLINE_SESSION")
     async def test_execute_success(
         self, mock_ctx: Mock, offline_session: OfflineSession, mock_session: AsyncMock
     ) -> None:
@@ -119,7 +119,7 @@ class TestOfflineSession:
         mock_session.execute.assert_called_once_with(query)
         mock_ctx.get.assert_called_once()
 
-    @patch("musigree.offline.database.offline_session.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_session.CTX_OFFLINE_SESSION")
     async def test_execute_integrity_error(
         self, mock_ctx: Mock, offline_session: OfflineSession, mock_session: AsyncMock
     ) -> None:
@@ -133,7 +133,7 @@ class TestOfflineSession:
         with pytest.raises(DatabaseError):
             await offline_session.execute(query)
 
-    @patch("musigree.offline.database.offline_session.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_session.CTX_OFFLINE_SESSION")
     async def test_execute_invalid_request_error(
         self, mock_ctx: Mock, offline_session: OfflineSession, mock_session: AsyncMock
     ) -> None:
@@ -147,7 +147,7 @@ class TestOfflineSession:
         with pytest.raises(DatabaseError):
             await offline_session.execute(query)
 
-    @patch("musigree.offline.database.offline_session.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_session.CTX_OFFLINE_SESSION")
     def test_session_property_success(
         self, mock_ctx: Mock, offline_session: OfflineSession, mock_session: AsyncMock
     ) -> None:
@@ -161,7 +161,7 @@ class TestOfflineSession:
         assert result is mock_session
         mock_ctx.get.assert_called_once()
 
-    @patch("musigree.offline.database.offline_session.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_session.CTX_OFFLINE_SESSION")
     def test_session_property_no_context(
         self, mock_ctx: Mock, offline_session: OfflineSession
     ) -> None:

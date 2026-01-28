@@ -2,7 +2,7 @@
 Unit tests for the RoleRepository class.
 
 This module tests the RoleRepository class which manages Role objects
-in the offline database.
+in the offline runtime_database.
 """
 
 from typing import Any, AsyncGenerator
@@ -14,9 +14,9 @@ from sqlalchemy import Result
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.role_type import RoleType
-from musigree.offline.database.role_repository import RoleRepository
-from musigree.offline.database.role_table import RoleTable
-from musigree.offline.domain.role import Role, RoleUncommitted
+from musigree.offline.offline_database.role_repository import RoleRepository
+from musigree.offline.offline_database.role_table import RoleTable
+from musigree.offline.offline_domain.role import Role, RoleUncommitted
 
 
 class TestRoleRepository:
@@ -74,7 +74,6 @@ class TestRoleRepository:
         """Test successful all() method execution."""
         # Arrange
         with patch.object(role_repository, "_all") as mock_all:
-
             async def mock_async_iterator() -> AsyncGenerator[RoleTable, Any]:
                 yield mock_role_table
 

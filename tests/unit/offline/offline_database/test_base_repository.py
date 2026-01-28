@@ -2,7 +2,7 @@
 Unit tests for the BaseRepository class.
 
 This module contains comprehensive unit tests for the BaseRepository class,
-which provides the base database repository functionality for the offline system.
+which provides the base offline_database repository functionality for the offline system.
 It tests initialization, error handling, and core functionality that can be tested in isolation.
 """
 
@@ -14,8 +14,8 @@ from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.offline.database.base_repository import BaseRepository
-from musigree.offline.database.base_table import OfflineBase, ConcreteTable
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import OfflineBase, ConcreteTable
 
 
 class MockTable(OfflineBase):
@@ -53,7 +53,7 @@ class TestBaseRepository:
         ):
             BadRepository()
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_count_success(self, mock_execute: AsyncMock) -> None:
         """Test successful count operation."""
 
@@ -76,7 +76,7 @@ class TestBaseRepository:
             mock_execute.assert_called_once()
             mock_result.scalar.assert_called_once()
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_count_non_integer_result(self, mock_execute: AsyncMock) -> None:
         """Test count operation with non-integer result."""
 
@@ -271,7 +271,7 @@ class TestBaseRepository:
             # Verify
             mock_session.rollback.assert_called_once()
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_update_integrity_error_during_execute(self, mock_execute: AsyncMock) -> None:
         """Test update operation with IntegrityError during execution."""
 
@@ -289,7 +289,7 @@ class TestBaseRepository:
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_update_invalid_request_error_during_execute(
         self, mock_execute: AsyncMock
     ) -> None:
@@ -307,7 +307,7 @@ class TestBaseRepository:
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_update_no_result(self, mock_execute: AsyncMock) -> None:
         """Test update operation when no record is found."""
 
@@ -326,7 +326,7 @@ class TestBaseRepository:
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
     async def test_get_not_found(self, mock_execute: AsyncMock) -> None:
         """Test get operation when record is not found."""
 

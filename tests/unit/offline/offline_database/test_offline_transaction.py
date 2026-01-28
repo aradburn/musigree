@@ -2,7 +2,7 @@
 Unit tests for the offline_transaction module.
 
 This module contains comprehensive unit tests for the offline_transaction context manager,
-which provides transaction management functionality for database operations in the offline system.
+which provides transaction management functionality for offline_database operations in the offline system.
 It tests successful transactions, error handling, rollback scenarios, and session management.
 """
 
@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 
 
 class TestOfflineTransaction:
@@ -25,8 +25,8 @@ class TestOfflineTransaction:
         session = AsyncMock(spec=AsyncSession)
         return session
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_success(
         self, mock_ctx: Mock, mock_get_session: AsyncMock, mock_session: AsyncMock
     ) -> None:
@@ -38,7 +38,7 @@ class TestOfflineTransaction:
         # Execute
         async with offline_transaction() as session:
             assert session is mock_session
-            # Simulate some database operations
+            # Simulate some offline_database operations
             pass
 
         # Verify
@@ -49,8 +49,8 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.rollback.assert_not_called()
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_database_error(
         self,
         mock_ctx: Mock,
@@ -61,10 +61,10 @@ class TestOfflineTransaction:
         # Setup
         mock_get_session.return_value = mock_session
         mock_ctx.set.return_value = "old_token"
-        test_error = DatabaseError(message="Test database error")
+        test_error = DatabaseError(message="Test offline_database error")
 
         # Execute & Verify
-        with pytest.raises(DatabaseError, match="Test database error"):
+        with pytest.raises(DatabaseError, match="Test offline_database error"):
             async with offline_transaction() as session:
                 assert session is mock_session
                 raise test_error
@@ -77,8 +77,8 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_integrity_error(
         self,
         mock_ctx: Mock,
@@ -105,8 +105,8 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_invalid_request_error(
         self,
         mock_ctx: Mock,
@@ -133,8 +133,8 @@ class TestOfflineTransaction:
         mock_ctx.reset.assert_called_once_with("old_token")
         mock_session.commit.assert_not_called()
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_commit_error(
         self,
         mock_ctx: Mock,
@@ -163,8 +163,8 @@ class TestOfflineTransaction:
         mock_session.close.assert_called_once()
         mock_ctx.reset.assert_called_once_with("old_token")
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_generic_exception(
         self, mock_ctx: Mock, mock_get_session: AsyncMock, mock_session: AsyncMock
     ) -> None:
@@ -188,8 +188,8 @@ class TestOfflineTransaction:
         mock_session.commit.assert_not_called()
         mock_session.rollback.assert_not_called()
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_context_management(
         self, mock_ctx: Mock, mock_get_session: AsyncMock, mock_session: AsyncMock
     ) -> None:
@@ -209,8 +209,8 @@ class TestOfflineTransaction:
         # Verify context is properly reset after exiting
         mock_ctx.reset.assert_called_once_with(old_token)
 
-    @patch("musigree.offline.database.offline_transaction.get_offline_session")
-    @patch("musigree.offline.database.offline_transaction.CTX_OFFLINE_SESSION")
+    @patch("musigree.offline.offline_database.offline_transaction.get_offline_session")
+    @patch("musigree.offline.offline_database.offline_transaction.CTX_OFFLINE_SESSION")
     async def test_offline_transaction_session_close_always_called(
         self, mock_ctx: Mock, mock_get_session: AsyncMock, mock_session: AsyncMock
     ) -> None:

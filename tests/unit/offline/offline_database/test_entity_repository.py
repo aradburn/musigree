@@ -2,7 +2,7 @@
 Unit tests for the EntityRepository class.
 
 This module tests the EntityRepository class which manages Entity objects
-in the offline database, including CRUD operations and specialized queries.
+in the offline runtime_database, including CRUD operations and specialized queries.
 """
 
 from unittest.mock import AsyncMock, Mock, patch, PropertyMock
@@ -14,9 +14,9 @@ from musigree import utils
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_domain.entity import Entity
 
 
 class TestEntityRepository:
