@@ -40,8 +40,8 @@ import logging
 import multiprocessing
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
