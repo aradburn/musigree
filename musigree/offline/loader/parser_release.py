@@ -55,9 +55,9 @@ import logging
 from typing import Any
 from xml.etree.ElementTree import Element
 
-from musigree.offline.domain.release import Release
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
@@ -226,7 +226,7 @@ class ParserRelease(ParserBase):
             return result
         for sub_element in element:
             data = {
-                # id gets filled in later in EntityDataAccess.resolve_references_from_release
+                # id gets filled in later in OfflineEntityDataAccess.resolve_references_from_release
                 "catalog_number": sub_element.get("catno"),
                 "name": sub_element.get("name"),
             }
