@@ -92,17 +92,17 @@ class LoaderUtils:
         """
         glob_pattern = f"discogs_{date}_{tag}s.xml.gz"
         """Create the glob pattern for matching the file."""
-        log.debug(f"discogs_data_directory: {discogs_data_directory}")
+        log.info(f"discogs_data_directory: {discogs_data_directory}")
         """Log the data directory."""
-        log.debug(f"glob_pattern: {glob_pattern}")
+        log.info(f"glob_pattern: {glob_pattern}")
         """Log the glob pattern."""
         files = sorted(glob.glob(glob_pattern, root_dir=discogs_data_directory))
         """Find all matching files using glob and sort them."""
-        log.debug(f"files: {files}")
+        log.info(f"files: {files}")
         """Log the found files."""
         full_path_files = os.path.join(discogs_data_directory, files[-1])
         """Construct the full path to the most recent file."""
-        log.debug(f"full_path_files: {full_path_files}")
+        log.info(f"full_path_files: {full_path_files}")
         """Log the full path."""
         return full_path_files
 
