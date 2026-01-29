@@ -100,3 +100,5 @@ License
 -------
 
 This project is licensed under the terms of the [LICENSE](LICENSE) file.
+The Discogs Data Dump is made available under the CC0 No Rights Reserved license:
+http://creativecommons.org/about/cc0

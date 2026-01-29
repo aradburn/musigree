@@ -83,6 +83,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 </p>
 
                 <p>
+                    This data is made available under the CC0 No Rights Reserved license:
+                    <a
+                        href="http://creativecommons.org/about/cc0"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                </p>
+
+                <p>
                     If something is not working, please file a bug report on{" "}
                     <a
                         href="https://github.com/aradburn/musigree/issues"
