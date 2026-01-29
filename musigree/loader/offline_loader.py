@@ -293,9 +293,8 @@ def offline_loader_main() -> None:
         runner.close()
 
     # Run the loader process between these dates
-    start_date = datetime.date(2025, 8, 1)
-    # start_date = datetime.date(2023, 10, 1)
-    end_date = datetime.date(2025, 8, 1)
+    start_date = datetime.date(2026, 1, 1)
+    end_date = datetime.date(2026, 1, 1)
     # end_date = datetime.datetime.now()
     offline_data_directory: str = str(offline_config.DATA_DIR)
     tasks = [
