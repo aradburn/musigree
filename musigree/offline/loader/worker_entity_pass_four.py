@@ -58,9 +58,10 @@ import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.offline_database import EntityTable
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
-from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 log = logging.getLogger(__name__)
@@ -95,12 +96,10 @@ async def process_entity_pass_four_worker_async(
     """Counter for the number of entities processed."""
 
     entity_repository = EntityRepository()
-    """Instance of EntityRepository for runtime_database operations on entities."""
-    relation_repository = RelationRepository()
-    """Instance of RelationRepository for runtime_database operations on relations."""
+    """Instance of EntityRepository for offline_database operations on entities."""
 
     async with offline_transaction():
-        """Ensure that runtime_database operations are performed within a transaction."""
+        """Ensure that offline_database operations are performed within a transaction."""
 
         for id_ in ids:
             """Iterate over the entity IDs."""
@@ -108,7 +107,6 @@ async def process_entity_pass_four_worker_async(
                 """Attempt to process the entity."""
                 await worker_pass_four_single(
                     entity_repository,
-                    relation_repository,
                     id_,
                 )
                 """Process the entity."""
@@ -129,7 +127,6 @@ async def process_entity_pass_four_worker_async(
 
 async def worker_pass_four_single(
     entity_repository: EntityRepository,
-    relation_repository: RelationRepository,
     id_: int,
 ) -> None:
     """
@@ -139,12 +136,36 @@ async def worker_pass_four_single(
 
     Args:
         entity_repository (EntityRepository): The repository for entity runtime_database operations.
-        relation_repository (RelationRepository): The repository for relation runtime_database operations.
         id_ (int): The internal ID of the entity to process.
 
     Raises:
         DatabaseError: If there's an error updating the entity in the runtime_database.
     """
+    entity = await entity_repository.get_by_id(id_)
+    metadata = entity.entity_metadata
+    if metadata is not None:
+        profile = entity.entity_metadata.get("profile", None)
+        if profile:
+            updated_profile = await OfflineEntityDataAccess.process_profile_links(
+                entity_repository, profile
+            )
+            if profile != updated_profile:
+                """If any changes were made to the entity."""
+                log.debug(f"Entity (Pass 4)\n{profile} ->\n{updated_profile}")
+                entity.entity_metadata["profile"] = updated_profile
+                try:
+                    await entity_repository.update(
+                        entity.id,
+                        {EntityTable.entity_metadata.key: entity.entity_metadata},
+                    )
+                    """Update the entity in the database."""
+                    await entity_repository.commit()
+                    """Commit the transaction."""
+                except DatabaseError:
+                    """Handle potential database errors."""
+                    log.warning(f"Database Error for id: {entity.id}")
+                    await entity_repository.rollback()
+                    # raise e
 
 
 def process_entity_pass_four_worker(ids: list[int], current_total: int, total_count: int) -> None:

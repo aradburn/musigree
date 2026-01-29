@@ -144,3 +144,19 @@ class OfflineReleaseDataAccess:
     #         }
     #         artists.append(artist)
     #     return artists
+
+    @staticmethod
+    async def get_release_title_from_release_id(release_id: int) -> str:
+        """
+        Resolves release title references.
+
+        Args:
+            release_id (int): The release_id.
+
+        Returns:
+            str: Release record title.
+
+        """
+        release_repository = ReleaseRepository()
+        release = await release_repository.get_by_id(release_id)
+        return release.title

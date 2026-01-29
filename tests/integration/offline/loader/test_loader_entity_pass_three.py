@@ -4,9 +4,9 @@ import pytest
 
 from musigree import utils
 from musigree.exceptions import NotFoundError
+from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
-from musigree.library.fields.entity_type import EntityType
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -213,12 +213,12 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
                            + "experimentation led them to pioneer sampling and looping techniques adopted "
                            + "by many of those who came after. \r\n\r\nThrobbing Gristle officially "
                            + "began at September 3, 1975 and they officially split on June 23, 1981.  "
-                           + "After they split, Genesis and Peter formed [a=Psychic TV] (and Peter later "
-                           + "joining [a=Coil]) and Chris and Cosey becoming, well, [a=Chris & Cosey]. "
-                           + "However, they came back together 23 years later in 2004 to plan an ill-fated "
-                           + "weekend festival, which became a one-off recording session in London when "
-                           + "the festival fell through, releasing a limited TGNOW album of the "
-                           + "recordings.\r\n",
+                           + "After they split, Genesis and Peter formed [a17926=Psychic TV] (and Peter "
+                           + "later joining [a660=Coil]) and Chris and Cosey becoming, well, [a29040=Chris "
+                           + "& Cosey]. However, they came back together 23 years later in 2004 to plan an "
+                           + "ill-fated weekend festival, which became a one-off recording session in "
+                           + "London when the festival fell through, releasing a limited TGNOW album of "
+                           + "the recordings.\r\n",
                 "real_name": "Genesis P-Orridge, Chris Carter, Cosey Fanni Tutti, Peter Christopheron",
                 "urls": [
                     "http://www.throbbing-gristle.com/",
@@ -263,7 +263,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
             "entity_type": EntityType.LABEL,
             "entity_metadata": {
                 "profile": "Classic Techno label from Detroit, USA.\r\n"
-                           + "[b]Label owner:[/b] [a=Carl Craig].\r\n",
+                           + "[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -304,7 +304,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
                 "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
                            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
                            + "operations were moved to New Windsor in 2005. "
-                           + "Operated by Chief Engineer [a=Alan Douches].\n",
+                           + "Operated by Chief Engineer [a275139=Alan Douches].\n",
                 "urls": ["http://www.westwestsidemusic.com/"],
             },
             "entity_name": "West West Side Music",

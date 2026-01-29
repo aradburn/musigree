@@ -442,7 +442,6 @@ class TestGetIdByEntityTypeAndEntityName:
         )
 
     @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
-    @patch("musigree.offline.data_access_layer.offline_entity_data_access.LOGGING_TRACE", True)
     @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
     async def test_get_id_cache_miss_db_miss_with_logging(
         self,
@@ -467,7 +466,7 @@ class TestGetIdByEntityTypeAndEntityName:
 
         # Assertions
         assert result is None
-        mock_log.debug.assert_called_once_with(
+        mock_log.error.assert_called_once_with(
             "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
         )
 
@@ -765,7 +764,7 @@ class TestProcessProfileLinks:
         """Test process_profile_links with multiple links of different types."""
         profile = "Label owner: [a=Carl Craig]. Released on [l7890]. Also check [a12345]."
 
-        mock_artist1 = Entity(
+        _mock_artist1 = Entity(
             id=1,
             entity_id=871,
             entity_type=EntityType.ARTIST,
@@ -841,7 +840,6 @@ class TestProcessProfileLinks:
         assert call_args[3] == "Nonexistent Artist"
 
     @pytest.mark.asyncio
-    @patch("musigree.offline.data_access_layer.offline_entity_data_access.LOGGING_TRACE", True)
     @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
     async def test_process_profile_links_entity_not_found_with_logging(
         self, mock_log: Mock, mock_entity_repository: AsyncMock
@@ -855,10 +853,9 @@ class TestProcessProfileLinks:
         result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
 
         assert result == profile
-        mock_log.debug.assert_any_call("process_profile_links: entity not found for a99999")
+        mock_log.error.assert_any_call("process_profile_links: entity not found for a99999")
 
     @pytest.mark.asyncio
-    @patch("musigree.offline.data_access_layer.offline_entity_data_access.LOGGING_TRACE", True)
     @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
     @patch(
         "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
@@ -872,7 +869,7 @@ class TestProcessProfileLinks:
         result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
 
         assert result == profile
-        mock_log.debug.assert_any_call(
+        mock_log.error.assert_any_call(
             "process_profile_links: entity_id not found for a=Nonexistent Artist"
         )
 
@@ -962,6 +959,372 @@ class TestProcessProfileLinks:
         result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
 
         assert result == "Check out [a456=Simple Name]."
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    async def test_process_profile_links_master_id_only(
+        self, mock_get_master_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [m2775] format - need to get master title."""
+        profile = "Check out master [m2775] for great music."
+        mock_get_master_title.return_value = "Warp10+3 Remixes"
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out master [m2775=Warp10+3 Remixes] for great music."
+        mock_get_master_title.assert_called_once_with(2775)
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_release_id_only(
+        self, mock_get_release_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [r2775] format - need to get release title."""
+        profile = "Released as [r2775]."
+        mock_get_release_title.return_value = "Selected Ambient Works 85-92"
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Released as [r2775=Selected Ambient Works 85-92]."
+        mock_get_release_title.assert_called_once_with(2775)
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_master_already_complete(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [m2775=Title] format - already complete."""
+        profile = "Check out [m2775=Warp10+3 Remixes]."
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_profile_links_release_already_complete(
+        self, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [r2775=Title] format - already complete."""
+        profile = "Released as [r2775=Selected Ambient Works 85-92]."
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
+    async def test_process_profile_links_master_name_not_supported(
+        self, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [m=Name] format - not supported, returns original."""
+        profile = "Check out [m=Master Name]."
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original since name lookup not supported
+        mock_log.error.assert_any_call(
+            "process_profile_links: master id lookup from name not supported for m=Master Name"
+        )
+
+    @pytest.mark.asyncio
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
+    async def test_process_profile_links_release_name_not_supported(
+        self, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [r=Name] format - not supported, returns original."""
+        profile = "Check out [r=Release Name]."
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original since name lookup not supported
+        mock_log.error.assert_any_call(
+            "process_profile_links: release id lookup from name not supported for r=Release Name"
+        )
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    async def test_process_profile_links_master_malformed_with_id(
+        self, mock_get_master_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [m=34567] format - malformed, treat as ID lookup."""
+        profile = "Check out [m=34567] for great music."
+        mock_get_master_title.return_value = "Warp10+3 Remixes"
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [m34567=Warp10+3 Remixes] for great music."
+        mock_get_master_title.assert_called_once_with(34567)
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_release_malformed_with_id(
+        self, mock_get_release_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links with [r=1234] format - malformed, treat as ID lookup."""
+        profile = "Released as [r=1234]."
+        mock_get_release_title.return_value = "Selected Ambient Works 85-92"
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Released as [r1234=Selected Ambient Works 85-92]."
+        mock_get_release_title.assert_called_once_with(1234)
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    async def test_process_profile_links_master_not_found_by_id(
+        self, mock_get_master_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links when master is not found by id."""
+        profile = "Check out [m99999]."
+        mock_get_master_title.side_effect = NotFoundError(message="Master not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original if not found
+        mock_get_master_title.assert_called_once_with(99999)
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_release_not_found_by_id(
+        self, mock_get_release_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links when release is not found by id."""
+        profile = "Check out [r99999]."
+        mock_get_release_title.side_effect = NotFoundError(message="Release not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile  # Should return original if not found
+        mock_get_release_title.assert_called_once_with(99999)
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    async def test_process_profile_links_master_malformed_not_found(
+        self, mock_get_master_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links when malformed master [m=99999] is not found - should still transform."""
+        profile = "Check out [m=99999]."
+        mock_get_master_title.side_effect = NotFoundError(message="Master not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [m99999]."  # Should transform to correct format even if not found
+        mock_get_master_title.assert_called_once_with(99999)
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_release_malformed_not_found(
+        self, mock_get_release_title: AsyncMock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links when malformed release [r=99999] is not found - should still transform."""
+        profile = "Check out [r=99999]."
+        mock_get_release_title.side_effect = NotFoundError(message="Release not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == "Check out [r99999]."  # Should transform to correct format even if not found
+        mock_get_release_title.assert_called_once_with(99999)
+
+    @pytest.mark.asyncio
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    async def test_process_profile_links_master_not_found_with_logging(
+        self, mock_get_master_title: AsyncMock, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links logs when master not found and logging is enabled."""
+        profile = "Check out [m99999]."
+        mock_get_master_title.side_effect = NotFoundError(message="Master not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_log.error.assert_any_call("process_profile_links: master not found for m99999")
+
+    @pytest.mark.asyncio
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_release_not_found_with_logging(
+        self, mock_get_release_title: AsyncMock, mock_log: Mock, mock_entity_repository: AsyncMock
+    ) -> None:
+        """Test process_profile_links logs when release not found and logging is enabled."""
+        profile = "Check out [r99999]."
+        mock_get_release_title.side_effect = NotFoundError(message="Release not found")
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_log.error.assert_any_call("process_profile_links: release not found for r99999")
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
+    )
+    async def test_process_profile_links_multiple_types_including_master_release(
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_get_release_title: AsyncMock,
+        mock_get_master_title: AsyncMock,
+        mock_entity_repository: AsyncMock,
+    ) -> None:
+        """Test process_profile_links with multiple link types including master and release."""
+        profile = (
+            "Label owner: [a=Carl Craig]. "
+            "Master release: [m2775]. "
+            "Also check release [r1234]. "
+            "Released on [l7890]."
+        )
+
+        mock_artist = Entity(
+            id=1,
+            entity_id=871,
+            entity_type=EntityType.ARTIST,
+            entity_name="Carl Craig",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            search_content="",
+        )
+        mock_label = Entity(
+            id=2,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            search_content="",
+        )
+
+        mock_find_entity_id.return_value = 871
+        mock_get_master_title.return_value = "Warp10+3 Remixes"
+        mock_get_release_title.return_value = "Selected Ambient Works 85-92"
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = [mock_label]
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        expected = (
+            "Label owner: [a871=Carl Craig]. "
+            "Master release: [m2775=Warp10+3 Remixes]. "
+            "Also check release [r1234=Selected Ambient Works 85-92]. "
+            "Released on [l7890=Planet E]."
+        )
+        assert result == expected
+        mock_find_entity_id.assert_called_once()
+        mock_get_master_title.assert_called_once_with(2775)
+        mock_get_release_title.assert_called_once_with(1234)
+        assert mock_entity_repository.get_by_entity_id_and_entity_type.call_count == 1
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    async def test_process_profile_links_master_and_release_already_complete(
+        self,
+        mock_get_release_title: AsyncMock,
+        mock_get_master_title: AsyncMock,
+        mock_entity_repository: AsyncMock,
+    ) -> None:
+        """Test process_profile_links with master and release already complete."""
+        profile = (
+            "Master: [m2775=Warp10+3 Remixes]. "
+            "Release: [r1234=Selected Ambient Works 85-92]."
+        )
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        assert result == profile
+        mock_get_master_title.assert_not_called()
+        mock_get_release_title.assert_not_called()
+        mock_entity_repository.get_by_entity_id_and_entity_type.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
+    )
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
+    )
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
+    )
+    async def test_process_profile_links_malformed_master_release_with_other_types(
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_get_release_title: AsyncMock,
+        mock_get_master_title: AsyncMock,
+        mock_entity_repository: AsyncMock,
+    ) -> None:
+        """Test process_profile_links with malformed master/release refs mixed with other types."""
+        profile = (
+            "Label owner: [a=Carl Craig]. "
+            "Master release: [m=34567]. "
+            "Also check release [r=1234]. "
+            "Released on [l7890]."
+        )
+
+        mock_label = Entity(
+            id=2,
+            entity_id=7890,
+            entity_type=EntityType.LABEL,
+            entity_name="Planet E",
+            relation_counts={},
+            entity_metadata={},
+            entities={},
+            search_content="",
+        )
+
+        mock_find_entity_id.return_value = 871
+        mock_get_master_title.return_value = "Warp10+3 Remixes"
+        mock_get_release_title.return_value = "Selected Ambient Works 85-92"
+        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = [mock_label]
+
+        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
+
+        expected = (
+            "Label owner: [a871=Carl Craig]. "
+            "Master release: [m34567=Warp10+3 Remixes]. "
+            "Also check release [r1234=Selected Ambient Works 85-92]. "
+            "Released on [l7890=Planet E]."
+        )
+        assert result == expected
+        mock_find_entity_id.assert_called_once()
+        mock_get_master_title.assert_called_once_with(34567)
+        mock_get_release_title.assert_called_once_with(1234)
+        assert mock_entity_repository.get_by_entity_id_and_entity_type.call_count == 1
 
 
 class TestGetByEntityIdAndEntityType:
@@ -1119,31 +1482,6 @@ class TestGetByEntityIdAndEntityType:
         )
 
         assert result.entity_metadata["profile"] == "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]."
-
-    @pytest.mark.asyncio
-    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
-    async def test_get_by_entity_id_and_entity_type_logs_profile(
-        self, mock_log: Mock, mock_entity_repository: AsyncMock
-    ) -> None:
-        """Test get_by_entity_id_and_entity_type logs profile when present."""
-        profile = "Test profile text."
-        mock_entity = Entity(
-            id=1,
-            entity_id=12345,
-            entity_type=EntityType.ARTIST,
-            entity_name="Test Artist",
-            relation_counts={},
-            entity_metadata={"profile": profile},
-            entities={},
-            search_content="",
-        )
-        mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
-
-        await OfflineEntityDataAccess.get_by_entity_id_and_entity_type(
-            mock_entity_repository, 12345, EntityType.ARTIST
-        )
-
-        mock_log.debug.assert_any_call(f"profile: {profile}")
 
     @pytest.mark.asyncio
     async def test_get_by_entity_id_and_entity_type_profile_none(

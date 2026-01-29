@@ -36,8 +36,9 @@ from musigree.library.fields.entity_id import to_entity_label_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.library.full_text_search.text_search_utils import normalise_search_content
-from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.data_access_layer.offline_entity_search import OfflineEntitySearch
+from musigree.offline.data_access_layer.offline_master_data_access import OfflineMasterDataAccess
+from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_domain.entity import Entity
@@ -284,10 +285,9 @@ class OfflineEntityDataAccess:
                 )
                 await entity_repository.rollback()
             except NotFoundError:
-                if LOGGING_TRACE:
-                    log.debug(
-                        f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
-                    )
+                log.error(
+                    f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
+                )
                 id_ = None
                 # Mark the cache entry as null.
                 await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
@@ -378,10 +378,17 @@ class OfflineEntityDataAccess:
         # [l7890] -> [l7890=Label Name]
         # [l=Label Name] -> [l7890=Label Name]
         # [l7890=Label Name]
+        # [m2775] -> [m2775=Master Record Title]
+        # [r2775] -> [r2775=Release Title]
         # e.g. "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n" ->
         #      "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"
+        # e.g. # [m2775] -> [m2775=Warp10+3 Remixes]
+        #
+        # Uses:
         # id -> name = entity_repository.get_entity_name_by_id()
         # name -> id = entity_repository.get_entity_id_by_entity_type_and_entity_name()
+        # master_id -> master_title OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
+        # release_id -> release_title OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
 
         # Map prefix to EntityType
         prefix_to_type = {
@@ -390,8 +397,8 @@ class OfflineEntityDataAccess:
         }
 
         # Pattern to match: [prefixid], [prefix=Name], or [prefixid=Name]
-        # prefix is a single letter (a or l), id is digits, Name can contain any characters except ]
-        pattern = r"\[([al])(\d*)(?:=([^\]]+))?\]"
+        # prefix is a single letter (a, l, m, or r), id is digits, Name can contain any characters except ]
+        pattern = r"\[([alrm])(\d*)(?:=([^\]]+))?\]"
 
         async def process_match(match: re.Match[str]) -> str:
             prefix = match.group(1)
@@ -399,6 +406,99 @@ class OfflineEntityDataAccess:
             entity_id_str = match.group(2)  # Can be empty
             entity_name = match.group(3)  # Can be None
 
+            # Handle master references: [mid] -> [mid=Master Title]
+            if prefix == "m":
+                # Case 1: [mid=Title] - already complete, return as is
+                if entity_id_str and entity_name:
+                    return match.group(0)
+
+                # Case 2: [mid] - need to get master title
+                if entity_id_str and not entity_name:
+                    try:
+                        master_id = int(entity_id_str)
+                        master_title = (
+                            await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
+                        )
+                        return f"[m{master_id}={master_title}]"
+                    except NotFoundError:
+                        log.error(f"process_profile_links: master not found for m{entity_id_str}")
+                        # Return original if master not found
+                        return match.group(0)
+
+                # Case 3: [m=value] - check if value is numeric ID
+                if not entity_id_str and entity_name:
+                    # Check if entity_name is numeric (malformed reference like [m=34567])
+                    try:
+                        master_id = int(entity_name)
+                        log.debug(f"master_id (from malformed ref): {master_id}")
+
+                        master_title = (
+                            await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
+                        )
+                        return f"[m{master_id}={master_title}]"
+                    except ValueError:
+                        # Not numeric, name lookup not supported
+                        log.error(
+                            f"process_profile_links: master id lookup from name not supported for m={entity_name}"
+                        )
+                        return match.group(0)
+                    except NotFoundError:
+                        log.error(f"process_profile_links: master not found for m{entity_name}")
+                        # Transform malformed ref to correct format even if not found
+                        return f"[m{int(entity_name)}]"
+
+                # Fallback: return original
+                return match.group(0)
+
+            # Handle release references: [rid] -> [rid=Release Title]
+            if prefix == "r":
+                # Case 1: [rid=Title] - already complete, return as is
+                if entity_id_str and entity_name:
+                    return match.group(0)
+
+                # Case 2: [rid] - need to get release title
+                if entity_id_str and not entity_name:
+                    try:
+                        release_id = int(entity_id_str)
+                        release_title = (
+                            await OfflineReleaseDataAccess.get_release_title_from_release_id(
+                                release_id
+                            )
+                        )
+                        return f"[r{release_id}={release_title}]"
+                    except NotFoundError:
+                        log.error(f"process_profile_links: release not found for r{entity_id_str}")
+                        # Return original if release not found
+                        return match.group(0)
+
+                # Case 3: [r=value] - check if value is numeric ID
+                if not entity_id_str and entity_name:
+                    # Check if entity_name is numeric (malformed reference like [r=1234])
+                    try:
+                        release_id = int(entity_name)
+                        log.debug(f"release_id (from malformed ref): {release_id}")
+
+                        release_title = (
+                            await OfflineReleaseDataAccess.get_release_title_from_release_id(
+                                release_id
+                            )
+                        )
+                        return f"[r{release_id}={release_title}]"
+                    except ValueError:
+                        # Not numeric, name lookup not supported
+                        log.error(
+                            f"process_profile_links: release id lookup from name not supported for r={entity_name}"
+                        )
+                        return match.group(0)
+                    except NotFoundError:
+                        log.error(f"process_profile_links: release not found for r{entity_name}")
+                        # Transform malformed ref to correct format even if not found
+                        return f"[r{int(entity_name)}]"
+
+                # Fallback: return original
+                return match.group(0)
+
+            # Handle entity references (artist and label)
             entity_type = prefix_to_type.get(prefix)
             if entity_type is None:
                 # Unknown prefix, return original
@@ -412,26 +512,19 @@ class OfflineEntityDataAccess:
             if entity_id_str and not entity_name:
                 try:
                     entity_id = int(entity_id_str)
-                    log.debug(f"entity_id: {entity_id}")
-                    log.debug(f"entity_type: {entity_type}")
-
                     entity = await entity_repository.get_by_entity_id_and_entity_type(
                         entity_id, entity_type
                     )
                     return f"[{prefix}{entity_id}={entity.entity_name}]"
                 except NotFoundError:
-                    if LOGGING_TRACE:
-                        log.debug(
-                            f"process_profile_links: entity not found for {prefix}{entity_id_str}"
-                        )
+                    log.error(
+                        f"process_profile_links: entity not found for {prefix}{entity_id_str}"
+                    )
                     # Return original if entity not found
                     return match.group(0)
 
             # Case 3: [prefix=Name] - need to get entity_id
             if not entity_id_str and entity_name:
-                log.debug(f"entity_type: {entity_type}")
-                log.debug(f"entity_name: {entity_name}")
-
                 token_repository = TokenRepository()
 
                 candidate_entity_id = (
@@ -448,10 +541,9 @@ class OfflineEntityDataAccess:
                 if candidate_entity_id is not None:
                     return f"[{prefix}{candidate_entity_id}={entity_name}]"
                 else:
-                    if LOGGING_TRACE:
-                        log.debug(
-                            f"process_profile_links: entity_id not found for {prefix}={entity_name}"
-                        )
+                    log.error(
+                        f"process_profile_links: entity_id not found for {prefix}={entity_name}"
+                    )
                     # Return original if entity_id not found
                     return match.group(0)
 
@@ -467,16 +559,12 @@ class OfflineEntityDataAccess:
         # to preserve indices when replacing
         replacements: list[tuple[re.Match[str], str]] = []
         for match in matches:
-            log.debug(f"match1: {match}")
             replacement = await process_match(match)
-            log.debug(f"replacement1: {replacement}")
             replacements.append((match, replacement))
 
         # Apply replacements from end to start to preserve indices
         result = profile
         for match, replacement in reversed(replacements):
-            log.debug(f"match2: {match}")
-            log.debug(f"replacement2: {replacement}")
             result = result[: match.start()] + replacement + result[match.end() :]
 
         return result
@@ -488,14 +576,11 @@ class OfflineEntityDataAccess:
         entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
         if entity is not None and entity.entity_metadata is not None:
             profile: str | None = entity.entity_metadata.get("profile", "")
-            log.debug(f"profile: {profile}")
             if profile is not None and profile:
-                log.debug(f"profile: {profile}")
                 updated_profile = await OfflineEntityDataAccess.process_profile_links(
                     entity_repository, profile
                 )
                 entity.entity_metadata["profile"] = updated_profile
-                log.debug(f"updated_profile: {updated_profile}")
         return entity
 
     @staticmethod
@@ -518,8 +603,7 @@ class OfflineEntityDataAccess:
                     # Mark the cache entry as null.
                     await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
             except NotFoundError:
-                if LOGGING_TRACE:
-                    log.debug(f"get_entity_name_by_id id not found: {id_}")
+                log.error(f"get_entity_name_by_id id not found: {id_}")
                 name = None
                 # Mark the cache entry as null.
                 await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)

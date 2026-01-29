@@ -47,7 +47,7 @@ class RuntimeDatabaseManager:
             RuntimeDatabaseManager.runtime_database_helper = RuntimeSqliteHelper()
 
         else:
-            raise ValueError("Configuration Error: Unknown runtime_database type")
+            raise ValueError("Configuration Error: Unknown database type")
 
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine

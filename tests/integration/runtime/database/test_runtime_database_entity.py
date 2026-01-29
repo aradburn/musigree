@@ -69,14 +69,14 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
                 "profile": "After forming [l=Ovum Recordings] as an independent label in October 1994 "
                            + "with former partner [a=King Britt], Josh recorded the cult classic 'Liquid Summer'. "
                            + "He went on to release singles for a wide variety of revered European labels ranging "
-                           + "from Belgium's [l=R & S Records] to England's [l=XL Recordings]. In 1995, Wink became "
+                           + "from Belgium's [l245=R & S Records] to England's [l160=XL Recordings]. In 1995, Wink became "
                            + "one of the first DJ-producers to translate his hard work into mainstream success when "
                            + "he unleashed a string of classics including 'Don't Laugh'\u00b8 'I'm Ready' and "
                            + "'Higher State of Consciousness' that topped charts worldwide. "
                            + "More recently he has had massive club hits such as 'How's Your Evening So Far' and "
                            + "'Superfreak' but he has also gained a lot of attention trough his remixes for "
-                           + "[a=FC Kahuna], [a=Paul Oakenfold], [a=Ladytron], [a=Clint Mansell], [a=Sting] "
-                           + "and [a=Depeche Mode], among others.",
+                           + "[a=FC Kahuna], [a67218=Paul Oakenfold], [a=Ladytron], [a11140=Clint Mansell], [a=Sting] "
+                           + "and [a2725=Depeche Mode], among others.",
                 "real_name": "Joshua Winkelman",
                 "urls": [
                     "http://www.joshwink.com/",
@@ -195,7 +195,7 @@ class TestRuntimeDatabaseEntity(AbstractDatabaseTest):
             "entity_id": 1,
             "entity_type": "EntityType.LABEL",
             "entity_metadata": {
-                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n",
+                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",

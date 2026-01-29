@@ -333,6 +333,115 @@ class TestFastAPIAPI:
         assert response.status_code == 400
 
     @pytest.mark.asyncio
+    async def test_entity_details_06(
+        self,
+        offline_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None, None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
+        client: AsyncClient,
+    ) -> None:
+        """Test getting entity details for an artist."""
+        response = await client.get("/api/artist/details/112")
+        assert response.status_code == 200
+
+        actual = response.json()
+        assert actual is not None
+
+        # Verify required fields are present
+        assert "id" in actual
+        assert "type" in actual
+        assert "name" in actual
+        assert "metadata" in actual
+        assert "entities" in actual
+        assert "relation_counts" in actual
+
+        # Verify correct types
+        assert actual["id"] == 112
+        assert actual["type"] == "artist"
+        assert isinstance(actual["name"], str)
+        assert isinstance(actual["metadata"], dict)
+        assert isinstance(actual["entities"], dict)
+        assert isinstance(actual["relation_counts"], dict)
+
+        expected = {
+            "id": 112,
+            "type": "artist",
+            "name": "D*Note",
+            "metadata": {
+                "name_variations": ["D Note",
+                                    "D'Note",
+                                    "D* Note",
+                                    "D-Note",
+                                    "D. Note",
+                                    "D.Note",
+                                    "D/Note",
+                                    "D:Note",
+                                    "D_Note"],
+                "profile": "D*Note's blend of Ambient, Nu-Jazz, Drum & Bass, House and rare groove springs from " +
+                           "Matt Winn (Matt Wienevski) and musical friends consisting of keyboard player [a115515] " +
+                           "who records as [a2649], guitarist Keith Osbourne, and others. Vocalists have " +
+                           "included [a14920], [a126446], [a19738] of " +
+                           "[a14449=Sunship], [a242942] and more. Other " +
+                           "collaborators include scratching from Charlie Lexton " +
+                           "as [a760], rappers [a22278=Navigator] and " +
+                           "[a276136].\r\n" +
+                           "\r\n" +
+                           "The debut album [r24317] had 4 singles, each of "
+                           "which enjoyed good reviews in their day. [r44657] "
+                           "built on the energy of the debut and included "
+                           "highlights such as the title track, Iniquity Worker "
+                           "and [r44664] with notable performance by vocalist "
+                           "[a126446].  To avoid confusion with the celebrity "
+                           "[a310446], Anderson now goes by P.Y. Anderson.\r\n"
+                           "\r\n"
+                           "Anderson also contributed to their eponymous 1997 "
+                           "album [r58445]  moving distinctly towards a house "
+                           "sound with her vocals delivering passion and power "
+                           "in the anthem [r524913].  [a1096=4 Hero] and "
+                           "[a962=Deep Dish] provided top-notch remixes. "
+                           "[r160143] of 2002 continued in the house dance "
+                           "direction. \r\n"
+                           "\r\n"
+                           "The sixth D*Note album is more thoughtful and deep.  "
+                           "[r1784742] arrived in 2006 featuring Beth Hirsch; "
+                           "who is well known for her vocals on the first "
+                           "[a2770=AIR] album [r41970].  Laguna features a "
+                           "version of [a90233]'s Edith and the Kingpin among "
+                           "others.  It includes several covers described by "
+                           "Winn as \"hidden gems, the sort of things that music "
+                           "lovers love finding.... an attempt to use the "
+                           "distinctive D*Note sound and marry it to strong "
+                           "American songs, connecting 70s folk rock with drum & "
+                           "bass.\"  \r\n"
+                           "\r\n"
+                           "Matt Winn has also made several short films. "
+                           "[r160144] is one of his soundtracks.  He also "
+                           "directed " +
+                           "[url=http://www.january2ndthemovie.com]January 2nd, " +
+                           "the movie[/url].\r\n" +
+                           "___________________________________________________\n",
+                "real_name": "Matt Wienevski",
+                "urls": ["http://www.january2ndthemovie.com"],
+            },
+            "entities": {
+                "members": {
+                    "Matt Wienevski": 31620,
+                },
+            },
+            "relation_counts": {
+                "Compiled On": 1,
+                "Engineer": 1,
+                "Remix": 1,
+                "Written By": 2
+            },
+            "countries": None,
+            "genres": None,
+            "styles": None,
+        }
+        assert actual == expected
+
+    @pytest.mark.asyncio
     async def test_network_01(
         self,
         offline_database_setup: AsyncGenerator[None, None],
