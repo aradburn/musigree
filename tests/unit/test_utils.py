@@ -553,7 +553,7 @@ def test_get_discogs_url() -> None:
     """Test get_discogs_url generates correct URL format."""
     input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, "xyz")
-    expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_xyz.xml.gz"
+    expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_xyz.xml.gz"
     assert result == expected
 
 
@@ -561,7 +561,7 @@ def test_get_discogs_artists_url() -> None:
     """Test get_discogs_url with artists type constant."""
     input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_ARTISTS_TYPE)
-    expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_artists.xml.gz"
+    expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_artists.xml.gz"
     assert result == expected
 
 
@@ -569,7 +569,7 @@ def test_get_discogs_releases_url() -> None:
     """Test get_discogs_url with releases type constant."""
     input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_RELEASES_TYPE)
-    expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_releases.xml.gz"
+    expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_releases.xml.gz"
     assert result == expected
 
 
@@ -577,7 +577,7 @@ def test_get_discogs_labels_url() -> None:
     """Test get_discogs_url with labels type constant."""
     input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_LABELS_TYPE)
-    expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_labels.xml.gz"
+    expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_labels.xml.gz"
     assert result == expected
 
 
@@ -585,7 +585,7 @@ def test_get_discogs_masters_url() -> None:
     """Test get_discogs_url with masters type constant."""
     input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_MASTERS_TYPE)
-    expected = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/2023/discogs_20230801_masters.xml.gz"
+    expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_masters.xml.gz"
     assert result == expected
 
 
