@@ -3,7 +3,7 @@ import pytest
 from musigree import utils
 from musigree.config import SqliteTestConfiguration
 from musigree.constants import DISCOGS_DATA
-from musigree.offline.domain.entity import Entity
+from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
 

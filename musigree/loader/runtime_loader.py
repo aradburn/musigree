@@ -40,7 +40,7 @@ from musigree.constants import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
@@ -216,8 +216,8 @@ def runtime_loader_main() -> None:
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
             )
         )
-        # Load roles, may be empty if no roles in database yet
-        runner.run(RoleDataAccess.load_all_roles_into_cache())
+        # Load roles, may be empty if no roles in offline_database yet
+        runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
         runner.close()
 
     # Run the loader process between these dates

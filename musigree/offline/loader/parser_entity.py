@@ -48,13 +48,13 @@ from typing import Any
 from xml.etree.ElementTree import Element
 
 from musigree.library.fields.entity_id import to_entity_internal_id
+from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
-from musigree.offline.domain.entity import Entity
-from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
+from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 """

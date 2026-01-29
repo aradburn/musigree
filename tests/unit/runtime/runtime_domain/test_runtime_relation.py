@@ -1,9 +1,10 @@
 import pytest
-from musigree.runtime.runtime_domain.relation import (
+
+from musigree.library.fields.entity_type import EntityType
+from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelation,
     RuntimeRelationResult,
 )
-from musigree.library.fields.entity_type import EntityType
 
 
 def test_creates_runtime_relation_with_valid_data() -> None:

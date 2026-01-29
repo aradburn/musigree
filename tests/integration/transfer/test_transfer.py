@@ -4,26 +4,25 @@ import pytest
 
 from musigree.config import Configuration
 from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
-from musigree.offline.data_access_layer.release_data_access import ReleaseDataAccess
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.role_repository import RoleRepository
-from musigree.runtime.runtime_database.country_repository import CountryRepository
-from musigree.runtime.runtime_database.genre_repository import GenreRepository
+from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.role_repository import RoleRepository
+from musigree.runtime.runtime_database.runtime_country_repository import RuntimeCountryRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
+from musigree.runtime.runtime_database.runtime_genre_repository import RuntimeGenreRepository
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
+from musigree.runtime.runtime_database.runtime_style_repository import RuntimeStyleRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_database.style_repository import StyleRepository
 from musigree.transfer.transfer_manager import TransferManager
-
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -108,9 +107,9 @@ class TestTransfer(AbstractDatabaseTest):
     ) -> None:
         # GIVEN
         async with runtime_transaction():
-            runtime_country_repository = CountryRepository()
-            runtime_genre_repository = GenreRepository()
-            runtime_style_repository = StyleRepository()
+            runtime_country_repository = RuntimeCountryRepository()
+            runtime_genre_repository = RuntimeGenreRepository()
+            runtime_style_repository = RuntimeStyleRepository()
 
             actual_country_count = await runtime_country_repository.count()
             actual_genre_count = await runtime_genre_repository.count()
@@ -121,7 +120,7 @@ class TestTransfer(AbstractDatabaseTest):
 
         async with offline_transaction():
             offline_release_repository = ReleaseRepository()
-            await ReleaseDataAccess.create_entity_details_index(offline_release_repository)
+            await OfflineReleaseDataAccess.create_entity_details_index(offline_release_repository)
 
         # WHEN
         await TransferManager.transfer_entity_details()

@@ -8,7 +8,7 @@ from musigree.config import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
 
@@ -42,5 +42,5 @@ async def run_offline_loading_process(
     atexit.register(CacheManager.shutdown_cache)
     atexit.register(OfflineDatabaseManager.shutdown_database)
 
-    await RoleDataAccess.load_all_roles_into_cache()
+    await OfflineRoleDataAccess.load_all_roles_into_cache()
     await process

@@ -59,12 +59,12 @@ import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.entity_table import EntityTable
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.entity import Entity
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 """
@@ -148,7 +148,7 @@ async def worker_pass_two_single(
     # if LOGGING_TRACE:
     # log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+    changed = await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""

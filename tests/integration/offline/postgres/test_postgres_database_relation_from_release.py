@@ -1,4 +1,4 @@
-from tests.integration.offline.domain.test_database_relation_from_release import (
+from tests.integration.offline.offline_domain.test_database_relation_from_release import (
     TestDatabaseRelationFromRelease,
 )
 

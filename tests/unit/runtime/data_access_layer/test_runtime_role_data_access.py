@@ -14,7 +14,7 @@ from musigree.library.fields.role_type import RoleType
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
-from musigree.runtime.runtime_domain.role import (
+from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRole,
     RuntimeRoleJSTreeEntry,
     RuntimeRoleJSTreeState,

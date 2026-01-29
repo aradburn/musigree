@@ -13,9 +13,9 @@ import pytest
 from sqlalchemy.exc import DataError
 
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.base_repository import BaseRepository
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_base import ParserBase
+from musigree.offline.offline_database.base_repository import BaseRepository
 
 
 class ConcreteLoaderBase(LoaderBase):

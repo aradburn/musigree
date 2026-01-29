@@ -32,15 +32,16 @@ The module utilizes `logging` for logging operations, `datetime` for date
 and time handling, and `luigi` for workflow management.
 """
 
+import asyncio
 import datetime
 import logging
+
 import luigi
-import asyncio
 
 from musigree.exceptions import NotFoundError
-from musigree.offline.database.metadata_repository import MetadataRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.metadata import MetadataUncommitted
+from musigree.offline.offline_database.metadata_repository import MetadataRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_domain.metadata import MetadataUncommitted
 
 log = logging.getLogger(__name__)
 """

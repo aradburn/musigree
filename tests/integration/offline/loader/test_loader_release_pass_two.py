@@ -4,8 +4,8 @@ import pytest
 
 from musigree import utils
 from musigree.exceptions import NotFoundError
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
 
 

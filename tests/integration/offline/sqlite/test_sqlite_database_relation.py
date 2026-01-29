@@ -1,4 +1,4 @@
-from tests.integration.offline.database.test_database_relation import (
+from tests.integration.offline.offline_database.test_database_relation import (
     TestDatabaseRelation,
 )
 

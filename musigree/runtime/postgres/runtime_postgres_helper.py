@@ -12,9 +12,9 @@ Key functionalities include:
       handling connections to both production, development, and test databases.
       For test environments, it uses `pg_temp` to create temporary test databases.
     - **Database Shutdown**: `shutdown_database` handles the shutdown of the
-      PostgreSQL database. For test databases, it performs cleanup, including
-      removing temporary database files.
-    - **Connection Checking**: `check_connection` checks the database
+      PostgreSQL runtime_database. For test databases, it performs cleanup, including
+      removing temporary runtime_database files.
+    - **Connection Checking**: `check_connection` checks the runtime_database
       connection, retrieves the PostgreSQL version, and logs the result.
     - **Table Management**: `create_tables` and `drop_tables` implement
       table creation and deletion using the SQLAlchemy metadata.
@@ -26,7 +26,7 @@ Key functionalities include:
       vacuuming and full/analyze vacuum options.
     - **Test Database Management**: Utilizes `pg_temp` to create and manage
       temporary test databases, including setup and cleanup.
-    - **Configuration Handling**: Dynamically configures the database connection
+    - **Configuration Handling**: Dynamically configures the runtime_database connection
       based on the `PRODUCTION` and `TESTING` flags in the application
       configuration.
     - **Pool Management**: Use different pool, `SingletonThreadPool` or classic
@@ -34,7 +34,7 @@ Key functionalities include:
     - **Connection Management**: Set the `connect_timeout`.
 
 The `RuntimePostgresHelper` class interacts with the following components:
-    - `sqlalchemy.Engine`: For creating and managing database connections.
+    - `sqlalchemy.Engine`: For creating and managing runtime_database connections.
     - `sqlalchemy.create_engine`: For creating PostgreSQL engines.
     - `sqlalchemy.text`: For executing raw SQL queries.
     - `sqlalchemy.dialects.postgresql.insert`: For generating PostgreSQL-specific
@@ -47,7 +47,7 @@ The `RuntimePostgresHelper` class interacts with the following components:
     - `musigree.config.Configuration`: For accessing application
       configuration settings.
     - `musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper`:
-      The base class for database helper classes.
+      The base class for runtime_database helper classes.
     - `musigree.runtime.runtime_database.runtime_base_table.RuntimeConcreteTable`:
         For type hinting for table classes.
     - `musigree.runtime.runtime_database_manager.RuntimeDatabaseManager`:
@@ -55,17 +55,16 @@ The `RuntimePostgresHelper` class interacts with the following components:
     - `logging`: For logging operations.
 
 The module utilizes `logging` for logging operations, `pathlib` for file path
-operations, `sqlalchemy` for database operations, `typing` for type hinting,
+operations, `sqlalchemy` for runtime_database operations, `typing` for type hinting,
 `shutil` for file deletion, `os` for os operation and `pg_temp` to manage the
-test database. It interacts with `musigree` library for specific configuration
+test runtime_database. It interacts with `musigree` library for specific configuration
 and runtime operation.
 """
 
 import logging
 import shutil
-from typing import Type
-
 from pathlib import Path
+from typing import Type
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
@@ -94,24 +93,24 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     Provides functionality for managing a PostgreSQL runtime database.
 
     This class extends `RuntimeDatabaseHelper` to provide PostgreSQL-specific
-    implementations for database operations. It handles connections to
+    implementations for runtime_database operations. It handles connections to
     production, development, and test databases, using `pg_temp` for test
     environments.
     """
 
     postgres_test_db: TempDB | None = None
-    """Instance of the test database."""
+    """Instance of the test runtime_database."""
     pg_runtime_dirname: Path | None = None
-    """Directory used for storing temp database files."""
+    """Directory used for storing temp runtime_database files."""
     _is_test: bool = False
-    """Flag to indicate if it is a test database."""
+    """Flag to indicate if it is a test runtime_database."""
 
     @staticmethod
     async def setup_database(config: Configuration) -> AsyncEngine:
         """
-        Sets up the PostgreSQL database connection and returns the engine.
+        Sets up the PostgreSQL runtime_database connection and returns the engine.
 
-        This method creates a PostgreSQL database engine, handling connections
+        This method creates a PostgreSQL runtime_database engine, handling connections
         to production, development, and test databases based on the application
         configuration. For test databases, it utilizes `pg_temp` to create and
         manage temporary test databases.
@@ -134,13 +133,13 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             port = config.POSTGRES_DATABASE_PORT
             """Get the port."""
             name = config.POSTGRES_RUNTIME_DATABASE_NAME
-            """Get the database name."""
+            """Get the runtime_database name."""
 
             log.info(f"DATABASE_HOST: {host}")
             log.info(f"DATABASE_PORT: {port}")
             log.info(f"DATABASE_NAME: {name}")
 
-            # Create a database engine and pool that will manage connections and execute queries
+            # Create a runtime_database engine and pool that will manage connections and execute queries
             url_object = URL.create(
                 POSTGRESQL_DRIVER_NAME,
                 username=config.POSTGRES_DATABASE_USERNAME,
@@ -149,7 +148,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 port=port,
                 database=name,
             )
-            """Create the url to connect to the database."""
+            """Create the url to connect to the runtime_database."""
             engine = create_async_engine(
                 url_object, pool_size=40, pool_timeout=300, pool_recycle=300
             )
@@ -175,7 +174,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 data_path.parent.mkdir(parents=True, exist_ok=True)
                 """Create the parent folder if needed."""
 
-                # Delete left over failed test database if present
+                # Delete left over failed test runtime_database if present
                 if data_path.is_dir():
                     """If the data folder already exists."""
                     shutil.rmtree(data_path)
@@ -215,7 +214,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 RuntimePostgresHelper.pg_runtime_dirname = pg_runtime_dirname
                 """Set the runtime dir name."""
 
-                # Create a temporary test database engine and pool that will manage connections and execute queries
+                # Create a temporary test runtime_database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,
                     username=RuntimePostgresHelper.postgres_test_db.current_user,
@@ -238,7 +237,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 """Handle the development configuration."""
                 log.info("Using Development Postgres Runtime Database")
 
-                # Create a database engine and pool that will manage connections and execute queries
+                # Create a runtime_database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,
                     username=config.POSTGRES_DATABASE_USERNAME,
@@ -260,19 +259,19 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     async def shutdown_database() -> None:
         """
-        Shuts down the PostgreSQL database connection.
+        Shuts down the PostgreSQL runtime_database connection.
 
-        This method handles the shutdown of the PostgreSQL database. For test
+        This method handles the shutdown of the PostgreSQL runtime_database. For test
         databases, it performs cleanup operations, including removing the temporary
-        database files and directories.
+        runtime_database files and directories.
         """
-        log.info("Shutting down Postgres runtime database")
+        log.info("Shutting down Postgres runtime runtime_database")
 
         if RuntimePostgresHelper._is_test and RuntimePostgresHelper.postgres_test_db is not None:
-            """If it is a test database."""
+            """If it is a test runtime_database."""
             log.info("Cleaning up Postgres Test Database")
             RuntimePostgresHelper.postgres_test_db.cleanup()
-            """Clean up the temp database."""
+            """Clean up the temp runtime_database."""
 
             log.info(f"Delete data dir: {RuntimePostgresHelper.postgres_test_db.pg_data_dir}")
             shutil.rmtree(RuntimePostgresHelper.postgres_test_db.pg_data_dir)
@@ -292,9 +291,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
-        Checks the PostgreSQL database connection and performs setup.
+        Checks the PostgreSQL runtime_database connection and performs setup.
 
-        This method checks the database connection, retrieves the PostgreSQL
+        This method checks the runtime_database connection, retrieves the PostgreSQL
         version, and logs the result.
 
         Args:
@@ -302,8 +301,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             engine (AsyncEngine): The SQLAlchemy async engine.
         """
         try:
-            """Try to connect to the database."""
-            log.info("Check Postgres runtime database connection...")
+            """Try to connect to the runtime_database."""
+            log.info("Check Postgres runtime runtime_database connection...")
 
             async with engine.connect() as connection:
                 """Open a connection."""
@@ -323,9 +322,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:
         """
-        Creates tables in the PostgreSQL database.
+        Creates tables in the PostgreSQL runtime_database.
 
-        This method creates database tables using the SQLAlchemy metadata.
+        This method creates runtime_database tables using the SQLAlchemy metadata.
 
         Args:
             tables (List[str], optional): An optional list of table names to
@@ -339,9 +338,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @classmethod
     async def drop_tables(cls, tables: list[str]) -> None:
         """
-        Drops tables from the PostgreSQL database.
+        Drops tables from the PostgreSQL runtime_database.
 
-        This method drops database tables using the SQLAlchemy metadata.
+        This method drops runtime_database tables using the SQLAlchemy metadata.
 
         Args:
             tables (List[str], optional): An optional list of table names to
@@ -360,7 +359,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             table_name: The name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
-            engine: The SQLAlchemy async engine connected to the database.
+            engine: The SQLAlchemy async engine connected to the runtime_database.
         """
         log.debug(f"VACUUM {table_name}")
 

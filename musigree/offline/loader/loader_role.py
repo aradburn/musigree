@@ -9,16 +9,16 @@ from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENA
 from musigree.exceptions import DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.role_type import RoleType
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.role_repository import RoleRepository
-from musigree.offline.domain.instruments import HornbostelSachs
-from musigree.offline.domain.role import (
-    RoleUncommitted,
-)
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.loader_utils import LoaderUtils
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.role_repository import RoleRepository
+from musigree.offline.offline_domain.instruments import HornbostelSachs
+from musigree.offline.offline_domain.role import (
+    RoleUncommitted,
+)
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class LoaderRole(LoaderBase):
 
         # Load back in all roles from database
         # TODO check if needed
-        await RoleDataAccess.load_all_roles_into_cache()
+        await OfflineRoleDataAccess.load_all_roles_into_cache()
         log.debug("Initial roles loaded OK")
 
     @classmethod

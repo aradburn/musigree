@@ -1,4 +1,4 @@
-from tests.integration.offline.database.test_database_entity import TestDatabaseEntity
+from tests.integration.offline.offline_database.test_database_entity import TestDatabaseEntity
 
 
 class TestSqliteDatabaseEntity(TestDatabaseEntity):

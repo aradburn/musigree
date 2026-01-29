@@ -17,7 +17,7 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.loader.offline_loader import load_offline_tables
 from musigree.loader.runtime_loader import load_runtime_tables
 from musigree.logging_config import setup_logging, shutdown_logging
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager

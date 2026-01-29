@@ -1,21 +1,21 @@
 """
-This module defines the `RuntimeDatabaseHelper` class and related utilities for managing the runtime database.
+This module defines the `RuntimeDatabaseHelper` class and related utilities for managing the runtime runtime_database.
 
-It provides an abstract base class for interacting with various database backends,
-handling database setup, shutdown, table management, and various data access operations.
+It provides an abstract base class for interacting with various runtime_database backends,
+handling runtime_database setup, shutdown, table management, and various data access operations.
 
 Key functionalities include:
-    - Abstract methods for setting up and shutting down the database.
-    - Methods for creating and dropping database tables.
+    - Abstract methods for setting up and shutting down the runtime_database.
+    - Methods for creating and dropping runtime_database tables.
     - Loading tables with initial data (e.g., roles).
     - Generating SQL insert queries.
     - Retrieving network data for entities.
-    - Managing database connections and sessions.
+    - Managing runtime_database connections and sessions.
     - Caching of frequently accessed data.
 
 The `RuntimeDatabaseHelper` class is designed to be subclassed for specific
-database implementations, such as SQLite or PostgreSQL. It utilizes SQLAlchemy
-for database operations and defines a set of methods that each subclass must
+runtime_database implementations, such as SQLite or PostgreSQL. It utilizes SQLAlchemy
+for runtime_database operations and defines a set of methods that each subclass must
 implement.
 """
 
@@ -46,27 +46,27 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_database.token_repository import TokenRepository
+from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 
 log = logging.getLogger(__name__)
 
 
 class RuntimeDatabaseHelper(ABC):
     """
-    Abstract base class for managing the runtime database.
+    Abstract base class for managing the runtime runtime_database.
 
-    This class provides an interface for interacting with the runtime database,
-    including methods for setting up and shutting down the database, creating
+    This class provides an interface for interacting with the runtime runtime_database,
+    including methods for setting up and shutting down the runtime_database, creating
     and dropping tables, loading initial data, and performing various data
     access operations.
 
-    Subclasses should implement the abstract methods to provide database-specific
+    Subclasses should implement the abstract methods to provide runtime_database-specific
     functionality.
 
     Attributes:
-        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime database.
+        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime runtime_database.
         runtime_async_session_factory (async_sessionmaker | None): The SQLAlchemy session factory
-            for creating database sessions.
+            for creating runtime_database sessions.
         text_search_index (TextSearchIndex | None): An index for text-based searches.
         entity_details_index (EntityDetailsIndex | None): An index for entity details.
         entity_count_cached (int): A cached count of entities.
@@ -78,9 +78,9 @@ class RuntimeDatabaseHelper(ABC):
     """
 
     runtime_async_engine: AsyncEngine | None = None
-    """The SQLAlchemy engine for the runtime database."""
+    """The SQLAlchemy engine for the runtime runtime_database."""
     runtime_async_session_factory: async_sessionmaker | None = None
-    """The SQLAlchemy session factory for creating database sessions."""
+    """The SQLAlchemy session factory for creating runtime_database sessions."""
 
     text_search_index: TextSearchIndex
     """An index for text-based searches."""
@@ -110,7 +110,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     async def setup_database(config: Configuration) -> AsyncEngine:
         """
-        Sets up the database connection and returns the engine.
+        Sets up the runtime_database connection and returns the engine.
 
         Args:
             config: The application configuration.
@@ -123,14 +123,14 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     @abstractmethod
     async def shutdown_database() -> None:
-        """Shuts down the database connection."""
+        """Shuts down the runtime_database connection."""
         pass
 
     @staticmethod
     @abstractmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
-        Checks the database connection.
+        Checks the runtime_database connection.
 
         Args:
             config: The application configuration.
@@ -142,7 +142,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     async def create_tables(cls, tables: list[str]) -> None:
         """
-        Creates database tables.
+        Creates runtime_database tables.
 
         Args:
             tables: An optional list of table names to create. If None, all tables
@@ -180,7 +180,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     async def drop_tables(cls, tables: list[str]) -> None:
         """
-        Drops database tables.
+        Drops runtime_database tables.
 
         Args:
             tables: An optional list of table names to drop. If None, all tables
@@ -226,7 +226,7 @@ class RuntimeDatabaseHelper(ABC):
             table_name: The name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
-            engine: The SQLAlchemy async engine connected to the database.
+            engine: The SQLAlchemy async engine connected to the runtime_database.
         """
         pass
 
@@ -337,7 +337,7 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     async def get_random_entity(
         entity_repository: RuntimeEntityRepository,
-        token_repository: TokenRepository,
+        token_repository: RuntimeTokenRepository,
     ) -> tuple[int, EntityType]:
         """
         Retrieves a random entity.

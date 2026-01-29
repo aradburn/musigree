@@ -1,6 +1,7 @@
 import pytest
-from musigree.runtime.runtime_domain.entity import RuntimeEntity, RuntimeEntityDB
+
 from musigree.library.fields.entity_type import EntityType
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, RuntimeEntityDB
 
 
 def test_converts_runtime_entity_to_db_representation() -> None:

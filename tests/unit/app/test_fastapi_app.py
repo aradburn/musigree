@@ -330,7 +330,7 @@ class TestInitApp:
         _mock_setup_logging: Mock,
         test_config: Configuration,
     ) -> None:
-        """Test that database setup is called during initialization."""
+        """Test that runtime_database setup is called during initialization."""
         # Arrange
         mock_cache = MagicMock()
         mock_cache_manager.get_cache.return_value = mock_cache

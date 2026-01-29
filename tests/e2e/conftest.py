@@ -73,7 +73,7 @@ def server_process(
         :param runtime_database_setup:
         :param offline_database_setup:
     """
-    # Get database paths from the configs
+    # Get runtime_database paths from the configs
     runtime_db_path = str(runtime_config.SQLITE_RUNTIME_DATABASE_NAME)
 
     process = multiprocessing.Process(
@@ -108,5 +108,5 @@ def base_url() -> str:
     return TEST_SERVER_BASE_URL
 
 
-# Reuse database fixtures from integration tests
+# Reuse runtime_database fixtures from integration tests
 pytest_plugins = ["tests.integration.app.conftest"]

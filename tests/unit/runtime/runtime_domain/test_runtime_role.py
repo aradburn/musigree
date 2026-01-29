@@ -1,5 +1,5 @@
 from musigree.library.fields.role_type import RoleType
-from musigree.runtime.runtime_domain.role import (
+from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRole,
     RuntimeRoleJSTree,
     RuntimeRoleJSTreeEntry,

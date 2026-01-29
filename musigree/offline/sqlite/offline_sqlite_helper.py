@@ -7,7 +7,7 @@ from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from musigree.config import Configuration
-from musigree.offline.database.offline_database_helper import (
+from musigree.offline.offline_database.offline_database_helper import (
     OfflineDatabaseHelper,
     ConcreteTable,
 )

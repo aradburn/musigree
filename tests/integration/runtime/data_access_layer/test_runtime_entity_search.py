@@ -9,8 +9,8 @@ from musigree.runtime.data_access_layer.runtime_entity_search import (
     RuntimeEntitySearch,
 )
 from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
+from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_database.token_repository import TokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from tests.conftest import AbstractDatabaseTest
 
@@ -35,7 +35,7 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         )
         async with runtime_transaction():
             runtime_entity_repository = RuntimeEntityRepository()
-            token_repository = TokenRepository()
+            token_repository = RuntimeTokenRepository()
 
             results = await RuntimeEntitySearch.search_entities(
                 runtime_entity_repository, token_repository, "Wax"
@@ -78,7 +78,7 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
         )
         async with runtime_transaction():
             runtime_entity_repository = RuntimeEntityRepository()
-            token_repository = TokenRepository()
+            token_repository = RuntimeTokenRepository()
 
             results = await RuntimeEntitySearch.search_entities(
                 runtime_entity_repository, token_repository, "Joker"

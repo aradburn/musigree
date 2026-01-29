@@ -4,11 +4,11 @@ from typing import Any
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.domain.relation import RelationDB
+from musigree.offline.offline_domain.relation import RelationDB
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_domain.relation import (
+from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelation,
     RuntimeRelationInternal,
     to_runtime_relation_db_dict,
@@ -34,7 +34,7 @@ class RuntimeRelationDataAccess:
         the specified roles.
 
         Args:
-            relation_repository: The repository to use for database operations.
+            relation_repository: The repository to use for runtime_database operations.
             entity_keys: List of (entity_id, entity_type) tuples to search for.
             role_names: List of role names to filter by.
 

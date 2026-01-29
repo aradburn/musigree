@@ -107,7 +107,7 @@ class TestOfflineLoaderFunctions:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     def test_get_load_offline_table_stages_success(
         self,
         _mock_role_data_access: Mock,
@@ -169,7 +169,7 @@ class TestOfflineLoaderFunctions:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_get_load_offline_table_stages_assertion_error_no_engine(
         self,
@@ -209,7 +209,7 @@ class TestOfflineLoaderFunctions:
 
     @patch("musigree.loader.offline_loader.luigi")
     @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.offline_loader.CacheManager")
     @patch("musigree.loader.offline_loader.setup_logging")
@@ -326,7 +326,7 @@ class TestOfflineLoaderIntegration:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @pytest.mark.asyncio
     async def test_load_offline_tables_integration(
         self,
@@ -395,7 +395,7 @@ class TestOfflineLoaderEdgeCases:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_empty_data_directory(
         self,
@@ -503,7 +503,7 @@ class TestOfflineLoaderEdgeCases:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_get_load_offline_table_stages_with_vacuum_full(
         self,
@@ -545,7 +545,7 @@ class TestOfflineLoaderEdgeCases:
 
     @patch("musigree.loader.offline_loader.luigi")
     @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.offline_loader.CacheManager")
     @patch("musigree.loader.offline_loader.setup_logging")
@@ -582,7 +582,7 @@ class TestOfflineLoaderEdgeCases:
 
     @patch("musigree.loader.offline_loader.luigi")
     @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.RoleDataAccess")
+    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.offline_loader.CacheManager")
     @patch("musigree.loader.offline_loader.setup_logging")
@@ -656,7 +656,7 @@ class TestOfflineLoaderEdgeCases:
             with patch("musigree.offline.loader.loader_entity.LoaderEntity"):
                 with patch("musigree.offline.loader.loader_release.LoaderRelease"):
                     with patch("musigree.offline.loader.loader_relation.LoaderRelation"):
-                        with patch("musigree.loader.offline_loader.RoleDataAccess"):
+                        with patch("musigree.loader.offline_loader.OfflineRoleDataAccess"):
                             with patch("musigree.offline.loader.loader_role.LoaderRole"):
                                 # Setup mocks
                                 mock_helper = Mock()

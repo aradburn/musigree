@@ -4,17 +4,17 @@ from pathlib import Path
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.role_repository import RoleRepository
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_database.role_repository import RoleRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.data_access_layer.runtime_relation_data_access import (
     RuntimeRelationDataAccess,
 )
-from musigree.runtime.runtime_database.country_repository import CountryRepository
-from musigree.runtime.runtime_database.genre_repository import GenreRepository
+from musigree.runtime.runtime_database.runtime_country_repository import RuntimeCountryRepository
+from musigree.runtime.runtime_database.runtime_genre_repository import RuntimeGenreRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
@@ -24,15 +24,15 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
 from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
+from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_database.style_repository import StyleRepository
-from musigree.runtime.runtime_database.token_repository import TokenRepository
+from musigree.runtime.runtime_database.runtime_style_repository import RuntimeStyleRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-from musigree.runtime.runtime_domain.country import Country
-from musigree.runtime.runtime_domain.genre import Genre
-from musigree.runtime.runtime_domain.role import RuntimeRole
-from musigree.runtime.runtime_domain.style import Style
-from musigree.runtime.runtime_domain.token import Token
+from musigree.runtime.runtime_domain.runtime_country import RuntimeCountry
+from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
+from musigree.runtime.runtime_domain.runtime_role import RuntimeRole
+from musigree.runtime.runtime_domain.runtime_style import RuntimeStyle
+from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
 from musigree.transfer.transfer_worker_entity_inserter import (
     transfer_worker_entity_inserter_async,
 )
@@ -147,9 +147,9 @@ class TransferManager:
         )
 
         async with runtime_transaction():
-            runtime_country_repository = CountryRepository()
+            runtime_country_repository = RuntimeCountryRepository()
             for _id, country_name in enumerate(sorted_countries):
-                country = Country(id=_id, country_name=country_name)
+                country = RuntimeCountry(id=_id, country_name=country_name)
                 await runtime_country_repository.create(country)
                 await runtime_country_repository.commit()
 
@@ -160,9 +160,9 @@ class TransferManager:
         )
 
         async with runtime_transaction():
-            runtime_genre_repository = GenreRepository()
+            runtime_genre_repository = RuntimeGenreRepository()
             for _id, genre_name in enumerate(sorted_genres):
-                genre = Genre(id=_id, genre_name=genre_name)
+                genre = RuntimeGenre(id=_id, genre_name=genre_name)
                 await runtime_genre_repository.create(genre)
                 await runtime_genre_repository.commit()
 
@@ -173,9 +173,9 @@ class TransferManager:
         )
 
         async with runtime_transaction():
-            runtime_style_repository = StyleRepository()
+            runtime_style_repository = RuntimeStyleRepository()
             for _id, style_name in enumerate(sorted_styles):
-                style = Style(id=_id, style_name=style_name)
+                style = RuntimeStyle(id=_id, style_name=style_name)
                 await runtime_style_repository.create(style)
                 await runtime_style_repository.commit()
 
@@ -195,10 +195,10 @@ class TransferManager:
             total_count += len(entity_ids)
 
         async with runtime_transaction():
-            runtime_token_repository = TokenRepository()
+            runtime_token_repository = RuntimeTokenRepository()
             for token, entity_ids in text_search_index.token_index.items():
                 for entity_id in entity_ids:
-                    token_entry = Token(token=token, entity_id=entity_id)
+                    token_entry = RuntimeToken(token=token, entity_id=entity_id)
                     await runtime_token_repository.create(token_entry)
                     inserted_count += 1
                     if inserted_count % BULK_REPORTING_SIZE == 0:

@@ -661,9 +661,9 @@ class TestRuntimeLoaderMainAdditional:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
-        # Mock RoleDataAccess.load_all_roles_into_cache
+        # Mock OfflineRoleDataAccess.load_all_roles_into_cache
         with patch(
-            "musigree.offline.data_access_layer.role_data_access.RoleDataAccess"
+            "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess"
         ) as mock_role_data_access:
             mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 

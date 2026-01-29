@@ -9,7 +9,7 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_domain.relation import RuntimeRelation
+from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelation
 from tests.conftest import AbstractDatabaseTest
 
 

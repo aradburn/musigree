@@ -1,6 +1,6 @@
 """Tests for MetadataRepository with Postgres backend using pytest fixtures."""
 
-from tests.integration.offline.database.test_repository_metadata import (
+from tests.integration.offline.offline_database.test_repository_metadata import (
     TestRepositoryMetadata,
 )
 

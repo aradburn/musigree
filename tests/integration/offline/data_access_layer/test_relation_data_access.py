@@ -4,11 +4,11 @@ import pytest
 
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.relation import RelationUncommitted
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_domain.relation import RelationUncommitted
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
 
@@ -28,10 +28,10 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = RelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release)
 
         # THEN
         expected = [
@@ -288,10 +288,10 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess().resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = RelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release)
 
         # THEN
         expected = [

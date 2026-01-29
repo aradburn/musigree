@@ -41,10 +41,7 @@ from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_utils import normalise_search_content
-from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
-from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
 """
@@ -99,8 +96,8 @@ async def route__api__entity_type__details__entity_id(
     try:
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
-            entity = await RuntimeEntityDataAccess.get_by_entity_id_and_entity_type(
-                entity_repository, entity_id, entity_type
+            entity = await entity_repository.get_by_entity_id_and_entity_type(
+                entity_id, entity_type
             )
     except NotFoundError:
         raise NotFoundError(message="Entity details not found") from None
@@ -290,9 +287,13 @@ async def route__api__search(
     Returns:
         dict[str, Any]: A dict containing a list of entities matching the search string.
     """
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
     from musigree.runtime.data_access_layer.runtime_entity_search import (
         RuntimeEntitySearch,
     )
+    from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 
     # Normalize first
     normalised_search_string = normalise_search_content(search_string)
@@ -307,7 +308,7 @@ async def route__api__search(
     try:
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
-            token_repository = TokenRepository()
+            token_repository = RuntimeTokenRepository()
 
             search_data = await RuntimeEntitySearch.search_entities(
                 entity_repository, token_repository, normalised_search_string
@@ -342,6 +343,7 @@ async def route__api__random(
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
     )
+    from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
@@ -350,7 +352,7 @@ async def route__api__random(
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
-        token_repository = TokenRepository()
+        token_repository = RuntimeTokenRepository()
         try:
             (
                 entity_id,

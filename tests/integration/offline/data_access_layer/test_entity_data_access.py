@@ -5,9 +5,9 @@ import pytest
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, TEST_DIR
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.data_access_layer.entity_data_access import EntityDataAccess
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
 
@@ -20,7 +20,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     ) -> None:
         async with offline_transaction():
             entity_repository = EntityRepository()
-            index = await EntityDataAccess.create_text_search_index(entity_repository)
+            index = await OfflineEntityDataAccess.create_text_search_index(entity_repository)
 
         # THEN
         assert len(index.token_index.items()) == 7221
@@ -35,7 +35,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
         async with offline_transaction():
             entity_repository = EntityRepository()
-            actual = await EntityDataAccess.get_id_by_entity_type_and_entity_name(
+            actual = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
                 entity_repository, entity_type, entity_name
             )
 
@@ -56,7 +56,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -83,7 +83,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -111,7 +111,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -136,7 +136,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_entity_references(entity_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -161,7 +161,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.labels
 
         # THEN
@@ -185,7 +185,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.companies
 
         # THEN
@@ -237,7 +237,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.artists
 
         # THEN
@@ -258,7 +258,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await EntityDataAccess.resolve_release_references(entity_repository, release)
+            await OfflineEntityDataAccess.resolve_release_references(entity_repository, release)
             actual = release.extra_artists
 
         # THEN

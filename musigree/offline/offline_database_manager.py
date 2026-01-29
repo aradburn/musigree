@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from musigree.config import Configuration
 from musigree.constants import DatabaseType, ThreadingModel
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.database.offline_database_helper import OfflineDatabaseHelper
+from musigree.offline.offline_database.offline_database_helper import OfflineDatabaseHelper
 
 log = logging.getLogger(__name__)
 

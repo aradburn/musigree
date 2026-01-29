@@ -5,8 +5,8 @@ import pytest
 from musigree import utils
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.database.entity_repository import EntityRepository
-from musigree.offline.database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.entity_repository import EntityRepository
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -218,7 +218,7 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_type": "EntityType.LABEL",
             "entity_metadata": {
                 "profile": "(Test Update) Classic Techno label from Detroit, USA.\r\n"
-                           + "[b]Label owner:[/b] [a=Carl Craig].\r\n",
+                           + "[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -261,7 +261,7 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
                 "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
                            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
                            + "operations were moved to New Windsor in 2005. "
-                           + "Operated by Chief Engineer [a=Alan Douches].\n",
+                           + "Operated by Chief Engineer [a275139=Alan Douches].\n",
                 "urls": ["http://www.westwestsidemusic.com/"],
             },
             "entity_name": "West West Side Music",

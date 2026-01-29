@@ -42,10 +42,11 @@ from musigree.constants import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
-from musigree.offline.database import ReleaseTable, EntityTable, RelationTable
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
+from musigree.offline.loader.loader_master import LoaderMaster
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
+from musigree.offline.offline_database import ReleaseTable, EntityTable, RelationTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.utils import log_banner
@@ -122,8 +123,9 @@ def get_load_offline_table_stages(
     entity_details_path = data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
     stages: list[partial[Coroutine[Any, Any, None]]] = [
         partial(LoaderRole.load_roles_into_database, roles_directory, instruments_directory),
-        partial(RoleDataAccess.load_all_roles_into_cache),
+        partial(OfflineRoleDataAccess.load_all_roles_into_cache),
         partial(LoaderEntity.loader_entity_pass_one, discogs_data_directory, date, is_bulk_inserts),
+        # Database cleanup
         partial(
             OfflineDatabaseManager.offline_database_helper.vacuum,
             EntityTable.__tablename__,
@@ -138,16 +140,25 @@ def get_load_offline_table_stages(
             is_bulk_inserts,
         ),
         partial(
+            LoaderMaster.loader_master_pass_one,
+            discogs_data_directory,
+            date,
+            is_bulk_inserts,
+        ),
+        partial(
             OfflineDatabaseManager.offline_database_helper.vacuum,
             ReleaseTable.__tablename__,
             is_full,
             is_analyze,
             OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
+        # Relsolve entity ids
         partial(LoaderEntity.loader_entity_pass_two),
+        # Resolve entity references within the release data
         partial(LoaderRelease.loader_release_pass_two),
+        # Build the relations
         partial(LoaderRelation.loader_relation_pass_one),
-        # partial(LoaderRelation.loader_relation_pass_two, date),
+        # Database cleanup
         partial(
             OfflineDatabaseManager.offline_database_helper.vacuum,
             EntityTable.__tablename__,
@@ -169,7 +180,9 @@ def get_load_offline_table_stages(
             is_analyze,
             OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
+        # Update entity relation counts
         partial(LoaderEntity.loader_entity_pass_three),
+        # Database cleanup
         partial(
             OfflineDatabaseManager.offline_database_helper.vacuum,
             EntityTable.__tablename__,
@@ -191,8 +204,12 @@ def get_load_offline_table_stages(
             is_analyze,
             OfflineDatabaseManager.offline_database_helper.offline_async_engine,
         ),
+        # Create text search and entity details indexes
         partial(LoaderEntity.loader_create_text_search_index, text_search_path),
+        partial(LoaderEntity.loader_create_text_search_tokens, text_search_path),
         partial(LoaderEntity.loader_create_entity_details_index, entity_details_path),
+        # Process entity metadata profile embedded links
+        partial(LoaderEntity.loader_entity_pass_four),
     ]
     return stages
 
@@ -271,14 +288,13 @@ def offline_loader_main() -> None:
                 ALL_OFFLINE_DATABASE_TABLE_NAMES
             )
         )
-        # Load roles, may be empty if no roles in database yet
-        runner.run(RoleDataAccess.load_all_roles_into_cache())
+        # Load roles, may be empty if no roles in offline_database yet
+        runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
         runner.close()
 
     # Run the loader process between these dates
-    start_date = datetime.date(2025, 8, 1)
-    # start_date = datetime.date(2023, 10, 1)
-    end_date = datetime.date(2025, 8, 1)
+    start_date = datetime.date(2026, 1, 1)
+    end_date = datetime.date(2026, 1, 1)
     # end_date = datetime.datetime.now()
     offline_data_directory: str = str(offline_config.DATA_DIR)
     tasks = [

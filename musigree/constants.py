@@ -41,9 +41,9 @@ LOGGING_DEBUG_FILE = LOGGING_DIR / "debug.log"
 DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
 DISCOGS_FILE_TEMPLATE = "discogs_{date}_{type}.xml.gz"
 DISCOGS_ARTISTS_TYPE = "artists"
-DISCOGS_RELEASES_TYPE = "releases"
 DISCOGS_LABELS_TYPE = "labels"
 DISCOGS_MASTERS_TYPE = "masters"
+DISCOGS_RELEASES_TYPE = "releases"
 
 # DATABASE
 OFFLINE_DATABASE = "offline_database"
@@ -51,9 +51,11 @@ RUNTIME_DATABASE = "runtime_database"
 ALL_OFFLINE_DATABASE_TABLE_NAMES = [
     "entity",
     "relation",
+    "master",
     "release",
     "role",
     "metadata",
+    "token",
 ]
 ALL_RUNTIME_DATABASE_TABLE_NAMES = [
     "runtime_entity",

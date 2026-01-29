@@ -281,9 +281,9 @@ class TestTransferManager:
 
     @pytest.mark.asyncio
     @patch("musigree.transfer.transfer_manager.offline_transaction")
-    @patch("musigree.transfer.transfer_manager.StyleRepository")
-    @patch("musigree.transfer.transfer_manager.GenreRepository")
-    @patch("musigree.transfer.transfer_manager.CountryRepository")
+    @patch("musigree.transfer.transfer_manager.RuntimeStyleRepository")
+    @patch("musigree.transfer.transfer_manager.RuntimeGenreRepository")
+    @patch("musigree.transfer.transfer_manager.RuntimeCountryRepository")
     @patch("musigree.transfer.transfer_manager.runtime_transaction")
     @patch("musigree.transfer.transfer_manager.RuntimeDatabaseManager")
     async def test_transfer_entity_details(
@@ -366,12 +366,12 @@ class TestTransferManager:
                     mock_text_search_index
                 )
 
-                # Mock runtime_transaction and TokenRepository
+                # Mock runtime_transaction and RuntimeTokenRepository
                 with patch(
                     "musigree.transfer.transfer_manager.runtime_transaction"
                 ) as mock_runtime_transaction:
                     with patch(
-                        "musigree.transfer.transfer_manager.TokenRepository"
+                        "musigree.transfer.transfer_manager.RuntimeTokenRepository"
                     ) as mock_token_repo_class:
                         # Mock the transaction context manager
                         mock_context_manager = AsyncMock()

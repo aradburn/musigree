@@ -4,21 +4,24 @@ This guide explains how to properly mock RoleCache interactions in tests using t
 
 ## Overview
 
-The `RoleCache` class is a central component in the Musigree system that provides various mappings and lookups for role-related information. When testing code that interacts with `RoleCache`, it's important to mock it properly to ensure consistent and reliable tests.
+The `RoleCache` class is a central component in the Musigree system that provides various mappings and lookups for
+role-related information. When testing code that interacts with `RoleCache`, it's important to mock it properly to
+ensure consistent and reliable tests.
 
 ## The RoleCacheMockHelper Utility
 
-The `RoleCacheMockHelper` class in `test_utils.py` provides standardized mocking patterns for `RoleCache` interactions. It handles all the complex setup required to mock the various attributes of `RoleCache`.
+The `RoleCacheMockHelper` class in `test_utils.py` provides standardized mocking patterns for `RoleCache` interactions.
+It handles all the complex setup required to mock the various attributes of `RoleCache`.
 
 ### Key RoleCache Attributes
 
 The `RoleCache` class has several important attributes that need to be mocked:
 
--   `role_name_to_role_id_lookup`: Dict[str, int] - Maps role names to IDs
--   `role_id_to_role_name_lookup`: Dict[int, str] - Maps role IDs to names
--   `role_name_set`: Set[str] - Set of all role names
--   `role_id_to_role_category_lookup`: Dict[int, RoleType.Category] - Maps IDs to categories
--   `role_category_to_role_name_lookup`: Dict[str, list[str]] - Maps categories to role lists
+- `role_name_to_role_id_lookup`: Dict[str, int] - Maps role names to IDs
+- `role_id_to_role_name_lookup`: Dict[int, str] - Maps role IDs to names
+- `role_name_set`: Set[str] - Set of all role names
+- `role_id_to_role_category_lookup`: Dict[int, RoleType.Category] - Maps IDs to categories
+- `role_category_to_role_name_lookup`: Dict[str, list[str]] - Maps categories to role lists
 
 ## Usage Patterns
 
@@ -28,6 +31,7 @@ For most tests, use the context manager approach:
 
 ```python
 from tests.unit.runtime.runtime_database.test_utils import RoleCacheMockHelper
+
 
 def test_something_with_role_cache():
     role_mappings = {"Producer": 1, "Engineer": 2}
@@ -40,7 +44,8 @@ def test_something_with_role_cache():
 
 ### 2. Module-Specific Mocking
 
-When the module imports `RoleCache` directly (like `from musigree.library.cache.role_cache import RoleCache`), you need to patch it at the module level:
+When the module imports `RoleCache` directly (like `from musigree.library.cache.role_cache import RoleCache`), you need
+to patch it at the module level:
 
 ```python
 def test_module_specific_role_cache():
@@ -210,7 +215,7 @@ from tests.unit.runtime.runtime_database.test_utils import RoleCacheMockHelper
 
 See these files for working examples:
 
--   `tests/unit/runtime/runtime_database/test_runtime_relation_repository.py`
--   `tests/unit/runtime/data_access_layer/test_role_entry.py`
+- `tests/unit/runtime/runtime_database/test_runtime_relation_repository.py`
+- `tests/unit/runtime/data_access_layer/test_role_entry.py`
 
 These demonstrate the proper usage patterns for different scenarios.

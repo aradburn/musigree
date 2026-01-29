@@ -9,7 +9,7 @@ from musigree.runtime.runtime_database import RuntimeRelationTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
-from musigree.runtime.runtime_domain.relation import (
+from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationInternal,
     RuntimeRelationUncommitted,
@@ -20,17 +20,17 @@ log = logging.getLogger(__name__)
 
 class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
     """
-    Repository for managing RuntimeRelation objects in the runtime database.
+    Repository for managing RuntimeRelation objects in the runtime runtime_database.
 
     This class provides async methods for interacting with the RuntimeRelationTable
-    in the runtime database, including creating, retrieving, and deleting
+    in the runtime runtime_database, including creating, retrieving, and deleting
     relations. It supports various query operations, such as finding relations
     by ID, key, or associated entity. It also includes bulk creation and
     deletion capabilities.
 
     Inherits from:
         RuntimeBaseRepository[RuntimeRelationTable]: Provides the basic runtime
-            database interaction functionality.
+            runtime_database interaction functionality.
 
     Attributes:
         schema_class (Type[RuntimeRelationTable]): The SQLAlchemy table class
@@ -84,7 +84,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
     async def all(self) -> AsyncGenerator[RuntimeRelationInternal, None]:
         """
-        Retrieves all relations from the runtime database.
+        Retrieves all relations from the runtime runtime_database.
 
         Yields:
             AsyncGenerator[RuntimeRelationInternal]: An async iterator yielding
@@ -238,7 +238,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         self, relation: RuntimeRelationUncommitted, on_conflict_do_nothing: bool = False
     ) -> RuntimeRelationInternal:
         """
-        Creates a new relation in the runtime database.
+        Creates a new relation in the runtime runtime_database.
 
         Args:
             relation: The RuntimeRelationUncommitted object to create.
@@ -275,7 +275,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         on_conflict_do_nothing: bool = False,
     ) -> None:
         """
-        Creates multiple relations in the runtime database in bulk.
+        Creates multiple relations in the runtime runtime_database in bulk.
 
         Args:
             relations: A list of RuntimeRelationUncommitted objects to create.

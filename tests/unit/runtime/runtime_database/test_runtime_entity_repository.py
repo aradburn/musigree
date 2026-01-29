@@ -10,7 +10,7 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 )
 from musigree.runtime.runtime_database.runtime_entity_table import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
-from musigree.runtime.runtime_domain.entity import RuntimeEntityDB
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntityDB
 
 
 # Import the test utility

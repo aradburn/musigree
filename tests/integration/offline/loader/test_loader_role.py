@@ -5,9 +5,8 @@ import pytest
 from musigree.config import Configuration
 from musigree.constants import ROLES_DATA, INSTRUMENTS_DATA
 from musigree.library.cache.role_cache import RoleCache
-from musigree.offline.data_access_layer.role_data_access import RoleDataAccess
+from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.loader.loader_role import LoaderRole
-
 from tests.conftest import AbstractDatabaseTest
 
 
@@ -75,7 +74,7 @@ class TestLoaderRole(AbstractDatabaseTest):
 
         # WHEN
         await LoaderRole.save_roles(roles_from_files)
-        await RoleDataAccess.load_all_roles_into_cache()
+        await OfflineRoleDataAccess.load_all_roles_into_cache()
 
         # THEN
         actual = len(roles_from_files)
@@ -99,7 +98,7 @@ class TestLoaderRole(AbstractDatabaseTest):
 
         # WHEN
         await LoaderRole.save_roles(hornbostel_sachs_roles)
-        await RoleDataAccess.load_all_roles_into_cache()
+        await OfflineRoleDataAccess.load_all_roles_into_cache()
 
         # THEN
         actual = len(hornbostel_sachs_roles)
@@ -123,7 +122,7 @@ class TestLoaderRole(AbstractDatabaseTest):
 
         # WHEN
         await LoaderRole.save_roles(wikipedia_instruments)
-        await RoleDataAccess.load_all_roles_into_cache()
+        await OfflineRoleDataAccess.load_all_roles_into_cache()
 
         # THEN
         actual = len(wikipedia_instruments)

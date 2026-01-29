@@ -12,11 +12,10 @@ from musigree.runtime.runtime_database.runtime_relation_table import (
     RuntimeRelationTable,
 )
 from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
-from musigree.runtime.runtime_domain.relation import (
+from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationUncommitted,
 )
-
 # Import the test utility
 from .test_utils import RoleCacheMockHelper
 

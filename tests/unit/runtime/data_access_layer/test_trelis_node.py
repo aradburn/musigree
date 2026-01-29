@@ -1,6 +1,6 @@
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
-from musigree.runtime.runtime_domain.entity import RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 
 def test_creates_trellis_node_with_valid_data() -> None:

@@ -52,13 +52,15 @@ from sqlalchemy.exc import OperationalError, IntegrityError
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
-from musigree.offline.data_access_layer.relation_data_access import RelationDataAccess
-from musigree.offline.database.relation_repository import RelationRepository
-from musigree.offline.database.release_repository import ReleaseRepository
-from musigree.offline.database.offline_transaction import offline_transaction
-from musigree.offline.domain.relation import RelationUncommitted
-from musigree.offline.domain.release import Release
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
+from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.relation import RelationUncommitted
+from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
@@ -182,7 +184,7 @@ async def process_release(release_id: int) -> None:
         """Attempt to process the release."""
         release = await release_repository.get_by_id(release_id)
         """Retrieve the release."""
-        relations = RelationDataAccess.from_release(release)
+        relations = OfflineRelationDataAccess.from_release(release)
         """Extract relations from the release."""
     except NotFoundError:
         """Handle the case where the release is not found."""

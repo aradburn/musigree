@@ -3,16 +3,16 @@ This module defines the `RuntimeSqliteHelper` class, which provides
 functionality for managing a SQLite runtime database in the Musigree system.
 
 It extends the `RuntimeDatabaseHelper` abstract base class to provide
-SQLite-specific implementations of database setup, shutdown, connection
+SQLite-specific implementations of runtime_database setup, shutdown, connection
 checking, table creation/deletion, and query generation.
 
 Key functionalities include:
-    - **Database Setup**: `setup_database` creates a SQLite database engine,
-      handling the creation of the database file if it does not exist.
+    - **Database Setup**: `setup_database` creates a SQLite runtime_database engine,
+      handling the creation of the runtime_database file if it does not exist.
     - **Database Shutdown**: `shutdown_database` provides a placeholder for
-      shutting down the database, as SQLite does not require explicit
+      shutting down the runtime_database, as SQLite does not require explicit
       shutdown.
-    - **Connection Checking**: `check_connection` checks the database
+    - **Connection Checking**: `check_connection` checks the runtime_database
       connection and performs SQLite-specific setup, such as enabling WAL
       journaling and setting cache size.
     - **Table Management**: `create_tables` and `drop_tables` implement
@@ -23,13 +23,13 @@ Key functionalities include:
       nothing" behavior.
     - **Vacuum Support**: Indicates that SQLite does not support table-specific
       vacuuming or full/analyze vacuum options.
-    - **File Management**: Creates the parent folder of the SQLite database file
+    - **File Management**: Creates the parent folder of the SQLite runtime_database file
     if it does not exist.
     - **Pool Management**: Use `NullPool` to manage the connection pool.
     - **Journal management**: Use `WAL` journaling.
 
 The `RuntimeSqliteHelper` class interacts with the following components:
-    - `sqlalchemy.Engine`: For creating and managing database connections.
+    - `sqlalchemy.Engine`: For creating and managing runtime_database connections.
     - `sqlalchemy.create_engine`: For creating SQLite engines.
     - `sqlalchemy.text`: For executing raw SQL queries.
     - `sqlalchemy.dialects.sqlite.insert`: For generating SQLite-specific
@@ -39,13 +39,13 @@ The `RuntimeSqliteHelper` class interacts with the following components:
     - `musigree.config.Configuration`: For accessing application
       configuration settings.
     - `musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper`:
-      The base class for database helper classes.
+      The base class for runtime_database helper classes.
     - `musigree.runtime.runtime_database.runtime_base_table.RuntimeConcreteTable`:
         For type hinting for table classes.
     - `logging`: For logging operations.
 
 The module utilizes `logging` for logging operations, `pathlib` for file path
-operations, `sqlalchemy` for database operations, and `typing` for type
+operations, `sqlalchemy` for runtime_database operations, and `typing` for type
 hinting. It interacts with `musigree` library for specific configuration and
 runtime operation.
 """
@@ -76,18 +76,18 @@ The logger for the RuntimeSqliteHelper module.
 
 class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     """
-    Provides functionality for managing a SQLite runtime database.
+    Provides functionality for managing a SQLite runtime runtime_database.
 
     This class extends `RuntimeDatabaseHelper` to provide SQLite-specific
-    implementations for database operations.
+    implementations for runtime_database operations.
     """
 
     @staticmethod
     async def setup_database(config: Configuration) -> AsyncEngine:
         """
-        Sets up the SQLite database connection and returns the engine.
+        Sets up the SQLite runtime_database connection and returns the engine.
 
-        This method creates a SQLite database file if it does not exist and
+        This method creates a SQLite runtime_database file if it does not exist and
         returns the SQLAlchemy engine.
 
         Args:
@@ -102,12 +102,12 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             "Configuration Error: SQLITE_RUNTIME_DATABASE_NAME is not set"
         )
 
-        # The path to the SQLite database file.
+        # The path to the SQLite runtime_database file.
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
-        log.info(f"Sqlite database path: {target_path}")
+        log.info(f"Sqlite runtime_database path: {target_path}")
 
         # target_parent = target_path.parent
-        """Get the parent folder of the database file."""
+        """Get the parent folder of the runtime_database file."""
         # target_parent.mkdir(parents=True, exist_ok=True)
         """Create the parent folder if it does not exist."""
 
@@ -144,7 +144,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     async def shutdown_database() -> None:
         """
-        Shuts down the SQLite database connection.
+        Shuts down the SQLite runtime_database connection.
 
         This method is a placeholder as SQLite does not require explicit
         shutdown.
@@ -154,9 +154,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
-        Checks the SQLite database connection and performs setup.
+        Checks the SQLite runtime_database connection and performs setup.
 
-        This method checks the database connection, retrieves the SQLite
+        This method checks the runtime_database connection, retrieves the SQLite
         version, and performs SQLite-specific setup, such as enabling WAL
         journaling, setting cache size, and enabling foreign keys.
 
@@ -165,8 +165,8 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             engine (Engine): The SQLAlchemy engine.
         """
         try:
-            """Attempt to connect to the database."""
-            log.info("Check Sqlite runtime database connection...")
+            """Attempt to connect to the runtime_database."""
+            log.info("Check Sqlite runtime runtime_database connection...")
 
             async with engine.connect() as connection:
                 """Open a connection."""
@@ -199,16 +199,16 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
             log.info("Runtime Database connected OK.")
         except (DatabaseError, OperationalError):
-            """Handle database errors."""
+            """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
             sys.exit("Runtime Database Connection Error")
 
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:
         """
-        Creates tables in the SQLite database.
+        Creates tables in the SQLite runtime_database.
 
-        This method creates database tables using the SQLAlchemy metadata.
+        This method creates runtime_database tables using the SQLAlchemy metadata.
 
         Args:
             tables (list[str], optional): An optional list of table names to
@@ -222,9 +222,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @classmethod
     async def drop_tables(cls, tables: list[str]) -> None:
         """
-        Drops tables from the SQLite database.
+        Drops tables from the SQLite runtime_database.
 
-        This method drops database tables using the SQLAlchemy metadata.
+        This method drops runtime_database tables using the SQLAlchemy metadata.
 
         Args:
             tables (List[str], optional): An optional list of table names to
@@ -238,13 +238,13 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
-        Performs a VACUUM operation on the database.
+        Performs a VACUUM operation on the runtime_database.
 
         Args:
             table_name: The name of the table to vacuum. Not used in SQLite.
             is_full: If True, performs a `VACUUM FULL` operation.
             is_analyze: If True, performs a `VACUUM ANALYZE` operation.
-            engine: The SQLAlchemy engine connected to the database.
+            engine: The SQLAlchemy engine connected to the runtime_database.
         """
         log.debug(f"VACUUM {table_name}")
 

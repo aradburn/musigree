@@ -160,7 +160,7 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
         def as_dict(self: DeclarativeBase) -> dict[str, Any]:
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
 
-        from musigree.offline.database.base_table import OfflineBase
+        from musigree.offline.offline_database.base_table import OfflineBase
         from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
         from musigree.library.domain.base import InternalDomainObject
 
