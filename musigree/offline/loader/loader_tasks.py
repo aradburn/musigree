@@ -70,7 +70,6 @@ import datetime
 import logging
 from collections.abc import Iterator
 from pathlib import Path
-from urllib.parse import urlparse
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
@@ -81,6 +80,7 @@ from musigree.constants import (
     DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
+    DISCOGS_FILE_TEMPLATE,
 )
 from musigree.offline.loader.loader_target import LoaderTarget
 from musigree.utils import (
@@ -486,11 +486,12 @@ class DiscogsDownloaderTask(luigi.Task):
         Returns:
             luigi.LocalTarget: The local target for this task.
         """
-        output_url = urlparse(self.url)
-        filename = output_url.path.rsplit("/", 1)[-1]
+        dump_date_date = datetime.date.fromisoformat(str(self.dump_date))
+        filename = DISCOGS_FILE_TEMPLATE.format(
+            date=dump_date_date.strftime("%Y%m%d"), type=str(self.dump_type)
+        )
         filepath = Path(str(self.data_directory)) / DISCOGS_DATA / filename
-        # filepath = os.path.join(ROOT_DIR, "musigree", "data", filename)
-        log.debug(f"DiscogsDownloaderTask output: {filepath}")
+        log.info(f"DiscogsDownloaderTask output: {filepath}")
         return luigi.LocalTarget(filepath)
 
     def run(self) -> None:
