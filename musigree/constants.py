@@ -38,7 +38,8 @@ LOGGING_ERROR_FILE = LOGGING_DIR / "error.log"
 LOGGING_DEBUG_FILE = LOGGING_DIR / "debug.log"
 
 # DISCOGS
-DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
+DISCOGS_BASE_URL = "https://data.discogs.com/,?download=data/{year}/"
+# OLD url DISCOGS_BASE_URL = "https://discogs-data-dumps.s3-us-west-2.amazonaws.com/data/{year}/"
 DISCOGS_FILE_TEMPLATE = "discogs_{date}_{type}.xml.gz"
 DISCOGS_ARTISTS_TYPE = "artists"
 DISCOGS_LABELS_TYPE = "labels"
