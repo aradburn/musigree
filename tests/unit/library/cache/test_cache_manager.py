@@ -45,6 +45,12 @@ class TestBaseCache:
         with pytest.raises(NotImplementedError):
             await cache.clear()
 
+        with pytest.raises(NotImplementedError):
+            await cache.close()
+
+        with pytest.raises(NotImplementedError):
+            await cache.ping()
+
 
 class TestSimpleCache:
     """Test cases for the SimpleCache implementation."""
@@ -144,22 +150,26 @@ class TestSimpleCache:
         with pytest.raises(NotImplementedError):
             await self.cache.ttl("key")
 
+    @pytest.mark.asyncio
+    async def test_simple_cache_close_clears_entries(self) -> None:
+        """Test that close() clears both regular and hash cache."""
+        await self.cache.set("key1", "value1")
+        await self.cache.hset("hash_key", {"field1": "value1"})
+        await self.cache.close()
+        assert await self.cache.get("key1") is None
+        assert await self.cache.hgetall("hash_key") is None
+
 
 class TestRedisCache:
     """Test cases for the RedisCache implementation."""
 
     @patch("musigree.library.cache.cache_manager.aioredis")
-    @patch("musigree.library.cache.cache_manager.fakeredis")
-    def test_redis_cache_no_redis_available(
-        self, mock_fakeredis: MagicMock, mock_aioredis: MagicMock
-    ) -> None:
-        """Test RedisCache when Redis is not available."""
+    def test_redis_cache_no_redis_available(self, mock_aioredis: MagicMock) -> None:
+        """Test RedisCache when Redis is not available leaves _client None."""
         mock_aioredis.ConnectionPool.from_url.side_effect = Exception("Connection failed")
-        mock_fake_client = MagicMock()
-        mock_fakeredis.FakeRedis.return_value = mock_fake_client
 
         cache = RedisCache()
-        assert cache._client == mock_fake_client
+        assert cache._client is None
 
     @patch("musigree.library.cache.cache_manager.aioredis")
     def test_redis_cache_successful_connection(self, mock_aioredis: MagicMock) -> None:
@@ -171,30 +181,19 @@ class TestRedisCache:
 
         cache = RedisCache()
         assert cache._client == mock_client
-        # Note: ping() is no longer called in __init__, it's called in setup_cache
 
     @patch("musigree.library.cache.cache_manager.aioredis")
-    @patch("musigree.library.cache.cache_manager.fakeredis")
-    def test_redis_cache_connection_failure(
-        self, mock_fakeredis: MagicMock, mock_aioredis: MagicMock
-    ) -> None:
-        """Test RedisCache falls back to FakeRedis on connection failure."""
+    def test_redis_cache_connection_failure(self, mock_aioredis: MagicMock) -> None:
+        """Test RedisCache leaves _client None on connection failure."""
         mock_aioredis.ConnectionPool.from_url.side_effect = Exception("Connection failed")
-        mock_fake_client = MagicMock()
-        mock_fakeredis.FakeRedis.return_value = mock_fake_client
 
         cache = RedisCache()
-        assert cache._client == mock_fake_client
+        assert cache._client is None
 
     @patch("musigree.library.cache.cache_manager.aioredis")
-    @patch("musigree.library.cache.cache_manager.fakeredis")
-    def test_redis_cache_initialization_params(
-        self, mock_fakeredis: MagicMock, mock_aioredis: MagicMock
-    ) -> None:
-        """Test RedisCache initialization parameters."""
+    def test_redis_cache_initialization_params(self, mock_aioredis: MagicMock) -> None:
+        """Test RedisCache initialization parameters when connection fails."""
         mock_aioredis.ConnectionPool.from_url.side_effect = Exception("Connection failed")
-        mock_fake_client = MagicMock()
-        mock_fakeredis.FakeRedis.return_value = mock_fake_client
         cache = RedisCache(
             host="example.com",
             port=6380,
@@ -203,14 +202,13 @@ class TestRedisCache:
             default_timeout=600,
         )
         assert cache.default_timeout == 600
-        assert cache._client == mock_fake_client
+        assert cache._client is None
 
 
 class TestCacheManager:
     """Test cases for the CacheManager class."""
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.asyncio
     async def cleanup_cache(self) -> AsyncGenerator[None, None]:
         """Clean up after each test."""
         yield
@@ -348,16 +346,13 @@ class TestRedisCacheMethods:
 
     @pytest.fixture
     def redis_cache(self) -> RedisCache:
-        """Create a RedisCache instance for testing."""
+        """Create a RedisCache instance for testing with a mock client."""
         with patch("musigree.library.cache.cache_manager.aioredis") as mock_aioredis:
-            with patch("musigree.library.cache.cache_manager.fakeredis") as mock_fakeredis:
-                mock_aioredis.ConnectionPool.from_url.side_effect = Exception("Connection failed")
-                mock_fake_client = MagicMock()
-                mock_fakeredis.FakeRedis.return_value = mock_fake_client
-                cache = RedisCache()
-                # Override the _client attribute with our mock for testing
-                cache._client = mock_fake_client
-                return cache
+            mock_aioredis.ConnectionPool.from_url.side_effect = Exception("Connection failed")
+            mock_client = MagicMock()
+            cache = RedisCache()
+            cache._client = mock_client
+            return cache
 
     def test_get_redis_client_not_initialized(self) -> None:
         """Test _get_redis_client when client is None."""
@@ -562,25 +557,15 @@ class TestRedisCacheMethods:
             await redis_cache.hset("test_key", {"field1": "value1"}, timeout=3600)
 
     @patch("musigree.library.cache.cache_manager.aioredis")
-    @patch("musigree.library.cache.cache_manager.fakeredis")
-    def test_redis_cache_ping_failure(
-        self, mock_fakeredis: MagicMock, mock_aioredis: MagicMock
-    ) -> None:
-        """Test RedisCache when ping() fails after successful connection."""
+    def test_redis_cache_ping_failure(self, mock_aioredis: MagicMock) -> None:
+        """Test RedisCache __init__ does not call ping; client is set on success."""
         mock_pool = MagicMock()
         mock_client = MagicMock()
         mock_aioredis.ConnectionPool.from_url.return_value = mock_pool
         mock_aioredis.Redis.from_pool.return_value = mock_client
         mock_client.ping.side_effect = Exception("Ping failed")
 
-        mock_fake_client = MagicMock()
-        mock_fakeredis.FakeRedis.return_value = mock_fake_client
-
         cache = RedisCache()
-        # Note: ping() is no longer called in __init__, it's called in setup_cache
-        # The connection failure in __init__ would cause fallback to FakeRedis
-        # But since ping() is not called here, the client remains as mock_client
-        # This test should be updated to test the actual behavior in setup_cache
         assert cache._client == mock_client
 
     @pytest.mark.asyncio
@@ -689,7 +674,6 @@ class TestCacheManagerUncoveredMethods:
     """Test cases for CacheManager methods that need more coverage."""
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.asyncio
     async def cleanup_cache(self) -> AsyncGenerator[None, None]:
         """Clean up after each test."""
         yield

@@ -149,17 +149,8 @@ class RedisCache(BaseCache):
             log.info(f"Redis server: {redis_url}")
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
-            # self._client = aioredis.Redis(
-            #     host=host,
-            #     port=port,
-            #     password=password,
-            #     db=db,
-            #     auto_close_connection_pool=True,
-            # )
-
         except Exception as e:
-            log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
-            self._client = fakeredis.FakeRedis()
+            log.warning(f"Failed to connect to Redis server: {e}")
 
     def _get_redis_client(self) -> aioredis.Redis | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
@@ -281,6 +272,15 @@ class RedisCache(BaseCache):
             log.exception(f"Error clearing Redis cache: {e}")
 
 
+class FakeRedisCache(RedisCache):
+    """Fake Redis-based cache implementation."""
+
+    # noinspection PyMissingConstructor
+    def __init__(self) -> None:
+        # Initialize Fake Redis cache.
+        self._client = fakeredis.FakeRedis()
+
+
 class CacheManager:
     """
     Manages the application's cache system.
@@ -336,6 +336,12 @@ class CacheManager:
                 ping_result = await cls.cache.ping()
                 if ping_result:
                     log.info("Successfully connected to Redis server")
+                else:
+                    cls.cache = FakeRedisCache()
+                    # Test connection
+                    ping_result = await cls.cache.ping()
+                    if ping_result:
+                        log.info("Successfully connected to Fake Redis cache")
 
             except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
