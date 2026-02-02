@@ -1205,7 +1205,7 @@ class TestProcessProfileLinks:
             "Released on [l7890]."
         )
 
-        mock_artist = Entity(
+        _mock_artist = Entity(
             id=1,
             entity_id=871,
             entity_type=EntityType.ARTIST,

@@ -396,21 +396,21 @@ class OfflineEntityDataAccess:
             "l": EntityType.LABEL,
         }
 
-        # Pattern to match: [prefixid], [prefix=Name], or [prefixid=Name]
+        # Pattern to ref_match: [prefixid], [prefix=Name], or [prefixid=Name]
         # prefix is a single letter (a, l, m, or r), id is digits, Name can contain any characters except ]
         pattern = r"\[([alrm])(\d*)(?:=([^\]]+))?\]"
 
-        async def process_match(match: re.Match[str]) -> str:
-            prefix = match.group(1)
+        async def process_match(ref_match: re.Match[str]) -> str:
+            prefix = ref_match.group(1)
             entity_id: int | None
-            entity_id_str = match.group(2)  # Can be empty
-            entity_name = match.group(3)  # Can be None
+            entity_id_str = ref_match.group(2)  # Can be empty
+            entity_name = ref_match.group(3)  # Can be None
 
             # Handle master references: [mid] -> [mid=Master Title]
             if prefix == "m":
                 # Case 1: [mid=Title] - already complete, return as is
                 if entity_id_str and entity_name:
-                    return match.group(0)
+                    return ref_match.group(0)
 
                 # Case 2: [mid] - need to get master title
                 if entity_id_str and not entity_name:
@@ -423,7 +423,7 @@ class OfflineEntityDataAccess:
                     except NotFoundError:
                         log.error(f"process_profile_links: master not found for m{entity_id_str}")
                         # Return original if master not found
-                        return match.group(0)
+                        return ref_match.group(0)
 
                 # Case 3: [m=value] - check if value is numeric ID
                 if not entity_id_str and entity_name:
@@ -441,20 +441,20 @@ class OfflineEntityDataAccess:
                         log.error(
                             f"process_profile_links: master id lookup from name not supported for m={entity_name}"
                         )
-                        return match.group(0)
+                        return ref_match.group(0)
                     except NotFoundError:
                         log.error(f"process_profile_links: master not found for m{entity_name}")
                         # Transform malformed ref to correct format even if not found
                         return f"[m{int(entity_name)}]"
 
                 # Fallback: return original
-                return match.group(0)
+                return ref_match.group(0)
 
             # Handle release references: [rid] -> [rid=Release Title]
             if prefix == "r":
                 # Case 1: [rid=Title] - already complete, return as is
                 if entity_id_str and entity_name:
-                    return match.group(0)
+                    return ref_match.group(0)
 
                 # Case 2: [rid] - need to get release title
                 if entity_id_str and not entity_name:
@@ -469,7 +469,7 @@ class OfflineEntityDataAccess:
                     except NotFoundError:
                         log.error(f"process_profile_links: release not found for r{entity_id_str}")
                         # Return original if release not found
-                        return match.group(0)
+                        return ref_match.group(0)
 
                 # Case 3: [r=value] - check if value is numeric ID
                 if not entity_id_str and entity_name:
@@ -489,24 +489,24 @@ class OfflineEntityDataAccess:
                         log.error(
                             f"process_profile_links: release id lookup from name not supported for r={entity_name}"
                         )
-                        return match.group(0)
+                        return ref_match.group(0)
                     except NotFoundError:
                         log.error(f"process_profile_links: release not found for r{entity_name}")
                         # Transform malformed ref to correct format even if not found
                         return f"[r{int(entity_name)}]"
 
                 # Fallback: return original
-                return match.group(0)
+                return ref_match.group(0)
 
             # Handle entity references (artist and label)
             entity_type = prefix_to_type.get(prefix)
             if entity_type is None:
                 # Unknown prefix, return original
-                return match.group(0)
+                return ref_match.group(0)
 
             # Case 1: [prefixid=Name] - already complete, return as is
             if entity_id_str and entity_name:
-                return match.group(0)
+                return ref_match.group(0)
 
             # Case 2: [prefixid] - need to get name
             if entity_id_str and not entity_name:
@@ -521,7 +521,7 @@ class OfflineEntityDataAccess:
                         f"process_profile_links: entity not found for {prefix}{entity_id_str}"
                     )
                     # Return original if entity not found
-                    return match.group(0)
+                    return ref_match.group(0)
 
             # Case 3: [prefix=Name] - need to get entity_id
             if not entity_id_str and entity_name:
@@ -545,10 +545,10 @@ class OfflineEntityDataAccess:
                         f"process_profile_links: entity_id not found for {prefix}={entity_name}"
                     )
                     # Return original if entity_id not found
-                    return match.group(0)
+                    return ref_match.group(0)
 
             # Fallback: return original
-            return match.group(0)
+            return ref_match.group(0)
 
         # Find all matches and process them sequentially
         matches = list(re.finditer(pattern, profile))
