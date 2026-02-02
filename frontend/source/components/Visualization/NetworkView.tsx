@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, memo } from "react";
 import { initNetwork } from "../../network/init";
 import { initSvg } from "../../svg";
-import { networkManager } from "../../core";
+import { networkManager } from "../../core/singletons";
 import { useNetwork } from "../../contexts/useNetwork";
 import { DOM_IDS } from "../../constants";
 

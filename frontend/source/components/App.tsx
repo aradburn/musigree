@@ -8,7 +8,7 @@ import { SidebarLeft } from "./Layout/SidebarLeft";
 import { SidebarRight } from "./Layout/SidebarRight";
 import { HelpModal } from "./Modals/HelpModal";
 import { NetworkView } from "./Visualization/NetworkView";
-import { LoadingAnimation } from "./Visualization";
+import LoadingAnimation from "./Visualization/LoadingAnimation";
 import { RolesOverlay } from "./Overlays/RolesOverlay";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
@@ -19,10 +19,13 @@ import { FSM, DOM_IDS } from "../constants";
 import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
-import { musigreeManager } from "@/core/index.ts";
+import { musigreeManager } from "../core/singletons";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
+
+/** Versioned localStorage key for return-visitor flag (client-localstorage-schema) */
+const HAS_VISITED_BEFORE_KEY = "hasVisitedBefore:v1";
 
 /**
  * Inner App component that uses WindowContext
@@ -39,11 +42,18 @@ const AppContent: React.FC = (): React.ReactElement => {
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {
-        // Check for return visitor status
-        const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+        let hasVisitedBefore: string | null = null;
+        try {
+            hasVisitedBefore = localStorage.getItem(HAS_VISITED_BEFORE_KEY);
+        } catch {
+            // Private browsing, quota, or disabled; treat as first visit
+        }
         if (!hasVisitedBefore) {
-            // First time visitor - show welcome modal
-            localStorage.setItem("hasVisitedBefore", "true");
+            try {
+                localStorage.setItem(HAS_VISITED_BEFORE_KEY, "true");
+            } catch {
+                // Ignore; treat as first visit
+            }
         } else {
             setIsReturnVisitor(true);
         }
@@ -72,29 +82,7 @@ const AppContent: React.FC = (): React.ReactElement => {
         };
     }, []);
 
-    // Add this new effect for updating CSS variable with navbar height
-    useEffect(() => {
-        const updateNavbarHeightVar = (): void => {
-            const navbar = document.querySelector("nav.navbar");
-            if (navbar) {
-                const height = navbar.getBoundingClientRect().height;
-                document.documentElement.style.setProperty(
-                    "--navbar-height",
-                    `${height}px`,
-                );
-            }
-        };
-
-        // Initial update
-        updateNavbarHeightVar();
-
-        // Update on resize
-        window.addEventListener("resize", updateNavbarHeightVar);
-
-        return (): void => {
-            window.removeEventListener("resize", updateNavbarHeightVar);
-        };
-    }, []);
+    // Navbar height CSS var is updated by WindowContext's single resize handler (client-event-listeners)
 
     const handleShowHelp = (): void => {
         setShowHelpModal(true);

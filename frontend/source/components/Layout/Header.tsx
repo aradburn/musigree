@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Navbar, Container, OverlayTrigger, Tooltip } from "react-bootstrap";
-import { SearchInput } from "../Search";
+import SearchInput from "../Search/SearchInput";
 import { FSM } from "../../constants";
 import { version } from "../../version";
 import { useWindow } from "../../contexts/useWindow";

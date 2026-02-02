@@ -49,7 +49,20 @@ import {
 } from "./AbstractFSM";
 import type { APINetworkDataResponse } from "../api";
 import { getSelectedRoles } from "../roles";
-import { track } from "../analytics";
+
+/** Lazy-loaded analytics track; defers loading analytics until first use. */
+let trackPromise: Promise<
+    (event: string, data?: Record<string, unknown>) => void
+> | null = null;
+
+function getTrack(): Promise<
+    (event: string, data?: Record<string, unknown>) => void
+> {
+    if (trackPromise === null) {
+        trackPromise = import("../analytics").then((m) => m.track);
+    }
+    return trackPromise;
+}
 
 // Extend the Window interface to include the dgNetwork property
 declare global {
@@ -505,8 +518,10 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         if (pushHistory) {
             this.pushState(networkData.center.key, params);
 
-            // Track the current page
-            track("network", { key: networkData.center.key });
+            // Track the current page (deferred analytics load)
+            void getTrack().then((track) =>
+                track("network", { key: networkData.center.key }),
+            );
         }
 
         console.log("FSM received-network convertNetworkDataToSimData");

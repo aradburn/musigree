@@ -9,7 +9,7 @@ import {
     appendCSS,
     svgString2Image,
 } from "../print";
-import { musigreeManager, networkManager } from "../core";
+import { musigreeManager, networkManager } from "../core/singletons";
 import { showMessage, clearMessages } from "../messages";
 import { DOM_IDS, SVG_IDS, SVG } from "../constants";
 
@@ -92,8 +92,8 @@ vi.mock("../messages", () => ({
     clearMessages: vi.fn(),
 }));
 
-// Mock dg global object
-vi.mock("../core", () => {
+// Mock core/singletons (print imports from core/singletons)
+vi.mock("../core/singletons", () => {
     const mockMusigreeManager = {
         _dimensions: [800, 600] as [number, number],
         _svgDimensions: [1000, 800] as [number, number],
@@ -117,7 +117,6 @@ vi.mock("../core", () => {
 
     return {
         musigreeManager: mockMusigreeManager,
-        getSelectedNodeKey: vi.fn().mockImplementation(() => "test-node"),
         networkManager: {
             data: {
                 nodeMap: mockNodeMap,

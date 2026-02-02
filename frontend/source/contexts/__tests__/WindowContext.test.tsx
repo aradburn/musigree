@@ -7,14 +7,16 @@ import { WindowContext } from "../windowContextInstance";
 import { INIT, SVG } from "../../constants";
 import { resetNetworkTransform } from "../../network/init";
 import { ResizeEvent } from "../../network/events";
-import { musigreeManager } from "../../core";
+import { musigreeManager } from "../../core/singletons";
+
+const NAVBAR_HEIGHT = 56;
 
 // Mock dependencies
 vi.mock("debounce", () => ({
     default: vi.fn((fn) => fn),
 }));
 
-vi.mock("../../core", () => ({
+vi.mock("../../core/singletons", () => ({
     musigreeManager: {
         dpr: 1,
         dimensions: [0, 0],
@@ -149,11 +151,99 @@ describe("WindowContext", () => {
             isMobile: false,
         });
 
-        // Check that it adds the resize event listener
+        // Single resize listener only (client-event-listeners: dimensions + navbar height)
+        expect(window.addEventListener).toHaveBeenCalledTimes(1);
         expect(window.addEventListener).toHaveBeenCalledWith(
             "resize",
             expect.any(Function),
         );
+    });
+
+    it("updates --navbar-height CSS variable on mount when navbar exists", () => {
+        const mockNavbar = document.createElement("nav");
+        mockNavbar.className = "navbar";
+        mockNavbar.getBoundingClientRect = vi.fn().mockReturnValue({
+            height: NAVBAR_HEIGHT,
+            width: 0,
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        vi.spyOn(document, "querySelector").mockImplementation(
+            (selector: string) => {
+                if (selector === "nav.navbar") return mockNavbar;
+                return null;
+            },
+        );
+        const setPropertySpy = vi.spyOn(
+            document.documentElement.style,
+            "setProperty",
+        );
+
+        render(
+            <WindowProvider>
+                <div>Test</div>
+            </WindowProvider>,
+        );
+
+        expect(setPropertySpy).toHaveBeenCalledWith(
+            "--navbar-height",
+            `${NAVBAR_HEIGHT}px`,
+        );
+        setPropertySpy.mockRestore();
+    });
+
+    it("handleResize updates --navbar-height CSS variable when navbar exists", async () => {
+        const mockNavbar = document.createElement("nav");
+        mockNavbar.className = "navbar";
+        mockNavbar.getBoundingClientRect = vi.fn().mockReturnValue({
+            height: NAVBAR_HEIGHT,
+            width: 0,
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        vi.spyOn(document, "querySelector").mockImplementation(
+            (selector: string) => {
+                if (selector === "nav.navbar") return mockNavbar;
+                return null;
+            },
+        );
+        const setPropertySpy = vi.spyOn(
+            document.documentElement.style,
+            "setProperty",
+        );
+        let contextValue: { handleResize: () => void };
+
+        render(
+            <WindowProvider>
+                <WindowContext.Consumer>
+                    {(value) => {
+                        contextValue = value;
+                        return null;
+                    }}
+                </WindowContext.Consumer>
+            </WindowProvider>,
+        );
+        setPropertySpy.mockClear();
+
+        await act(async () => {
+            contextValue.handleResize();
+        });
+
+        expect(setPropertySpy).toHaveBeenCalledWith(
+            "--navbar-height",
+            `${NAVBAR_HEIGHT}px`,
+        );
+        setPropertySpy.mockRestore();
     });
 
     it("updates musigreeManager with dimensions", () => {

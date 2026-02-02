@@ -352,7 +352,7 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                     className="flex-fill d-flex"
                     ref={containerRef}
                 >
-                    {containerHeight !== undefined && (
+                    {containerHeight !== undefined ? (
                         <Tree<NodeData>
                             key={`tree-${show}`}
                             ref={treeRef}
@@ -436,17 +436,17 @@ export const RolesOverlay: React.FC<RolesOverlayProps> = ({
                                 );
                             }}
                         </Tree>
-                    )}
+                    ) : null}
 
                     {/* Temporary placeholder that displays when no data is available */}
-                    {arboristData.length === 0 && show && (
+                    {arboristData.length === 0 && show ? (
                         <div
                             id={DOM_IDS.ROLES_CONTAINER}
                             className="roles-container"
                         >
                             <p>Loading roles data...</p>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </Offcanvas.Body>
         </Offcanvas>

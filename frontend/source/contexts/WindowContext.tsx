@@ -3,12 +3,24 @@ import React, { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import debounce from "debounce";
 import { DOM_IDS, INIT, SVG } from "../constants";
-import { musigreeManager } from "../core";
+import { musigreeManager } from "../core/singletons";
 import { ResizeEvent } from "../network/events";
 import { resetNetworkTransform } from "../network/init";
 import { setSvgSize } from "@/svg";
 import { WindowContext } from "./windowContextInstance";
 import type { WindowState } from "./windowContextInstance";
+
+/** Updates --navbar-height CSS variable from nav.navbar height (client-event-listeners: single resize handler). */
+const updateNavbarHeightVar = (): void => {
+    const navbar = document.querySelector("nav.navbar");
+    if (navbar) {
+        const height = navbar.getBoundingClientRect().height;
+        document.documentElement.style.setProperty(
+            "--navbar-height",
+            `${height}px`,
+        );
+    }
+};
 
 // Initial state (with placeholder values that will be updated in useEffect)
 const initialState: WindowState = {
@@ -68,7 +80,7 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         };
     };
 
-    // Handle window resize
+    // Handle window resize (single listener: dimensions + navbar height CSS var)
     const handleResize = debounce((): void => {
         console.log("WindowContext handleResize()");
         try {
@@ -81,6 +93,9 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             setSvgSize(DOM_IDS.SVG_ID);
             // Reset network visualization
             resetNetworkTransform();
+
+            // Update navbar height CSS variable for layout
+            updateNavbarHeightVar();
 
             // Dispatch resize event
             window.dispatchEvent(new ResizeEvent());
@@ -102,10 +117,13 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         setState(initialState);
         stateRef.current = initialState;
 
+        // Set navbar height CSS variable on mount
+        updateNavbarHeightVar();
+
         // Register getter function to retrieve isMobile from WindowContext state
         musigreeManager.setIsMobileGetter(() => stateRef.current.isMobile);
 
-        // Add resize event listener
+        // Add single resize event listener (dimensions + navbar height)
         window.addEventListener("resize", handleResize as () => void);
 
         // Clean up event listener on unmount

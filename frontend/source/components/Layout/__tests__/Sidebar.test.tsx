@@ -26,7 +26,7 @@ vi.mock("../../Visualization/ForceControls", () => ({
 
 // Import after mocking
 import { printSvg } from "../../../print";
-import { musigreeManager } from "../../../core";
+import { musigreeManager } from "../../../core/singletons";
 
 describe("SidebarLeft Component", () => {
     beforeEach(() => {

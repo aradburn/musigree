@@ -18,7 +18,7 @@ import {
     handleZoom,
     type RelationsArcData,
 } from "../relations";
-import { relationsManager, musigreeManager } from "../core";
+import { relationsManager, musigreeManager } from "../core/singletons";
 import { SVG_IDS, DOM_IDS, RELATIONS, TIMING } from "../constants";
 
 // Test data for relations
@@ -92,8 +92,8 @@ vi.mock("d3", async () => {
     return enhancedMock;
 });
 
-// Mock core module
-vi.mock("../core", () => {
+// Mock core/singletons (relations imports from core/singletons)
+vi.mock("../core/singletons", () => {
     const mockRelations = {
         data: { results: [] },
         byYear: new Map(),

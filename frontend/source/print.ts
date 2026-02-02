@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import saveAs from "file-saver";
 import { DOM_IDS, EXPORT, TIMING, MESSAGE } from "./constants";
-import { musigreeManager, networkManager } from "./core";
+import { musigreeManager, networkManager } from "./core/singletons";
 import { showMessage, clearMessages } from "./messages";
 
 /**

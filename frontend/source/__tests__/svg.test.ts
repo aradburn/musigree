@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as d3 from "d3";
 import * as svgModule from "../svg";
 import { initSvg, setSvgSize, setupSvgDefs } from "../svg";
-import { musigreeManager } from "../core";
+import { musigreeManager } from "../core/singletons";
 import { DOM_IDS, SVG_IDS, SVG } from "../constants";
 
 // Define types for d3 mocks

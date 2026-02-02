@@ -6,9 +6,9 @@ import { Header } from "../Header";
 import { FSM } from "../../../constants";
 import { WindowProvider } from "../../../contexts/WindowContext";
 
-// Mock SearchInput component
-vi.mock("../../Search", () => ({
-    SearchInput: vi.fn().mockImplementation(({ placeholder, className }) => (
+// Mock SearchInput component (direct import path)
+vi.mock("../../Search/SearchInput", () => ({
+    default: vi.fn().mockImplementation(({ placeholder, className }) => (
         <div data-testid="mock-search-input" className={className}>
             {placeholder}
         </div>
@@ -20,7 +20,7 @@ vi.mock("debounce", () => ({
     default: vi.fn((fn) => fn),
 }));
 
-vi.mock("../../../core", () => ({
+vi.mock("../../../core/singletons", () => ({
     musigreeManager: {
         dpr: 1,
         dimensions: [0, 0],
