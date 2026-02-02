@@ -94,6 +94,7 @@ class OfflineDatabaseHelper(ABC):
         for table_def in table_definitions:
             log.debug(f"creating table: {table_def.name}")
 
+        # noinspection PyTypeChecker
         async with (
             OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
         ):
@@ -125,6 +126,7 @@ class OfflineDatabaseHelper(ABC):
             table_definitions: list[Table] = [
                 OfflineBase.metadata.tables[table_name] for table_name in tables
             ]
+            # noinspection PyTypeChecker
             async with (
                 OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
             ):
@@ -133,6 +135,7 @@ class OfflineDatabaseHelper(ABC):
                     await conn.execute(DropTable(table, if_exists=True))
                 await conn.commit()
         else:
+            # noinspection PyTypeChecker
             async with (
                 OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
             ):
