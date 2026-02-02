@@ -11,5 +11,5 @@ log = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     _config = SqliteDevelopmentConfiguration()
-    process = LoaderEntity().loader_entity_pass_two()
+    process = LoaderEntity().loader_entity_pass_four()
     asyncio.run(run_offline_loading_process(_config, process))

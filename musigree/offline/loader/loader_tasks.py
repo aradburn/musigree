@@ -103,6 +103,8 @@ class LoaderSetupTask(luigi.Task):
     Musigree logging system, ensuring consistent log output.
     """
 
+    task_namespace = "musigree"
+
     data_directory = luigi.Parameter(significant=False)
 
     start_date = luigi.DateParameter()
@@ -129,13 +131,14 @@ class LoaderSetupTask(luigi.Task):
         This method sets up the logging handlers for luigi and yields the
         next task in the workflow.
         """
-        log.debug(f"Running loader setup task: {self.task_id}")
         logging.getLogger("luigi").handlers = logging.getLogger("musigree").handlers
         logging.getLogger("luigi").propagate = False
         logging.getLogger("luigi").setLevel(logging.WARNING)
         logging.getLogger("luigi-interface").handlers = logging.getLogger("musigree").handlers
         logging.getLogger("luigi-interface").propagate = False
         logging.getLogger("luigi-interface").setLevel(logging.WARNING)
+        log.debug(f"Running loader setup task: {self.task_id}")
+
         self.output().done()
 
         yield LoaderTask(
@@ -152,6 +155,8 @@ class LoaderTask(luigi.WrapperTask):
     This task manages the overall data loading process for a range of dates,
     including downloading and loading data.
     """
+
+    task_namespace = "musigree"
 
     data_directory = luigi.Parameter(significant=False)
 
@@ -192,6 +197,8 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
     This task ensures that all required dump types (artists, releases, labels,
     masters) are downloaded for a given date.
     """
+
+    task_namespace = "musigree"
 
     data_directory = luigi.Parameter(significant=False)
 
@@ -258,6 +265,8 @@ class LoaderTaskForDate(luigi.WrapperTask):
     process is executed through multiple stages.
     """
 
+    task_namespace = "musigree"
+
     data_directory = luigi.Parameter(significant=False)
 
     dump_date = luigi.DateParameter()
@@ -296,7 +305,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
         yield DiscogsDownloaderTaskForDate(
             data_directory=self.data_directory, dump_date=self.dump_date
         )
-        from musigree.loader.offline_loader import get_load_offline_table_stages
+        from musigree.loader.run_offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
             Path(str(self.data_directory)),
@@ -319,12 +328,16 @@ class LoaderTaskForDateAndStage(luigi.Task):
     process for a given date, as defined by the `OfflineDatabaseManager`.
     """
 
+    task_namespace = "musigree"
+
     data_directory = luigi.Parameter(significant=False)
 
     dump_date = luigi.DateParameter()
     """The date for which to load the data."""
     stage = luigi.IntParameter()
     """The stage of the data loading process to execute."""
+
+    isTaskComplete = False
 
     @property
     def priority(self):  # type: ignore
@@ -357,6 +370,9 @@ class LoaderTaskForDateAndStage(luigi.Task):
         Yields:
             luigi.Task: The dependency tasks.
         """
+        yield DiscogsDownloaderTaskForDate(
+            data_directory=self.data_directory, dump_date=self.dump_date
+        )
         if int(str(self.stage)) > 0:
             # Require the previous stage (monthly subtasks defined in database_helper) to have been completed
             yield LoaderTaskForDateAndStage(
@@ -392,7 +408,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
             f"Run LoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
 
-        from musigree.loader.offline_loader import get_load_offline_table_stages
+        from musigree.loader.run_offline_loader import get_load_offline_table_stages
 
         stages = get_load_offline_table_stages(
             Path(str(self.data_directory)),
@@ -434,9 +450,13 @@ class LoaderTaskForDateAndStage(luigi.Task):
             # completion:
             task.add_done_callback(background_tasks.discard)
             loop.run_until_complete(task)
+            self.isTaskComplete = True
 
         except RuntimeError as e:
             log.exception(e, exc_info=True)
+
+    def complete(self) -> bool:
+        return super().complete() and self.isTaskComplete
 
 
 class DiscogsDownloaderTask(luigi.Task):
@@ -447,12 +467,16 @@ class DiscogsDownloaderTask(luigi.Task):
     a given date and dump type (e.g., artists, releases).
     """
 
+    task_namespace = "musigree"
+
     data_directory = luigi.Parameter(significant=False)
 
     dump_date = luigi.DateParameter()
     """The date for which to download the Discogs dump."""
     dump_type = luigi.Parameter()
     """The type of the Discogs dump (e.g., artists, releases)."""
+
+    isDownloadingComplete = False
 
     @property
     def url(self) -> str:
@@ -491,7 +515,7 @@ class DiscogsDownloaderTask(luigi.Task):
             date=dump_date_date.strftime("%Y%m%d"), type=str(self.dump_type)
         )
         filepath = Path(str(self.data_directory)) / DISCOGS_DATA / filename
-        log.info(f"DiscogsDownloaderTask output: {filepath}")
+        # log.info(f"DiscogsDownloaderTask output: {filepath}")
         return luigi.LocalTarget(filepath)
 
     def run(self) -> None:
@@ -502,7 +526,26 @@ class DiscogsDownloaderTask(luigi.Task):
         and saves it to the output path.
         """
         log.debug(f"Running task: {self.task_id} for date: {self.dump_date}")
-        log.debug(f"download_file({self.url}, {self.output().path})")
-        with self.output().temporary_path() as temporary_binary_file_path:
-            with open(temporary_binary_file_path, "wb") as output_file:
-                download_file(self.url, output_file)
+        log.debug(f"download_file: {self.url} -> {self.output().path}")
+        if not self.output().exists():
+            with self.output().temporary_path() as temporary_binary_file_path:
+                try:
+                    with open(temporary_binary_file_path, "wb") as output_file:
+                        download_file(self.url, output_file)
+                except KeyboardInterrupt as e:
+                    temp_path = Path(temporary_binary_file_path)
+                    if temp_path.exists():
+                        log.debug(f"deleting temp file: {temp_path}")
+                        temp_path.unlink()
+                    raise e
+                except Exception as e:
+                    temp_path = Path(temporary_binary_file_path)
+                    if temp_path.exists():
+                        log.debug(f"deleting temp file: {temp_path}")
+                        temp_path.unlink()
+                    raise e
+
+        self.isDownloadingComplete = True
+
+    def complete(self) -> bool:
+        return super().complete() and self.isDownloadingComplete

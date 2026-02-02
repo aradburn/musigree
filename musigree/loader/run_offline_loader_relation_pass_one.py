@@ -4,7 +4,7 @@ import logging
 from musigree.config import (
     SqliteDevelopmentConfiguration,
 )
-from musigree.loader.offline_runner import run_offline_loading_process
+from musigree.loader.offline_process_runner import run_offline_loading_process
 from musigree.offline.loader.loader_relation import LoaderRelation
 
 log = logging.getLogger(__name__)

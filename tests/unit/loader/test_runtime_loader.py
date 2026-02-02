@@ -1,5 +1,5 @@
 """
-Unit tests for musigree.loader.runtime_loader module.
+Unit tests for musigree.loader.run_runtime_loader module.
 """
 
 from pathlib import Path
@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
 from musigree.config import SqliteTestConfiguration, Configuration
-from musigree.loader.runtime_loader import (
+from musigree.loader.run_runtime_loader import (
     load_runtime_table_stage,
     get_load_runtime_table_stages,
     load_runtime_tables,
@@ -34,7 +34,7 @@ class TestRuntimeLoaderFunctions:
         """Provide mock date."""
         return "2024-11-01"
 
-    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
+    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_tables_success(
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
@@ -52,7 +52,7 @@ class TestRuntimeLoaderFunctions:
         # Assert
         mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
 
-    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
+    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_table_stage_success(
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
@@ -73,7 +73,7 @@ class TestRuntimeLoaderFunctions:
         # Note: We can't easily assert which specific stage was called due to the way coroutines work
         # but we can verify the function was called with correct parameters
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_success(
@@ -113,7 +113,7 @@ class TestRuntimeLoaderFunctions:
         assert isinstance(result, list)
         assert len(result) > 0
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     def test_get_load_runtime_table_stages_assertion_error_no_helper(
         self,
         mock_db_manager: Mock,
@@ -132,7 +132,7 @@ class TestRuntimeLoaderFunctions:
             excinfo.value
         )
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_assertion_error_no_engine(
@@ -166,14 +166,14 @@ class TestRuntimeLoaderFunctions:
 
         assert "runtime_async_engine must be initialized" in str(excinfo.value)
 
-    @patch("musigree.loader.runtime_loader.luigi")
-    @patch("musigree.loader.runtime_loader.atexit")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.sys")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
+    @patch("musigree.loader.run_runtime_loader.luigi")
+    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.sys")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_success(
         self,
         mock_runner: Mock,
@@ -182,7 +182,7 @@ class TestRuntimeLoaderFunctions:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test successful execution of loader_main."""
@@ -228,14 +228,14 @@ class TestRuntimeLoaderFunctions:
         mock_runtime_helper.create_tables.assert_called_once()
         mock_luigi.build.assert_called_once()
 
-    @patch("musigree.loader.runtime_loader.luigi")
-    @patch("musigree.loader.runtime_loader.atexit")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.sys")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
+    @patch("musigree.loader.run_runtime_loader.luigi")
+    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.sys")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_loader_main_cache_error(
         self,
         mock_runner: Mock,
@@ -244,7 +244,7 @@ class TestRuntimeLoaderFunctions:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test loader main function when cache is not available."""
@@ -294,7 +294,7 @@ class TestRuntimeLoaderIntegration:
         """Test integration of load_runtime_tables with all components."""
         # Mock get_load_runtime_table_stages to return awaitable mock stages
         with patch(
-            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages"
         ) as mock_get_stages:
             # Create async mock stages
             mock_stage1 = AsyncMock()
@@ -320,7 +320,7 @@ class TestRuntimeLoaderIntegration:
         date = "2024-11-01"
 
         with patch(
-            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages"
         ) as mock_get_stages:
             # Create async mock stages
             mock_stage1 = AsyncMock()
@@ -342,7 +342,7 @@ class TestRuntimeLoaderIntegration:
 class TestRuntimeLoaderEdgeCases:
     """Test edge cases for runtime loader functions."""
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_empty_data_directory(
@@ -376,7 +376,7 @@ class TestRuntimeLoaderEdgeCases:
         assert isinstance(stages, list)
         assert len(stages) > 0
 
-    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
+    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_tables_missing_text_search(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_tables when text search file is missing."""
@@ -394,7 +394,7 @@ class TestRuntimeLoaderEdgeCases:
         with pytest.raises(FileNotFoundError, match="Text search file not found"):
             await load_runtime_tables(missing_directory, "2024-11-01")
 
-    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
+    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_table_stage_with_exception(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_table_stage when a stage raises an exception."""
@@ -410,7 +410,7 @@ class TestRuntimeLoaderEdgeCases:
         with pytest.raises(RuntimeError, match="Stage execution failed"):
             await load_runtime_table_stage(data_directory, date, stage=0)
 
-    @patch("musigree.loader.runtime_loader.get_load_runtime_table_stages")
+    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_tables_empty_stages_list(self, mock_get_stages: Mock) -> None:
         """Test load_runtime_tables with empty stages list."""
@@ -426,7 +426,7 @@ class TestRuntimeLoaderEdgeCases:
         # Assert
         mock_get_stages.assert_called_once_with(data_directory, date)
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.transfer.transfer_manager.TransferManager")
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_vacuum_configurations(
@@ -491,7 +491,7 @@ class TestRuntimeLoaderEdgeCases:
         # This would be handled by Python's list indexing, which allows negative indices
         # We'll test this behavior
         with patch(
-            "musigree.loader.runtime_loader.get_load_runtime_table_stages"
+            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages"
         ) as mock_get_stages:
             mock_stage = AsyncMock()
             mock_get_stages.return_value = [mock_stage]
@@ -503,7 +503,7 @@ class TestRuntimeLoaderEdgeCases:
 
             mock_get_stages.assert_called_once()
 
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     def test_get_load_runtime_table_stages_none_date(
         self,
         mock_db_manager: Mock,
@@ -543,13 +543,14 @@ class TestRuntimeLoaderEdgeCases:
 class TestRuntimeLoaderShutdown:
     """Test cases for runtime loader shutdown functionality."""
 
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.shutdown_logging")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
-    def test_shutdown_loader_success(
+    @pytest.mark.asyncio
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.shutdown_logging")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
+    async def test_shutdown_loader_success(
         self,
         mock_runner: Mock,
         mock_shutdown_logging: Mock,
@@ -562,6 +563,7 @@ class TestRuntimeLoaderShutdown:
         # Arrange
         mock_offline_db_manager.shutdown_database = AsyncMock()
         mock_runtime_db_manager.shutdown_database = AsyncMock()
+        mock_cache_manager.shutdown_cache = AsyncMock()
 
         # Mock asyncio.Runner context manager
         mock_runner_instance = Mock()
@@ -569,9 +571,9 @@ class TestRuntimeLoaderShutdown:
         mock_runner.return_value.__exit__.return_value = None
 
         # Act
-        from musigree.loader.runtime_loader import shutdown_loader
+        from musigree.loader.run_runtime_loader import shutdown_runtime_loader
 
-        shutdown_loader()
+        await shutdown_runtime_loader()
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -580,13 +582,14 @@ class TestRuntimeLoaderShutdown:
         mock_cache_manager.shutdown_cache.assert_called_once()
         mock_shutdown_logging.assert_called_once()
 
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.shutdown_logging")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
-    def test_shutdown_loader_with_database_error(
+    @pytest.mark.asyncio
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.shutdown_logging")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
+    async def test_shutdown_loader_with_database_error(
         self,
         mock_runner: Mock,
         _mock_shutdown_logging: Mock,
@@ -609,23 +612,23 @@ class TestRuntimeLoaderShutdown:
         mock_runner.return_value.__exit__.return_value = None
 
         # Act & Assert - Should propagate the exception when runner.run is called
-        from musigree.loader.runtime_loader import shutdown_loader
+        from musigree.loader.run_runtime_loader import shutdown_runtime_loader
 
         with pytest.raises(Exception, match="Database shutdown failed"):
-            shutdown_loader()
+            await shutdown_runtime_loader()
 
 
 class TestRuntimeLoaderMainAdditional:
     """Additional test cases for runtime_loader_main function."""
 
-    @patch("musigree.loader.runtime_loader.luigi")
-    @patch("musigree.loader.runtime_loader.atexit")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.sys")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
+    @patch("musigree.loader.run_runtime_loader.luigi")
+    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.sys")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_luigi_failure(
         self,
         mock_runner: Mock,
@@ -634,7 +637,7 @@ class TestRuntimeLoaderMainAdditional:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test runtime_loader_main when Luigi build fails."""
@@ -678,14 +681,14 @@ class TestRuntimeLoaderMainAdditional:
             # Assert
             mock_luigi.build.assert_called_once()
 
-    @patch("musigree.loader.runtime_loader.luigi")
-    @patch("musigree.loader.runtime_loader.atexit")
-    @patch("musigree.loader.runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.runtime_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.runtime_loader.CacheManager")
-    @patch("musigree.loader.runtime_loader.setup_logging")
-    @patch("musigree.loader.runtime_loader.sys")
-    @patch("musigree.loader.runtime_loader.asyncio.Runner")
+    @patch("musigree.loader.run_runtime_loader.luigi")
+    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_runtime_loader.CacheManager")
+    @patch("musigree.loader.run_runtime_loader.setup_logging")
+    @patch("musigree.loader.run_runtime_loader.sys")
+    @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_database_setup_failure(
         self,
         mock_runner: Mock,
@@ -694,7 +697,7 @@ class TestRuntimeLoaderMainAdditional:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test runtime_loader_main when database setup fails."""

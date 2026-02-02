@@ -1,5 +1,5 @@
 """
-Unit tests for musigree.loader.offline_loader module.
+Unit tests for musigree.loader.run_offline_loader module.
 """
 
 from functools import partial
@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
 from musigree.config import SqliteTestConfiguration, Configuration
-from musigree.loader.offline_loader import (
+from musigree.loader.run_offline_loader import (
     load_offline_tables,
     load_offline_table_stage,
     get_load_offline_table_stages,
@@ -48,7 +48,7 @@ class TestOfflineLoaderFunctions:
         """
         return "2024-11-01"
 
-    @patch("musigree.loader.offline_loader.get_load_offline_table_stages")
+    @patch("musigree.loader.run_offline_loader.get_load_offline_table_stages")
     @pytest.mark.asyncio
     async def test_load_offline_tables_success(
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
@@ -71,7 +71,7 @@ class TestOfflineLoaderFunctions:
         # Assert
         mock_get_stages.assert_called_once_with(mock_data_directory, mock_date, True)
 
-    @patch("musigree.loader.offline_loader.get_load_offline_table_stages")
+    @patch("musigree.loader.run_offline_loader.get_load_offline_table_stages")
     @pytest.mark.asyncio
     async def test_load_offline_table_stage_success(
         self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
@@ -103,11 +103,11 @@ class TestOfflineLoaderFunctions:
         # Note: We can't easily assert which specific stage was called due to the way coroutines work
         # but we can verify the function was called with correct parameters
 
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     def test_get_load_offline_table_stages_success(
         self,
         _mock_role_data_access: Mock,
@@ -146,7 +146,7 @@ class TestOfflineLoaderFunctions:
         assert isinstance(result, list)
         assert len(result) > 0
 
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     def test_get_load_offline_table_stages_assertion_error_no_helper(
         self,
         mock_db_manager: Mock,
@@ -165,11 +165,11 @@ class TestOfflineLoaderFunctions:
             excinfo.value
         )
 
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_get_load_offline_table_stages_assertion_error_no_engine(
         self,
@@ -207,14 +207,14 @@ class TestOfflineLoaderFunctions:
 
         assert "offline_async_engine must be initialized" in str(excinfo.value)
 
-    @patch("musigree.loader.offline_loader.luigi")
-    @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.offline_loader.CacheManager")
-    @patch("musigree.loader.offline_loader.setup_logging")
-    @patch("musigree.loader.offline_loader.sys")
-    @patch("musigree.loader.offline_loader.asyncio.Runner")
+    @patch("musigree.loader.run_offline_loader.luigi")
+    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.CacheManager")
+    @patch("musigree.loader.run_offline_loader.setup_logging")
+    @patch("musigree.loader.run_offline_loader.sys")
+    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
     def test_offline_loader_main_success(
         self,
         mock_runner: Mock,
@@ -223,7 +223,7 @@ class TestOfflineLoaderFunctions:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test successful execution of offline_loader_main."""
@@ -263,13 +263,13 @@ class TestOfflineLoaderFunctions:
         mock_role_data_access.load_all_roles_into_cache.assert_called_once()
         mock_luigi.build.assert_called_once()
 
-    @patch("musigree.loader.offline_loader.luigi")
-    @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.offline_loader.CacheManager")
-    @patch("musigree.loader.offline_loader.setup_logging")
-    @patch("musigree.loader.offline_loader.sys")
-    @patch("musigree.loader.offline_loader.asyncio.Runner")
+    @patch("musigree.loader.run_offline_loader.luigi")
+    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.CacheManager")
+    @patch("musigree.loader.run_offline_loader.setup_logging")
+    @patch("musigree.loader.run_offline_loader.sys")
+    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
     def test_offline_loader_main_cache_error(
         self,
         mock_runner: Mock,
@@ -277,7 +277,7 @@ class TestOfflineLoaderFunctions:
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main function when cache is not available."""
@@ -322,11 +322,11 @@ class TestOfflineLoaderIntegration:
         """
         return SqliteTestConfiguration()
 
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @pytest.mark.asyncio
     async def test_load_offline_tables_integration(
         self,
@@ -339,7 +339,7 @@ class TestOfflineLoaderIntegration:
         """Test integration of load_offline_tables with all components."""
         # Mock get_load_offline_table_stages to return awaitable mock stages
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             # Create AsyncMock objects for stages
             mock_stage1 = AsyncMock()
@@ -365,7 +365,7 @@ class TestOfflineLoaderIntegration:
         date = "2024-11-01"
 
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             # Create AsyncMock objects
             mock_stage1 = AsyncMock()
@@ -395,7 +395,7 @@ class TestOfflineLoaderEdgeCases:
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_empty_data_directory(
         self,
@@ -409,7 +409,7 @@ class TestOfflineLoaderEdgeCases:
         empty_directory = Path("/empty")
         date = "2024-11-01"
 
-        with patch("musigree.loader.offline_loader.OfflineDatabaseManager") as mock_db_manager:
+        with patch("musigree.loader.run_offline_loader.OfflineDatabaseManager") as mock_db_manager:
             mock_helper = Mock()
             mock_helper.is_vacuum_full.return_value = False
             mock_helper.is_vacuum_analyze.return_value = False
@@ -433,13 +433,14 @@ class TestOfflineLoaderEdgeCases:
             assert isinstance(stages, list)
             assert len(stages) > 0
 
-    @patch("musigree.loader.offline_loader.asyncio.Runner")
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.offline_loader.RuntimeDatabaseManager")
-    @patch("musigree.loader.offline_loader.CacheManager")
-    @patch("musigree.loader.offline_loader.setup_logging")
-    @patch("musigree.loader.offline_loader.shutdown_logging")
-    def test_shutdown_offline_loader_success(
+    @pytest.mark.asyncio
+    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.RuntimeDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.CacheManager")
+    @patch("musigree.loader.run_offline_loader.setup_logging")
+    @patch("musigree.loader.run_offline_loader.shutdown_logging")
+    async def test_shutdown_offline_loader_success(
         self,
         mock_shutdown_logging: Mock,
         mock_setup_logging: Mock,
@@ -452,6 +453,7 @@ class TestOfflineLoaderEdgeCases:
         # Arrange
         mock_offline_db_manager.shutdown_database = AsyncMock()
         mock_runtime_db_manager.shutdown_database = AsyncMock()
+        mock_cache_manager.shutdown_cache = AsyncMock()
 
         # Mock asyncio.Runner context manager
         mock_runner_instance = Mock()
@@ -459,7 +461,7 @@ class TestOfflineLoaderEdgeCases:
         mock_runner.return_value.__exit__.return_value = None
 
         # Act
-        shutdown_offline_loader()
+        await shutdown_offline_loader()
 
         # Assert
         mock_setup_logging.assert_called_once()
@@ -475,7 +477,7 @@ class TestOfflineLoaderEdgeCases:
         date = "2024-11-01"
 
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             mock_get_stages.return_value = []
 
@@ -491,7 +493,7 @@ class TestOfflineLoaderEdgeCases:
         date = "2024-11-01"
 
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             mock_stage = AsyncMock()
             mock_get_stages.return_value = [partial(mock_stage)]
@@ -499,11 +501,11 @@ class TestOfflineLoaderEdgeCases:
             # Test negative index (should work due to Python's negative indexing)
             await load_offline_table_stage(data_directory, date, is_bulk_inserts=True, stage=-1)
 
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.offline.loader.loader_entity.LoaderEntity")
     @patch("musigree.offline.loader.loader_release.LoaderRelease")
     @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_get_load_offline_table_stages_with_vacuum_full(
         self,
@@ -543,14 +545,14 @@ class TestOfflineLoaderEdgeCases:
         assert isinstance(result, list)
         assert len(result) > 0
 
-    @patch("musigree.loader.offline_loader.luigi")
-    @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.offline_loader.CacheManager")
-    @patch("musigree.loader.offline_loader.setup_logging")
-    @patch("musigree.loader.offline_loader.sys")
-    @patch("musigree.loader.offline_loader.asyncio.Runner")
+    @patch("musigree.loader.run_offline_loader.luigi")
+    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.CacheManager")
+    @patch("musigree.loader.run_offline_loader.setup_logging")
+    @patch("musigree.loader.run_offline_loader.sys")
+    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
     def test_offline_loader_main_assertion_error_no_helper(
         self,
         mock_runner: Mock,
@@ -559,7 +561,7 @@ class TestOfflineLoaderEdgeCases:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         _mock_role_data_access: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main when database helper is not initialized."""
@@ -580,14 +582,14 @@ class TestOfflineLoaderEdgeCases:
 
         assert "offline_database_helper must be initialized" in str(excinfo.value)
 
-    @patch("musigree.loader.offline_loader.luigi")
-    @patch("musigree.loader.offline_loader.atexit")
-    @patch("musigree.loader.offline_loader.OfflineRoleDataAccess")
-    @patch("musigree.loader.offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.offline_loader.CacheManager")
-    @patch("musigree.loader.offline_loader.setup_logging")
-    @patch("musigree.loader.offline_loader.sys")
-    @patch("musigree.loader.offline_loader.asyncio.Runner")
+    @patch("musigree.loader.run_offline_loader.luigi")
+    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
+    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
+    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_loader.CacheManager")
+    @patch("musigree.loader.run_offline_loader.setup_logging")
+    @patch("musigree.loader.run_offline_loader.sys")
+    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
     def test_offline_loader_main_luigi_failure(
         self,
         mock_runner: Mock,
@@ -596,7 +598,7 @@ class TestOfflineLoaderEdgeCases:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_atexit: Mock,
+        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main when Luigi build fails."""
@@ -639,7 +641,7 @@ class TestOfflineLoaderEdgeCases:
             pass
 
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             mock_get_stages.return_value = [
                 partial(working_stage),
@@ -652,11 +654,11 @@ class TestOfflineLoaderEdgeCases:
 
     def test_get_load_offline_table_stages_different_bulk_insert_values(self) -> None:
         """Test get_load_offline_table_stages with different bulk insert values."""
-        with patch("musigree.loader.offline_loader.OfflineDatabaseManager") as mock_db_manager:
+        with patch("musigree.loader.run_offline_loader.OfflineDatabaseManager") as mock_db_manager:
             with patch("musigree.offline.loader.loader_entity.LoaderEntity"):
                 with patch("musigree.offline.loader.loader_release.LoaderRelease"):
                     with patch("musigree.offline.loader.loader_relation.LoaderRelation"):
-                        with patch("musigree.loader.offline_loader.OfflineRoleDataAccess"):
+                        with patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess"):
                             with patch("musigree.offline.loader.loader_role.LoaderRole"):
                                 # Setup mocks
                                 mock_helper = Mock()
@@ -688,7 +690,7 @@ class TestOfflineLoaderEdgeCases:
         date = "2024-11-01"
 
         with patch(
-            "musigree.loader.offline_loader.get_load_offline_table_stages"
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
         ) as mock_get_stages:
             mock_stage = AsyncMock()
             mock_get_stages.return_value = [partial(mock_stage)]

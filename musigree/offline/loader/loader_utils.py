@@ -100,6 +100,9 @@ class LoaderUtils:
         """Find all matching files using glob and sort them."""
         log.info(f"files: {files}")
         """Log the found files."""
+        if not files:
+            raise RuntimeError("No files found")
+
         full_path_files = os.path.join(discogs_data_directory, files[-1])
         """Construct the full path to the most recent file."""
         log.info(f"full_path_files: {full_path_files}")
