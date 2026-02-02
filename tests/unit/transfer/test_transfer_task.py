@@ -341,7 +341,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
             with patch("asyncio.get_running_loop", side_effect=RuntimeError):
                 # Need to patch the second call to get_load_runtime_table_stages in the run method
                 with patch(
-                    "musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages
+                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages", mock_get_stages
                 ):
                     task.run()
 
@@ -390,7 +390,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
 
                     # Need to patch the second call to get_load_runtime_table_stages in the run method
                     with patch(
-                        "musigree.loader.runtime_loader.get_load_runtime_table_stages",
+                        "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
                         mock_get_stages,
                     ):
                         task.run()
@@ -434,7 +434,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
 
                 # Need to patch the second call to get_load_runtime_table_stages in the run method
                 with patch(
-                    "musigree.loader.runtime_loader.get_load_runtime_table_stages", mock_get_stages
+                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages", mock_get_stages
                 ):
                     task.run()
 
@@ -470,7 +470,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
 
                     # Need to patch the second call to get_load_runtime_table_stages in the run method
                     with patch(
-                        "musigree.loader.runtime_loader.get_load_runtime_table_stages",
+                        "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
                         mock_get_stages,
                     ):
                         task.run()  # Should not raise, should handle the exception
