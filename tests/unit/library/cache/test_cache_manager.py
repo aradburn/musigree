@@ -215,7 +215,7 @@ class TestCacheManager:
         # Reset the cache manager
         if hasattr(CacheManager, "cache") and CacheManager.cache is not None:
             # Check if it's a real cache instance (has async methods) or a mock
-            if hasattr(CacheManager.cache, "clear") and callable(getattr(CacheManager.cache.clear, "__call__", None)):
+            if hasattr(CacheManager.cache, "clear") and callable(CacheManager.cache.clear):
                 try:
                     await CacheManager.shutdown_cache()
                 except (TypeError, AttributeError):
@@ -680,7 +680,7 @@ class TestCacheManagerUncoveredMethods:
         # Reset the cache manager
         if hasattr(CacheManager, "cache") and CacheManager.cache is not None:
             # Check if it's a real cache instance (has async methods) or a mock
-            if hasattr(CacheManager.cache, "clear") and callable(getattr(CacheManager.cache.clear, "__call__", None)):
+            if hasattr(CacheManager.cache, "clear") and callable(CacheManager.cache.clear):
                 try:
                     await CacheManager.shutdown_cache()
                 except (TypeError, AttributeError):
