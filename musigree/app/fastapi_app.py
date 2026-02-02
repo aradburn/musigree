@@ -339,8 +339,8 @@ async def shutdown_application() -> None:
     log.info("######## APPLICATION SHUTDOWN BEGIN ########")
     await RuntimeDatabaseManager.shutdown_database()
     await CacheManager.shutdown_cache()
-    shutdown_logging()
     log.info("######## APPLICATION SHUTDOWN END ########")
+    shutdown_logging()
 
 
 async def init_app(config: Configuration) -> None:
