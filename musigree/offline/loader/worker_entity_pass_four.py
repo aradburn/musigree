@@ -151,7 +151,7 @@ async def worker_pass_four_single(
             )
             if profile != updated_profile:
                 """If any changes were made to the entity."""
-                log.debug(f"Entity (Pass 4)\n{profile} ->\n{updated_profile}")
+                # log.debug(f"Entity (Pass 4)\n{profile} ->\n{updated_profile}")
                 entity.entity_metadata["profile"] = updated_profile
                 try:
                     await entity_repository.update(
