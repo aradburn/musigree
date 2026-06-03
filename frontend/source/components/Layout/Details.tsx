@@ -6,8 +6,8 @@ import {
     createExternalLinkBadgeClass,
     createExternalLinkBadgeText,
     expandCommas,
-    expandProfileURLs,
     expandProfileReferences,
+    expandProfileURLs,
     removeURLProtocol,
 } from "../../utils";
 import DOMPurify from "dompurify";
@@ -68,7 +68,7 @@ export const Details: React.FC<DetailsProps> = ({ entity, isMobile }) => {
                       <dd className={ddClassName}>
                           <a
                               href={DOMPurify.sanitize(url)}
-                              className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
+                              className="link-light link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
                               target="_blank"
                               rel="noopener noreferrer"
                           >
@@ -80,12 +80,7 @@ export const Details: React.FC<DetailsProps> = ({ entity, isMobile }) => {
         : "";
 
     return (
-        <div
-            id="entity-details-panel"
-            className="details-panel
-                        mx-auto pe-3
-                        bg-secondary-subtle"
-        >
+        <div id="entity-details-panel" className="mx-auto pe-3 text-light">
             {/* Details panel */}
             <div className="details-title h4">
                 <span>{hasEntity ? entity?.name : "Details"}</span>

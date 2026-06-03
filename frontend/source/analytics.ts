@@ -1,11 +1,15 @@
 /**
- * @fileoverview Analytics service wrapper for Umami and Swetrix
+ * @fileoverview Analytics service wrapper for OpenPanel, Umami and Swetrix
  * Provides a unified interface for tracking events across different analytics providers
  */
 
 /**
  * Type definitions for analytics providers
  */
+interface OpenPanelProvider {
+    track: (event: string, data?: Record<string, unknown>) => void;
+}
+
 interface UmamiProvider {
     track: (event: string, data?: Record<string, unknown>) => void;
     identify?: (userId: string, userData?: Record<string, unknown>) => void;
@@ -25,13 +29,18 @@ interface SwetrixProvider {
 /**
  * Analytics provider type
  */
-type AnalyticsProvider = "umami" | "swetrix" | "none";
+type AnalyticsProvider = "openpanel" | "umami" | "swetrix" | "none";
 
 /**
  * Detects which analytics provider is available
  */
 function detectProvider(): AnalyticsProvider {
     if (typeof window !== "undefined") {
+        // Check for Open Panel
+        if (window.op && typeof window.op.track === "function") {
+            return "openpanel";
+        }
+
         // Check for Umami
         if (window.umami && typeof window.umami.track === "function") {
             return "umami";
@@ -40,7 +49,7 @@ function detectProvider(): AnalyticsProvider {
         // Check for Swetrix
         if (window.swetrix && typeof window.swetrix.track === "function") {
             if (typeof window.swetrix.init === "function") {
-                window.swetrix.init("UlCB72ACQWVr", {
+                window.swetrix.init("D4uZiIIdoJiH", {
                     devMode: true,
                     apiURL: "https://swetrix-api.musigree.com/log",
                 });
@@ -78,6 +87,12 @@ class AnalyticsService {
      */
     track(event: string, data?: Record<string, unknown>): void {
         switch (this.provider) {
+            case "openpanel": {
+                if (window.op?.track) {
+                    // window.op.track(event, data);
+                }
+                break;
+            }
             case "umami": {
                 if (window.umami?.track) {
                     window.umami.track(event, data);
@@ -130,6 +145,7 @@ export const identify = (
 // Extend Window interface to include analytics providers
 declare global {
     interface Window {
+        op?: OpenPanelProvider;
         umami?: UmamiProvider;
         swetrix?: SwetrixProvider;
     }

@@ -152,12 +152,7 @@ export abstract class AbstractFSM {
         const stateMethod = this._state[methodKey as keyof State];
 
         if (typeof stateMethod === "function") {
-            (stateMethod as (...args: unknown[]) => void).call(
-                this._state,
-                context,
-                data,
-                ...args,
-            );
+            stateMethod.call(this._state, context, data, ...args);
         } else {
             console.warn(`Unhandled event: ${event}`);
         }

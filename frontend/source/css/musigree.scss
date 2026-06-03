@@ -23,6 +23,21 @@ body {
     }
 }
 
+.background-gradient {
+  background: linear-gradient(to right, $mg-background-dark-color 0%, $mg-background-light-color 1%, $mg-background-lighter-color 2%);
+}
+
+.background-highlight {
+    background-color: lighten($mg-background-dark-color, 50%);
+    /*background-color: $mg-background-highlight-color;*/
+}
+
+.badge-highlight {
+    background-color: lighten($mg-background-dark-color, 50%);
+    /*background-color: $mg-badge-highlight-color;*/
+}
+
+/*
 .bg-opacity-40 {
     --bs-bg-opacity: 0.4;
 }
@@ -30,6 +45,7 @@ body {
 .bg-opacity-60 {
     --bs-bg-opacity: 0.6;
 }
+*/
 
 #react-app-container {
     @media (max-width: 575.98px) {
@@ -48,7 +64,7 @@ body {
 }
 
 .navbar {
-    background-image: linear-gradient(#c9d9cd55 0%, #2f5954aa 100%);
+    background-image: linear-gradient($mg-navbar-top-color 0%, $mg-navbar-bottom-color 100%);
 }
 
 .navbar-brand-icon {
@@ -92,14 +108,14 @@ body {
 }
 
 .sidebar-right-container {
-    background-color: $mg-background-light-color !important;
+    background-color: $mg-background-dark-color !important;
     width: 30rem;
     min-width: 30rem;
     max-width: 30rem;
 }
 
 .sidebar-right-container-collapsed {
-    background-color: $mg-background-light-color !important;
+    background-color: $mg-background-dark-color !important;
     width: 5rem;
     min-width: 5rem;
     max-width: 5rem;
@@ -128,7 +144,7 @@ body {
         width: 100vw;
     }
     .sidebar-right-container {
-        background-color: $mg-background-light-color !important;
+        background-color: $mg-background-dark-color !important;
         width: 100vw;
         min-width: 100vw;
         max-width: 100vw;
@@ -173,7 +189,7 @@ body {
 }
 
 .details-panel {
-    background-color: $mg-background-light-color !important;
+    background-color: $mg-background-dark-color !important;
     @media (min-width: 575.98px) {
         min-width: 29.5rem;
         max-width: 29.5rem;
@@ -181,12 +197,10 @@ body {
 }
 
 .details-title {
-    color: $mg-text-color;
     max-width: 25rem;
 }
 
 .details-content {
-    color: $mg-text-color;
 }
 
 .entity-link {
@@ -196,11 +210,18 @@ body {
     &:hover {
         text-decoration: underline;
     }
+    padding-left: 0.2rem !important;
+    padding-right: 0.2rem !important;
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.2rem !important;
 }
 
 .url-badge {
     font-size: 1rem;
-    padding: 0.4rem !important;
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.2rem !important;
 }
 
 #advert-panel hr {
@@ -317,7 +338,7 @@ body {
 
 #help-modal .modal-content {
     background-color: $mg-modal-background-color;
-    border-color: $mg-primary-color;
+    border-color: $mg-background-dark-color;
     border-width: 4px;
 }
 
@@ -342,7 +363,7 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none; /* Override default look */
     appearance: none;
     margin-top: -12px; /* Centers thumb on the track */
-    background-color: $mg-secondary-color;
+    background-color: $mg-background-dark-color;
     height: 1.6rem;
     width: 0.8rem;
 }
@@ -350,7 +371,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
     border: none; /*Removes extra border that FF applies*/
     border-radius: 0; /*Removes default border-radius that FF applies*/
-    background-color: $mg-secondary-color;
+    background-color: lighten($mg-background-dark-color, 20%);
     height: 1.6rem;
     width: 0.8rem;
 }
@@ -358,7 +379,7 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-moz-range-thumb,
 input[type="range"]::-webkit-slider-thumb,
 input[type="range"]::slider-thumb {
-    background-color: $mg-background-dark-color !important;
+    background-color: lighten($mg-background-dark-color, 20%) !important;
 }
 
 .tt-menu {
@@ -391,7 +412,7 @@ a[href^="https://"]::after {
     width: 9px;
     height: 9px;
     margin-left: 5px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='whitesmoke' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
