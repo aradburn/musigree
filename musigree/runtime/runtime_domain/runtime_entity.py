@@ -27,7 +27,7 @@ __all__ = [
 import logging
 from typing import Any
 
-from pydantic import Field, field_serializer
+from pydantic import Field, StrictInt, field_serializer
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
@@ -45,8 +45,8 @@ class RuntimeEntity(InternalDomainObject):
     encapsulating its properties and relationships.
 
     Attributes:
-        id (int): The unique identifier for the runtime entity.
-        entity_id (int): The ID of the entity, typically an external ID
+        id (StrictInt): The unique identifier for the runtime entity.
+        entity_id (StrictInt): The ID of the entity, typically an external ID
             from a source like Discogs.
         entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
         entity_name (str): The name of the entity.
@@ -61,9 +61,9 @@ class RuntimeEntity(InternalDomainObject):
         styles (str | None): The styles associated with the entity.
     """
 
-    id: int
+    id: StrictInt
     """The unique identifier for the runtime entity."""
-    entity_id: int
+    entity_id: StrictInt
     """The ID of the entity."""
     entity_type: EntityType
     """The type of the entity."""

@@ -34,7 +34,7 @@ __all__ = [
 import logging
 from typing import Any
 
-from pydantic import field_serializer
+from pydantic import StrictInt, field_serializer
 from musigree import utils
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
@@ -61,22 +61,22 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     assigned an ID and stored in the runtime_database.
 
     Attributes:
-        subject (int): The ID of the subject entity.
+        subject (StrictInt): The ID of the subject entity.
         role_name (str): The name of the role.
-        object (int): The ID of the object entity.
-        release_id (int): The release ID.
-        year (int): The release year.
+        object (StrictInt): The ID of the object entity.
+        release_id (StrictInt): The release ID.
+        year (StrictInt): The release year.
     """
 
-    subject: int
+    subject: StrictInt
     """The ID of the subject entity."""
     role_name: str
     """The name of the role."""
-    object: int
+    object: StrictInt
     """The ID of the object entity."""
-    release_id: int
+    release_id: StrictInt
     """The ID of the release."""
-    year: int | None = None
+    year: StrictInt | None = None
     """The release year, if available."""
 
     @staticmethod

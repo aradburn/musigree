@@ -352,15 +352,24 @@ class CacheManager:
             raise ValueError("Invalid CACHE_TYPE in configuration")
 
     @classmethod
-    async def shutdown_cache(cls) -> None:
+    async def clear_cache(cls) -> None:
         """
-        Clears and shuts down the cache.
+        Clears the cache.
 
-        This method clears the cache and sets the cache attribute to None,
-        releasing any resources held by the cache.
+        This method clears the cache releasing any resources held by the cache.
         """
         if cls.cache is not None:
             await cls.cache.clear()
+        log.debug("Cache cleared")
+
+    @classmethod
+    async def shutdown_cache(cls) -> None:
+        """
+        Shuts down the cache.
+
+        This method shuts down the cache.
+        """
+        if cls.cache is not None:
             await cls.cache.close()
         log.info("Shutdown cache")
 

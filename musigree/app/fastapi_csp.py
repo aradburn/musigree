@@ -160,6 +160,9 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
                 "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
             )
             analytics_api_url = "https://swetrix-api.musigree.com/ "
+        case AnalyticsType.OPENPANEL:
+            analytics_script_url = "https://openpanel.dev/op1.js "
+            analytics_api_url = "https://opapi.musigree.com/ "
 
     is_report_only = False
     content_security_policy_options = get_content_security_policy_production(

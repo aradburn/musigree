@@ -86,7 +86,7 @@ class TestRuntimeCountry:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert errors[0]["type"] == "int_parsing"
+        assert errors[0]["type"] == "int_type"
         assert errors[0]["loc"] == ("id",)
 
     def test_country_validation_error_invalid_name_type(self) -> None:
@@ -100,10 +100,14 @@ class TestRuntimeCountry:
         assert errors[0]["loc"] == ("country_name",)
 
     def test_country_string_coercion_for_id(self) -> None:
-        """Test that string numbers are coerced to integers for id."""
-        country = RuntimeCountry(id="42", country_name="Test RuntimeCountry")  # type: ignore
-        assert country.id == 42
-        assert isinstance(country.id, int)
+        """Test that StrictInt id rejects string values (no coercion)."""
+        with pytest.raises(ValidationError) as exc_info:
+            RuntimeCountry(id="42", country_name="Test RuntimeCountry")  # type: ignore
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "int_type"
+        assert errors[0]["loc"] == ("id",)
 
     def test_country_equality(self) -> None:
         """Test equality comparison between RuntimeCountry instances."""

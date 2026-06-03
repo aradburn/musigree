@@ -8,7 +8,7 @@ from musigree.library.fields.role_type import RoleType
 
 class RoleTable(OfflineBase):
     """
-    Represents the 'role' table in the runtime_database.
+    Represents the 'role' table in the offline_database.
 
     This table stores information about the different roles that entities can
     have in the Musigree system, such as 'Producer', 'Remixer', or 'Label Manager'.
@@ -16,7 +16,7 @@ class RoleTable(OfflineBase):
     structured way of classifying relationships between entities.
 
     Attributes:
-        __tablename__ (str): The name of the table in the runtime_database.
+        __tablename__ (str): The name of the table in the offline_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the role.
         role_name (Mapped[str]): The name of the role (e.g., 'Producer', 'Remixer').
@@ -29,7 +29,7 @@ class RoleTable(OfflineBase):
     """
 
     __tablename__ = "role"
-    """The name of the table in the runtime_database."""
+    """The name of the table in the offline_database."""
 
     # COLUMNS
 
@@ -53,7 +53,7 @@ class RoleTable(OfflineBase):
     """
     The name of the main category to which the role belongs.
     """
-    role_subcategory_name: Mapped[str] = mapped_column(String, nullable=True)
+    role_subcategory_name: Mapped[str | None] = mapped_column(String, nullable=True)
     """
      The name of the subcategory to which the role belongs.
     """

@@ -86,7 +86,7 @@ class TestRuntimeGenre:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert errors[0]["type"] == "int_parsing"
+        assert errors[0]["type"] == "int_type"
         assert errors[0]["loc"] == ("id",)
 
     def test_genre_validation_error_invalid_name_type(self) -> None:
@@ -100,10 +100,14 @@ class TestRuntimeGenre:
         assert errors[0]["loc"] == ("genre_name",)
 
     def test_genre_string_coercion_for_id(self) -> None:
-        """Test that string numbers are coerced to integers for id."""
-        genre = RuntimeGenre(id="42", genre_name="Test RuntimeGenre")  # type: ignore
-        assert genre.id == 42
-        assert isinstance(genre.id, int)
+        """Test that StrictInt id rejects string values (no coercion)."""
+        with pytest.raises(ValidationError) as exc_info:
+            RuntimeGenre(id="42", genre_name="Test RuntimeGenre")  # type: ignore
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "int_type"
+        assert errors[0]["loc"] == ("id",)
 
     def test_genre_equality(self) -> None:
         """Test equality comparison between RuntimeGenre instances."""

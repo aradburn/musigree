@@ -25,10 +25,10 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 
 import json
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Query, Request, Depends
 from fastapi.responses import HTMLResponse
-from typing import Annotated
 
 from musigree.app.fastapi_dependencies import get_roles, get_year, get_entity_type, get_entity_id
 from musigree.exceptions import NotFoundError
@@ -106,24 +106,21 @@ async def route__index(
     og_title = "Musigree - An Interactive Map of Artists, Bands & Labels"
     og_image = application_url + "/img/og_image.png"
 
+    context = {
+        "title": title,
+        "application_url": application_url,
+        "initial_json": initial_js,
+        "multiselect_mapping": multiselect_mapping,
+        "og_title": og_title,
+        "og_type": "website",
+        "og_image": og_image,
+        "og_url": og_url,
+        "original_roles": roles,
+        "original_year": year,
+    }
+
     """Generate the URL for the current request with the selected roles."""
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            # "request": request,
-            "title": title,
-            "application_url": application_url,
-            "initial_json": initial_js,
-            "multiselect_mapping": multiselect_mapping,
-            "og_title": og_title,
-            "og_type": "website",
-            "og_image": og_image,
-            "og_url": og_url,
-            "original_roles": roles,
-            "original_year": year,
-        },
-    )
+    return templates.TemplateResponse(request=request, name="index.html", context=context)
 
 
 async def route__entity_type__entity_id(
@@ -239,23 +236,21 @@ async def route__entity_type__entity_id(
     multiselect_mapping = RoleEntry.get_multiselect_mapping()
     """Get the multiselect mapping for roles."""
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "title": title,
-            "application_url": application_url,
-            "initial_json": initial_js,
-            "key": key,
-            "multiselect_mapping": multiselect_mapping,
-            "og_title": og_title,
-            "og_type": "website",
-            "og_image": og_image,
-            "og_url": og_url,
-            "original_roles": roles,
-            "original_year": year,
-        },
-    )
+    context = {
+        "title": title,
+        "application_url": application_url,
+        "initial_json": initial_js,
+        "key": key,
+        "multiselect_mapping": multiselect_mapping,
+        "og_title": og_title,
+        "og_type": "website",
+        "og_image": og_image,
+        "og_url": og_url,
+        "original_roles": roles,
+        "original_year": year,
+    }
+
+    return templates.TemplateResponse(request, name="index.html", context=context)
 
 
 @router.get("/artist/{entity_id}", response_class=HTMLResponse)

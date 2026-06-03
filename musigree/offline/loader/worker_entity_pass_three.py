@@ -129,8 +129,8 @@ async def worker_pass_three_single(
     Processes a single entity for pass three of the loading process.
 
     This function calculates and updates the relation counts for a given entity.
-    It retrieves all relations where the entity is either the subject or object,
-    counts the unique relations for each role, and updates the entity's
+    It queries aggregated distinct (subject, object) counts per role where the
+    entity is subject or object, then updates the entity's
     relation_counts field.
 
     Args:
@@ -141,37 +141,9 @@ async def worker_pass_three_single(
     Raises:
         DatabaseError: If there's an error updating the entity in the database.
     """
-    _relation_counts: dict[str, set[tuple[int, int]]] = {}
-    """A dictionary to store relation counts by role."""
-    _relation_count_totals: dict[str, int] = {}
-    """A dictionary to store the total counts for each role."""
+    _relation_count_totals = await relation_repository.find_role_counts_by_entity(id_)
+    """Distinct (subject, object) counts per role (aggregated in SQL)."""
 
-    # Get all relations for this entity, where the entity is the subject or object of the relation
-    relations = await relation_repository.find_by_entity(id_)
-    """Retrieve all relations for this entity."""
-
-    for relation in relations:
-        """Iterate over the relations."""
-        if relation.role not in _relation_counts:
-            """If the role has not been seen yet."""
-            _relation_counts[relation.role] = set()
-            """Create a new set for the role."""
-        key = (
-            relation.subject,
-            relation.object,
-        )
-        """Create a key from the subject and the object."""
-        set_entry = _relation_counts.get(relation.role)
-        if set_entry is not None:
-            set_entry.add(key)
-        """Add the key to the set for this role."""
-
-    for role, keys in _relation_counts.items():
-        """Iterate over the roles and the sets of keys."""
-        _relation_count_totals[role] = len(keys)
-        """Count the unique keys in the set."""
-
-    # log.debug(f"Entity (Pass 3) [{id_}]: Relation Counts: {_relation_count_totals}")
     if len(_relation_count_totals) > 0:
         try:
             """Attempt to update the relation counts."""

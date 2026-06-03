@@ -29,11 +29,11 @@ from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
     SqliteDevelopmentConfiguration,
+    PostgresDevelopmentConfiguration,
 )
 from musigree.constants import (
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
-    ALL_OFFLINE_DATABASE_TABLE_NAMES,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
@@ -173,7 +173,7 @@ def runtime_loader_main() -> None:
 
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
-    offline_config = SqliteDevelopmentConfiguration()
+    offline_config = PostgresDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")
@@ -200,11 +200,11 @@ def runtime_loader_main() -> None:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        runner.run(
-            OfflineDatabaseManager.offline_database_helper.create_tables(
-                ALL_OFFLINE_DATABASE_TABLE_NAMES
-            )
-        )
+        # runner.run(
+        #     OfflineDatabaseManager.offline_database_helper.create_tables(
+        #         ALL_OFFLINE_DATABASE_TABLE_NAMES
+        #     )
+        # )
         runner.run(
             RuntimeDatabaseManager.runtime_database_helper.drop_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
@@ -219,9 +219,9 @@ def runtime_loader_main() -> None:
         runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
         # Run the loader process between these dates
-        start_date = datetime.date(2025, 8, 1)
+        start_date = datetime.date(2026, 3, 1)
         # start_date = datetime.date(2023, 10, 1)
-        end_date = datetime.date(2025, 8, 1)
+        end_date = datetime.date(2026, 3, 1)
         # end_date = datetime.datetime.now()
         runtime_data_directory: str = str(runtime_config.DATA_DIR)
         tasks = [

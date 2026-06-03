@@ -308,9 +308,8 @@ class TestCacheManager:
 
         await CacheManager.shutdown_cache()
 
-        mock_cache.clear.assert_called_once()
         mock_cache.close.assert_called_once()
-        # Note: The current implementation doesn't delete the cache attribute
+        # Shutdown clears via close() (e.g. Redis flushdb), not a separate clear()
 
     def test_cache_manager_get_cache_when_set(self) -> None:
         """Test CacheManager get_cache returns cache when set."""

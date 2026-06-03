@@ -18,6 +18,8 @@ __all__ = [
 from datetime import date
 from typing import Any, Self
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 
 
@@ -30,7 +32,7 @@ class Release(InternalDomainObject):
     companies, country of origin, and tracklist.
 
     Attributes:
-        release_id (int): The unique identifier for the release. This is
+        release_id (StrictInt): The unique identifier for the release. This is
             typically an external ID from a source like Discogs.
         artists (list[dict[str, Any]] | None): A list of artists associated
             with the release. Each item in the list is a dictionary containing
@@ -61,7 +63,7 @@ class Release(InternalDomainObject):
             Each item is a dictionary describing a track.
     """
 
-    release_id: int
+    release_id: StrictInt
     """The unique identifier for the release."""
     artists: list[dict[str, Any]] | None = None
     """A list of artists associated with the release."""
@@ -79,7 +81,7 @@ class Release(InternalDomainObject):
     """A list of identifiers for the release."""
     labels: list[dict[str, Any]] | None = None
     """A list of labels associated with the release."""
-    master_id: int | None = None
+    master_id: StrictInt | None = None
     """The master ID of the release."""
     notes: str | None = None
     """Additional notes about the release."""

@@ -380,6 +380,7 @@ class TestLoaderTaskForDateAndStage:
         assert isinstance(priority, int)
         assert priority > 0
 
+    # noinspection PyUnresolvedReferences
     def test_requires_returns_previous_stage_when_stage_gt_zero(self) -> None:
         """Test that requires() yields DiscogsDownloaderTaskForDate and previous stage when stage > 0."""
         task = LoaderTaskForDateAndStage(
@@ -400,6 +401,7 @@ class TestLoaderTaskForDateAndStage:
         assert dep.dump_date == task.dump_date
         assert dep.stage == 2
 
+    # noinspection PyUnresolvedReferences
     def test_requires_returns_discogs_downloader_for_stage_zero(self) -> None:
         """Test that requires() yields DiscogsDownloaderTaskForDate for stage 0."""
         task = LoaderTaskForDateAndStage(

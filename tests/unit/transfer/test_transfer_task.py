@@ -6,6 +6,7 @@ which are Luigi tasks responsible for orchestrating data loading from offline
 to runtime database.
 """
 
+import asyncio
 import datetime
 import logging
 from typing import Any
@@ -376,19 +377,22 @@ class TestRuntimeLoaderTaskForDateAndStage:
                     mock_loop = Mock()
                     mock_new_loop.return_value = mock_loop
 
-                    # Create a mock task that behaves like an asyncio Task
                     mock_task = Mock()
                     mock_task.add_done_callback = Mock()
-                    mock_loop.create_task.return_value = mock_task
 
-                    # Make sure the task is properly awaited
-                    def mock_run_until_complete(_task: Any) -> None:
-                        # Just return None since we're mocking the execution
-                        return None
+                    # Run the coroutine when create_task is called so it is not left unawaited
+                    def create_task_and_run(coro: Any) -> Mock:
+                        run_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(run_loop)
+                        try:
+                            run_loop.run_until_complete(coro)
+                        finally:
+                            run_loop.close()
+                        return mock_task
 
-                    mock_loop.run_until_complete.side_effect = mock_run_until_complete
+                    mock_loop.create_task.side_effect = create_task_and_run
+                    mock_loop.run_until_complete.side_effect = lambda _: None
 
-                    # Need to patch the second call to get_load_runtime_table_stages in the run method
                     with patch(
                         "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
                         mock_get_stages,
@@ -456,24 +460,39 @@ class TestRuntimeLoaderTaskForDateAndStage:
             data_directory="/test/data", dump_date=datetime.date(2023, 1, 15), stage=0
         )
 
+        mock_output = Mock()
+        mock_output.done = AsyncMock()
+
         # Mock the event loop setup
-        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
-            with patch("asyncio.new_event_loop") as mock_new_loop:
-                with patch("asyncio.set_event_loop") as _mock_set_loop:
-                    mock_loop = Mock()
-                    mock_new_loop.return_value = mock_loop
-                    mock_task = Mock()
-                    mock_loop.create_task.return_value = mock_task
+        with patch.object(task, "output", return_value=mock_output):
+            with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+                with patch("asyncio.new_event_loop") as mock_new_loop:
+                    with patch("asyncio.set_event_loop") as _mock_set_loop:
+                        mock_loop = Mock()
+                        mock_new_loop.return_value = mock_loop
+                        mock_task = Mock()
+                        mock_task.add_done_callback = Mock()
 
-                    # Make run_until_complete raise RuntimeError
-                    mock_loop.run_until_complete.side_effect = RuntimeError("Test error")
+                        # Run the coroutine when create_task is called so it is not left unawaited
+                        def create_task_and_run(coro: Any) -> Mock:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            try:
+                                loop.run_until_complete(coro)
+                            except RuntimeError:
+                                pass  # test expects run_until_complete to raise
+                            finally:
+                                loop.close()
+                            return mock_task
 
-                    # Need to patch the second call to get_load_runtime_table_stages in the run method
-                    with patch(
-                        "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
-                        mock_get_stages,
-                    ):
-                        task.run()  # Should not raise, should handle the exception
+                        mock_loop.create_task.side_effect = create_task_and_run
+                        mock_loop.run_until_complete.side_effect = RuntimeError("Test error")
+
+                        with patch(
+                            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
+                            mock_get_stages,
+                        ):
+                            task.run()  # Should not raise, should handle the exception
 
         # Verify the exception was logged
         mock_log.exception.assert_called_once()

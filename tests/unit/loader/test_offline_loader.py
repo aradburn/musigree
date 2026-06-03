@@ -453,6 +453,7 @@ class TestOfflineLoaderEdgeCases:
         # Arrange
         mock_offline_db_manager.shutdown_database = AsyncMock()
         mock_runtime_db_manager.shutdown_database = AsyncMock()
+        mock_cache_manager.clear_cache = AsyncMock()
         mock_cache_manager.shutdown_cache = AsyncMock()
 
         # Mock asyncio.Runner context manager
@@ -467,6 +468,7 @@ class TestOfflineLoaderEdgeCases:
         mock_setup_logging.assert_called_once()
         mock_offline_db_manager.shutdown_database.assert_called_once()
         mock_runtime_db_manager.shutdown_database.assert_called_once()
+        mock_cache_manager.clear_cache.assert_called_once()
         mock_cache_manager.shutdown_cache.assert_called_once()
         mock_shutdown_logging.assert_called_once()
 

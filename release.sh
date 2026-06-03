@@ -79,16 +79,18 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd frontend
     npm run check-types
     npm run lint
-#    npm run test
+    npm run test
     npm audit
     cd ..
 
     # Check backend passes tests
     echo "Check backend passes tests..."
     uv run pytest tests/unit \
+        --log-disable=httpx \
         --log-disable=musigree.app.fastapi_api \
         --log-disable=musigree.app.fastapi_app \
         --log-disable=musigree.app.fastapi_assets \
+        --log-disable=musigree.app.fastapi_csp \
         --log-disable=musigree.app.fastapi_dependencies \
         --log-disable=musigree.app.fastapi_security \
         --log-disable=musigree.app.fastapi_ui \
@@ -97,15 +99,19 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         --log-disable=musigree.library.cache.cache_manager \
         --log-disable=musigree.library.full_text_search.text_search_index \
         --log-disable=musigree.loader.create_entity_details_index \
+        --log-disable=musigree.loader.create_text_search_index \
+        --log-disable=musigree.loader.offline_process_runner \
         --log-disable=musigree.loader.run_offline_loader \
         --log-disable=musigree.loader.run_runtime_loader \
         --log-disable=musigree.logging_config \
-        --log-disable=musigree.offline.data_access_layer.release_data_access \
-        --log-disable=musigree.offline.data_access_layer.role_data_access \
-        --log-disable=musigree.offline.database.offline_transaction \
+        --log-disable=musigree.offline.data_access_layer.offline_entity_data_access \
+        --log-disable=musigree.offline.data_access_layer.offline_release_data_access \
+        --log-disable=musigree.offline.data_access_layer.offline_role_data_access \
+        --log-disable=musigree.offline.offline_database.offline_transaction \
         --log-disable=musigree.offline.loader.loader_base \
         --log-disable=musigree.offline.loader.loader_role \
         --log-disable=musigree.offline.loader.loader_target \
+        --log-disable=musigree.offline.loader.loader_tasks \
         --log-disable=musigree.offline.loader.loader_utils \
         --log-disable=musigree.offline.loader.worker_entity_pass_three \
         --log-disable=musigree.offline.loader.worker_entity_updater \

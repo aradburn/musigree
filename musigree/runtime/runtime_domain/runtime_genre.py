@@ -11,6 +11,8 @@ __all__ = [
 
 import logging
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 
 log = logging.getLogger(__name__)
@@ -24,11 +26,11 @@ class RuntimeGenre(InternalDomainObject):
     encapsulating its properties and relationships.
 
     Attributes:
-        id (int): The unique identifier for the genre.
+        id (StrictInt): The unique identifier for the genre.
         genre_name (str): The name of the genre.
     """
 
-    id: int
+    id: StrictInt
     """The unique identifier for the genre."""
     genre_name: str
     """The name of the genre."""

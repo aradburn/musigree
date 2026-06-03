@@ -11,6 +11,8 @@ __all__ = [
 
 import logging
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 
 log = logging.getLogger(__name__)
@@ -22,10 +24,10 @@ class Token(InternalDomainObject):
 
     Attributes:
         token (str): The token.
-        entity_id (int): The unique identifier for the corresponding entity.
+        entity_id (StrictInt): The unique identifier for the corresponding entity.
     """
 
     token: str
     """The token."""
-    entity_id: int
+    entity_id: StrictInt
     """The unique identifier for the entity that has a name containing this token."""

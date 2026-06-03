@@ -58,6 +58,7 @@ import multiprocessing
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError
+from musigree.library.cache.cache_manager import CacheManager
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.offline_database import EntityTable
 from musigree.offline.offline_database.entity_repository import EntityRepository
@@ -181,7 +182,20 @@ def process_entity_pass_four_worker(ids: list[int], current_total: int, total_co
     OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
     """Initialize the runtime_database engine."""
 
-    loop.run_until_complete(process_entity_pass_four_worker_async(ids, current_total, total_count))
+    # Re-initialize cache in this process so Redis client is bound to this loop.
+    config = OfflineDatabaseManager.offline_config
+    if config is None:
+        raise RuntimeError(
+            "OfflineDatabaseManager.offline_config not set; run setup_database first"
+        )
+    loop.run_until_complete(CacheManager.setup_cache(config))
+
+    try:
+        loop.run_until_complete(
+            process_entity_pass_four_worker_async(ids, current_total, total_count)
+        )
+    finally:
+        loop.run_until_complete(CacheManager.shutdown_cache())
 
     OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
     """Close the runtime_database engine."""

@@ -18,7 +18,7 @@ class TokenTable(OfflineBase):
     Attributes:
         __tablename__ (str): The name of the table in the offline_database.
         token (Mapped[str]): The token. This column is indexed for faster lookups.
-        id (Mapped[int]): The id of the entity containign this token as part of the entity's name.
+        id (Mapped[int]): The id of the entity containing this token as part of the entity's name.
     """
 
     __tablename__ = "token"

@@ -17,6 +17,8 @@ __all__ = [
 
 from typing import Any, Self
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 
 
@@ -29,7 +31,7 @@ class Master(InternalDomainObject):
     and images.
 
     Attributes:
-        master_id (int): The unique identifier for this master record. This is
+        master_id (StrictInt): The unique identifier for this master record. This is
             typically an external ID from a source like Discogs.
         title (str): The title of the master record.
         year (int): The year the master record was released.
@@ -54,11 +56,11 @@ class Master(InternalDomainObject):
     # 'master_style': 'master_id style',
     # 'master_image': 'master_id type width height',
 
-    master_id: int
+    master_id: StrictInt
     """The unique identifier for the master record."""
     title: str
     """The title of the master record."""
-    year: int
+    year: StrictInt
     """The year the master record was released."""
     main_release: str
     """The main release ID associated with this master."""

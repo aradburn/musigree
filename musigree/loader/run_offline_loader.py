@@ -29,7 +29,7 @@ from luigi.execution_summary import LuigiRunResult
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
+    PostgresDevelopmentConfiguration,
 )
 from musigree.constants import (
     DISCOGS_DATA,
@@ -238,10 +238,34 @@ async def shutdown_offline_loader() -> None:
     except OperationalError:
         pass
 
+    await CacheManager.clear_cache()
     await CacheManager.shutdown_cache()
 
     log.info("######## OFFLINE LOADER SHUTDOWN DONE ########")
     shutdown_logging()
+
+
+async def _finalize_offline_loader_before_loop_close() -> None:
+    """
+    Cancel loader tasks and release resources while the event loop is still usable.
+
+    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
+    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
+    avoids that path and drains pending tasks first.
+    """
+    loop = asyncio.get_running_loop()
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks(loop) if t is not current and not t.done()]
+    for task in pending:
+        task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+    try:
+        await shutdown_offline_loader()
+    except KeyboardInterrupt:
+        log.warning("Offline loader shutdown interrupted (database may not be fully closed)")
+    except asyncio.CancelledError:
+        raise
 
 
 def offline_loader_main() -> None:
@@ -266,60 +290,66 @@ def offline_loader_main() -> None:
 
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
-    offline_config = SqliteDevelopmentConfiguration()
+    offline_config = PostgresDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
     with asyncio.Runner() as runner:
-        # Register shutdown
-        asyncio_atexit.register(shutdown_offline_loader, loop=runner.get_loop())
+        loop = runner.get_loop()
+        asyncio_atexit.register(shutdown_offline_loader, loop=loop)
+        try:
+            # Setup Cache
+            runner.run(CacheManager.setup_cache(offline_config))
+            cache = CacheManager.get_cache()
+            if cache is None:
+                log.error("Cache not set")
+                sys.exit()
 
-        # Setup Cache
-        runner.run(CacheManager.setup_cache(offline_config))
-        cache = CacheManager.get_cache()
-        if cache is None:
-            log.error("Cache not set")
-            sys.exit()
+            log.debug("Clearing cache")
+            runner.run(CacheManager.clear())
+            runner.run(OfflineDatabaseManager.setup_database(offline_config))
 
-        log.debug("Clearing cache")
-        runner.run(CacheManager.clear())
-        runner.run(OfflineDatabaseManager.setup_database(offline_config))
-
-        assert OfflineDatabaseManager.offline_database_helper is not None, (
-            "offline_database_helper must be initialized before calling initialize()"
-        )
-        runner.run(
-            OfflineDatabaseManager.offline_database_helper.create_tables(
-                ALL_OFFLINE_DATABASE_TABLE_NAMES
+            assert OfflineDatabaseManager.offline_database_helper is not None, (
+                "offline_database_helper must be initialized before calling initialize()"
             )
-        )
-        # Load roles, may be empty if no roles in offline_database yet
-        runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
+            runner.run(
+                OfflineDatabaseManager.offline_database_helper.create_tables(
+                    ALL_OFFLINE_DATABASE_TABLE_NAMES
+                )
+            )
+            # Load roles, may be empty if no roles in offline_database yet
+            runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
-        # Get the current date
-        now_date = datetime.datetime.now()
+            # Get the current date
+            now_date = datetime.datetime.now()
 
-        # Run the loader process between these dates
-        start_date = datetime.date(2026, 2, 1)
-        end_date = datetime.date(now_date.year, now_date.month, 1)
+            # Run the loader process between these dates
+            start_date = datetime.date(2026, 3, 1)
+            end_date = datetime.date(now_date.year, now_date.month, 1)
 
-        offline_data_directory: str = str(offline_config.DATA_DIR)
-        tasks = [
-            LoaderSetupTask(
-                data_directory=offline_data_directory, start_date=start_date, end_date=end_date
-            ),
-        ]
-        luigi_run_result = cast(
-            LuigiRunResult,
-            luigi.build(
-                tasks,
-                detailed_summary=True,
-                local_scheduler=True,
-                log_level="WARNING",
-            ),
-        )
-        log.info(luigi_run_result.summary_text)
-
-        runner.close()
+            offline_data_directory: str = str(offline_config.DATA_DIR)
+            tasks = [
+                LoaderSetupTask(
+                    data_directory=offline_data_directory, start_date=start_date, end_date=end_date
+                ),
+            ]
+            luigi_run_result = cast(
+                LuigiRunResult,
+                luigi.build(
+                    tasks,
+                    detailed_summary=True,
+                    local_scheduler=True,
+                    log_level="WARNING",
+                ),
+            )
+            log.info(luigi_run_result.summary_text)
+        finally:
+            asyncio_atexit.unregister(shutdown_offline_loader, loop=loop)
+            try:
+                runner.run(_finalize_offline_loader_before_loop_close())
+            except KeyboardInterrupt:
+                log.warning(
+                    "Offline loader finalize interrupted; proceeding with event loop shutdown"
+                )
 
 
 if __name__ == "__main__":

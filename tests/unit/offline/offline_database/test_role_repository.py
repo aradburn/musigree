@@ -6,7 +6,7 @@ in the offline runtime_database.
 """
 
 from typing import Any, AsyncGenerator
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
 from sqlalchemy import Result
@@ -166,6 +166,62 @@ class TestRoleRepository:
         """Test successful repository initialization."""
         repo = RoleRepository()
         assert repo.schema_class == RoleTable
+
+    @pytest.mark.asyncio
+    async def test_get_by_name_success(
+        self,
+        role_repository: RoleRepository,
+        mock_role_table: RoleTable,
+        mock_role: Role,
+    ) -> None:
+        """Test successful get_by_name execution."""
+        mock_session = AsyncMock()
+        mock_result = Mock(spec=Result)
+        mock_result.scalars.return_value.one_or_none.return_value = mock_role_table
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        with patch.object(
+            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        ):
+            with patch.object(Role, "model_validate", return_value=mock_role):
+                result = await role_repository.get_by_name("performer")
+                assert result == mock_role
+
+    @pytest.mark.asyncio
+    async def test_get_by_name_not_found(self, role_repository: RoleRepository) -> None:
+        """Test get_by_name when role is not found."""
+        mock_session = AsyncMock()
+        mock_result = Mock(spec=Result)
+        mock_result.scalars.return_value.one_or_none.return_value = None
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        with patch.object(
+            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        ):
+            with pytest.raises(NotFoundError):
+                await role_repository.get_by_name("nonexistent")
+
+    @pytest.mark.asyncio
+    async def test_create_bulk_success(
+        self,
+        role_repository: RoleRepository,
+        mock_role_uncommitted: RoleUncommitted,
+    ) -> None:
+        """Test create_bulk executes bulk insert."""
+        mock_session = AsyncMock()
+        mock_helper = Mock()
+        mock_helper.generate_insert_bulk_query.return_value = Mock()
+
+        with patch.object(
+            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        ):
+            with patch(
+                "musigree.offline.offline_database_manager.OfflineDatabaseManager"
+            ) as mock_manager:
+                mock_manager.offline_database_helper = mock_helper
+                await role_repository.create_bulk([mock_role_uncommitted])
+                mock_helper.generate_insert_bulk_query.assert_called_once()
+                mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_all_empty_result(self, role_repository: RoleRepository) -> None:

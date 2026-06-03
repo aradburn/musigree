@@ -68,8 +68,10 @@ operations, `urllib.parse` for URL parsing and `musigree` library.
 import asyncio
 import datetime
 import logging
+from asyncio import Task
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
@@ -339,6 +341,11 @@ class LoaderTaskForDateAndStage(luigi.Task):
 
     isTaskComplete = False
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Do not call complete() here: it hits the DB via LoaderTarget.exists() and
+        # breaks unit tests and any context without OfflineDatabaseManager setup.
+
     @property
     def priority(self):  # type: ignore
         """
@@ -441,7 +448,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 """Set a new event loop if none exists."""
-            task = loop.create_task(worker_function())
+            task: Task[None] = loop.create_task(worker_function())
             # Add task to the set. This creates a strong reference.
             background_tasks.add(task)
 
@@ -456,7 +463,8 @@ class LoaderTaskForDateAndStage(luigi.Task):
             log.exception(e, exc_info=True)
 
     def complete(self) -> bool:
-        return super().complete() and self.isTaskComplete
+        # Persisted completion (metadata row) or successful run() this session.
+        return super().complete() or self.isTaskComplete
 
 
 class DiscogsDownloaderTask(luigi.Task):
