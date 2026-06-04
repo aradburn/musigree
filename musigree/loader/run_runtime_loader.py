@@ -15,7 +15,6 @@ The loader is responsible for:
 """
 
 import asyncio
-import atexit
 import datetime
 import logging
 import sys
@@ -24,16 +23,17 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
+import asyncio_atexit  # type: ignore
 import luigi
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
     SqliteDevelopmentConfiguration,
+    PostgresDevelopmentConfiguration,
 )
 from musigree.constants import (
     TEXT_SEARCH_DATA,
     TEXT_SEARCH_FILENAME,
-    ALL_OFFLINE_DATABASE_TABLE_NAMES,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
@@ -124,7 +124,7 @@ def get_load_runtime_table_stages(
     return stages
 
 
-def shutdown_loader() -> None:
+async def shutdown_runtime_loader() -> None:
     """
     Shuts down the loader application.
 
@@ -135,18 +135,19 @@ def shutdown_loader() -> None:
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
     log.info("######## RUNTIME LOADER SHUTDOWN START ########")
-    with asyncio.Runner() as runner:
-        try:
-            runner.run(OfflineDatabaseManager.shutdown_database())
-        except OperationalError:
-            pass
+    try:
+        if OfflineDatabaseManager.offline_database_helper is not None:
+            await OfflineDatabaseManager.shutdown_database()
+    except OperationalError:
+        pass
 
-        try:
-            runner.run(RuntimeDatabaseManager.shutdown_database())
-        except OperationalError:
-            pass
+    try:
+        if RuntimeDatabaseManager.runtime_database_helper is not None:
+            await RuntimeDatabaseManager.shutdown_database()
+    except OperationalError:
+        pass
 
-        runner.run(CacheManager.shutdown_cache())
+    await CacheManager.shutdown_cache()
 
     shutdown_logging()
     log.info("######## RUNTIME LOADER SHUTDOWN DONE ########")
@@ -172,15 +173,15 @@ def runtime_loader_main() -> None:
 
     # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
     # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
-    offline_config = SqliteDevelopmentConfiguration()
+    offline_config = PostgresDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")
 
-    # Note reverse order (last in first out), logging is the last to be shutdown
-    atexit.register(shutdown_loader)
-
     with asyncio.Runner() as runner:
+        # Register shutdown
+        asyncio_atexit.register(shutdown_runtime_loader, loop=runner.get_loop())
+
         # Setup Cache
         runner.run(CacheManager.setup_cache(offline_config))
         cache = CacheManager.get_cache()
@@ -192,20 +193,18 @@ def runtime_loader_main() -> None:
         runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))
         runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
-        runner.close()
 
-    assert OfflineDatabaseManager.offline_database_helper is not None, (
-        "offline_database_helper must be initialized before calling initialize()"
-    )
-    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-        "runtime_database_helper must be initialized before calling initialize()"
-    )
-    with asyncio.Runner() as runner:
-        runner.run(
-            OfflineDatabaseManager.offline_database_helper.create_tables(
-                ALL_OFFLINE_DATABASE_TABLE_NAMES
-            )
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "offline_database_helper must be initialized before calling initialize()"
         )
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+        # runner.run(
+        #     OfflineDatabaseManager.offline_database_helper.create_tables(
+        #         ALL_OFFLINE_DATABASE_TABLE_NAMES
+        #     )
+        # )
         runner.run(
             RuntimeDatabaseManager.runtime_database_helper.drop_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
@@ -218,26 +217,27 @@ def runtime_loader_main() -> None:
         )
         # Load roles, may be empty if no roles in offline_database yet
         runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
-        runner.close()
 
-    # Run the loader process between these dates
-    start_date = datetime.date(2025, 8, 1)
-    # start_date = datetime.date(2023, 10, 1)
-    end_date = datetime.date(2025, 8, 1)
-    # end_date = datetime.datetime.now()
-    runtime_data_directory: str = str(runtime_config.DATA_DIR)
-    tasks = [
-        RuntimeLoaderSetupTask(
-            data_directory=runtime_data_directory, start_date=start_date, end_date=end_date
-        ),
-    ]
-    luigi_run_result = luigi.build(
-        tasks,
-        detailed_summary=True,
-        local_scheduler=True,
-        log_level="WARNING",
-    )
-    log.info(luigi_run_result.summary_text)
+        # Run the loader process between these dates
+        start_date = datetime.date(2026, 3, 1)
+        # start_date = datetime.date(2023, 10, 1)
+        end_date = datetime.date(2026, 3, 1)
+        # end_date = datetime.datetime.now()
+        runtime_data_directory: str = str(runtime_config.DATA_DIR)
+        tasks = [
+            RuntimeLoaderSetupTask(
+                data_directory=runtime_data_directory, start_date=start_date, end_date=end_date
+            ),
+        ]
+        luigi_run_result = luigi.build(
+            tasks,
+            detailed_summary=True,
+            local_scheduler=True,
+            log_level="WARNING",
+        )
+        log.info(luigi_run_result.summary_text)
+
+        runner.close()
 
 
 if __name__ == "__main__":

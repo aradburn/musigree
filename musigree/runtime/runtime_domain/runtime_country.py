@@ -11,6 +11,8 @@ __all__ = [
 
 import logging
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 
 log = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ class RuntimeCountry(InternalDomainObject):
         country_name (str): The name of the country.
     """
 
-    id: int
+    id: StrictInt
     """The unique identifier for the country."""
     country_name: str
     """The name of the country."""

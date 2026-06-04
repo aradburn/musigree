@@ -39,7 +39,7 @@ export const createEntityLink = (
 };
 
 export const createURLBadgeClass = (_str: string): string => {
-    return "badge url-badge rounded-pill me-2 text-black bg-success-subtle bg-opacity-40 bg-gradient";
+    return "badge url-badge rounded-pill me-2 text-black badge-highlight bg-gradient";
 };
 
 export const createExternalLinkBadgeClass = (str: string): string => {

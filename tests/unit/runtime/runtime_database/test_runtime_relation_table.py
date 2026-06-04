@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.runtime.runtime_database.runtime_relation_table import (
     RuntimeRelationTable,
@@ -69,7 +69,7 @@ class TestRuntimeRelationTable:
         expected_columns = {"id", "subject", "predicate", "object"}
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeRelationTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeRelationTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)
@@ -77,7 +77,7 @@ class TestRuntimeRelationTable:
     def test_primary_key(self) -> None:
         """Test that id column is the primary key."""
         # GIVEN/WHEN
-        primary_key_columns = [col.name for col in inspect(RuntimeRelationTable).primary_key]
+        primary_key_columns = [col.name for col in class_mapper(RuntimeRelationTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]

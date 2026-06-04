@@ -38,10 +38,15 @@ export default defineConfig({
         rollupOptions: {
             input: "source/index.ts",
             output: {
+                // Vite's css-post plugin calls this with `names` only (no `name`); Rolldown may omit `name` too.
                 assetFileNames: (assetInfo) => {
-                    if (assetInfo.name == 'style.css')
-                        return 'assets/musigree-[hash].css';
-                    return assetInfo.name;
+                    const primary =
+                        assetInfo.name ??
+                        (Array.isArray(assetInfo.names) ? assetInfo.names[0] : undefined);
+                    if (primary === "style.css") {
+                        return "assets/musigree-[hash].css";
+                    }
+                    return primary ?? "assets/[name]-[hash][extname]";
                 },
             },
             external: [ /fonts/ ],

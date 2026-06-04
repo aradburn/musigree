@@ -1,4 +1,5 @@
 import pytest
+# noinspection PyPackageRequirements
 from starlette import status
 
 from musigree.exceptions import (

@@ -12,7 +12,7 @@ from musigree.offline.offline_database.base_table import OfflineBase
 
 class RelationTable(OfflineBase):
     """
-    Represents the 'relation' table in the runtime_database.
+    Represents the 'relation' table in the offline_database.
 
     This table stores information about the relationships between entities
     in the Musigree system. Each row in the table represents a directed
@@ -20,7 +20,7 @@ class RelationTable(OfflineBase):
     predicate (role) describing the nature of the relation.
 
     Attributes:
-        __tablename__ (str): The name of the table in the runtime_database.
+        __tablename__ (str): The name of the table in the offline_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing integer.
         subject (Mapped[int]): The ID of the subject entity in the relation.
         predicate (Mapped[int]): The ID of the role (predicate) defining the relation.
@@ -30,7 +30,7 @@ class RelationTable(OfflineBase):
     """
 
     __tablename__ = "relation"
-    """The name of the table in the runtime_database."""
+    """The name of the table in the offline_database."""
 
     # COLUMNS
 
@@ -46,10 +46,10 @@ class RelationTable(OfflineBase):
     """The ID of the object entity in the relation."""
     release_id: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the release associated with this entry."""
-    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """The year of the release."""
 
-    __table_args__: tuple[Index, Index, dict[Any, Any]] = (
+    __table_args__: tuple[Index, Index, dict[str, Any]] = (
         # Index(
         #     "idx_relation",
         #     subject,

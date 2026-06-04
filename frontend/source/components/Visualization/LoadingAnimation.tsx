@@ -3,7 +3,7 @@ import { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { useLoading } from "../../contexts/useLoading";
 import { LOADING, TIMING, SVG_IDS, DOM_IDS } from "../../constants";
-import { musigreeManager } from "../../core";
+import { musigreeManager } from "../../core/singletons";
 
 /**
  * Interface for arc data used in the loading animation

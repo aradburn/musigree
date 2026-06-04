@@ -1,4 +1,4 @@
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
 
@@ -48,7 +48,7 @@ class TestRuntimeCountryTable:
         expected_columns = {"id", "country_name"}
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeCountryTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeCountryTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)

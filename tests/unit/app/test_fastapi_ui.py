@@ -145,11 +145,11 @@ class TestFastAPIUI:
         # Verify the response
         assert isinstance(response, HTMLResponse)
 
-        # Verify template context - entity route passes context directly as second argument
+        # Verify template context
         call_args = mock_templates.TemplateResponse.call_args
-        template_name = call_args[0][0]  # First positional argument
-        context = call_args[0][1]  # Second positional argument
-        assert template_name == "index.html"
+        assert call_args[0][0] == mock_request
+        assert call_args.kwargs["name"] == "index.html"
+        context = call_args.kwargs["context"]
         assert context["title"] == "Musigree: The Beatles"
         assert "The Beatles" in context["og_title"]
 
@@ -268,9 +268,9 @@ class TestFastAPIUI:
                 mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
             )
 
-        # Verify template context contains URL - entity route passes context directly
+        # Verify template context contains URL
         call_args = mock_templates.TemplateResponse.call_args
-        context = call_args[0][1]  # Second positional argument
+        context = call_args.kwargs["context"]
         assert "og_url" in context
         assert "/artist/123" in context["og_url"]
         assert "roles=Artist" in context["og_url"]

@@ -162,7 +162,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         aria-expanded={showResults}
                     />
 
-                    {query && (
+                    {query ? (
                         <span
                             className="clear bg-light-subtle opacity-50 input-group-text px-2 py-0"
                             role="button"
@@ -171,7 +171,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         >
                             <i className="bi bi-backspace"></i>
                         </span>
-                    )}
+                    ) : null}
                 </div>
             </Form>
 
@@ -189,7 +189,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     ref={popoverRef}
                 >
                     <Popover.Body className="search-results-body p-0">
-                        {loading && (
+                        {loading ? (
                             <div className="d-flex justify-content-center p-3">
                                 <Spinner
                                     animation="border"
@@ -202,24 +202,24 @@ const SearchInput: React.FC<SearchInputProps> = ({
                                 </Spinner>
                                 <span className="ms-2">Loading...</span>
                             </div>
-                        )}
+                        ) : null}
 
-                        {error && (
+                        {error ? (
                             <div className="text-danger p-3">
                                 Error: {error}
                             </div>
-                        )}
+                        ) : null}
 
                         {!loading &&
-                            !error &&
-                            results.length === 0 &&
-                            query.length >= TYPEAHEAD.MIN_QUERY_LENGTH && (
-                                <div className="p-3">
-                                    No results found for "{query}"
-                                </div>
-                            )}
+                        !error &&
+                        results.length === 0 &&
+                        query.length >= TYPEAHEAD.MIN_QUERY_LENGTH ? (
+                            <div className="p-3">
+                                No results found for "{query}"
+                            </div>
+                        ) : null}
 
-                        {!loading && !error && results.length > 0 && (
+                        {!loading && !error && results.length > 0 ? (
                             <div
                                 role="listbox"
                                 className="list-group list-group-flush"
@@ -233,7 +233,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                                     />
                                 ))}
                             </div>
-                        )}
+                        ) : null}
                     </Popover.Body>
                 </Popover>
             </Overlay>

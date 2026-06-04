@@ -1,5 +1,6 @@
 """Unit tests for LoaderTarget class."""
 
+import asyncio
 import datetime
 from typing import Any
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -72,9 +73,11 @@ class TestLoaderTarget:
         mock_metadata_repo.return_value = mock_repo_instance
         mock_repo_instance.get_by_key = AsyncMock(return_value=MagicMock())
 
-        # Mock the Runner context manager
+        def run_coro(coro: Any) -> Any:
+            return asyncio.run(coro)
+
         mock_runner_instance = MagicMock()
-        mock_runner_instance.run.return_value = True
+        mock_runner_instance.run.side_effect = run_coro
         mock_asyncio_runner.return_value.__enter__ = MagicMock(return_value=mock_runner_instance)
         mock_asyncio_runner.return_value.__exit__ = MagicMock(return_value=None)
 
@@ -102,9 +105,11 @@ class TestLoaderTarget:
         mock_metadata_repo.return_value = mock_repo_instance
         mock_repo_instance.get_by_key = AsyncMock(side_effect=NotFoundError(("Not found",)))
 
-        # Mock the Runner context manager
+        def run_coro(coro: Any) -> Any:
+            return asyncio.run(coro)
+
         mock_runner_instance = MagicMock()
-        mock_runner_instance.run.return_value = False
+        mock_runner_instance.run.side_effect = run_coro
         mock_asyncio_runner.return_value.__enter__ = MagicMock(return_value=mock_runner_instance)
         mock_asyncio_runner.return_value.__exit__ = MagicMock(return_value=None)
 

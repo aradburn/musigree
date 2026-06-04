@@ -1,46 +1,26 @@
 /*!
  * Musigree SCSS
- * Copyright 2023-2025 Andrew Radburn
+ * Copyright 2023-2026 Andrew Radburn
  * Licensed under MIT (https://github.com/aradburn/musigree/blob/main/LICENSE)
  */
-$mg-primary-color: rgba(70, 115, 94, 0.7333333333);
-$mg-secondary-color: #4d8c6f;
+$mg-background-light-color: #BFC7BD;
+// $mg-background-light-color: #CAD0C8;
+$mg-background-lighter-color: #DFE3DE;
+$mg-background-dark-color: #2F4F4F;
+$mg-background-highlight-color: #FEFBDC;
+$mg-badge-highlight-color: #D4D9D3;
+// $mg-background-highlight-color: #F4F6F4;
+// $mg-background-highlight-color: #DFE3DE;
 
-$mg-background-light-color: #9db1ae;
-$mg-background-dark-color: #2f4f4f;
+$mg-navbar-top-color: #DFE3DEAA;
+$mg-navbar-bottom-color: #2F4F4FAA;
 
-// $mg-background-light-color: #9db1ae;
-// $mg-background-dark-color: #022a36;
-
-// $mg-background-light-color: #022a36;
-// $mg-background-dark-color: #2F5954;
-
-// blue-green
-// $mg-background-light-color: #c1cfcc;
-// $mg-background-light-color: #bbd0c9;
-// $mg-background-light-color: #b6c6b9;
-// $mg-background-light-color: #85AB8C;
-// $mg-background-light-color: #b3c3c4;
-// $mg-background-light-color: #70AEA5;
-// $mg-background-light-color: #ccd6cf;
-// $mg-background-light-color: #cbd7ce;
-// $mg-background-light-color: #c9d9cd;
-// $mg-background-light-color: #9db8ac;
-// $mg-background-light-color: #a3beb2;
-// $mg-background-light-color: #bcd2c9;
-// $mg-background-dark-color: #2F5954;
-
-// Original
-// $mg-background-light-color: #bcd2c9;
-// $mg-background-dark-color: #1c5a51;
-
-$mg-text-color: #0e0e0e;
-// $mg-text-color: #111;
+$mg-text-color: #fff;
 $mg-text-inner-color: #000;
 $mg-text-outer-color: #fff;
 
-$mg-svg-background-color: #eee;
-$mg-modal-background-color: #f9fbfa;
+$mg-svg-background-color: #FEF3EC;
+$mg-modal-background-color: #F9FBFA;
 
 $mg-tooltip-color: #111;
 $mg-tooltip-background-color: #ffffcc;

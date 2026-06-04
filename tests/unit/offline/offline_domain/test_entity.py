@@ -192,3 +192,31 @@ class TestEntity:
 
         serialized_type = entity.serialize_entity_type(EntityType.ARTIST)
         assert serialized_type == "ARTIST"
+
+    def test_size_property_artist_entities_not_dict(self) -> None:
+        """Test size returns 0 when entities is not a dict (ARTIST)."""
+        entity = Entity.model_construct(
+            id=1,
+            entity_id=123,
+            entity_type=EntityType.ARTIST,
+            entity_name="Test Artist",
+            relation_counts={},
+            entity_metadata={},
+            entities=[],  # Not a dict; defensive branch
+            search_content="test",
+        )
+        assert entity.size == 0
+
+    def test_size_property_label_entities_not_dict(self) -> None:
+        """Test size returns 0 when entities is not a dict (LABEL)."""
+        entity = Entity.model_construct(
+            id=1,
+            entity_id=456,
+            entity_type=EntityType.LABEL,
+            entity_name="Test Label",
+            relation_counts={},
+            entity_metadata={},
+            entities=None,  # Not a dict; defensive branch
+            search_content="test",
+        )
+        assert entity.size == 0

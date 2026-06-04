@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 class OfflineDatabaseManager:
     offline_database_helper: OfflineDatabaseHelper | None = None
     _threading_model: ThreadingModel | None = None
+    """Configuration used during setup; workers use it for cache re-initialization."""
+    offline_config: Configuration | None = None
 
     @staticmethod
     def get_concurrency_count() -> int:
@@ -30,6 +32,7 @@ class OfflineDatabaseManager:
 
     @classmethod
     async def setup_database(cls, config: Configuration) -> None:
+        OfflineDatabaseManager.offline_config = config
         OfflineDatabaseManager._threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
@@ -51,9 +54,13 @@ class OfflineDatabaseManager:
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
+        if OfflineDatabaseManager.offline_database_helper is None:
+            raise ValueError("Configuration Error: Cannot set database helper")
+
         async_engine = await OfflineDatabaseManager.offline_database_helper.setup_database(config)
         OfflineDatabaseManager.offline_database_helper.offline_async_engine = async_engine
-        log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
+
+        # log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
 
         def engine_on_connect(dbapi_con, connection_record) -> None:  # type: ignore
             if LOGGING_TRACE:
@@ -118,9 +125,15 @@ class OfflineDatabaseManager:
         )
 
         if OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None:
-            await OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose()
+            try:
+                await OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose()
+            except KeyboardInterrupt:
+                log.warning("Offline engine dispose interrupted")
 
-        await OfflineDatabaseManager.offline_database_helper.shutdown_database()
+        try:
+            await OfflineDatabaseManager.offline_database_helper.shutdown_database()
+        except KeyboardInterrupt:
+            log.warning("Offline database helper shutdown interrupted")
 
     @classmethod
     def reinitialize_offline_database_async_engine(cls, loop: AbstractEventLoop) -> None:

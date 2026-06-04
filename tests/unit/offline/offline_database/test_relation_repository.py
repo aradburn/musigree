@@ -12,6 +12,7 @@ from sqlalchemy import Result, select
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
+from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.relation_table import RelationTable
 from musigree.offline.offline_domain.relation import (
@@ -216,6 +217,65 @@ class TestRelationRepository:
             # Assert
             assert result == [mock_relation_internal]
             mock_get_all.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_find_role_counts_by_entity_success(
+        self, relation_repository: RelationRepository
+    ) -> None:
+        """Distinct pair counts per predicate map to role names."""
+        mock_session = AsyncMock()
+        mock_result = Mock()
+        mock_result.all.return_value = [(1, 2), (2, 1)]
+        mock_session.execute.return_value = mock_result
+        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+            m.return_value = mock_session
+            with patch.dict(
+                RoleCache.role_id_to_role_name_lookup,
+                {1: "performer", 2: "producer"},
+                clear=False,
+            ):
+                result = await relation_repository.find_role_counts_by_entity(99)
+        assert result == {"performer": 2, "producer": 1}
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_find_role_counts_by_entity_empty(
+        self, relation_repository: RelationRepository
+    ) -> None:
+        """No relation rows yields empty dict."""
+        mock_session = AsyncMock()
+        mock_result = Mock()
+        mock_result.all.return_value = []
+        mock_session.execute.return_value = mock_result
+        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+            m.return_value = mock_session
+            result = await relation_repository.find_role_counts_by_entity(1)
+        assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_find_role_counts_by_entity_skips_unknown_predicate(
+        self,
+        relation_repository: RelationRepository,
+    ) -> None:
+        """Unknown predicate ids are omitted with a warning."""
+        mock_session = AsyncMock()
+        mock_result = Mock()
+        mock_result.all.return_value = [(1, 1), (99999, 5)]
+        mock_session.execute.return_value = mock_result
+        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+            m.return_value = mock_session
+            with patch.dict(RoleCache.role_id_to_role_name_lookup, {1: "performer"}, clear=True):
+                with patch(
+                    "musigree.offline.offline_database.relation_repository.log"
+                ) as mock_log:
+                    result = await relation_repository.find_role_counts_by_entity(5)
+        assert result == {"performer": 1}
+        mock_log.warning.assert_called_once()
+        assert mock_log.warning.call_args[0][0].startswith(
+            "find_role_counts_by_entity: unknown predicate id"
+        )
+        assert mock_log.warning.call_args[0][1] == 99999
+        assert mock_log.warning.call_args[0][2] == 5
 
     @pytest.mark.asyncio
     async def test_find_by_entity_and_roles_success(

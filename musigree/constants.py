@@ -109,3 +109,4 @@ class CSPSetting(enum.Enum):
 class AnalyticsType(enum.Enum):
     UMAMI = 1
     SWETRIX = 2
+    OPENPANEL = 3

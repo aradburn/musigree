@@ -1,3 +1,4 @@
+from typing import Any
 from sqlalchemy import String, Index, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -9,7 +10,7 @@ from musigree.library.fields.int_enum import IntEnum
 
 class EntityTable(OfflineBase):
     """
-    Represents the 'entity' table in the runtime_database.
+    Represents the 'entity' table in the offline_database.
 
     This table stores information about entities in the Musigree system,
     including artists and labels. It contains various attributes such as
@@ -17,7 +18,7 @@ class EntityTable(OfflineBase):
     and content used for search operations.
 
     Attributes:
-        __tablename__ (str): The name of the table in the runtime_database.
+        __tablename__ (str): The name of the table in the offline_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing integer.
         entity_id (Mapped[int]): The external ID of the entity (e.g., from Discogs).
         entity_type (Mapped[EntityType]): The type of the entity (Artist or Label).
@@ -49,15 +50,15 @@ class EntityTable(OfflineBase):
     """
      The name of the entity.
     """
-    relation_counts: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    relation_counts: Mapped[dict | None] = mapped_column(type_=JSON, nullable=True)
     """
       Counts of relations to other entities.
     """
-    entity_metadata: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
+    entity_metadata: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
     """
      Additional metadata about the entity.
     """
-    entities: Mapped[dict | list] = mapped_column(type_=JSON, nullable=False)
+    entities: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
     """
      Information about related entities.
     """
@@ -66,7 +67,7 @@ class EntityTable(OfflineBase):
      Content used for full-text search operations.
     """
 
-    __table_args__: tuple[Index, Index, dict] = (
+    __table_args__: tuple[Index, Index, dict[str, Any]] = (
         Index(
             "idx_entity_id_and_entity_type",
             entity_id,

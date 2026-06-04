@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import React from "react";
 import { printSvg } from "../../print";
-import { musigreeManager } from "../../core";
+import { musigreeManager } from "../../core/singletons";
 import ForceControls from "../Visualization/ForceControls";
 
 /**

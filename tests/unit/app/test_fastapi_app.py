@@ -9,7 +9,9 @@ from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+# noinspection PyPackageRequirements
 from starlette.requests import Request
+# noinspection PyPackageRequirements
 from starlette.responses import JSONResponse, Response
 
 from musigree.app.fastapi_app import (
@@ -208,8 +210,9 @@ class TestExceptionHandlers:
         if handler is not None:
             # noinspection PyCallingNonCallable
             result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+            response: Response
             if hasattr(result, "__await__"):
-                response: Response = await result  # type: ignore
+                response = await result  # type: ignore
             else:
                 response = result  # type: ignore
 
@@ -232,8 +235,9 @@ class TestExceptionHandlers:
 
         # Act
         result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        response: Response
         if hasattr(result, "__await__"):
-            response: Response = await result  # type: ignore
+            response = await result  # type: ignore
         else:
             response = result  # type: ignore
 
@@ -255,8 +259,9 @@ class TestExceptionHandlers:
 
         # Act
         result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        response: Response
         if hasattr(result, "__await__"):
-            response: Response = await result  # type: ignore
+            response = await result  # type: ignore
         else:
             response = result  # type: ignore
 

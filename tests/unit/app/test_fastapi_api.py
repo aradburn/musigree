@@ -7,13 +7,27 @@ from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+# noinspection PyPackageRequirements
 from starlette.requests import Request
+# noinspection PyPackageRequirements
 from starlette.responses import JSONResponse
 
 from musigree.app.fastapi_api import router
 from musigree.config import SqliteTestConfiguration, Configuration
 from musigree.exceptions import BadRequestError, NotFoundError, DatabaseError, UnprocessableContentError
 from musigree.library.fields.entity_type import EntityType
+
+
+def _async_cache_mock() -> MagicMock:
+    """Cache mock with async get/ttl/incr/expire so rate_limiter can await them without warnings."""
+    cache = MagicMock()
+    cache.get = AsyncMock(return_value=None)
+    cache.ttl = AsyncMock(return_value=60)
+    cache.incr = AsyncMock()
+    cache.expire = AsyncMock()
+    cache.hgetall = AsyncMock(return_value=None)
+    cache.hset = AsyncMock()
+    return cache
 
 
 # Exception handlers for the test FastAPI app
@@ -80,7 +94,7 @@ class TestFastAPIRoutes:
         """Test successful entity relations retrieval."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -179,7 +193,7 @@ class TestFastAPIRoutes:
         """Test successful entity network retrieval."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -276,7 +290,7 @@ class TestFastAPIRoutes:
         """Test entity network with roles query parameter."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -341,7 +355,7 @@ class TestFastAPIRoutes:
         """Test entity network with year query parameter."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -401,7 +415,7 @@ class TestFastAPIRoutes:
         """Test entity network with no query parameters to test empty roles default."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -458,7 +472,7 @@ class TestFastAPIRoutes:
         """Test successful search with cache miss."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -507,7 +521,7 @@ class TestFastAPIRoutes:
         """Test search with empty results."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -547,7 +561,7 @@ class TestFastAPIRoutes:
         """Test search with exception."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -580,7 +594,7 @@ class TestFastAPIRoutes:
         """Test search with cache hit - should return cached result without calling search."""
         # Arrange
         # Mock cache - return cached data for cache hit
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         cached_data = {"results": ({"key": "artist-123", "name": "Cached Artist"},)}
         mock_cache.hgetall = AsyncMock(return_value=cached_data)
         mock_cache.hset = AsyncMock()
@@ -628,7 +642,7 @@ class TestFastAPIRoutes:
         """Test search with cache miss - should perform search and cache the result."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -677,7 +691,7 @@ class TestFastAPIRoutes:
         """Test successful entity details retrieval."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -740,7 +754,7 @@ class TestFastAPIRoutes:
         """Test entity details with cache hit - should return cached result without calling repository."""
         # Arrange
         # Mock cache - return cached data for cache hit
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         cached_data = {
             "id": 123,
             "type": "artist",
@@ -795,7 +809,7 @@ class TestFastAPIRoutes:
         """Test entity details with cache miss - should fetch from repository and cache the result."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -863,7 +877,7 @@ class TestFastAPIRoutes:
         """Test entity details with invalid entity ID."""
         # Arrange
         # Mock cache
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache_manager.return_value = mock_cache
 
         mock_entity_repo = AsyncMock()
@@ -901,7 +915,7 @@ class TestFastAPIRoutes:
         """Test entity details when entity is not found."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -944,7 +958,7 @@ class TestFastAPIRoutes:
         """Test entity relations when no data is found."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1000,7 +1014,7 @@ class TestFastAPIRoutes:
         """Test entity relations with cache hit - should return cached result without calling database."""
         # Arrange
         # Mock cache - return cached data for cache hit
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         cached_data = {"relations": [{"id": "1", "type": "artist"}]}
         mock_cache.hgetall = AsyncMock(return_value=cached_data)
         mock_cache.hset = AsyncMock()
@@ -1045,7 +1059,7 @@ class TestFastAPIRoutes:
         """Test entity relations with cache miss - should fetch from database and cache the result."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1111,7 +1125,7 @@ class TestFastAPIRoutes:
         """Test entity network with cache hit - should return cached result without calling database."""
         # Arrange
         # Mock cache - return cached data for cache hit
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         cached_data = {"graph": {"nodes": [{"id": "1"}], "edges": [{"from": "1", "to": "2"}]}}
         mock_cache.hgetall = AsyncMock(return_value=cached_data)
         mock_cache.hset = AsyncMock()
@@ -1156,7 +1170,7 @@ class TestFastAPIRoutes:
         """Test entity network with cache miss - should fetch from database and cache the result."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1208,7 +1222,7 @@ class TestFastAPIRoutes:
         """Test successful roles retrieval."""
         # Arrange
         # Mock cache for rate limiter
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
         mock_cache.ttl = AsyncMock(return_value=60)
         mock_cache.incr = AsyncMock()
@@ -1242,7 +1256,7 @@ class TestFastAPIRoutes:
         """Test successful random entity retrieval."""
         # Arrange
         # Mock cache for rate limiter
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
         mock_cache.ttl = AsyncMock(return_value=60)
         mock_cache.incr = AsyncMock()
@@ -1290,7 +1304,7 @@ class TestFastAPIRoutes:
         """Test random entity retrieval with database error."""
         # Arrange
         # Mock cache for rate limiter
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.get = AsyncMock(return_value=None)  # No rate limit hit
         mock_cache.ttl = AsyncMock(return_value=60)
         mock_cache.incr = AsyncMock()
@@ -1429,7 +1443,7 @@ class TestAdditionalEndpointScenarios:
         """Test entity details for label entity type."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1509,7 +1523,7 @@ class TestAdditionalEndpointScenarios:
         """Test entity network when no data is found."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1558,7 +1572,7 @@ class TestAdditionalEndpointScenarios:
         """Test entity details with cache returning empty dict - should be treated as cache hit."""
         # Arrange
         # Mock cache - return empty dict (edge case - should be treated as cache hit)
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value={})  # Empty dict, not None
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1600,7 +1614,7 @@ class TestAdditionalEndpointScenarios:
         """Test that cache key is constructed correctly for entity relations."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache
@@ -1668,7 +1682,7 @@ class TestAdditionalEndpointScenarios:
         """Test that cache key includes entity type and ID for network endpoint."""
         # Arrange
         # Mock cache - return None for cache miss
-        mock_cache = MagicMock()
+        mock_cache = _async_cache_mock()
         mock_cache.hgetall = AsyncMock(return_value=None)  # Force a cache miss
         mock_cache.hset = AsyncMock()
         mock_cache_manager.return_value = mock_cache

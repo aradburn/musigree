@@ -28,7 +28,7 @@ export const EntityLink: React.FC<EntityLinkProps> = ({
     return (
         <a
             href={url}
-            className="entity-link badge p-1 text-black bg-success-subtle bg-opacity-40 bg-gradient"
+            className="entity-link badge text-black background-highlight bg-gradient"
             onClick={handleClick}
         >
             {entityName}

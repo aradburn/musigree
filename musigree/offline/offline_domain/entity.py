@@ -19,7 +19,7 @@ __all__ = [
 import logging
 from typing import Self, Any
 
-from pydantic import field_serializer
+from pydantic import StrictInt, field_serializer
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
@@ -37,7 +37,7 @@ class _EntityBase(InternalDomainObject):
     entity size, and converting between offline_domain and runtime_database representations.
 
     Attributes:
-        entity_id (int): The unique identifier for the entity. This is the
+        entity_id (StrictInt): The unique identifier for the entity. This is the
             external ID, from discogs.
         entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
         entity_name (str): The name of the entity.
@@ -53,7 +53,7 @@ class _EntityBase(InternalDomainObject):
             preprocessed string that can be used for full-text search operations.
     """
 
-    entity_id: int
+    entity_id: StrictInt
     entity_type: EntityType
     entity_name: str
     relation_counts: dict[str, Any]
@@ -108,13 +108,13 @@ class _EntityBase(InternalDomainObject):
         if self.entity_type == EntityType.ARTIST:
             if isinstance(self.entities, dict):
                 members = self.entities.get("members", [])
-            elif isinstance(self.entities, list):
-                members = self.entities
+            else:
+                members = []
         elif self.entity_type == EntityType.LABEL:
             if isinstance(self.entities, dict):
                 members = self.entities.get("sublabels", [])
-            elif isinstance(self.entities, list):
-                members = self.entities
+            else:
+                members = []
         return len(members)
 
     @staticmethod
@@ -140,7 +140,7 @@ class _EntityBase(InternalDomainObject):
         elif entity_type == EntityType.LABEL:
             return f"label-{entity_id}"
         # noinspection PyUnreachableCode
-        raise ValueError(entity_id, entity_type)
+        raise ValueError(f"Unsupported entity type: {entity_type!r} (entity_id={entity_id})")
 
     def to_domain(self) -> Self:
         """

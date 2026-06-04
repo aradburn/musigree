@@ -4,7 +4,10 @@ from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
 
+# noinspection PyPackageRequirements
 import fakeredis
+
+# noinspection PyPackageRequirements
 from redis import asyncio as aioredis
 
 from musigree.config import Configuration
@@ -149,17 +152,8 @@ class RedisCache(BaseCache):
             log.info(f"Redis server: {redis_url}")
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
-            # self._client = aioredis.Redis(
-            #     host=host,
-            #     port=port,
-            #     password=password,
-            #     db=db,
-            #     auto_close_connection_pool=True,
-            # )
-
         except Exception as e:
-            log.warning(f"Failed to connect to Redis server: {e}. Using FakeRedis instead.")
-            self._client = fakeredis.FakeRedis()
+            log.warning(f"Failed to connect to Redis server: {e}")
 
     def _get_redis_client(self) -> aioredis.Redis | fakeredis.FakeRedis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
@@ -281,6 +275,15 @@ class RedisCache(BaseCache):
             log.exception(f"Error clearing Redis cache: {e}")
 
 
+class FakeRedisCache(RedisCache):
+    """Fake Redis-based cache implementation."""
+
+    # noinspection PyMissingConstructor
+    def __init__(self) -> None:
+        # Initialize Fake Redis cache.
+        self._client = fakeredis.FakeRedis()
+
+
 class CacheManager:
     """
     Manages the application's cache system.
@@ -333,10 +336,23 @@ class CacheManager:
                 log.info("Using Redis cache")
 
                 # Test connection
-                ping_result = await cls.cache.ping()
-                if ping_result:
-                    log.info("Successfully connected to Redis server")
-
+                if cls.cache is not None:
+                    ping_result = await cls.cache.ping()
+                    if ping_result:
+                        log.info("Successfully connected to Redis server")
+                    else:
+                        log.info("Cannot ping Redis cache")
+                else:
+                    cls.cache = FakeRedisCache()
+                    # Test connection
+                    if cls.cache is not None:
+                        ping_result = await cls.cache.ping()
+                        if ping_result:
+                            log.info("Successfully connected to Fake Redis cache")
+                        else:
+                            log.info("Cannot ping Fake Redis cache")
+                    else:
+                        log.info("Cannot connect to Fake Redis cache")
             except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
@@ -346,15 +362,24 @@ class CacheManager:
             raise ValueError("Invalid CACHE_TYPE in configuration")
 
     @classmethod
-    async def shutdown_cache(cls) -> None:
+    async def clear_cache(cls) -> None:
         """
-        Clears and shuts down the cache.
+        Clears the cache.
 
-        This method clears the cache and sets the cache attribute to None,
-        releasing any resources held by the cache.
+        This method clears the cache releasing any resources held by the cache.
         """
         if cls.cache is not None:
             await cls.cache.clear()
+        log.debug("Cache cleared")
+
+    @classmethod
+    async def shutdown_cache(cls) -> None:
+        """
+        Shuts down the cache.
+
+        This method shuts down the cache.
+        """
+        if cls.cache is not None:
             await cls.cache.close()
         log.info("Shutdown cache")
 

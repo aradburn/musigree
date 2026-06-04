@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager } from "./core/index";
+import { musigreeManager } from "./core/singletons";
 import { SVG, MARKER, SVG_IDS, DOM_IDS, GRADIENT } from "./constants";
 import { convertRemToPixels } from "./utils";
 

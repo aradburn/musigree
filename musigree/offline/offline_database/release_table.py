@@ -1,3 +1,4 @@
+from typing import Any
 from sqlalchemy import String, Integer, Date, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -7,7 +8,7 @@ from musigree.offline.offline_database.base_table import OfflineBase
 
 class ReleaseTable(OfflineBase):
     """
-    Represents the 'release' table in the runtime_database.
+    Represents the 'release' table in the offline_database.
 
     This table stores information about music releases, including details
     such as artists, companies, country of origin, extra artists, formats,
@@ -15,7 +16,7 @@ class ReleaseTable(OfflineBase):
     and tracklist.
 
     Attributes:
-        __tablename__ (str): The name of the table in the runtime_database.
+        __tablename__ (str): The name of the table in the offline_database.
         release_id (Mapped[int]): The primary key of the table, representing the
             unique identifier for the release.
         artists (Mapped[dict | list]): Information about the artists involved
@@ -46,7 +47,7 @@ class ReleaseTable(OfflineBase):
     """
 
     __tablename__ = "release"
-    """The name of the table in the runtime_database."""
+    """The name of the table in the offline_database."""
 
     # COLUMNS
 
@@ -54,49 +55,49 @@ class ReleaseTable(OfflineBase):
     """
     The primary key of the table, representing the unique identifier for the release.
     """
-    artists: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    artists: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about the artists involved in the release. Stored as a JSON object.
     """
-    companies: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    companies: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about the companies involved in the release. Stored as a JSON object.
     """
-    country: Mapped[str] = mapped_column(String, nullable=True)
+    country: Mapped[str | None] = mapped_column(String, nullable=True)
     """The country where the release originated."""
-    extra_artists: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    extra_artists: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about additional artists involved in the release. Stored as a JSON object.
     """
-    formats: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    formats: Mapped[list[str] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about the formats of the release. Stored as a JSON object.
     """
-    genres: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    genres: Mapped[list[str] | None] = mapped_column(type_=JSON, nullable=True)
     """The musical genres associated with the release. Stored as a JSON object."""
-    identifiers: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    identifiers: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Various identifiers associated with the release. Stored as a JSON object.
     """
-    labels: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    labels: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about the record labels associated with the release. Stored as a JSON object.
     """
-    master_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    master_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """
     The ID of the master release this release is associated with.
     """
-    notes: Mapped[str] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String, nullable=True)
     """Additional notes about the release."""
-    release_date: Mapped[Date] = mapped_column(Date, nullable=True)
+    release_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
     """The date the release was published."""
-    styles: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    styles: Mapped[list[str] | None] = mapped_column(type_=JSON, nullable=True)
     """
     The musical styles associated with the release. Stored as a JSON object.
     """
     title: Mapped[str] = mapped_column(String, nullable=True)
     """The title of the release."""
-    tracklist: Mapped[dict | list] = mapped_column(type_=JSON, nullable=True)
+    tracklist: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """
     Information about the tracks included in the release. Stored as a JSON object.
     """

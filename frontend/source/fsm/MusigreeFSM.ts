@@ -6,31 +6,36 @@
 import * as d3 from "d3";
 import { musigreeManager, networkManager } from "../core/singletons";
 import {
-    restartForceLayout,
-    stopForceLayout,
     displayForceLayout,
+    restartForceLayout,
     setForceLayoutNodes,
     setNetworkForces,
+    stopForceLayout,
 } from "../network/forceLayout";
-import type { NodeKey, NetworkCenter, NetworkData } from "../network/data";
+import type {
+    NetworkCenter,
+    NetworkData,
+    NodeKey,
+    SimLink,
+    SimNode,
+} from "../network/data";
 import {
-    processAPINetworkDataResponse,
     convertNetworkDataToSimData,
+    processAPINetworkDataResponse,
     updateGlobalData,
 } from "../network/data";
 import { pruneSimData } from "../network/pruning";
 import type { RelationsData } from "../relations";
 import type { EntityData } from "../entities";
+import type { APINetworkDataResponse } from "../api";
 import {
+    fetchAPIEntity,
     fetchAPINetwork,
     fetchAPIRandom,
     fetchAPIRelations,
-    fetchAPIEntity,
 } from "../api";
 import { resetNetworkTransform } from "../network/init";
-import { FORCE, MESSAGE } from "../constants";
-import { FSM, INIT } from "../constants";
-import type { SimNode, SimLink } from "../network/data";
+import { FORCE, FSM, INIT, MESSAGE } from "../constants";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
 import { showMessage } from "../messages";
 import type { Actions } from "./actions/Actions";
@@ -42,14 +47,22 @@ import { RequestingRelationsState } from "./states/RequestingRelationsState";
 import { RequestingRandomState } from "./states/RequestingRandomState";
 import { UninitializedState } from "./states/UninitializedState";
 import debounce from "debounce";
-import {
-    AbstractFSM,
-    type EventData,
-    type TransitionFunction,
-} from "./AbstractFSM";
-import type { APINetworkDataResponse } from "../api";
+import { AbstractFSM, type TransitionFunction } from "./AbstractFSM";
 import { getSelectedRoles } from "../roles";
-import { track } from "../analytics";
+
+/** Lazy-loaded analytics track; defers loading analytics until first use. */
+let trackPromise: Promise<
+    (event: string, data?: Record<string, unknown>) => void
+> | null = null;
+
+function getTrack(): Promise<
+    (event: string, data?: Record<string, unknown>) => void
+> {
+    if (trackPromise === null) {
+        trackPromise = import("../analytics").then((m) => m.track);
+    }
+    return trackPromise;
+}
 
 // Extend the Window interface to include the dgNetwork property
 declare global {
@@ -178,7 +191,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         }
 
         // Emit the event
-        this.emit(event, data as EventData);
+        this.emit(event, data);
     }
 
     /**
@@ -287,10 +300,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             }
         }, INIT.DEBOUNCE_DELAY);
 
-        window.addEventListener(
-            FSM.EVENTS.RESIZE,
-            handleResize as EventListener,
-        );
+        window.addEventListener(FSM.EVENTS.RESIZE, handleResize);
 
         // Handle SVG mousedown events
         const svgDocument = document.getElementById("svg");
@@ -505,8 +515,10 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         if (pushHistory) {
             this.pushState(networkData.center.key, params);
 
-            // Track the current page
-            track("network", { key: networkData.center.key });
+            // Track the current page (deferred analytics load)
+            void getTrack().then((track) =>
+                track("network", { key: networkData.center.key }),
+            );
         }
 
         console.log("FSM received-network convertNetworkDataToSimData");

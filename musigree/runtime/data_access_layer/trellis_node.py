@@ -202,9 +202,10 @@ class TrellisNode:
             parents = new_parents
             """Update the parents to the new parents."""
         """Convert the parentage to a frozenset."""
-        self._parentage = frozenset(parentage)
+        result_parentage = frozenset(parentage)
+        self._parentage = result_parentage
         """Update the parentage."""
-        return self._parentage
+        return result_parentage
 
     # PUBLIC PROPERTIES
 

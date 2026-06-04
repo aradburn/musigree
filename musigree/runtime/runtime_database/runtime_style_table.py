@@ -1,7 +1,7 @@
 from typing import Any
 
-from sqlalchemy import String, inspect
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, class_mapper
 
 from musigree import utils
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
@@ -50,7 +50,7 @@ class RuntimeStyleTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in inspect(RuntimeStyleTable).columns])
+        column_names = set([column.name for column in class_mapper(RuntimeStyleTable).columns])
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 

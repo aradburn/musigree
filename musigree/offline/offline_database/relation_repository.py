@@ -1,7 +1,7 @@
 import logging
 from typing import AsyncGenerator
 
-from sqlalchemy import Result, select, Select, delete
+from sqlalchemy import Result, String, cast, delete, func, literal, or_, select, Select
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
@@ -217,6 +217,52 @@ class RelationRepository(BaseRepository[RelationTable]):
             )
         )
         return await self._get_all_by_query(query)
+
+    async def find_role_counts_by_entity(self, id_: int) -> dict[str, int]:
+        """
+        Count distinct (subject, object) relation edges per role for an entity.
+
+        Includes rows where the entity is subject or object. Matches the logic
+        of loading all relations via ``find_by_entity`` and deduplicating pairs
+        per role, but aggregates in the database.
+
+        Args:
+            id_: Internal entity id.
+
+        Returns:
+            Mapping of role name to count of distinct (subject, object) pairs.
+        """
+        # Delimiter must not appear in stringified integer ids (avoids "1"+"23"=="12"+"3").
+        _pair_key = (
+            cast(RelationTable.subject, String)
+            + literal("\x1f")
+            + cast(RelationTable.object, String)
+        )
+        stmt = (
+            select(RelationTable.predicate, func.count(func.distinct(_pair_key)))
+            .where(
+                or_(
+                    RelationTable.subject == id_,
+                    RelationTable.object == id_,
+                )
+            )
+            .group_by(RelationTable.predicate)
+        )
+        result: Result = await self._session.execute(stmt)
+        rows = result.all()
+        out: dict[str, int] = {}
+        lookup = RoleCache.role_id_to_role_name_lookup
+        for predicate_id, cnt in rows:
+            role_name = lookup.get(predicate_id)
+            if role_name is None:
+                log.warning(
+                    "find_role_counts_by_entity: unknown predicate id %s for entity %s, skipping",
+                    predicate_id,
+                    id_,
+                )
+                continue
+            out[role_name] = int(cnt)
+        return out
 
     async def find_by_entity_and_roles(
         self, id_: int, role_ids: list[int]

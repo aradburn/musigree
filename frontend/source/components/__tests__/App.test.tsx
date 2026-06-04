@@ -29,13 +29,22 @@ vi.mock("../App", () => {
         );
 
         React.useEffect(() => {
-            // Check if user has visited before
-            const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+            // Check if user has visited before (versioned key, try/catch per client-localstorage-schema)
+            const HAS_VISITED_BEFORE_KEY = "hasVisitedBefore:v1";
+            let hasVisitedBefore: string | null = null;
+            try {
+                hasVisitedBefore = localStorage.getItem(HAS_VISITED_BEFORE_KEY);
+            } catch {
+                // Private browsing, quota, or disabled; treat as first visit
+            }
             setIsReturnVisitor(!!hasVisitedBefore);
 
-            // Set localStorage for first-time visitors
             if (!hasVisitedBefore) {
-                localStorage.setItem("hasVisitedBefore", "true");
+                try {
+                    localStorage.setItem(HAS_VISITED_BEFORE_KEY, "true");
+                } catch {
+                    // Ignore; treat as first visit
+                }
                 setShowWelcomeModal(true);
             }
         }, []);
@@ -138,7 +147,9 @@ describe("App Component", () => {
         render(<App />);
         expect(screen.getByTestId("app-component")).toBeInTheDocument();
         expect(screen.getByTestId("header-component")).toBeInTheDocument();
-        expect(screen.getByTestId("sidebar-left-component")).toBeInTheDocument();
+        expect(
+            screen.getByTestId("sidebar-left-component"),
+        ).toBeInTheDocument();
         expect(
             screen.getByTestId("network-view-component"),
         ).toBeInTheDocument();
@@ -155,14 +166,14 @@ describe("App Component", () => {
     it("checks localStorage for returning visitors", () => {
         render(<App />);
         expect(localStorageMock.getItem).toHaveBeenCalledWith(
-            "hasVisitedBefore",
+            "hasVisitedBefore:v1",
         );
     });
 
     it("sets localStorage for first-time visitors", () => {
         render(<App />);
         expect(localStorageMock.setItem).toHaveBeenCalledWith(
-            "hasVisitedBefore",
+            "hasVisitedBefore:v1",
             "true",
         );
     });
@@ -189,6 +200,29 @@ describe("App Component", () => {
         const welcomeModal = screen.getByTestId("welcome-modal-component");
         expect(welcomeModal).toHaveAttribute("data-show", "true");
         expect(welcomeModal).toHaveAttribute("data-returnvisitor", "false");
+    });
+
+    it("handles localStorage getItem throwing (e.g. private browsing)", () => {
+        localStorageMock.getItem.mockImplementation(() => {
+            throw new Error("QuotaExceededError");
+        });
+        expect(() => render(<App />)).not.toThrow();
+        // Treated as first visit; setItem may still be called
+        expect(localStorageMock.getItem).toHaveBeenCalledWith(
+            "hasVisitedBefore:v1",
+        );
+    });
+
+    it("handles localStorage setItem throwing (e.g. quota exceeded)", () => {
+        localStorageMock.getItem.mockReturnValue(null);
+        localStorageMock.setItem.mockImplementation(() => {
+            throw new Error("QuotaExceededError");
+        });
+        expect(() => render(<App />)).not.toThrow();
+        expect(localStorageMock.setItem).toHaveBeenCalledWith(
+            "hasVisitedBefore:v1",
+            "true",
+        );
     });
 
     it("passes correct initial props to modals", () => {

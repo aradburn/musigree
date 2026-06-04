@@ -84,7 +84,7 @@ class RoleType:
      Useful for extracting additional details from role descriptions.
     """
 
-    category_names = {
+    category_names: dict[Category, str] = {
         Category.ACTING_LITERARY_AND_SPOKEN: "Acting, Literary & Spoken",
         Category.COMPANIES: "Companies",
         Category.CONDUCTING_AND_LEADING: "Conducting & Leading",
@@ -104,7 +104,7 @@ class RoleType:
     A mapping from each `Category` enum member to its human-readable name.
     """
 
-    subcategory_names = {
+    subcategory_names: dict[Subcategory, str] = {
         Subcategory.NONE: "None",
         Subcategory.DRUMS_AND_PERCUSSION: "Drums & Percussion",
         Subcategory.KEYBOARDS: "Keyboards",

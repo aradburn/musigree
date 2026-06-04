@@ -86,7 +86,7 @@ class TestRuntimeStyle:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert errors[0]["type"] == "int_parsing"
+        assert errors[0]["type"] == "int_type"
         assert errors[0]["loc"] == ("id",)
 
     def test_style_validation_error_invalid_name_type(self) -> None:
@@ -100,10 +100,14 @@ class TestRuntimeStyle:
         assert errors[0]["loc"] == ("style_name",)
 
     def test_style_string_coercion_for_id(self) -> None:
-        """Test that string numbers are coerced to integers for id."""
-        style = RuntimeStyle(id="42", style_name="Test Style")  # type: ignore
-        assert style.id == 42
-        assert isinstance(style.id, int)
+        """Test that StrictInt id rejects string values (no coercion)."""
+        with pytest.raises(ValidationError) as exc_info:
+            RuntimeStyle(id="42", style_name="Test Style")  # type: ignore
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "int_type"
+        assert errors[0]["loc"] == ("id",)
 
     def test_style_equality(self) -> None:
         """Test equality comparison between RuntimeStyle instances."""

@@ -110,6 +110,9 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 )
                 OfflinePostgresHelper.pg_offline_dirname = pg_offline_dirname
 
+                if OfflinePostgresHelper.postgres_test_db is None:
+                    raise ValueError("Configuration Error: Cannot set test database")
+
                 # Create a temporary test database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,

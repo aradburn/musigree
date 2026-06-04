@@ -20,8 +20,10 @@
     <script type="module" src="{{ asset('@vite/client') }}"></script>
     <script type="module">
         import RefreshRuntime from "{{ asset('@react-refresh') }}";
+
         RefreshRuntime.injectIntoGlobalHook(window);
-        window.$RefreshReg$ = () => {};
+        window.$RefreshReg$ = () => {
+        };
         window.$RefreshSig$ = () => (type) => type;
         window.__vite_plugin_react_preamble_installed__ = true;
     </script>
@@ -76,10 +78,40 @@ labels using information derived from the Discogs.com database.">
     <link rel="stylesheet" href="{{ asset('style.css') }}"/>
     {%- endif %}
 
-    {# Analytics: Umami or Swetrix - the analytics service will detect which is
+    {# Analytics: OpenPanel, Umami or Swetrix - the analytics service will
+    detect which is
     loaded #}
     {# Uncomment the service you want to use, or configure via template
     variables #}
+    <script>
+        window.op = window.op || function () {
+            var n = [];
+            return new Proxy(function () {
+                arguments.length && n.push([].slice.call(arguments))
+            }, {
+                get: function (t, r) {
+                    return "q" === r ? n : function () {
+                        n.push([r].concat([].slice.call(arguments)))
+                    }
+                }, has: function (t, r) {
+                    return "q" === r
+                }
+            })
+        }();
+        window.op('init', {
+            apiUrl: 'https://opapi.musigree.com',
+            clientId: '562582ce-9dce-4e9e-a350-612fd6e3e4cf',
+            trackScreenViews: true,
+            trackOutgoingLinks: true,
+            trackAttributes: true,
+            // sessionReplay: {
+            //   enabled: true,
+            // },
+        });
+    </script>
+
+    <script src="https://openpanel.dev/op1.js" defer async></script>
+
     {# Umami #}
     {#
     <script defer src="https://umami.musigree.com/script.js"
@@ -88,7 +120,9 @@ labels using information derived from the Discogs.com database.">
     </script>
     #}
     {# Swetrix - uncomment to use instead of or alongside Umami #}
+    {#
     <script defer src="https://swetrix.org/swetrix.js"></script>
+    #}
 
 </head>
 
@@ -102,9 +136,11 @@ labels using information derived from the Discogs.com database.">
     </div>
 </div>
 
+<!--@formatter:off-->
 {% if initial_json %}
 <script>{{ initial_json|safe }}</script>
 {% endif %}
+<!--@formatter:on-->
 
 <script type="module" src="{{ asset('index.ts') }}"></script>
 

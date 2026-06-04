@@ -9,14 +9,14 @@ from musigree.offline.offline_database.base_table import OfflineBase
 
 class MetadataTable(OfflineBase):
     """
-    Represents the 'metadata' table in the runtime_database.
+    Represents the 'metadata' table in the offline_database.
 
     This table stores metadata information used by the Musigree system.
     It includes a unique key, a value, a timestamp, and a version ID for
     each metadata entry.
 
     Attributes:
-        __tablename__ (str): The name of the table in the runtime_database.
+        __tablename__ (str): The name of the table in the offline_database.
         metadata_id (Mapped[int]): The primary key of the table, an auto-incrementing integer.
         version_id (Mapped[int]): An integer representing the version of the metadata entry.
         metadata_key (Mapped[str]): The unique key for the metadata entry.

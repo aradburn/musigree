@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager, relationsManager } from "./core";
+import { musigreeManager, relationsManager } from "./core/singletons";
 import { DOM_IDS, SVG_IDS, RELATIONS, TIMING } from "./constants";
 
 /**

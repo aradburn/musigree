@@ -17,7 +17,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, date
 from functools import partial
 from io import BufferedWriter
-from typing import Protocol, Any, TypeVar, Generator, Callable
+from typing import Any, TypeVar, Generator, Callable, Protocol
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -27,15 +27,20 @@ from unidecode import unidecode
 
 from musigree.constants import VERSION
 
+T_read = TypeVar("T_read", covariant=True)
+T_write = TypeVar("T_write", contravariant=True)
 
-class SupportsWrite(Protocol):
-    """Protocol for objects that support writing."""
 
-    def write(self, data: str | bytes) -> Any: ...
+class SupportsRead(Protocol[T_read]):
+    """Protocol for file-like objects that support binary reads."""
 
-    def flush(self) -> None: ...
+    def read(self, size: int = -1, /) -> T_read: ...
 
-    def close(self) -> None: ...
+
+class SupportsWrite(Protocol[T_write]):
+    """Protocol for file-like objects that support binary writes."""
+
+    def write(self, data: T_write, /) -> int: ...
 
 
 log = logging.getLogger(__name__)
@@ -171,10 +176,13 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
         elif isinstance(o, InternalDomainObject):
             return list_public_attributes(preprocessor.filter(o.model_dump()))
         elif isinstance(o, enum.Enum):
+            # noinspection PyStringConversionWithoutDunderMethod
             return str(o)
         elif isinstance(o, date):
+            # noinspection PyStringConversionWithoutDunderMethod
             return str(o)
         elif isinstance(o, datetime):
+            # noinspection PyStringConversionWithoutDunderMethod
             return str(o)
         else:
             return f"<<non-serializable: {type(o).__qualname__}>>"
@@ -298,7 +306,11 @@ def sleep_with_backoff(multiplier: int) -> None:
     time.sleep(time_in_secs)
 
 
-def download_file(input_url: str, output_file: SupportsWrite | BufferedWriter) -> None:
+def copyfile(s: SupportsRead[bytes], t: SupportsWrite[bytes], length: int) -> None:
+    shutil.copyfileobj(s, t, length=length)
+
+
+def download_file(input_url: str, output_file: BufferedWriter) -> None:
     """Download a file from a URL and write it to the provided output file-like object.
     Args:
         input_url (str): The URL of the file to download.
@@ -306,9 +318,9 @@ def download_file(input_url: str, output_file: SupportsWrite | BufferedWriter) -
     """
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()
-        shutil.copyfileobj(response.raw, output_file, length=10 * 1024)
-    output_file.flush()  # type: ignore
-    output_file.close()  # type: ignore
+        copyfile(response.raw, output_file, length=10 * 1024)
+    output_file.flush()
+    output_file.close()
 
 
 def get_discogs_url(dump_date: date, dump_type: str) -> str:

@@ -18,6 +18,7 @@ __all__ = [
     "Role",
 ]
 
+from pydantic import StrictInt
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.role_type import RoleType
 
@@ -74,9 +75,9 @@ class Role(_RoleBase):
     runtime_database, with an ID, name, category and subcategory.
 
     Attributes:
-        id (int): The unique identifier for the role. This is assigned by
+        id (StrictInt): The unique identifier for the role. This is assigned by
             the runtime_database when the role is stored.
     """
 
-    id: int
+    id: StrictInt
     """The unique identifier for the role."""

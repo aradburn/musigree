@@ -31,6 +31,8 @@ __all__ = [
 
 from dataclasses import field
 
+from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.role_type import RoleType
 
@@ -53,7 +55,7 @@ class RuntimeRole(InternalDomainObject):
         role_subcategory_name (str): The name of the role subcategory.
     """
 
-    id: int
+    id: StrictInt
     """The unique identifier for the role."""
     role_name: str
     """The name of the role."""

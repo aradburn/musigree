@@ -358,8 +358,11 @@ class TestAssetRouterEndpoints:
         router, templates = create_assets_router(config)
 
         # In development, should only have the context endpoint, no static file mounts
-        route_paths = [getattr(route, "path", None) for route in router.routes]
-        static_routes = [path for path in route_paths if path and path.startswith("/assets")]
+        static_routes = [
+            path
+            for route in router.routes
+            if isinstance(path := getattr(route, "path", None), str) and path.startswith("/assets")
+        ]
         assert len(static_routes) == 0
 
 

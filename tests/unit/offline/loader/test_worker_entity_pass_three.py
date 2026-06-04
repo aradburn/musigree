@@ -7,7 +7,7 @@ and updating relation counts for entities in the offline database.
 """
 
 import logging
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -20,7 +20,6 @@ from musigree.offline.loader.worker_entity_pass_three import (
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_database.relation_repository import RelationRepository
-from musigree.offline.offline_domain.relation import Relation
 
 
 class TestWorkerEntityPassThree:
@@ -31,42 +30,18 @@ class TestWorkerEntityPassThree:
         """Set up test configuration."""
         self.config = SqliteTestConfiguration()
 
-    @pytest.fixture
-    def mock_relation_data(self) -> list[Mock]:
-        """Create mock relation data for testing."""
-        relations = []
-
-        # Create mock relations with different roles
-        relation1 = Mock(spec=Relation)
-        relation1.role = "performer"
-        relation1.subject = 1
-        relation1.object = 2
-
-        relation2 = Mock(spec=Relation)
-        relation2.role = "performer"
-        relation2.subject = 1
-        relation2.object = 3
-
-        relation3 = Mock(spec=Relation)
-        relation3.role = "producer"
-        relation3.subject = 1
-        relation3.object = 4
-
-        relations.extend([relation1, relation2, relation3])
-        return relations
-
     @pytest.mark.asyncio
-    async def test_worker_pass_three_single_success(
-        self, mock_relation_data: list[Relation]
-    ) -> None:
+    async def test_worker_pass_three_single_success(self) -> None:
         """Test successful processing of a single entity in pass three."""
         # Arrange
         entity_id = 1
         mock_entity_repo = AsyncMock(spec=EntityRepository)
         mock_relation_repo = AsyncMock(spec=RelationRepository)
 
-        # Mock relation repository to return test data
-        mock_relation_repo.find_by_entity.return_value = mock_relation_data
+        mock_relation_repo.find_role_counts_by_entity.return_value = {
+            "performer": 2,
+            "producer": 1,
+        }
 
         # Mock entity repository update and commit
         mock_entity_repo.update.return_value = None
@@ -76,7 +51,7 @@ class TestWorkerEntityPassThree:
         await worker_pass_three_single(mock_entity_repo, mock_relation_repo, entity_id)
 
         # Assert
-        mock_relation_repo.find_by_entity.assert_called_once_with(entity_id)
+        mock_relation_repo.find_role_counts_by_entity.assert_called_once_with(entity_id)
 
         # Check that update was called with correct relation counts
         expected_counts = {
@@ -104,29 +79,30 @@ class TestWorkerEntityPassThree:
         mock_entity_repo = AsyncMock(spec=EntityRepository)
         mock_relation_repo = AsyncMock(spec=RelationRepository)
 
-        # Mock relation repository to return empty list
-        mock_relation_repo.find_by_entity.return_value = []
+        # Mock relation repository: no relations touching this entity
+        mock_relation_repo.find_role_counts_by_entity.return_value = {}
 
         # Act
         await worker_pass_three_single(mock_entity_repo, mock_relation_repo, entity_id)
 
         # Assert
-        mock_relation_repo.find_by_entity.assert_called_once_with(entity_id)
+        mock_relation_repo.find_role_counts_by_entity.assert_called_once_with(entity_id)
 
         # Should not call update with empty relation counts
         mock_entity_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_worker_pass_three_single_database_error(
-        self, mock_relation_data: list[Relation]
-    ) -> None:
+    async def test_worker_pass_three_single_database_error(self) -> None:
         """Test handling of database error during entity update."""
         # Arrange
         entity_id = 1
         mock_entity_repo = AsyncMock(spec=EntityRepository)
         mock_relation_repo = AsyncMock(spec=RelationRepository)
 
-        mock_relation_repo.find_by_entity.return_value = mock_relation_data
+        mock_relation_repo.find_role_counts_by_entity.return_value = {
+            "performer": 2,
+            "producer": 1,
+        }
         mock_entity_repo.update.side_effect = DatabaseError(message="Update failed")
 
         # Act & Assert
@@ -135,41 +111,21 @@ class TestWorkerEntityPassThree:
 
     @pytest.mark.asyncio
     async def test_worker_pass_three_single_duplicate_relations(self) -> None:
-        """Test processing of an entity with duplicate relations."""
+        """Test processing when SQL aggregate dedupes duplicate subject-object pairs."""
         # Arrange
         entity_id = 1
         mock_entity_repo = AsyncMock(spec=EntityRepository)
         mock_relation_repo = AsyncMock(spec=RelationRepository)
 
-        # Create relations where some have the same subject-object pair
-        relation1 = Mock(spec=Relation)
-        relation1.role = "performer"
-        relation1.subject = 1
-        relation1.object = 2
-
-        relation2 = Mock(spec=Relation)
-        relation2.role = "performer"
-        relation2.subject = 1
-        relation2.object = 2  # Same subject-object pair as relation1
-
-        relation3 = Mock(spec=Relation)
-        relation3.role = "performer"
-        relation3.subject = 1
-        relation3.object = 3  # Different object
-
-        relations = [relation1, relation2, relation3]
-        mock_relation_repo.find_by_entity.return_value = relations
+        mock_relation_repo.find_role_counts_by_entity.return_value = {"performer": 2}
 
         # Act
         await worker_pass_three_single(mock_entity_repo, mock_relation_repo, entity_id)
 
         # Assert
-        # Should only count unique subject-object pairs, so count should be 2 not 3
-        expected_counts = {"performer": 2}
-
         call_args = mock_entity_repo.update.call_args
         actual_payload = call_args[0][1]
-        assert actual_payload[EntityTable.relation_counts.key] == expected_counts
+        assert actual_payload[EntityTable.relation_counts.key] == {"performer": 2}
 
     @pytest.mark.asyncio
     async def test_process_entity_pass_three_worker_single_threaded(

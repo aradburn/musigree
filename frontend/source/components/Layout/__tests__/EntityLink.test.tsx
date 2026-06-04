@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {fireEvent, render, screen} from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { EntityLink } from "../EntityLink";
-import { RequestNetworkEvent } from "@/network/events";
+import {EntityLink} from "../EntityLink";
+import {RequestNetworkEvent} from "@/network/events";
 
 describe("EntityLink", () => {
     let dispatchEventSpy: ReturnType<typeof vi.spyOn>;
@@ -29,7 +29,7 @@ describe("EntityLink", () => {
         });
 
         it("renders as an anchor element", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -42,7 +42,7 @@ describe("EntityLink", () => {
         });
 
         it("has correct href attribute", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -55,7 +55,7 @@ describe("EntityLink", () => {
         });
 
         it("applies correct CSS classes", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -67,10 +67,8 @@ describe("EntityLink", () => {
             expect(link).toHaveClass(
                 "entity-link",
                 "badge",
-                "p-1",
                 "text-black",
-                "bg-success-subtle",
-                "bg-opacity-40",
+                "background-highlight",
                 "bg-gradient",
             );
         });
@@ -78,7 +76,7 @@ describe("EntityLink", () => {
 
     describe("Click Handler", () => {
         it("prevents default navigation when clicked", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -107,7 +105,7 @@ describe("EntityLink", () => {
         });
 
         it("dispatches RequestNetworkEvent when entityKey is valid", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -131,7 +129,7 @@ describe("EntityLink", () => {
         });
 
         it("does not dispatch event when entityKey is empty string", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey=""
                     entityName="Test Artist"
@@ -146,7 +144,7 @@ describe("EntityLink", () => {
         });
 
         it("does not dispatch event when entityKey is 'null' string", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="null"
                     entityName="Test Artist"
@@ -162,14 +160,14 @@ describe("EntityLink", () => {
 
         it("dispatches event with correct entityKey for different entity types", () => {
             const testCases = [
-                { key: "a-12345", name: "Artist", url: "/artist/a-12345" },
-                { key: "l-67890", name: "Label", url: "/label/l-67890" },
-                { key: "r-11111", name: "Release", url: "/release/r-11111" },
+                {key: "a-12345", name: "Artist", url: "/artist/a-12345"},
+                {key: "l-67890", name: "Label", url: "/label/l-67890"},
+                {key: "r-11111", name: "Release", url: "/release/r-11111"},
             ];
 
-            testCases.forEach(({ key, name, url }) => {
-                const { container, unmount } = render(
-                    <EntityLink entityKey={key} entityName={name} url={url} />,
+            testCases.forEach(({key, name, url}) => {
+                const {container, unmount} = render(
+                    <EntityLink entityKey={key} entityName={name} url={url}/>,
                 );
 
                 const link = container.querySelector("a") as HTMLAnchorElement;
@@ -177,8 +175,8 @@ describe("EntityLink", () => {
 
                 const dispatchedEvent =
                     dispatchEventSpy.mock.calls[
-                        dispatchEventSpy.mock.calls.length - 1
-                    ][0];
+                    dispatchEventSpy.mock.calls.length - 1
+                        ][0];
                 expect(dispatchedEvent.detail.entityKey).toBe(key);
 
                 unmount();
@@ -187,7 +185,7 @@ describe("EntityLink", () => {
         });
 
         it("always sets pushHistory to true", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-12345"
                     entityName="Test Artist"
@@ -232,7 +230,7 @@ describe("EntityLink", () => {
         });
 
         it("handles entityKey with special characters", () => {
-            const { container } = render(
+            const {container} = render(
                 <EntityLink
                     entityKey="a-123_45-abc"
                     entityName="Test"

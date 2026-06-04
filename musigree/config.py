@@ -39,7 +39,7 @@ class Configuration(BaseSettings):
     APPLICATION_ROOT: str = "http://localhost"
     THREADING_MODEL: ThreadingModel = ThreadingModel.THREAD
     CACHE_TYPE: CacheType = CacheType.MEMORY
-    ANALTICS_TYPE: AnalyticsType = AnalyticsType.SWETRIX
+    ANALTICS_TYPE: AnalyticsType = AnalyticsType.OPENPANEL
 
     # PostgreSQL settings
     POSTGRES_DATABASE_USERNAME: str | None = None

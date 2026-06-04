@@ -1,7 +1,7 @@
 from typing import Any
 from unittest.mock import Mock, patch
 
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_table import RuntimeEntityTable
@@ -83,8 +83,8 @@ class TestRuntimeEntityTable:
         # THEN
         assert table_name == "runtime_entity"
 
-    @patch("tests.unit.runtime.runtime_database.test_runtime_entity_table.inspect")
-    def test_columns_exist(self, mock_inspect: Mock) -> None:
+    @patch("tests.unit.runtime.runtime_database.test_runtime_entity_table.class_mapper")
+    def test_columns_exist(self, mock_class_mapper: Mock) -> None:
         """Test that expected columns exist in the table."""
         # GIVEN
         expected_columns = {
@@ -109,29 +109,29 @@ class TestRuntimeEntityTable:
             mock_col.name = col_name
             mock_columns.append(mock_col)
 
-        mock_inspector = Mock()
-        mock_inspector.columns = mock_columns
-        mock_inspect.return_value = mock_inspector
+        class_mapper_mock = Mock()
+        class_mapper_mock.columns = mock_columns
+        mock_class_mapper.return_value = class_mapper_mock
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeEntityTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeEntityTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)
 
-    @patch("tests.unit.runtime.runtime_database.test_runtime_entity_table.inspect")
-    def test_primary_key(self, mock_inspect: Mock) -> None:
+    @patch("tests.unit.runtime.runtime_database.test_runtime_entity_table.class_mapper")
+    def test_primary_key(self, mock_class_mapper: Mock) -> None:
         """Test that id column is the primary key."""
         # GIVEN
         mock_pk_col = Mock()
         mock_pk_col.name = "id"
 
-        mock_inspector = Mock()
-        mock_inspector.primary_key = [mock_pk_col]
-        mock_inspect.return_value = mock_inspector
+        class_mapper_mock = Mock()
+        class_mapper_mock.primary_key = [mock_pk_col]
+        mock_class_mapper.return_value = class_mapper_mock
 
         # WHEN
-        primary_key_columns = [col.name for col in inspect(RuntimeEntityTable).primary_key]
+        primary_key_columns = [col.name for col in class_mapper(RuntimeEntityTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]

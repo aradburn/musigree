@@ -49,7 +49,9 @@ def create_development_app() -> FastAPI:
     """
     _app = create_app(runtime_config)
 
-    logging.getHandlerByName("console_handler").setLevel("DEBUG")
+    console_handler = logging.getHandlerByName("console_handler")
+    if console_handler is not None:
+        console_handler.setLevel(logging.DEBUG)
 
     """
     FastAPI application instance.

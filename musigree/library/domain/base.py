@@ -12,6 +12,7 @@ __all__ = [
     "_InternalDomainObject",
     "PublicDomainObject",
     "_PublicDomainObject",
+    "to_camelcase",
 ]
 
 from musigree import utils

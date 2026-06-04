@@ -1,7 +1,7 @@
 from typing import Any
 
-from sqlalchemy import String, inspect, Integer
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Integer
+from sqlalchemy.orm import Mapped, mapped_column, class_mapper
 
 from musigree import utils
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
@@ -48,7 +48,7 @@ class RuntimeTokenTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in inspect(RuntimeTokenTable).columns])
+        column_names = set([column.name for column in class_mapper(RuntimeTokenTable).columns])
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 

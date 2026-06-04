@@ -40,7 +40,7 @@ from typing import Iterator
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
-from musigree.loader.runtime_loader import get_load_runtime_table_stages
+from musigree.loader.run_runtime_loader import get_load_runtime_table_stages
 from musigree.offline.loader.loader_target import LoaderTarget
 
 log = logging.getLogger(__name__)
@@ -269,7 +269,7 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
             f"Run RuntimeLoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
         )
 
-        from musigree.loader.runtime_loader import get_load_runtime_table_stages
+        from musigree.loader.run_runtime_loader import get_load_runtime_table_stages
 
         stages = get_load_runtime_table_stages(
             Path(str(self.data_directory)),

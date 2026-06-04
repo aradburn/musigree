@@ -167,9 +167,11 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
             "runtime_async_engine must be initialized before calling create_tables()"
         )
+        # noinspection PyTypeChecker
         async with (
             RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
         ):
+            # noinspection PyTypeChecker
             await conn.run_sync(
                 RuntimeBase.metadata.create_all,
                 checkfirst=True,
@@ -196,22 +198,27 @@ class RuntimeDatabaseHelper(ABC):
         )
 
         if tables is not None:
+            # noinspection PyTypeChecker
             table_definitions: list[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
+                # noinspection PyTypeChecker
                 async with (
                     RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
                 ):
+                    # noinspection PyTypeChecker
                     await conn.run_sync(
                         table.drop,
                         checkfirst=True,
                     )
         else:
+            # noinspection PyTypeChecker
             async with (
                 RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
             ):
+                # noinspection PyTypeChecker
                 await conn.run_sync(
                     RuntimeBase.metadata.drop_all,
                     checkfirst=True,
