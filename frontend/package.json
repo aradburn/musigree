@@ -82,5 +82,8 @@
         "vite": "^8.0.14",
         "vite-plugin-remove-console": "^2.2.0",
         "vitest": "^4.1.7"
+    },
+    "engines": {
+        "node": ">=26.1.0"
     }
 }
