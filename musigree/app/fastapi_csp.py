@@ -7,6 +7,7 @@ from Secweb.ContentSecurityPolicy.ContentSecurityPolicyMiddleware import (
 )
 from fastapi import FastAPI
 
+from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.config import Configuration
 from musigree.constants import AnalyticsType, CSPSetting
 
@@ -223,7 +224,8 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
                 sys.exit("CSP Development Security Headers Not Set")
 
     # Add CSP security headers middleware
-    app.add_middleware(
+    add_app_middleware(
+        app,
         ContentSecurityPolicy,
         Option=content_security_policy_options,
         script_nonce=False,

@@ -2,7 +2,7 @@ import logging
 from collections.abc import Sequence, AsyncGenerator
 from typing import Any
 
-from sqlalchemy import Result, select, update, Select, delete, func
+from sqlalchemy import Result, select, tuple_, update, Select, delete, func
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
@@ -379,28 +379,10 @@ class EntityRepository(BaseRepository[EntityTable]):
         Returns:
             List[Entity]: A list of found entities.
         """
-        artist_ids: list[int] = []
-        label_ids: list[int] = []
-        for entity_id, entity_type in entity_keys:
-            if entity_type == EntityType.ARTIST:
-                artist_ids.append(entity_id)
-            elif entity_type == EntityType.LABEL:
-                label_ids.append(entity_id)
-        if artist_ids and label_ids:
-            where_clause = (
-                (EntityTable.entity_type == EntityType.ARTIST)
-                & (EntityTable.entity_id.in_(artist_ids))
-            ) | (
-                (EntityTable.entity_type == EntityType.LABEL)
-                & (EntityTable.entity_id.in_(label_ids))
-            )
-        elif artist_ids:
-            where_clause = (EntityTable.entity_type == EntityType.ARTIST) & (
-                EntityTable.entity_id.in_(artist_ids)
-            )
-        else:
-            where_clause = (EntityTable.entity_type == EntityType.LABEL) & (
-                EntityTable.entity_id.in_(label_ids)
-            )
-        query = select(EntityTable).where(where_clause)
+        if not entity_keys:
+            return []
+        composite_keys = [(entity_id, entity_type.value) for entity_id, entity_type in entity_keys]
+        query = select(EntityTable).where(
+            tuple_(EntityTable.entity_id, EntityTable.entity_type).in_(composite_keys)
+        )
         return await self._get_all_by_query(query)

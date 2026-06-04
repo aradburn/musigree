@@ -2,6 +2,8 @@ import logging
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+# noinspection PyPackageRequirements
 from starlette import status
 
 log = logging.getLogger(__name__)

@@ -5,7 +5,9 @@ Unit tests for musigree.app.fastapi_cors module.
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+# noinspection PyPackageRequirements
 from starlette.requests import Request
+# noinspection PyPackageRequirements
 from starlette.responses import Response
 
 from musigree.app.fastapi_cors import (

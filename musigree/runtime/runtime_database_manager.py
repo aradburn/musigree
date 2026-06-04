@@ -49,6 +49,9 @@ class RuntimeDatabaseManager:
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
+        if RuntimeDatabaseManager.runtime_database_helper is None:
+            raise ValueError("Configuration Error: Cannot set database helper")
+
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
 

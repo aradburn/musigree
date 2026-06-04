@@ -348,7 +348,7 @@ class OfflineEntityDataAccess:
                 entity_repository, token_repository, normalised_entity_name
             )
             for result_entry in search_data["results"]:
-                result_dict: dict[str, str] = dict(result_entry)
+                result_dict: dict[str, str] = dict[str, str](result_entry)
                 key = result_dict["key"]
                 name = result_dict["name"]
                 key_parts = key.split("-")
@@ -361,12 +361,18 @@ class OfflineEntityDataAccess:
         except NotFoundError as _ex:
             entity_id_str = CACHE_ENTRY_IS_NULL
 
+        # Not found in search results so far
+        if entity_id_str is None:
+            entity_id_str = CACHE_ENTRY_IS_NULL
+
         # Cache the result
-        await cache.set(cache_key_str, entity_id_str)
+        if entity_id_str is not None:
+            await cache.set(cache_key_str, entity_id_str)
 
         if entity_id_str == CACHE_ENTRY_IS_NULL:
             return None
-
+        if entity_id_str is None:
+            return None
         return int(entity_id_str)
 
     @staticmethod
@@ -402,7 +408,7 @@ class OfflineEntityDataAccess:
 
         async def process_match(ref_match: re.Match[str]) -> str:
             prefix = ref_match.group(1)
-            entity_id: int | None
+            # entity_id: int | None
             entity_id_str = ref_match.group(2)  # Can be empty
             entity_name = ref_match.group(3)  # Can be None
 
@@ -511,11 +517,11 @@ class OfflineEntityDataAccess:
             # Case 2: [prefixid] - need to get name
             if entity_id_str and not entity_name:
                 try:
-                    entity_id = int(entity_id_str)
+                    entity_id_int: int = int(entity_id_str)
                     entity = await entity_repository.get_by_entity_id_and_entity_type(
-                        entity_id, entity_type
+                        entity_id_int, entity_type
                     )
-                    return f"[{prefix}{entity_id}={entity.entity_name}]"
+                    return f"[{prefix}{entity_id_int}={entity.entity_name}]"
                 except NotFoundError:
                     log.error(
                         f"process_profile_links: entity not found for {prefix}{entity_id_str}"
@@ -581,6 +587,8 @@ class OfflineEntityDataAccess:
                     entity_repository, profile
                 )
                 entity.entity_metadata["profile"] = updated_profile
+        if entity is None:
+            raise NotFoundError
         return entity
 
     @staticmethod

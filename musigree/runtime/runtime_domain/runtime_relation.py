@@ -35,6 +35,7 @@ import logging
 from typing import Any
 
 from pydantic import StrictInt, field_serializer
+
 from musigree import utils
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
@@ -133,7 +134,7 @@ class RuntimeRelationDB(_RuntimeRelationBase):
             RuntimeRelationInternal: The internal representation of the relation.
         """
         relation_db_dict: dict = self.model_dump()
-        role_id = relation_db_dict.get("predicate")
+        role_id: int | None = relation_db_dict.get("predicate")
         if role_id is None:
             raise ValueError("Role ID is None")
         role_name = RoleCache.role_id_to_role_name_lookup[role_id]

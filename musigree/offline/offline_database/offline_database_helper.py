@@ -88,6 +88,7 @@ class OfflineDatabaseHelper(ABC):
 
         for table in OfflineBase.metadata.tables:
             log.debug(f"table in metadata: {table}")
+        # noinspection PyTypeChecker
         table_definitions: list[Table] = [
             OfflineBase.metadata.tables[table_name] for table_name in tables
         ]
@@ -98,6 +99,7 @@ class OfflineDatabaseHelper(ABC):
         async with (
             OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
         ):
+            # noinspection PyTypeChecker
             await conn.run_sync(
                 OfflineBase.metadata.create_all,
                 checkfirst=True,
@@ -123,6 +125,7 @@ class OfflineDatabaseHelper(ABC):
         )
 
         if tables is not None:
+            # noinspection PyTypeChecker
             table_definitions: list[Table] = [
                 OfflineBase.metadata.tables[table_name] for table_name in tables
             ]
@@ -139,6 +142,7 @@ class OfflineDatabaseHelper(ABC):
             async with (
                 OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
             ):
+                # noinspection PyTypeChecker
                 await conn.run_sync(OfflineBase.metadata.drop_all, checkfirst=True)
                 await conn.commit()
 

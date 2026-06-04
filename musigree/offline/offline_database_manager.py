@@ -54,9 +54,13 @@ class OfflineDatabaseManager:
         else:
             raise ValueError("Configuration Error: Unknown database type")
 
+        if OfflineDatabaseManager.offline_database_helper is None:
+            raise ValueError("Configuration Error: Cannot set database helper")
+
         async_engine = await OfflineDatabaseManager.offline_database_helper.setup_database(config)
         OfflineDatabaseManager.offline_database_helper.offline_async_engine = async_engine
-        log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
+
+        # log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
 
         def engine_on_connect(dbapi_con, connection_record) -> None:  # type: ignore
             if LOGGING_TRACE:

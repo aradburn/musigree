@@ -26,7 +26,7 @@ The module uses the following components:
 import logging
 import sys
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import asyncio_atexit  # type: ignore
 from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
@@ -41,12 +41,19 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
+
+# noinspection PyPackageRequirements
 from starlette.middleware.cors import CORSMiddleware
+
+# noinspection PyPackageRequirements
 from starlette.responses import Response
+
+# noinspection PyPackageRequirements
 from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import PreflightLoggerMiddleware, CustomCORSPreflightMiddleware
 from musigree.app.fastapi_csp import setup_csp_middleware
+from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration
 from musigree.constants import (
@@ -98,7 +105,7 @@ def create_app(config: Configuration) -> FastAPI:
     log_banner()
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> Any:
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         """
         Lifespan context manager for the FastAPI application.
 
@@ -144,21 +151,23 @@ def create_app(config: Configuration) -> FastAPI:
         log.info("Configuring CORS for production")
         log.debug(f"Allowed origins: {allowed_origins}")
 
-        app.add_middleware(
+        add_app_middleware(
+            app,
             CORSMiddleware,
             allow_origins=allowed_origins,
             allow_methods=["GET,HEAD,POST,OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
-        app.add_middleware(
+        add_app_middleware(
+            app,
             CustomCORSPreflightMiddleware,
             allow_origins=allowed_origins,
             allow_methods=["GET,HEAD,POST,OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
-        app.add_middleware(PreflightLoggerMiddleware)
+        add_app_middleware(app, PreflightLoggerMiddleware)
 
     else:
         # Development: more permissive for local development
@@ -175,7 +184,8 @@ def create_app(config: Configuration) -> FastAPI:
         ]
         log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")
-        app.add_middleware(
+        add_app_middleware(
+            app,
             CORSMiddleware,
             allow_origins=allowed_origins,
             allow_methods=["*"],

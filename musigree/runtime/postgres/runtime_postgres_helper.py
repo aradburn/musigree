@@ -214,6 +214,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 RuntimePostgresHelper.pg_runtime_dirname = pg_runtime_dirname
                 """Set the runtime dir name."""
 
+                if RuntimePostgresHelper.postgres_test_db is None:
+                    raise ValueError("Configuration Error: Cannot set test database")
+
                 # Create a temporary test runtime_database engine and pool that will manage connections and execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,

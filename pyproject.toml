@@ -97,6 +97,7 @@ python_version = "3.13"
 warn_return_any = true
 disallow_untyped_defs = true
 ignore_missing_imports = false   # Display error for all missing imports
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.ruff]
 line-length = 100                # Line length for formatting

@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.library.fields.role_type import RoleType
 from musigree.runtime.runtime_database.runtime_role_table import RuntimeRoleTable
@@ -104,7 +104,7 @@ class TestRuntimeRoleTable:
         }
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeRoleTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeRoleTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)
@@ -112,7 +112,7 @@ class TestRuntimeRoleTable:
     def test_primary_key(self) -> None:
         """Test that id column is the primary key."""
         # GIVEN/WHEN
-        primary_key_columns = [col.name for col in inspect(RuntimeRoleTable).primary_key]
+        primary_key_columns = [col.name for col in class_mapper(RuntimeRoleTable).primary_key]
 
         # THEN
         assert primary_key_columns == ["id"]
@@ -120,7 +120,7 @@ class TestRuntimeRoleTable:
     def test_role_name_indexed(self) -> None:
         """Test that role_name column has index."""
         # GIVEN/WHEN
-        role_name_column = inspect(RuntimeRoleTable).columns["role_name"]
+        role_name_column = class_mapper(RuntimeRoleTable).columns["role_name"]
 
         # THEN
         assert role_name_column.index

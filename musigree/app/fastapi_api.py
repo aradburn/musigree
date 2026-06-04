@@ -103,7 +103,7 @@ async def route__api__entity_type__details__entity_id(
         raise NotFoundError(message="Entity details not found") from None
 
     # Convert the entity to a dictionary format suitable for API response
-    entity_data = {
+    result_entity_data: dict[str, Any] = {
         "id": entity.entity_id,
         "type": entity.entity_type.name.lower(),
         "name": entity.entity_name,
@@ -116,9 +116,9 @@ async def route__api__entity_type__details__entity_id(
     }
 
     # Cache the result
-    await cache.hset(cache_key_str, entity_data)
+    await cache.hset(cache_key_str, result_entity_data)
 
-    return entity_data
+    return result_entity_data
 
 
 # noinspection PyUnusedLocal
@@ -316,10 +316,12 @@ async def route__api__search(
     except NotFoundError as _ex:
         raise NotFoundError(message="Entity name not found") from None
 
-    # Cache the result
-    await cache.hset(cache_key_str, search_data)
+    result_search_data: dict[str, Any] = search_data if search_data is not None else {}
 
-    return search_data
+    # Cache the result
+    await cache.hset(cache_key_str, result_search_data)
+
+    return result_search_data
 
 
 @router.get("/random")

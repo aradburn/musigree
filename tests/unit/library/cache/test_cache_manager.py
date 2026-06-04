@@ -355,6 +355,7 @@ class TestRedisCacheMethods:
 
     def test_get_redis_client_not_initialized(self) -> None:
         """Test _get_redis_client when client is None."""
+        # noinspection PyTypeChecker
         cache = RedisCache.__new__(RedisCache)  # Create without calling __init__
         cache._client = None
 

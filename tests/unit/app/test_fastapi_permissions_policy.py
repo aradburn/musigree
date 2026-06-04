@@ -1,10 +1,13 @@
 """
 Unit tests for musigree.app.fastapi_permissions_policy module.
 """
-from typing import Callable
+from collections.abc import MutableMapping
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+# noinspection PyPackageRequirements
+from starlette.types import Send
 
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy, PermissionsPolicyOptions
 
@@ -47,7 +50,7 @@ class TestPermissionsPolicy:
         with pytest.warns(SyntaxWarning):
             with pytest.raises(SyntaxError, match="does not exist"):
                 # noinspection Mypy
-                options: PermissionsPolicyOptions = {"invalid-feature": ["self"]}
+                options: PermissionsPolicyOptions = {"invalid-feature": ["self"]}  # type: ignore[typeddict-unknown-key]
                 PermissionsPolicy(app, Option=options)
 
     def test_init_wildcard_with_others_raises_syntax_error(self) -> None:
@@ -84,22 +87,24 @@ class TestPermissionsPolicy:
             policy = PermissionsPolicy(app, Option=options)
         scope = {"type": "http"}
         receive = AsyncMock()
-        sent_messages: list = []
+        sent_messages: list[MutableMapping[str, Any]] = []
 
-        async def capture_send(message: dict) -> None:
+        async def capture_send(message: MutableMapping[str, Any]) -> None:
             sent_messages.append(message)
             if message.get("type") == "http.response.start":
                 _headers = message.get("headers", [])
                 header_keys = [k.decode().lower() if isinstance(k, bytes) else k.lower() for k, _ in _headers]
                 assert "permissions-policy" in header_keys
 
-        async def app_side_effect(_scope: dict, _rec: object, send: Callable) -> None:
-            await send({"type": "http.response.start", "status": 200, "headers": []})
-            await send({"type": "http.response.body", "body": b"ok"})
+        send: Send = capture_send
+
+        async def app_side_effect(_scope: dict[str, Any], _rec: object, _send: Send) -> None:
+            await _send({"type": "http.response.start", "status": 200, "headers": []})
+            await _send({"type": "http.response.body", "body": b"ok"})
 
         app.side_effect = app_side_effect
 
-        await policy(scope, receive, capture_send)
+        await policy(scope, receive, send)
 
         app.assert_called_once()
         assert len(sent_messages) >= 2

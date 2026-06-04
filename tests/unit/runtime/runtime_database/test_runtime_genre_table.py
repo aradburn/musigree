@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 
@@ -50,7 +50,7 @@ class TestRuntimeGenreTable:
         expected_columns = {"id", "genre_name"}
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeGenreTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeGenreTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)

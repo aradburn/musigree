@@ -4,7 +4,10 @@ from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
 
+# noinspection PyPackageRequirements
 import fakeredis
+
+# noinspection PyPackageRequirements
 from redis import asyncio as aioredis
 
 from musigree.config import Configuration
@@ -333,16 +336,23 @@ class CacheManager:
                 log.info("Using Redis cache")
 
                 # Test connection
-                ping_result = await cls.cache.ping()
-                if ping_result:
-                    log.info("Successfully connected to Redis server")
+                if cls.cache is not None:
+                    ping_result = await cls.cache.ping()
+                    if ping_result:
+                        log.info("Successfully connected to Redis server")
+                    else:
+                        log.info("Cannot ping Redis cache")
                 else:
                     cls.cache = FakeRedisCache()
                     # Test connection
-                    ping_result = await cls.cache.ping()
-                    if ping_result:
-                        log.info("Successfully connected to Fake Redis cache")
-
+                    if cls.cache is not None:
+                        ping_result = await cls.cache.ping()
+                        if ping_result:
+                            log.info("Successfully connected to Fake Redis cache")
+                        else:
+                            log.info("Cannot ping Fake Redis cache")
+                    else:
+                        log.info("Cannot connect to Fake Redis cache")
             except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)

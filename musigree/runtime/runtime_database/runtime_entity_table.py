@@ -1,6 +1,7 @@
 from typing import Any
-from sqlalchemy import String, Index, Integer, inspect, JSON
-from sqlalchemy.orm import Mapped, mapped_column
+
+from sqlalchemy import String, Index, Integer, JSON
+from sqlalchemy.orm import Mapped, mapped_column, class_mapper
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
@@ -100,7 +101,7 @@ class RuntimeEntityTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in inspect(RuntimeEntityTable).columns])
+        column_names = set([column.name for column in class_mapper(RuntimeEntityTable).columns])
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 

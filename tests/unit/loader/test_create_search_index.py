@@ -27,6 +27,7 @@ class TestShutdownLoader:
         mock_shutdown_logging: MagicMock,
     ) -> None:
         """Test shutdown_loader calls database shutdown and cache shutdown."""
+
         async def noop() -> None:
             pass
 
@@ -49,7 +50,7 @@ class TestShutdownLoader:
     @patch("musigree.loader.create_text_search_index.setup_logging")
     def test_shutdown_loader_handles_operational_error(
         self,
-        mock_setup_logging: MagicMock,
+        _mock_setup_logging: MagicMock,
         mock_offline_manager: MagicMock,
         mock_runtime_manager: MagicMock,
         mock_cache_manager: MagicMock,
@@ -98,6 +99,7 @@ class TestCreateSearchIndex:
         mock_transfer_manager_cls: MagicMock,
     ) -> None:
         """create_text_search_index runs setup and index creation when cache is available."""
+
         async def noop() -> None:
             pass
 
@@ -147,13 +149,14 @@ class TestCreateSearchIndex:
     @patch("musigree.loader.create_text_search_index.setup_logging")
     def test_create_text_search_index_exits_when_cache_not_set(
         self,
-        mock_setup_logging: MagicMock,
-        mock_log_banner: MagicMock,
-        mock_atexit: MagicMock,
+        _mock_setup_logging: MagicMock,
+        _mock_log_banner: MagicMock,
+        _mock_atexit: MagicMock,
         mock_cache_manager: MagicMock,
         mock_sys: MagicMock,
     ) -> None:
         """create_text_search_index exits when CacheManager.get_cache() returns None."""
+
         async def noop() -> None:
             pass
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy.orm import class_mapper
 
 from musigree.runtime.runtime_database.runtime_style_table import RuntimeStyleTable
 
@@ -50,7 +50,7 @@ class TestRuntimeStyleTable:
         expected_columns = {"id", "style_name"}
 
         # WHEN
-        columns = set(column.name for column in inspect(RuntimeStyleTable).columns)
+        columns = set(column.name for column in class_mapper(RuntimeStyleTable).columns)
 
         # THEN
         assert expected_columns.issubset(columns)

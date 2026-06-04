@@ -184,7 +184,8 @@ async def process_release(release_id: int) -> None:
         """Attempt to process the release."""
         release = await release_repository.get_by_id(release_id)
         """Retrieve the release."""
-        relations = OfflineRelationDataAccess.from_release(release)
+        if release is not None:
+            relations = OfflineRelationDataAccess.from_release(release)
         """Extract relations from the release."""
     except NotFoundError:
         """Handle the case where the release is not found."""

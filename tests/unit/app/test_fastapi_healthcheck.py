@@ -8,6 +8,7 @@ import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+# noinspection PyPackageRequirements
 from starlette import status
 
 from musigree.app.fastapi_healthcheck import HealthCheck, get_health, router

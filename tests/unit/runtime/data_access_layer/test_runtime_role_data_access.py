@@ -78,7 +78,7 @@ class TestBuildRoleTree:
         await RuntimeRoleDataAccess.build_role_tree([role])
 
         # Find the role entry in the data
-        role_entry = None
+        role_entry: RuntimeRoleJSTreeEntry | None = None
         for entry in mock_role_cache.role_jstree.data:
             if entry.text == "Vocals":
                 role_entry = entry
@@ -106,7 +106,7 @@ class TestBuildRoleTree:
         await RuntimeRoleDataAccess.build_role_tree([role])
 
         # Find the role entry in the data
-        role_entry = None
+        role_entry: RuntimeRoleJSTreeEntry | None = None
         for entry in mock_role_cache.role_jstree.data:
             if entry.text == "Guitar":
                 role_entry = entry
@@ -139,7 +139,7 @@ class TestBuildRoleTree:
         await RuntimeRoleDataAccess.build_role_tree([role])
 
         # Find the role entry in the data
-        role_entry = None
+        role_entry: RuntimeRoleJSTreeEntry | None = None
         for entry in mock_role_cache.role_jstree.data:
             if entry.text == "Guitar":
                 role_entry = entry
@@ -172,7 +172,7 @@ class TestBuildRoleTree:
         await RuntimeRoleDataAccess.build_role_tree([role])
 
         # Find the role entry in the data
-        role_entry = None
+        role_entry: RuntimeRoleJSTreeEntry | None = None
         for entry in mock_role_cache.role_jstree.data:
             if entry.text == "Vocals":
                 role_entry = entry

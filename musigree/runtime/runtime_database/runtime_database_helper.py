@@ -171,6 +171,7 @@ class RuntimeDatabaseHelper(ABC):
         async with (
             RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
         ):
+            # noinspection PyTypeChecker
             await conn.run_sync(
                 RuntimeBase.metadata.create_all,
                 checkfirst=True,
@@ -197,6 +198,7 @@ class RuntimeDatabaseHelper(ABC):
         )
 
         if tables is not None:
+            # noinspection PyTypeChecker
             table_definitions: list[Table] = [
                 RuntimeBase.metadata.tables[table_name] for table_name in tables
             ]
@@ -206,6 +208,7 @@ class RuntimeDatabaseHelper(ABC):
                 async with (
                     RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
                 ):
+                    # noinspection PyTypeChecker
                     await conn.run_sync(
                         table.drop,
                         checkfirst=True,
@@ -215,6 +218,7 @@ class RuntimeDatabaseHelper(ABC):
             async with (
                 RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
             ):
+                # noinspection PyTypeChecker
                 await conn.run_sync(
                     RuntimeBase.metadata.drop_all,
                     checkfirst=True,

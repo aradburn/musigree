@@ -5,6 +5,7 @@ This module contains comprehensive unit tests for the offline session management
 including session creation, context variable management, and the OfflineSession class.
 """
 
+# noinspection PyPackageRequirements
 from contextvars import ContextVar
 from unittest.mock import AsyncMock, Mock, patch
 
