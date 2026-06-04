@@ -375,10 +375,16 @@ input[type="range"]::-moz-range-thumb {
     height: 1.6rem;
     width: 0.8rem;
 }
-.form-range::-moz-range-thumb,
-input[type="range"]::-moz-range-thumb,
-input[type="range"]::-webkit-slider-thumb,
-input[type="range"]::slider-thumb {
+.form-range::-moz-range-thumb {
+    background-color: lighten($mg-background-dark-color, 20%) !important;
+}
+input[type="range"]::-moz-range-thumb {
+    background-color: lighten($mg-background-dark-color, 20%) !important;
+}
+input[type="range"]::-webkit-slider-thumb {
+    background-color: lighten($mg-background-dark-color, 20%) !important;
+}
+input[type="range"]::-ms-slider-thumb {
     background-color: lighten($mg-background-dark-color, 20%) !important;
 }
 
