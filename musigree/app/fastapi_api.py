@@ -345,7 +345,6 @@ async def route__api__random(
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
     )
-    from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
@@ -354,17 +353,16 @@ async def route__api__random(
 
     async with runtime_transaction():
         entity_repository = RuntimeEntityRepository()
-        token_repository = RuntimeTokenRepository()
         try:
             (
                 entity_id,
                 entity_type,
             ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
-                entity_repository, token_repository
+                entity_repository
             )
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
-            # log.exception("Error in API for /random", exc_info=True)
+            log.exception("Error in API for /random", exc_info=True)
             raise DatabaseError(message="API error") from None
 
     data = {"center": f"{entity_type.name.lower()}-{entity_id}"}

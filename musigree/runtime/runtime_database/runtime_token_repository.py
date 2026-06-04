@@ -1,5 +1,4 @@
 import logging
-import random
 from typing import AsyncGenerator
 
 from sqlalchemy import Result, select, func
@@ -83,20 +82,6 @@ class RuntimeTokenRepository(RuntimeBaseRepository[RuntimeTokenTable]):
         ids = result.scalars().all()
 
         return [int(item) for item in ids]
-
-    async def get_random_id(self) -> int | None:
-        """
-        Retrieves a random entity id.
-
-        Returns:
-            int | None: The entity id or None if none found.
-        """
-        max_row = await self.count()
-        random_row = random.randint(0, max_row - 1)
-        query = select(RuntimeTokenTable.entity_id).where(RuntimeTokenTable.id == random_row)
-        result: Result = await self.execute(query)
-
-        return result.scalar_one_or_none()
 
     async def create(self, token: RuntimeToken) -> RuntimeToken:
         """

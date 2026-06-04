@@ -29,7 +29,6 @@ from sqlalchemy.sql.dml import ReturningInsert, Insert
 
 from musigree.config import Configuration
 from musigree.exceptions import NotFoundError
-from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
@@ -46,7 +45,6 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
-from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 
 log = logging.getLogger(__name__)
 
@@ -344,14 +342,12 @@ class RuntimeDatabaseHelper(ABC):
     @staticmethod
     async def get_random_entity(
         entity_repository: RuntimeEntityRepository,
-        token_repository: RuntimeTokenRepository,
     ) -> tuple[int, EntityType]:
         """
         Retrieves a random entity.
 
         Args:
             entity_repository: The entity repository.
-            token_repository: The token repository.
 
         Returns:
             tuple[int, EntityType]: A tuple containing the entity ID and type.
@@ -383,35 +379,27 @@ class RuntimeDatabaseHelper(ABC):
         while True:
             entity = None
 
-            random_id = await token_repository.get_random_id()
+            if RuntimeDatabaseManager.runtime_database_helper.entity_count_cached == 0:
+                RuntimeDatabaseManager.runtime_database_helper.entity_count_cached = (
+                    await entity_repository.count()
+                )
 
-            if random_id is None:
-                continue
-
-            entity_id, entity_type = to_entity_external_id(random_id)
-            if entity_type == EntityType.LABEL:
-                continue
             try:
-                entity = await entity_repository.get_by_id(random_id)
+                entity = await entity_repository.get_random_entity(
+                    RuntimeDatabaseManager.runtime_database_helper.entity_count_cached
+                )
             except NotFoundError:
                 log.debug("random not found")
                 counter += 1
                 continue
 
-            # if DatabaseHelper.entity_count_cached == 0:
-            #     DatabaseHelper.entity_count_cached = entity_repository.count()
-            # random_id = random.randint(1, DatabaseHelper.entity_count_cached)
-            # try:
-            #     entity = entity_repository.get_random_by_id(random_id)
-            #     # entity = entity_repository.get_by_id(random_id)
-            # except NotFoundError:
-            #     counter += 1
-            #     entity = None
-            #     continue
+            if entity is None:
+                continue
+            if entity.entity_type == EntityType.LABEL:
+                continue
 
             relation_counts = entity.relation_counts
             entities = entity.entities
-            # log.debug(f"relation_counts: {relation_counts}")
             counter += 1
             if entity.entity_type == EntityType.LABEL:
                 continue
