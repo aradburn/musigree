@@ -21,6 +21,7 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 """
 
 import logging
+import random
 from collections.abc import Sequence
 from typing import Any, AsyncGenerator
 
@@ -401,3 +402,24 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             tuple_(RuntimeEntityTable.entity_id, RuntimeEntityTable.entity_type).in_(composite_keys)
         )
         return await self._get_all_by_query(query)
+
+    async def get_random_entity(self, max_row: int) -> RuntimeEntity | None:
+        """
+        Retrieves a random entity id.
+
+        Returns:
+            int | None: The entity id or None if none found.
+        """
+        random_row = random.randint(0, max_row)
+        query = (
+            select(RuntimeEntityTable)
+            .where(RuntimeEntityTable.id >= random_row)
+            .order_by(RuntimeEntityTable.id)
+            .limit(1)
+        )
+        result: Result = await self.execute(query)
+        instance = result.scalar_one_or_none()
+        if instance is None:
+            return None
+        entity_db = RuntimeEntityDB.model_validate(instance)
+        return entity_db.to_domain()
