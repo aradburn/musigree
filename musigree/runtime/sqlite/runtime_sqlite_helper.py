@@ -124,20 +124,31 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         log.info(f"Sqlite Database URL: {target_url}")
 
         poolclass: type[Pool]
+        engine: AsyncEngine
         if config.IS_READ_ONLY:
             poolclass = AsyncAdaptedQueuePool
+            engine = create_async_engine(
+                target_url,
+                connect_args={
+                    "check_same_thread": False,
+                    "timeout": 60,
+                },
+                poolclass=poolclass,
+                pool_size=4,
+                max_overflow=0,
+            )
         else:
             # During loading we have a single thread, so we can use a static pool
             poolclass = StaticPool
+            engine = create_async_engine(
+                target_url,
+                connect_args={
+                    "check_same_thread": False,
+                    "timeout": 600,
+                },
+                poolclass=poolclass,
+            )
 
-        engine = create_async_engine(
-            target_url,
-            connect_args={
-                "check_same_thread": False,
-                "timeout": 600,
-            },
-            poolclass=poolclass,
-        )
         """Create the engine."""
         return engine
 
@@ -176,13 +187,24 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 """Log the version."""
 
                 # Setup Sqlite
-                await connection.execute(text("pragma journal_mode=MEMORY;"))
-                await connection.execute(text("pragma journal_size_limit=6144000;"))
-                await connection.execute(text("pragma synchronous=OFF;"))
-                await connection.execute(text("pragma locking_mode=EXCLUSIVE;"))
-                await connection.execute(text("pragma cache_size=-10000;"))
-                await connection.execute(text("pragma temp_store=MEMORY;"))
-                await connection.execute(text("pragma foreign_keys=OFF;"))
+                if config.PRODUCTION:
+                    await connection.execute(text("pragma query_only=ON;"))
+                    await connection.execute(text("pragma mmap_size=24000000000;"))
+                    await connection.execute(text("pragma journal_mode=OFF;"))
+                    await connection.execute(text("pragma synchronous=OFF;"))
+                    await connection.execute(text("pragma locking_mode=NORMAL;"))
+                    await connection.execute(text("pragma cache_size=-262144;"))
+                    await connection.execute(text("pragma temp_store=MEMORY;"))
+                    await connection.execute(text("pragma foreign_keys=OFF;"))
+                else:
+                    await connection.execute(text("pragma mmap_size=24000000000;"))
+                    await connection.execute(text("pragma journal_mode=MEMORY;"))
+                    await connection.execute(text("pragma journal_size_limit=6144000;"))
+                    await connection.execute(text("pragma synchronous=OFF;"))
+                    await connection.execute(text("pragma locking_mode=EXCLUSIVE;"))
+                    await connection.execute(text("pragma cache_size=-262144;"))
+                    await connection.execute(text("pragma temp_store=MEMORY;"))
+                    await connection.execute(text("pragma foreign_keys=OFF;"))
 
                 # await connection.execute(text("pragma journal_mode=WAL;"))
                 # """Enable `WAL` journaling."""
