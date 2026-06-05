@@ -68,10 +68,10 @@ ENV REDIS_PASSWORD=${REDIS_PASSWORD}
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
       org.opencontainers.image.title="musigree" \
       org.opencontainers.image.description="Interactive visualization of the Discogs database" \
-      org.opencontainers.image.version="1.0.68" \
+      org.opencontainers.image.version="1.0.69" \
       org.opencontainers.image.source="https://github.com/aradburn/musigree" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.created="2026-06-05T13:52:51Z" \
+      org.opencontainers.image.created="2026-06-05T15:08:29Z" \
       org.opencontainers.image.revision="" \
       security.scan.enabled="true"
 
@@ -112,6 +112,8 @@ COPY --from=frontend-builder --chown=nonroot:nonroot --chmod=755 /app/frontend/d
 # The venv contains Python and all dependencies
 ENV PATH="/app/.venv/bin:$PATH"
 
+ENV MALLOC_ARENA_MAX=2
+
 # RUN chmod 555 / && chmod 555 /bin /usr/bin /usr/sbin 2>/dev/null || true
 
 # Reset the entrypoint, don't invoke `uv`
@@ -129,16 +131,17 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Run the application with gunicorn
 CMD ["gunicorn", \
+     "--preload", \
      "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", \
-     "--worker-connections", "1000", \
-     "--timeout", "120", \
+     "--timeout", "60", \
      "--keep-alive", "5", \
-     "--max-requests", "1000", \
+     "--max-requests", "100000", \
      "--max-requests-jitter", "100", \
      "--graceful-timeout", "30", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
      "--log-level", "info", \
+     "--worker-tmp-dir", "/dev/shm", \
      "musigree.app.fastapi_prod_app:app"]
