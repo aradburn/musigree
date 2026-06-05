@@ -193,7 +193,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                     await connection.execute(text("pragma journal_mode=OFF;"))
                     await connection.execute(text("pragma synchronous=OFF;"))
                     await connection.execute(text("pragma locking_mode=NORMAL;"))
-                    await connection.execute(text("pragma cache_size=-262144;"))
+                    await connection.execute(text("pragma cache_size=-32768;"))
                     await connection.execute(text("pragma temp_store=MEMORY;"))
                     await connection.execute(text("pragma foreign_keys=OFF;"))
                 else:
@@ -202,7 +202,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                     await connection.execute(text("pragma journal_size_limit=6144000;"))
                     await connection.execute(text("pragma synchronous=OFF;"))
                     await connection.execute(text("pragma locking_mode=EXCLUSIVE;"))
-                    await connection.execute(text("pragma cache_size=-262144;"))
+                    await connection.execute(text("pragma cache_size=-32768;"))
                     await connection.execute(text("pragma temp_store=MEMORY;"))
                     await connection.execute(text("pragma foreign_keys=OFF;"))
 
