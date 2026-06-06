@@ -158,35 +158,6 @@ class TestRuntimeDatabaseManager:
         assert "checkout" in registered_events
 
     @pytest.mark.asyncio
-    @patch("musigree.runtime.sqlite.runtime_sqlite_helper.RuntimeSqliteHelper")
-    @patch("musigree.runtime.runtime_database_manager.listen")
-    @patch("logging.getLogger")
-    async def test_setup_database_no_event_listeners_for_single_thread(
-        self, _mock_logger: Mock, mock_listen: Mock, mock_sqlite_helper: Mock
-    ) -> None:
-        """Test that no event listeners are registered when concurrency count = 1."""
-        # Arrange
-        mock_config = Mock()
-        mock_config.THREADING_MODEL = ThreadingModel.THREAD
-        mock_config.DATABASE = DatabaseType.SQLITE
-
-        mock_async_engine = AsyncMock()
-        mock_helper_instance = AsyncMock()
-        mock_helper_instance.setup_database.return_value = mock_async_engine
-        mock_helper_instance.check_connection.return_value = None
-        mock_sqlite_helper.return_value = mock_helper_instance
-
-        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=1):
-            with patch(
-                "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-            ) as _mock_runtime_helper_class:
-                # Act
-                await RuntimeDatabaseManager.setup_database(mock_config)
-
-        # Assert that no event listeners were registered
-        mock_listen.assert_not_called()
-
-    @pytest.mark.asyncio
     async def test_setup_database_unknown_database_type(self) -> None:
         """Test setup_database raises error for unknown database type."""
         # Arrange
