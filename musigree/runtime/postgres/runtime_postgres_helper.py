@@ -62,13 +62,14 @@ and runtime operation.
 """
 
 import logging
+import os
 import shutil
 from pathlib import Path
 from typing import Type
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import URL, text, SingletonThreadPool, AsyncAdaptedQueuePool
+from sqlalchemy import URL, text, SingletonThreadPool, AsyncAdaptedQueuePool, exc
 from sqlalchemy.dialects.postgresql import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -76,6 +77,7 @@ from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
+from musigree.logging_config import LOGGING_TRACE
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
@@ -290,6 +292,33 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             """Remove the temp db reference."""
             RuntimePostgresHelper._is_test = False
             """Reset the test flag."""
+
+    @staticmethod
+    def engine_on_connect(dbapi_con, connection_record):  # type: ignore
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            if LOGGING_TRACE:
+                log.debug(f"New engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
+    @staticmethod
+    def engine_on_connect_read_only(dbapi_con, connection_record):  # type: ignore
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            if LOGGING_TRACE:
+                log.debug(f"New engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
+    @staticmethod
+    def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            pid = os.getpid()
+            if connection_record.info["pid"] != pid:
+                log.error(f"New engine checkout using wrong pid: {dbapi_con}")
+
+                connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
+                raise exc.DisconnectionError(
+                    "Connection record belongs to pid %s, "
+                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                )
 
     @staticmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:

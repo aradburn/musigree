@@ -126,6 +126,24 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
+    def engine_on_connect(dbapi_con, connection_record):  # type: ignore
+        """Setup_on runtime database, run per connection."""
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def engine_on_connect_read_only(dbapi_con, connection_record):  # type: ignore
+        """Setup_on runtime database, run per connection."""
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
+        """Setup_on runtime database, run per pool checkout."""
+        pass
+
+    @staticmethod
+    @abstractmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Checks the runtime_database connection.
