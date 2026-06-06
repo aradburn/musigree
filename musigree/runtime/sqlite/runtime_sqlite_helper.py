@@ -183,9 +183,6 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma temp_store=MEMORY;")
             dbapi_con.execute("pragma foreign_keys=OFF;")
 
-            # dbapi_con.commit()
-            """Commit the operation."""
-
             log.info("Runtime Database connected OK.")
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
@@ -214,9 +211,6 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma cache_size=-32768;")
             dbapi_con.execute("pragma temp_store=MEMORY;")
             dbapi_con.execute("pragma foreign_keys=OFF;")
-
-            dbapi_con.commit()
-            """Commit the operation."""
 
             log.info("Runtime Database connected OK.")
         except (DatabaseError, OperationalError):
