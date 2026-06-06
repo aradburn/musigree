@@ -51,11 +51,12 @@ runtime operation.
 """
 
 import logging
+import os
 import sys
 from sqlite3 import OperationalError
 from typing import Type
 
-from sqlalchemy import text, StaticPool, URL, Pool, AsyncAdaptedQueuePool
+from sqlalchemy import text, StaticPool, URL, Pool, AsyncAdaptedQueuePool, exc
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -63,10 +64,12 @@ from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
 from musigree.constants import SQLITE_DRIVER_NAME
+from musigree.logging_config import LOGGING_TRACE
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
     RuntimeConcreteTable,
 )
+from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
 log = logging.getLogger(__name__)
 """
@@ -163,6 +166,77 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         log.info("Shutting down Sqlite Runtime Database")
 
     @staticmethod
+    def engine_on_connect(dbapi_con, connection_record):  # type: ignore
+        try:
+            """Attempt to connect to the runtime_database."""
+            log.info("Check Sqlite runtime runtime_database connection...")
+
+            # Setup Sqlite for development
+            dbapi_con.execute("pragma journal_mode=MEMORY;")
+            dbapi_con.execute("pragma journal_size_limit=6144000;")
+            dbapi_con.execute("pragma locking_mode=EXCLUSIVE;")
+
+            # Common for dev and prod
+            dbapi_con.execute("pragma mmap_size=24000000000;")
+            dbapi_con.execute("pragma synchronous=OFF;")
+            dbapi_con.execute("pragma cache_size=-32768;")
+            dbapi_con.execute("pragma temp_store=MEMORY;")
+            dbapi_con.execute("pragma foreign_keys=OFF;")
+
+            log.info("Runtime Database connected OK.")
+        except (DatabaseError, OperationalError):
+            """Handle runtime_database errors."""
+            log.error("Runtime Database Connection Error")
+            sys.exit("Runtime Database Connection Error")
+
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            if LOGGING_TRACE:
+                log.debug(f"New engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
+    @staticmethod
+    def engine_on_connect_read_only(dbapi_con, connection_record):  # type: ignore
+        try:
+            """Attempt to connect to the runtime_database."""
+            log.info("Check Sqlite runtime runtime_database connection...")
+
+            # Setup Sqlite read only
+            dbapi_con.execute("pragma query_only=ON;")
+            dbapi_con.execute("pragma journal_mode=OFF;")
+            dbapi_con.execute("pragma locking_mode=NORMAL;")
+
+            # Common for dev and prod
+            dbapi_con.execute("pragma mmap_size=24000000000;")
+            dbapi_con.execute("pragma synchronous=OFF;")
+            dbapi_con.execute("pragma cache_size=-32768;")
+            dbapi_con.execute("pragma temp_store=MEMORY;")
+            dbapi_con.execute("pragma foreign_keys=OFF;")
+
+            log.info("Runtime Database connected OK.")
+        except (DatabaseError, OperationalError):
+            """Handle runtime_database errors."""
+            log.error("Runtime Database Connection Error")
+            sys.exit("Runtime Database Connection Error")
+
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            if LOGGING_TRACE:
+                log.debug(f"New engine connection: {dbapi_con}")
+            connection_record.info["pid"] = os.getpid()
+
+    @staticmethod
+    def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
+        if RuntimeDatabaseManager.get_concurrency_count() > 1:
+            pid = os.getpid()
+            if connection_record.info["pid"] != pid:
+                log.error(f"New engine checkout using wrong pid: {dbapi_con}")
+
+                connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
+                raise exc.DisconnectionError(
+                    "Connection record belongs to pid %s, "
+                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                )
+
+    @staticmethod
     async def check_connection(config: Configuration, engine: AsyncEngine) -> None:
         """
         Checks the SQLite runtime_database connection and performs setup.
@@ -186,36 +260,6 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 log.info(f"Database Version: {version.scalars().one_or_none()}")
                 """Log the version."""
 
-                # Setup Sqlite
-                if config.PRODUCTION:
-                    await connection.execute(text("pragma query_only=ON;"))
-                    await connection.execute(text("pragma mmap_size=24000000000;"))
-                    await connection.execute(text("pragma journal_mode=OFF;"))
-                    await connection.execute(text("pragma synchronous=OFF;"))
-                    await connection.execute(text("pragma locking_mode=NORMAL;"))
-                    await connection.execute(text("pragma cache_size=-32768;"))
-                    await connection.execute(text("pragma temp_store=MEMORY;"))
-                    await connection.execute(text("pragma foreign_keys=OFF;"))
-                else:
-                    await connection.execute(text("pragma mmap_size=24000000000;"))
-                    await connection.execute(text("pragma journal_mode=MEMORY;"))
-                    await connection.execute(text("pragma journal_size_limit=6144000;"))
-                    await connection.execute(text("pragma synchronous=OFF;"))
-                    await connection.execute(text("pragma locking_mode=EXCLUSIVE;"))
-                    await connection.execute(text("pragma cache_size=-32768;"))
-                    await connection.execute(text("pragma temp_store=MEMORY;"))
-                    await connection.execute(text("pragma foreign_keys=OFF;"))
-
-                # await connection.execute(text("pragma journal_mode=WAL;"))
-                # """Enable `WAL` journaling."""
-                # await connection.execute(text("pragma synchronous=normal;"))
-                # """Set `synchronous` to normal."""
-                # await connection.execute(text("pragma journal_size_limit = 6144000;"))
-                # """Set `journal_size_limit`."""
-                # await connection.execute(text("pragma cache_size=-10000;"))
-                # """Set `cache_size`."""
-                # await connection.execute(text("pragma temp_store=MEMORY;"))
-                # """Set `temp_store` to `MEMORY`."""
                 await connection.commit()
                 """Commit the operation."""
 

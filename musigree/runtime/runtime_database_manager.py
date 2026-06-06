@@ -1,15 +1,12 @@
 import logging
 import multiprocessing
-import os
 from asyncio import AbstractEventLoop
 
-from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.ext.asyncio import async_sessionmaker, close_all_sessions
 
 from musigree.config import Configuration
 from musigree.constants import DatabaseType, ThreadingModel
-from musigree.logging_config import LOGGING_TRACE
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
 )
@@ -55,25 +52,23 @@ class RuntimeDatabaseManager:
         async_engine = await RuntimeDatabaseManager.runtime_database_helper.setup_database(config)
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine = async_engine
 
-        def engine_on_connect(dbapi_con, connection_record):  # type: ignore
-            if LOGGING_TRACE:
-                log.debug(f"New engine connection: {dbapi_con}")
-            connection_record.info["pid"] = os.getpid()
-
-        def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
-            pid = os.getpid()
-            if connection_record.info["pid"] != pid:
-                log.error(f"New engine checkout using wrong pid: {dbapi_con}")
-
-                connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
-                raise exc.DisconnectionError(
-                    "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
-                )
-
-        if RuntimeDatabaseManager.get_concurrency_count() > 1:
-            listen(async_engine.sync_engine, "connect", engine_on_connect)
-            listen(async_engine.sync_engine, "checkout", engine_on_checkout)
+        if config.IS_READ_ONLY:
+            listen(
+                async_engine.sync_engine,
+                "connect",
+                RuntimeDatabaseManager.runtime_database_helper.engine_on_connect_read_only,
+            )
+        else:
+            listen(
+                async_engine.sync_engine,
+                "connect",
+                RuntimeDatabaseManager.runtime_database_helper.engine_on_connect,
+            )
+        listen(
+            async_engine.sync_engine,
+            "checkout",
+            RuntimeDatabaseManager.runtime_database_helper.engine_on_checkout,
+        )
 
         # a async_sessionmaker(), also in the same scope as the engine
         RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = (
