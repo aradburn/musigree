@@ -172,16 +172,17 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             log.info("Get Sqlite runtime_database connection...")
 
             # Setup Sqlite for development
-            dbapi_con.execute("pragma journal_mode=MEMORY;")
-            dbapi_con.execute("pragma journal_size_limit=6144000;")
-            dbapi_con.execute("pragma locking_mode=EXCLUSIVE;")
+            dbapi_con.execute("PRAGMA journal_mode=MEMORY;")
+            dbapi_con.execute("PRAGMA journal_size_limit=6144000;")
+            dbapi_con.execute("PRAGMA locking_mode=EXCLUSIVE;")
 
             # Common for dev and prod
-            # dbapi_con.execute("pragma mmap_size=24000000000;")
-            dbapi_con.execute("pragma synchronous=OFF;")
-            dbapi_con.execute("pragma cache_size=-32768;")
-            dbapi_con.execute("pragma temp_store=MEMORY;")
-            dbapi_con.execute("pragma foreign_keys=OFF;")
+            dbapi_con.execute("pragma mmap_size=4294967296;")
+            dbapi_con.execute("PRAGMA synchronous=OFF;")
+            dbapi_con.execute("PRAGMA cache_size=-524288;")
+            dbapi_con.execute("PRAGMA temp_store=MEMORY;")
+            dbapi_con.execute("PRAGMA foreign_keys=OFF;")
+            dbapi_con.execute("PRAGMA threads=4;")
 
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
@@ -200,16 +201,17 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             log.info("Get Sqlite runtime_database read only connection...")
 
             # Setup Sqlite read only
-            dbapi_con.execute("pragma query_only=ON;")
-            dbapi_con.execute("pragma journal_mode=OFF;")
-            dbapi_con.execute("pragma locking_mode=NORMAL;")
+            dbapi_con.execute("PRAGMA query_only=ON;")
+            dbapi_con.execute("PRAGMA journal_mode=OFF;")
+            dbapi_con.execute("PRAGMA locking_mode=NORMAL;")
 
             # Common for dev and prod
-            # dbapi_con.execute("pragma mmap_size=24000000000;")
-            dbapi_con.execute("pragma synchronous=OFF;")
-            dbapi_con.execute("pragma cache_size=-32768;")
-            dbapi_con.execute("pragma temp_store=MEMORY;")
-            dbapi_con.execute("pragma foreign_keys=OFF;")
+            dbapi_con.execute("PRAGMA mmap_size=4294967296;")
+            dbapi_con.execute("PRAGMA synchronous=OFF;")
+            dbapi_con.execute("PRAGMA cache_size=-524288;")
+            dbapi_con.execute("PRAGMA temp_store=MEMORY;")
+            dbapi_con.execute("PRAGMA foreign_keys=OFF;")
+            dbapi_con.execute("PRAGMA threads=4;")
 
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
