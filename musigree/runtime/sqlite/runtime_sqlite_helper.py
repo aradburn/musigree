@@ -169,7 +169,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     def engine_on_connect(dbapi_con, connection_record):  # type: ignore
         try:
             """Attempt to connect to the runtime_database."""
-            log.info("Check Sqlite runtime runtime_database connection...")
+            log.info("Get Sqlite runtime_database connection...")
 
             # Setup Sqlite for development
             dbapi_con.execute("pragma journal_mode=MEMORY;")
@@ -177,13 +177,12 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma locking_mode=EXCLUSIVE;")
 
             # Common for dev and prod
-            dbapi_con.execute("pragma mmap_size=24000000000;")
+            # dbapi_con.execute("pragma mmap_size=24000000000;")
             dbapi_con.execute("pragma synchronous=OFF;")
             dbapi_con.execute("pragma cache_size=-32768;")
             dbapi_con.execute("pragma temp_store=MEMORY;")
             dbapi_con.execute("pragma foreign_keys=OFF;")
 
-            log.info("Runtime Database connected OK.")
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
@@ -198,7 +197,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     def engine_on_connect_read_only(dbapi_con, connection_record):  # type: ignore
         try:
             """Attempt to connect to the runtime_database."""
-            log.info("Check Sqlite runtime runtime_database connection...")
+            log.info("Get Sqlite runtime_database read only connection...")
 
             # Setup Sqlite read only
             dbapi_con.execute("pragma query_only=ON;")
@@ -206,13 +205,12 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma locking_mode=NORMAL;")
 
             # Common for dev and prod
-            dbapi_con.execute("pragma mmap_size=24000000000;")
+            # dbapi_con.execute("pragma mmap_size=24000000000;")
             dbapi_con.execute("pragma synchronous=OFF;")
             dbapi_con.execute("pragma cache_size=-32768;")
             dbapi_con.execute("pragma temp_store=MEMORY;")
             dbapi_con.execute("pragma foreign_keys=OFF;")
 
-            log.info("Runtime Database connected OK.")
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
