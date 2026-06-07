@@ -93,11 +93,19 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Returns:
             List[RuntimeEntity]: A list of retrieved entities.
         """
+        log.debug("a")
         result: Result = await self.execute(query)
+        log.debug("b")
 
         instances = result.scalars().all()
+        log.debug("c")
+
         entity_dbs = [RuntimeEntityDB.model_validate(instance) for instance in instances]
+        log.debug("d")
+
         entities = [entity_db.to_domain() for entity_db in entity_dbs]
+        log.debug("e")
+
         return entities
 
     async def count_by_type(self, entity_type: EntityType) -> int:
