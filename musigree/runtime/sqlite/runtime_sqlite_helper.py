@@ -177,7 +177,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma locking_mode=EXCLUSIVE;")
 
             # Common for dev and prod
-            dbapi_con.execute("pragma mmap_size=24000000000;")
+            # dbapi_con.execute("pragma mmap_size=24000000000;")
             dbapi_con.execute("pragma synchronous=OFF;")
             dbapi_con.execute("pragma cache_size=-32768;")
             dbapi_con.execute("pragma temp_store=MEMORY;")
@@ -206,7 +206,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("pragma locking_mode=NORMAL;")
 
             # Common for dev and prod
-            dbapi_con.execute("pragma mmap_size=24000000000;")
+            # dbapi_con.execute("pragma mmap_size=24000000000;")
             dbapi_con.execute("pragma synchronous=OFF;")
             dbapi_con.execute("pragma cache_size=-32768;")
             dbapi_con.execute("pragma temp_store=MEMORY;")
