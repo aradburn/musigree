@@ -55,13 +55,13 @@ class TestLoggingConfig:
 
         # Check default handler
         default = handlers["default"]
-        assert default["level"] == "INFO"
+        assert default["level"] == "DEBUG"
         assert default["formatter"] == "standard"
         assert default["class"] == "logging.StreamHandler"
 
         # Check console handler
         console = handlers["console_handler"]
-        assert console["level"] == "INFO"
+        assert console["level"] == "DEBUG"
         assert console["formatter"] == "standard"
         assert console["class"] == "logging.StreamHandler"
 
