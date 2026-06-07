@@ -71,7 +71,7 @@ class PostgresProductionConfiguration(Configuration):
     TESTING: bool = False
     DATA_DIR: Path = ROOT_DIR / "musigree" / "data"
     DATABASE: DatabaseType = DatabaseType.POSTGRES
-    APPLICATION_ROOT: str = "https://musigree.azurewebsites.net/"
+    APPLICATION_ROOT: str = "https://musigree.com/"
     THREADING_MODEL: ThreadingModel = ThreadingModel.PROCESS
     CACHE_TYPE: CacheType = CacheType.REDIS
 

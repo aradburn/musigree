@@ -141,6 +141,6 @@ CMD ["gunicorn", \
      "--graceful-timeout", "30", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
-     "--log-level", "info", \
+     "--log-level", "debug", \
      "--worker-tmp-dir", "/dev/shm", \
      "musigree.app.fastapi_prod_app:app"]
