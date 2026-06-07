@@ -120,6 +120,7 @@ def get_load_runtime_table_stages(
         partial(TransferManager.transfer_entity),
         # Load relations into the runtime database
         partial(TransferManager.transfer_relation),
+        # TODO add db cleanup analyze etc + dbapi_con.execute("PRAGMA optimize;")
     ]
     return stages
 
