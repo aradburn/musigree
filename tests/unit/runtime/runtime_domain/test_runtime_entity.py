@@ -19,7 +19,7 @@ def test_converts_runtime_entity_to_db_representation() -> None:
         entity_name="Test Artist",
         relation_counts={},
         entity_metadata={},
-        entities={"aliases": ["Alias1"], "groups": ["Group1"], "members": ["Member1"]},
+        entities={"aliases": {"Alias1": 123}, "groups": {"Group1": 456}, "members": {"Member1": 789}},
         countries="Country1",
         genres="Genre1",
         styles="Style1",
@@ -28,9 +28,9 @@ def test_converts_runtime_entity_to_db_representation() -> None:
     assert db_entity.entity_id == 100
     assert db_entity.entity_type == EntityType.ARTIST
     assert db_entity.entity_name == "Test Artist"
-    assert db_entity.aliases == ["Alias1"]
-    assert db_entity.groups == ["Group1"]
-    assert db_entity.members == ["Member1"]
+    assert db_entity.aliases == {"Alias1": 123}
+    assert db_entity.groups == {"Group1": 456}
+    assert db_entity.members == {"Member1": 789}
 
 
 def test_converts_runtime_entity_to_db_representation_with_empty_entities() -> None:
@@ -60,10 +60,10 @@ def test_converts_runtime_entity_db_to_domain_representation() -> None:
         entity_name="Test Artist",
         relation_counts={},
         entity_metadata={},
-        aliases=["Alias1"],
-        groups=["Group1"],
-        members=["Member1"],
-        parent_label=["Parent1"],
+        aliases={"Alias1": 123},
+        groups={"Group1": 456},
+        members={"Member1": 789},
+        parent_label={"Parent1": 543},
         countries="Country1",
         genres="Genre1",
         styles="Style1",
@@ -72,10 +72,10 @@ def test_converts_runtime_entity_db_to_domain_representation() -> None:
     assert entity.entity_id == 100
     assert entity.entity_type == EntityType.ARTIST
     assert entity.entity_name == "Test Artist"
-    assert entity.entities["aliases"] == ["Alias1"]
-    assert entity.entities["groups"] == ["Group1"]
-    assert entity.entities["members"] == ["Member1"]
-    assert entity.entities["parent_label"] == ["Parent1"]
+    assert entity.entities["aliases"] == {"Alias1": 123}
+    assert entity.entities["groups"] == {"Group1": 456}
+    assert entity.entities["members"] == {"Member1": 789}
+    assert entity.entities["parent_label"] == {"Parent1": 543}
 
 
 def test_converts_runtime_entity_db_to_domain_representation_with_none_entities() -> None:

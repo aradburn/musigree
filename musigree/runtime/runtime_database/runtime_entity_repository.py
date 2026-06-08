@@ -25,7 +25,7 @@ import random
 from collections.abc import Sequence
 from typing import Any, AsyncGenerator
 
-from sqlalchemy import Result, select, tuple_, update, Select, delete, func
+from sqlalchemy import Result, select, tuple_, update, Select, delete, func, null
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
@@ -93,19 +93,10 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Returns:
             List[RuntimeEntity]: A list of retrieved entities.
         """
-        log.debug("a")
         result: Result = await self.execute(query)
-        log.debug("b")
-
         instances = result.scalars().all()
-        log.debug("c")
-
         entity_dbs = [RuntimeEntityDB.model_validate(instance) for instance in instances]
-        log.debug("d")
-
         entities = [entity_db.to_domain() for entity_db in entity_dbs]
-        log.debug("e")
-
         return entities
 
     async def count_by_type(self, entity_type: EntityType) -> int:
@@ -406,10 +397,32 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         if not entity_keys:
             return []
         composite_keys = [(entity_id, entity_type.value) for entity_id, entity_type in entity_keys]
-        query = select(RuntimeEntityTable).where(
+        # Select every column required by RuntimeEntityDB except the (potentially
+        # large) entity_metadata, which is returned as NULL to avoid loading it.
+        query = select(
+            RuntimeEntityTable.id,
+            RuntimeEntityTable.entity_id,
+            RuntimeEntityTable.entity_type,
+            RuntimeEntityTable.entity_name,
+            RuntimeEntityTable.relation_counts,
+            null().label(RuntimeEntityTable.entity_metadata.key),
+            RuntimeEntityTable.aliases,
+            RuntimeEntityTable.groups,
+            RuntimeEntityTable.members,
+            RuntimeEntityTable.parent_label,
+            RuntimeEntityTable.countries,
+            RuntimeEntityTable.genres,
+            RuntimeEntityTable.styles,
+        ).where(
             tuple_(RuntimeEntityTable.entity_id, RuntimeEntityTable.entity_type).in_(composite_keys)
         )
-        return await self._get_all_by_query(query)
+        result: Result = await self.execute(query)
+        # mappings() yields a dict per row; scalars() would return only the first
+        # column (entity_id) and break model_validate.
+        rows = result.mappings().all()
+        entity_dbs = [RuntimeEntityDB.model_validate(dict(row)) for row in rows]
+        entities = [entity_db.to_domain() for entity_db in entity_dbs]
+        return entities
 
     async def get_random_entity(self, max_row: int) -> RuntimeEntity | None:
         """

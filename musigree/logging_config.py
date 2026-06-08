@@ -18,13 +18,13 @@ LOGGING_CONFIG: dict[str, Any] = {
     },
     "handlers": {
         "default": {
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },
         "console_handler": {
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",

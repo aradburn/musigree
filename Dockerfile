@@ -131,7 +131,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Run the application with gunicorn
 CMD ["gunicorn", \
-     "--workers", "1", \
+     "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", \
      "--timeout", "60", \
@@ -141,6 +141,6 @@ CMD ["gunicorn", \
      "--graceful-timeout", "30", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
-     "--log-level", "debug", \
+     "--log-level", "info", \
      "--worker-tmp-dir", "/dev/shm", \
      "musigree.app.fastapi_prod_app:app"]
