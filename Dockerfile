@@ -68,10 +68,10 @@ ENV REDIS_PASSWORD=${REDIS_PASSWORD}
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
       org.opencontainers.image.title="musigree" \
       org.opencontainers.image.description="Interactive visualization of the Discogs database" \
-      org.opencontainers.image.version="1.0.77" \
+      org.opencontainers.image.version="1.0.78" \
       org.opencontainers.image.source="https://github.com/aradburn/musigree" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.created="2026-06-07T16:49:22Z" \
+      org.opencontainers.image.created="2026-06-08T17:10:15Z" \
       org.opencontainers.image.revision="" \
       security.scan.enabled="true"
 
@@ -131,7 +131,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Run the application with gunicorn
 CMD ["gunicorn", \
-     "--workers", "1", \
+     "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", \
      "--timeout", "60", \
@@ -141,6 +141,6 @@ CMD ["gunicorn", \
      "--graceful-timeout", "30", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
-     "--log-level", "debug", \
+     "--log-level", "info", \
      "--worker-tmp-dir", "/dev/shm", \
      "musigree.app.fastapi_prod_app:app"]

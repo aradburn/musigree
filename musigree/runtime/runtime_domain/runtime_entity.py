@@ -71,7 +71,7 @@ class RuntimeEntity(InternalDomainObject):
     """The name of the entity."""
     relation_counts: dict[str, int]
     """The relation counts of the entity."""
-    entity_metadata: dict[str, Any]
+    entity_metadata: dict[str, Any] = Field(default_factory=dict)
     """The metadata of the entity."""
     entities: dict[str, Any] = Field(default_factory=dict)
     """The entities related to this entity."""
@@ -165,6 +165,7 @@ class RuntimeEntity(InternalDomainObject):
             RuntimeEntityDB: The runtime_database representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
+        entity_metadata: dict | None = entity_dict.get("entity_metadata", {})
         entities: dict = entity_dict.get("entities", {})
         # noinspection PyUnreachableCode
         aliases: dict | None = entities.get("aliases", None) if isinstance(entities, dict) else None
@@ -176,6 +177,8 @@ class RuntimeEntity(InternalDomainObject):
         parent_label: dict | None = (
             entities.get("parent_label", None) if isinstance(entities, dict) else None
         )
+        if entity_metadata is not None and len(entity_metadata) == 0:
+            entity_metadata = None
         if aliases is not None and len(aliases) == 0:
             aliases = None
         if groups is not None and len(groups) == 0:
@@ -185,7 +188,11 @@ class RuntimeEntity(InternalDomainObject):
         if parent_label is not None and len(parent_label) == 0:
             parent_label = None
         entity_dict.update(
-            aliases=aliases, groups=groups, members=members, parent_label=parent_label
+            entity_metadata=entity_metadata,
+            aliases=aliases,
+            groups=groups,
+            members=members,
+            parent_label=parent_label,
         )
         return RuntimeEntityDB.model_validate(entity_dict)
 
@@ -202,11 +209,11 @@ class RuntimeEntityDB(InternalDomainObject):
         entity_id (int): The ID of the entity.
         entity_type (EntityType): The type of the entity.
         entity_name (str): The name of the entity.
-        relation_counts (dict | list): The relation counts of the entity.
-        entity_metadata (dict | list): The metadata of the entity.
-        aliases (dict | list | None): The aliases of the entity.
-        groups (dict | list | None): The groups associated with the entity.
-        members (dict | list | None): The members associated with the entity.
+        relation_counts (dict): The relation counts of the entity.
+        entity_metadata (dict | None): The metadata of the entity.
+        aliases (dict | None): The aliases of the entity.
+        groups (dict | None): The groups associated with the entity.
+        members (dict | None): The members associated with the entity.
         countries (str | None): The countries associated with the entity.
         genres (str | None): The genres associated with the entity.
         styles (str | None): The styles associated with the entity.
@@ -220,17 +227,17 @@ class RuntimeEntityDB(InternalDomainObject):
     """The type of the entity."""
     entity_name: str
     """The name of the entity."""
-    relation_counts: dict | list
+    relation_counts: dict
     """The relation counts of the entity."""
-    entity_metadata: dict | list
+    entity_metadata: dict | None
     """The metadata of the entity."""
-    aliases: dict | list | None
+    aliases: dict | None
     """The aliases of the entity."""
-    groups: dict | list | None
+    groups: dict | None
     """The groups associated with the entity."""
-    members: dict | list | None
+    members: dict | None
     """The members associated with the entity."""
-    parent_label: dict | list | None
+    parent_label: dict | None
     """The parent label associated with the entity if it is a label."""
     countries: str | None
     """The countries associated with the entity."""
@@ -256,6 +263,9 @@ class RuntimeEntityDB(InternalDomainObject):
             RuntimeEntity: The offline_domain representation of the runtime entity.
         """
         entity_dict: dict = self.model_dump()
+        entity_metadata: dict | None = entity_dict.pop("entity_metadata", {})
+        if entity_metadata is None:
+            entity_metadata = {}
         aliases: dict = entity_dict.pop("aliases", {})
         groups: dict = entity_dict.pop("groups", {})
         members: dict = entity_dict.pop("members", {})
@@ -269,7 +279,7 @@ class RuntimeEntityDB(InternalDomainObject):
             entities.update(members=members)
         if parent_label is not None and len(parent_label) > 0:
             entities.update(parent_label=parent_label)
-        entity_dict.update(entities=entities)
+        entity_dict.update(entity_metadata=entity_metadata, entities=entities)
         return RuntimeEntity.model_validate(entity_dict)
 
 
