@@ -841,22 +841,6 @@ class TestProcessProfileLinks:
 
     @pytest.mark.asyncio
     @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
-    async def test_process_profile_links_entity_not_found_with_logging(
-        self, mock_log: Mock, mock_entity_repository: AsyncMock
-    ) -> None:
-        """Test process_profile_links logs when entity not found and logging is enabled."""
-        profile = "Check out [a99999]."
-        mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
-            message="Entity not found"
-        )
-
-        result = await OfflineEntityDataAccess.process_profile_links(mock_entity_repository, profile)
-
-        assert result == profile
-        mock_log.error.assert_any_call("process_profile_links: entity not found for a99999")
-
-    @pytest.mark.asyncio
-    @patch("musigree.offline.data_access_layer.offline_entity_data_access.log")
     @patch(
         "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name")
     async def test_process_profile_links_entity_id_not_found_with_logging(

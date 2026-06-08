@@ -523,9 +523,9 @@ class OfflineEntityDataAccess:
                     )
                     return f"[{prefix}{entity_id_int}={entity.entity_name}]"
                 except NotFoundError:
-                    log.error(
-                        f"process_profile_links: entity not found for {prefix}{entity_id_str}"
-                    )
+                    # log.error(
+                    #     f"process_profile_links: entity not found for {prefix}{entity_id_str}"
+                    # )
                     # Return original if entity not found
                     return ref_match.group(0)
 
