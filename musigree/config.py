@@ -178,7 +178,7 @@ class SqliteProductionConfiguration(Configuration):
 
     # SQLite settings
     SQLITE_OFFLINE_DATABASE_NAME: Path = ROOT_DIR / OFFLINE_DATABASE / "musigree_offline_prod.db"
-    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / RUNTIME_DATABASE / "musigree_runtime_prod.db"
+    SQLITE_RUNTIME_DATABASE_NAME: Path = ROOT_DIR / ".." / "data" / "musigree_runtime_prod.db"
 
     # Redis cache
     REDIS_USERNAME: str | None = Field(
