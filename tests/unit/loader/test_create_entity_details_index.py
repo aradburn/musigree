@@ -136,7 +136,7 @@ class TestCreateEntityDetailsIndex:
     def test_main_execution(self) -> None:
         """Test main block execution."""
         with patch(
-            "musigree.loader.create_entity_details_index.SqliteDevelopmentConfiguration"
+            "musigree.loader.create_entity_details_index.PostgresReadOnlyDevelopmentConfiguration"
         ) as mock_config_class:
             with patch(
                 "musigree.loader.create_entity_details_index.asyncio.run"

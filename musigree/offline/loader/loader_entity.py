@@ -131,8 +131,12 @@ class LoaderEntity(LoaderBase):
 
         worker_coroutines = utils.worker_generator(worker_function, batched_ids, total_count)
 
+        assert OfflineDatabaseManager.offline_config is not None
+
         await utils.queue_worker_functions(
-            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+            OfflineDatabaseManager.get_concurrency_count(),
+            worker_coroutines,
+            OfflineDatabaseManager.offline_config.THREADING_MODEL,
         )
 
     @classmethod

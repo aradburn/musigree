@@ -14,6 +14,7 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 )
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
 
 log = logging.getLogger(__name__)
 
@@ -250,3 +251,15 @@ class RuntimeEntityDataAccess:
             runtime_entity_dict_list.append(runtime_entity_dict)
 
         return runtime_entity_dict_list
+
+    @staticmethod
+    def get_runtime_token_dicts_from_runtime_tokens(
+        token_list: list[RuntimeToken],
+    ) -> list[dict[str, Any]]:
+        token_entry_dict_list: list[dict[str, Any]] = []
+
+        for token_entry in token_list:
+            token_entry_dict = token_entry.model_dump()
+            token_entry_dict_list.append(token_entry_dict)
+
+        return token_entry_dict_list

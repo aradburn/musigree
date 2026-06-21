@@ -224,6 +224,11 @@ class RuntimeDatabaseHelper(ABC):
                 async with (
                     RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
                 ):
+                    for index in table.indexes:
+                        await conn.run_sync(
+                            index.drop,
+                            checkfirst=True,
+                        )
                     # noinspection PyTypeChecker
                     await conn.run_sync(
                         table.drop,
@@ -242,7 +247,9 @@ class RuntimeDatabaseHelper(ABC):
 
     @staticmethod
     @abstractmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -266,6 +273,28 @@ class RuntimeDatabaseHelper(ABC):
     def is_vacuum_analyze() -> bool:
         """
         Indicates whether the analyze operation is supported after a vacuum.
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    async def analyze(table_name: str | None, engine: AsyncEngine) -> None:
+        """
+        Abstract method to initate an analyze on a table.
+        Args:
+            table_name: Optional, the name of the table to analyze.
+            engine: The SQLAlchemy async engine connected to the runtime_database.
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    async def optimize(table_name: str | None, engine: AsyncEngine) -> None:
+        """
+        Abstract method to initate an optimize on a table.
+        Args:
+            table_name: Optional, the name of the table to optimize.
+            engine: The SQLAlchemy async engine connected to the runtime_database.
         """
         pass
 

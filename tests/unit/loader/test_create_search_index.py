@@ -15,14 +15,12 @@ class TestShutdownLoader:
 
     @patch("musigree.loader.create_text_search_index.shutdown_logging")
     @patch("musigree.loader.create_text_search_index.CacheManager")
-    @patch("musigree.loader.create_text_search_index.RuntimeDatabaseManager")
     @patch("musigree.loader.create_text_search_index.OfflineDatabaseManager")
     @patch("musigree.loader.create_text_search_index.setup_logging")
     def test_shutdown_loader_calls_managers(
         self,
         mock_setup_logging: MagicMock,
         mock_offline_manager: MagicMock,
-        mock_runtime_manager: MagicMock,
         mock_cache_manager: MagicMock,
         mock_shutdown_logging: MagicMock,
     ) -> None:
@@ -32,27 +30,23 @@ class TestShutdownLoader:
             pass
 
         mock_offline_manager.shutdown_database = MagicMock(side_effect=lambda: noop())
-        mock_runtime_manager.shutdown_database = MagicMock(side_effect=lambda: noop())
         mock_cache_manager.shutdown_cache = MagicMock(return_value=noop())
 
         shutdown_loader()
 
         mock_setup_logging.assert_called_once()
         mock_offline_manager.shutdown_database.assert_called_once()
-        mock_runtime_manager.shutdown_database.assert_called_once()
         mock_cache_manager.shutdown_cache.assert_called_once()
         mock_shutdown_logging.assert_called_once()
 
     @patch("musigree.loader.create_text_search_index.shutdown_logging")
     @patch("musigree.loader.create_text_search_index.CacheManager")
-    @patch("musigree.loader.create_text_search_index.RuntimeDatabaseManager")
     @patch("musigree.loader.create_text_search_index.OfflineDatabaseManager")
     @patch("musigree.loader.create_text_search_index.setup_logging")
     def test_shutdown_loader_handles_operational_error(
         self,
         _mock_setup_logging: MagicMock,
         mock_offline_manager: MagicMock,
-        mock_runtime_manager: MagicMock,
         mock_cache_manager: MagicMock,
         mock_shutdown_logging: MagicMock,
     ) -> None:
@@ -66,7 +60,6 @@ class TestShutdownLoader:
             pass
 
         mock_offline_manager.shutdown_database = MagicMock(side_effect=lambda: raise_op_error())
-        mock_runtime_manager.shutdown_database = MagicMock(side_effect=lambda: raise_op_error())
         mock_cache_manager.shutdown_cache = MagicMock(return_value=noop())
 
         shutdown_loader()
@@ -78,10 +71,7 @@ class TestShutdownLoader:
 class TestCreateSearchIndex:
     """Test cases for create_text_search_index function."""
 
-    @patch("musigree.loader.create_text_search_index.TransferManager")
     @patch("musigree.loader.create_text_search_index.LoaderEntity")
-    @patch("musigree.loader.create_text_search_index.ALL_RUNTIME_DATABASE_TABLE_NAMES", ["table1"])
-    @patch("musigree.loader.create_text_search_index.RuntimeDatabaseManager")
     @patch("musigree.loader.create_text_search_index.OfflineDatabaseManager")
     @patch("musigree.loader.create_text_search_index.CacheManager")
     @patch("musigree.loader.create_text_search_index.atexit")
@@ -94,9 +84,7 @@ class TestCreateSearchIndex:
         mock_atexit: MagicMock,
         mock_cache_manager: MagicMock,
         mock_offline_manager: MagicMock,
-        mock_runtime_manager: MagicMock,
         mock_loader_entity_cls: MagicMock,
-        mock_transfer_manager_cls: MagicMock,
     ) -> None:
         """create_text_search_index runs setup and index creation when cache is available."""
 
@@ -108,20 +96,12 @@ class TestCreateSearchIndex:
         mock_cache_manager.clear = MagicMock(return_value=noop())
         mock_offline_manager.setup_database = MagicMock(return_value=noop())
         mock_offline_manager.offline_database_helper = MagicMock()
-        mock_runtime_manager.setup_database = MagicMock(return_value=noop())
-        mock_runtime_manager.runtime_database_helper = MagicMock()
-        mock_runtime_manager.runtime_database_helper.create_tables = MagicMock(
-            return_value=noop()
-        )
         mock_loader = MagicMock()
         mock_loader.loader_create_text_search_index = MagicMock(return_value=noop())
         mock_loader_entity_cls.return_value = mock_loader
-        mock_transfer = MagicMock()
-        mock_transfer.transfer_load_text_search_index = MagicMock(return_value=noop())
-        mock_transfer_manager_cls.return_value = mock_transfer
 
         with patch(
-            "musigree.loader.create_text_search_index.SqliteDevelopmentConfiguration"
+            "musigree.loader.create_text_search_index.PostgresReadOnlyDevelopmentConfiguration"
         ) as mock_config_cls:
             mock_config = MagicMock()
             mock_config.DATA_DIR = Path(".")
@@ -135,12 +115,7 @@ class TestCreateSearchIndex:
         mock_cache_manager.setup_cache.assert_called_once()
         mock_cache_manager.get_cache.assert_called()
         mock_offline_manager.setup_database.assert_called_once()
-        mock_runtime_manager.setup_database.assert_called_once()
-        mock_runtime_manager.runtime_database_helper.create_tables.assert_called_once_with(
-            ["table1"]
-        )
         mock_loader.loader_create_text_search_index.assert_called_once()
-        mock_transfer.transfer_load_text_search_index.assert_called_once()
 
     @patch("musigree.loader.create_text_search_index.sys")
     @patch("musigree.loader.create_text_search_index.CacheManager")
@@ -165,7 +140,7 @@ class TestCreateSearchIndex:
         mock_sys.exit.side_effect = SystemExit
 
         with patch(
-            "musigree.loader.create_text_search_index.SqliteDevelopmentConfiguration"
+            "musigree.loader.create_text_search_index.PostgresReadOnlyDevelopmentConfiguration"
         ):
             with pytest.raises(SystemExit):
                 create_text_search_index()

@@ -76,6 +76,8 @@ BULK_REPORTING_SIZE = 10000
 """The number of records to process before reporting progress."""
 BULK_YIELD_SIZE = 20000
 """The number of records to stream in a chunk from the database."""
+BULK_LOAD_CHUNK_SIZE = 100000
+"""The number of records to hold in memory at once before flushing to worker processes."""
 
 
 class DatabaseType(enum.Enum):

@@ -321,7 +321,7 @@ class CacheManager:
         # noinspection PyUnreachableCode
         if cache_type == CacheType.MEMORY:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
-            log.info("Using memory cache")
+            # log.info("Using memory cache")
 
         elif cache_type == CacheType.REDIS:
             try:
@@ -381,7 +381,7 @@ class CacheManager:
         """
         if cls.cache is not None:
             await cls.cache.close()
-        log.info("Shutdown cache")
+        # log.info("Shutdown cache")
 
     @classmethod
     def get_cache(cls) -> BaseCache:

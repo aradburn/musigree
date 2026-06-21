@@ -274,26 +274,26 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         )
         return result.scalar_one_or_none()
 
-    async def get_id_by_entity_type_and_entity_id(
-        self, entity_type: EntityType, entity_id: int
-    ) -> int | None:
-        """
-        Retrieves an internal entity ID by entity type and external entity ID.
-
-        Args:
-            entity_type: The type of the entity.
-            entity_id: The external entity ID.
-
-        Returns:
-            int | None: The internal entity ID, or None if not found.
-        """
-        result = await self._session.execute(
-            select(RuntimeEntityTable.id).where(
-                (RuntimeEntityTable.entity_id == entity_id)
-                & (RuntimeEntityTable.entity_type == entity_type)
-            )
-        )
-        return result.scalar_one_or_none()
+    # async def get_id_by_entity_type_and_entity_id(
+    #     self, entity_type: EntityType, entity_id: int
+    # ) -> int | None:
+    #     """
+    #     Retrieves an internal entity ID by entity type and external entity ID.
+    #
+    #     Args:
+    #         entity_type: The type of the entity.
+    #         entity_id: The external entity ID.
+    #
+    #     Returns:
+    #         int | None: The internal entity ID, or None if not found.
+    #     """
+    #     result = await self._session.execute(
+    #         select(RuntimeEntityTable.id).where(
+    #             (RuntimeEntityTable.entity_id == entity_id)
+    #             & (RuntimeEntityTable.entity_type == entity_type)
+    #         )
+    #     )
+    #     return result.scalar_one_or_none()
 
     async def get_entity_name_by_id(self, id_: int) -> str | None:
         """

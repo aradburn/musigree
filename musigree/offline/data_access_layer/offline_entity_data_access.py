@@ -41,6 +41,7 @@ from musigree.offline.data_access_layer.offline_master_data_access import Offlin
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.token_repository import TokenRepository
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.offline_domain.release import Release
 
@@ -396,6 +397,14 @@ class OfflineEntityDataAccess:
         # master_id -> master_title OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
         # release_id -> release_title OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
 
+        if OfflineDatabaseManager.offline_config is None:
+            logging_required = True
+        else:
+            if OfflineDatabaseManager.offline_config.TESTING:
+                logging_required = False
+            else:
+                logging_required = True
+
         # Map prefix to EntityType
         prefix_to_type = {
             "a": EntityType.ARTIST,
@@ -427,7 +436,10 @@ class OfflineEntityDataAccess:
                         )
                         return f"[m{master_id}={master_title}]"
                     except NotFoundError:
-                        log.error(f"process_profile_links: master not found for m{entity_id_str}")
+                        if logging_required:
+                            log.error(
+                                f"process_profile_links: master not found for m{entity_id_str}"
+                            )
                         # Return original if master not found
                         return ref_match.group(0)
 
@@ -444,12 +456,14 @@ class OfflineEntityDataAccess:
                         return f"[m{master_id}={master_title}]"
                     except ValueError:
                         # Not numeric, name lookup not supported
-                        log.error(
-                            f"process_profile_links: master id lookup from name not supported for m={entity_name}"
-                        )
+                        if logging_required:
+                            log.error(
+                                f"process_profile_links: master id lookup from name not supported for m={entity_name}"
+                            )
                         return ref_match.group(0)
                     except NotFoundError:
-                        log.error(f"process_profile_links: master not found for m{entity_name}")
+                        if logging_required:
+                            log.error(f"process_profile_links: master not found for m{entity_name}")
                         # Transform malformed ref to correct format even if not found
                         return f"[m{int(entity_name)}]"
 
@@ -473,7 +487,10 @@ class OfflineEntityDataAccess:
                         )
                         return f"[r{release_id}={release_title}]"
                     except NotFoundError:
-                        log.error(f"process_profile_links: release not found for r{entity_id_str}")
+                        if logging_required:
+                            log.error(
+                                f"process_profile_links: release not found for r{entity_id_str}"
+                            )
                         # Return original if release not found
                         return ref_match.group(0)
 
@@ -482,7 +499,8 @@ class OfflineEntityDataAccess:
                     # Check if entity_name is numeric (malformed reference like [r=1234])
                     try:
                         release_id = int(entity_name)
-                        log.debug(f"release_id (from malformed ref): {release_id}")
+                        if logging_required:
+                            log.debug(f"release_id (from malformed ref): {release_id}")
 
                         release_title = (
                             await OfflineReleaseDataAccess.get_release_title_from_release_id(
@@ -492,12 +510,16 @@ class OfflineEntityDataAccess:
                         return f"[r{release_id}={release_title}]"
                     except ValueError:
                         # Not numeric, name lookup not supported
-                        log.error(
-                            f"process_profile_links: release id lookup from name not supported for r={entity_name}"
-                        )
+                        if logging_required:
+                            log.error(
+                                f"process_profile_links: release id lookup from name not supported for r={entity_name}"
+                            )
                         return ref_match.group(0)
                     except NotFoundError:
-                        log.error(f"process_profile_links: release not found for r{entity_name}")
+                        if logging_required:
+                            log.error(
+                                f"process_profile_links: release not found for r{entity_name}"
+                            )
                         # Transform malformed ref to correct format even if not found
                         return f"[r{int(entity_name)}]"
 
@@ -523,9 +545,10 @@ class OfflineEntityDataAccess:
                     )
                     return f"[{prefix}{entity_id_int}={entity.entity_name}]"
                 except NotFoundError:
-                    # log.error(
-                    #     f"process_profile_links: entity not found for {prefix}{entity_id_str}"
-                    # )
+                    if logging_required:
+                        log.error(
+                            f"process_profile_links: entity not found for {prefix}{entity_id_str}"
+                        )
                     # Return original if entity not found
                     return ref_match.group(0)
 
@@ -547,9 +570,10 @@ class OfflineEntityDataAccess:
                 if candidate_entity_id is not None:
                     return f"[{prefix}{candidate_entity_id}={entity_name}]"
                 else:
-                    log.error(
-                        f"process_profile_links: entity_id not found for {prefix}={entity_name}"
-                    )
+                    if logging_required:
+                        log.error(
+                            f"process_profile_links: entity_id not found for {prefix}={entity_name}"
+                        )
                     # Return original if entity_id not found
                     return ref_match.group(0)
 

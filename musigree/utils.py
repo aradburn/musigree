@@ -13,7 +13,7 @@ import textwrap
 import time
 import unicodedata
 from collections.abc import Mapping, Iterator, Sequence, Iterable, AsyncIterable
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import datetime, date
 from functools import partial
 from io import BufferedWriter
@@ -25,7 +25,7 @@ from sqlalchemy.orm import DeclarativeBase
 from toolz import count  # type: ignore
 from unidecode import unidecode
 
-from musigree.constants import VERSION
+from musigree.constants import VERSION, ThreadingModel
 
 T_read = TypeVar("T_read", covariant=True)
 T_write = TypeVar("T_write", contravariant=True)
@@ -440,11 +440,13 @@ async def async_worker_generator(
 async def queue_worker_functions(
     max_concurrent: int,
     worker_partials: Generator[partial, None, None] | list[partial],
+    threading_model: ThreadingModel = ThreadingModel.THREAD,
 ) -> Any:
     """Run worker coroutines with a maximum number of concurrent workers.
     Args:
         max_concurrent (int): The maximum number of concurrent workers.
         worker_partials (Generator[Callable[..., None], None, None]): A generator of worker coroutines.
+        threading_model: (ThreadingModel)
     """
     if max_concurrent < 1:
         max_concurrent = 1
@@ -454,13 +456,15 @@ async def queue_worker_functions(
 
     tasks = []
     loop = asyncio.get_running_loop()
-    if max_concurrent > 1:
+    if threading_model == ThreadingModel.PROCESS:
         # loop.set_debug(True)
-        with ProcessPoolExecutor(max_workers=max_concurrent) as executor:
+        with ProcessPoolExecutor(max_workers=max_concurrent) as process_executor:
             for worker_partial in worker_partials:
                 # log.debug("Get next worker_partial")
                 # Create max_concurrent worker tasks to process the queue concurrently.
-                future = loop.run_in_executor(executor, worker_partial.func, *worker_partial.args)
+                future = loop.run_in_executor(
+                    process_executor, worker_partial.func, *worker_partial.args
+                )
                 # log.debug("Got next worker_partial future")
                 tasks.append(future)
 
@@ -471,17 +475,40 @@ async def queue_worker_functions(
                         await completed_future
                     # await asyncio.wait([task])
                     # log.debug("completed future")
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.1)
             # log.debug("Done all worker_partials")
 
             for completed_future in asyncio.as_completed(tasks):
                 # log.debug(f"Get as_completed on future: {completed_future}")
                 await completed_future
     else:
-        for worker_partial in worker_partials:
-            # Create a worker tasks to process the queue one by one.
-            future = loop.run_in_executor(None, worker_partial.func, *worker_partial.args)
-            await future
+        with ThreadPoolExecutor(max_workers=max_concurrent) as thread_executor:
+            for worker_partial in worker_partials:
+                # log.debug("Get next worker_partial")
+                # Create max_concurrent worker tasks to process the queue concurrently.
+                future = loop.run_in_executor(
+                    thread_executor, worker_partial.func, *worker_partial.args
+                )
+                # log.debug("Got next worker_partial future")
+                tasks.append(future)
+
+                if len(tasks) >= max_concurrent:
+                    task = tasks.pop(0)
+                    # log.debug("awaiting future")
+                    for completed_future in asyncio.as_completed([task]):
+                        await completed_future
+                    # await asyncio.wait([task])
+                    # log.debug("completed future")
+                    await asyncio.sleep(0.1)
+            # log.debug("Done all worker_partials")
+
+            for completed_future in asyncio.as_completed(tasks):
+                # log.debug(f"Get as_completed on future: {completed_future}")
+                await completed_future
+        # for worker_partial in worker_partials:
+        #     # Create a worker tasks to process the queue one by one.
+        #     future = loop.run_in_executor(None, worker_partial.func, *worker_partial.args)
+        #     await future
 
     total_processing_time = time.monotonic() - started_at
     log.debug(f"total processing time: {total_processing_time:.2f} seconds")

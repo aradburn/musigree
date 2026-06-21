@@ -223,8 +223,9 @@ class TestRuntimeLoaderFunctions:
         mock_cache_manager.get_cache.assert_called_once()
         mock_offline_db_manager.setup_database.assert_called_once()
         mock_runtime_db_manager.setup_database.assert_called_once()
-        # mock_offline_helper.create_tables.assert_called_once()
-        mock_runtime_helper.drop_tables.assert_called_once()
+        mock_offline_helper.drop_tables.assert_not_called()
+        mock_offline_helper.create_tables.assert_not_called()
+        mock_runtime_helper.drop_tables.assert_not_called()
         mock_runtime_helper.create_tables.assert_called_once()
         mock_luigi.build.assert_called_once()
 

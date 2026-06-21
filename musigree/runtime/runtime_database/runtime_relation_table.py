@@ -60,11 +60,13 @@ class RuntimeRelationTable(RuntimeBase):
         Index(
             "idx_runtime_relation_subject",
             subject,
+            predicate,
             unique=False,
         ),
         Index(
             "idx_runtime_relation_object",
             object,
+            predicate,
             unique=False,
         ),
         {},

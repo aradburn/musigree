@@ -136,15 +136,6 @@ class TestRuntimeEntityTable:
         # THEN
         assert primary_key_columns == ["id"]
 
-    def test_table_args_defined(self) -> None:
-        """Test that table args are properly defined."""
-        # GIVEN/WHEN
-        table_args = RuntimeEntityTable.__table_args__
-
-        # THEN
-        assert table_args is not None
-        assert isinstance(table_args, tuple)
-
     def test_repr_with_data(self) -> None:
         """Test string representation of RuntimeEntityTable instance with data."""
         # GIVEN

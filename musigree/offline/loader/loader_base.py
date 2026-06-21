@@ -162,8 +162,12 @@ class LoaderBase(ABC):
 
         worker_coroutines = utils.worker_generator(worker, batch_records, 0)
 
+        assert OfflineDatabaseManager.offline_config is not None
+
         await utils.queue_worker_functions(
-            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+            OfflineDatabaseManager.get_concurrency_count(),
+            worker_coroutines,
+            OfflineDatabaseManager.offline_config.THREADING_MODEL,
         )
 
         for _id in id_accumulator:
@@ -204,8 +208,12 @@ class LoaderBase(ABC):
                 delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted)
             )
 
+            assert OfflineDatabaseManager.offline_config is not None
+
             await utils.queue_worker_functions(
-                OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+                OfflineDatabaseManager.get_concurrency_count(),
+                worker_coroutines,
+                OfflineDatabaseManager.offline_config.THREADING_MODEL,
             )
 
         return processed_count

@@ -51,12 +51,13 @@ runtime operation.
 """
 
 import logging
+import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
 from typing import Type
 
-from sqlalchemy import text, StaticPool, URL, Pool, AsyncAdaptedQueuePool, exc
+from sqlalchemy import text, URL, Pool, AsyncAdaptedQueuePool, exc
 from sqlalchemy.dialects.sqlite import insert, Insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
@@ -128,29 +129,41 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
         poolclass: type[Pool]
         engine: AsyncEngine
-        if config.IS_READ_ONLY:
-            poolclass = AsyncAdaptedQueuePool
-            engine = create_async_engine(
-                target_url,
-                connect_args={
-                    "check_same_thread": False,
-                    "timeout": 60,
-                },
-                poolclass=poolclass,
-                pool_size=4,
-                max_overflow=0,
-            )
-        else:
-            # During loading we have a single thread, so we can use a static pool
-            poolclass = StaticPool
-            engine = create_async_engine(
-                target_url,
-                connect_args={
-                    "check_same_thread": False,
-                    "timeout": 600,
-                },
-                poolclass=poolclass,
-            )
+        poolclass = AsyncAdaptedQueuePool
+        engine = create_async_engine(
+            target_url,
+            connect_args={
+                "check_same_thread": False,
+                "timeout": 60,
+            },
+            poolclass=poolclass,
+            pool_size=multiprocessing.cpu_count(),
+            # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+            max_overflow=0,
+        )
+        # if config.IS_READ_ONLY:
+        #     poolclass = AsyncAdaptedQueuePool
+        #     engine = create_async_engine(
+        #         target_url,
+        #         connect_args={
+        #             "check_same_thread": False,
+        #             "timeout": 60,
+        #         },
+        #         poolclass=poolclass,
+        #         pool_size=4,
+        #         max_overflow=0,
+        #     )
+        # else:
+        #     # During loading we have a single thread, so we can use a static pool
+        #     poolclass = StaticPool
+        #     engine = create_async_engine(
+        #         target_url,
+        #         connect_args={
+        #             "check_same_thread": False,
+        #             "timeout": 600,
+        #         },
+        #         poolclass=poolclass,
+        #     )
 
         """Create the engine."""
         return engine
@@ -169,20 +182,21 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     def engine_on_connect(dbapi_con, connection_record):  # type: ignore
         try:
             """Attempt to connect to the runtime_database."""
-            log.info("Get Sqlite runtime_database connection...")
+            log.debug("Get Sqlite runtime_database connection...")
 
             # Setup Sqlite for development
             dbapi_con.execute("PRAGMA journal_mode=MEMORY;")
             dbapi_con.execute("PRAGMA journal_size_limit=6144000;")
-            dbapi_con.execute("PRAGMA locking_mode=EXCLUSIVE;")
+            dbapi_con.execute("PRAGMA locking_mode=NORMAL;")
+            dbapi_con.execute("PRAGMA busy_timeout = 100000;")
 
             # Common for dev and prod
-            dbapi_con.execute("pragma mmap_size=6442450944;")
-            dbapi_con.execute("PRAGMA synchronous=OFF;")
-            dbapi_con.execute("PRAGMA cache_size=-262144;")
+            dbapi_con.execute("PRAGMA mmap_size=0;")
+            dbapi_con.execute("PRAGMA synchronous=NORMAL;")
+            dbapi_con.execute("PRAGMA cache_size=-65536;")
             dbapi_con.execute("PRAGMA temp_store=MEMORY;")
             dbapi_con.execute("PRAGMA foreign_keys=OFF;")
-            dbapi_con.execute("PRAGMA threads=4;")
+            dbapi_con.execute("PRAGMA threads=8;")
 
         except (DatabaseError, OperationalError):
             """Handle runtime_database errors."""
@@ -206,7 +220,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("PRAGMA locking_mode=NORMAL;")
 
             # Common for dev and prod
-            dbapi_con.execute("PRAGMA mmap_size=0;")
+            dbapi_con.execute("PRAGMA mmap_size=6442450944;")
             dbapi_con.execute("PRAGMA synchronous=OFF;")
             dbapi_con.execute("PRAGMA cache_size=-65536;")
             dbapi_con.execute("PRAGMA temp_store=MEMORY;")
@@ -302,7 +316,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Performs a VACUUM operation on the runtime_database.
 
@@ -315,10 +331,8 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         log.debug(f"VACUUM {table_name}")
 
         query = "VACUUM"
-        if is_full:
-            query += " FULL"
-        if is_analyze:
-            query += " ANALYZE"
+        if table_name is not None:
+            query += " " + table_name
         query += ";"
 
         async with engine.connect() as connection:
@@ -343,6 +357,41 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             bool: False, as this is not supported.
         """
         return False
+
+    @staticmethod
+    async def analyze(table_name: str | None, engine: AsyncEngine) -> None:
+        """
+        Performs a ANALYZE operation on the runtime_database.
+
+        Args:
+            table_name: Optional, the name of the table to vacuum.
+            engine: The SQLAlchemy engine connected to the runtime_database.
+        """
+        log.debug(f"ANALYZE {table_name}")
+
+        if table_name is not None:
+            query = f"ANALYZE {table_name};"
+        else:
+            query = "ANALYZE;"
+
+        async with engine.connect() as connection:
+            await connection.execute(text(query))
+
+    @staticmethod
+    async def optimize(table_name: str | None, engine: AsyncEngine) -> None:
+        """
+        Performs a PRAGMA optimize operation on the runtime_database.
+
+        Args:
+            table_name: Optional, the name of the table to optimize.
+            engine: The SQLAlchemy engine connected to the runtime_database.
+        """
+        log.debug(f"OPTIMIZE {table_name}")
+
+        query = "PRAGMA optimize;"
+
+        async with engine.connect() as connection:
+            await connection.execute(text(query))
 
     @staticmethod
     def generate_insert_query(
