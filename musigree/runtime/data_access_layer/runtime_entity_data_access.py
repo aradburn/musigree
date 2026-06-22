@@ -60,6 +60,7 @@ class RuntimeEntityDataAccess:
                     if not entity_id:
                         continue
                     ids = sorted((entity_id, entity.entity_id))
+                    log.debug(f"            structural_roles_to_relations aliases: {ids}")
                     relation = RuntimeRelationResult(
                         entity_one_id=ids[0],
                         entity_one_type=entity.entity_type,
@@ -76,6 +77,7 @@ class RuntimeEntityDataAccess:
                     for entity_id in entity.entities["groups"].values():
                         if not entity_id:
                             continue
+                        log.debug(f"            structural_roles_to_relations groups: {entity_id}")
                         relation = RuntimeRelationResult(
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
@@ -90,6 +92,7 @@ class RuntimeEntityDataAccess:
                     for entity_id in entity.entities["members"].values():
                         if not entity_id:
                             continue
+                        log.debug(f"            structural_roles_to_relations members: {entity_id}")
                         relation = RuntimeRelationResult(
                             entity_one_id=entity_id,
                             entity_one_type=entity.entity_type,
@@ -106,6 +109,9 @@ class RuntimeEntityDataAccess:
                 for entity_id in entity.entities["parent_label"].values():
                     if not entity_id:
                         continue
+                    log.debug(
+                        f"            structural_roles_to_relations parent_label: {entity_id}"
+                    )
                     relation = RuntimeRelationResult(
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
@@ -120,6 +126,7 @@ class RuntimeEntityDataAccess:
                 for entity_id in entity.entities["sublabels"].values():
                     if not entity_id:
                         continue
+                    log.debug(f"            structural_roles_to_relations sublabels: {entity_id}")
                     relation = RuntimeRelationResult(
                         entity_one_id=entity_id,
                         entity_one_type=entity.entity_type,

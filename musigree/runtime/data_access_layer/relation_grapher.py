@@ -200,7 +200,7 @@ class RelationGrapher:
         entity_repository: RuntimeEntityRepository,
         ids_to_visit: set[int],
     ) -> list[RuntimeEntity]:
-        # log.debug(f"        Retrieving entities keys: {ids_to_visit}")
+        log.debug(f"        Retrieving entities keys: {ids_to_visit}")
         entities: list[RuntimeEntity] = []
         ids_to_visit_list = list(ids_to_visit)
         stop = len(ids_to_visit_list)
@@ -414,8 +414,8 @@ class RelationGrapher:
     def process_relations(self, relation_links: dict[str, RuntimeRelationResult]) -> None:
         log.debug(f"    process {len(relation_links)} relation_links")
         for link_key, relation in sorted(relation_links.items()):
-            # log.debug(f"        link_key: {link_key}")
-            # log.debug(f"        relation: {relation}")
+            log.debug(f"        link_key: {link_key}")
+            log.debug(f"        relation: {relation}")
 
             if not relation.entity_one_id or not relation.entity_two_id:
                 log.debug(f"        skip: {relation}")
