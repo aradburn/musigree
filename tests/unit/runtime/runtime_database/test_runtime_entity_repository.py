@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
@@ -353,3 +354,51 @@ class TestRuntimeEntityRepository:
             mock_session.execute.assert_called_once()
         finally:
             CTX_RUNTIME_SESSION.reset(token)
+
+    @pytest.mark.asyncio
+    async def test_search_multi_empty_ids_returns_empty_list(self) -> None:
+        """Test search_multi with empty ids returns an empty list."""
+        result = await self.repository.search_multi([])
+        assert result == []
+
+    @pytest.mark.asyncio
+    @patch.object(RuntimeEntityRepository, "execute")
+    async def test_search_multi_success(self, mock_execute: Mock) -> None:
+        """Test successfully retrieving multiple entities by internal id."""
+        # GIVEN
+        internal_id = to_entity_internal_id(12345, EntityType.ARTIST)
+        row = {
+            "id": internal_id,
+            "entity_id": 12345,
+            "entity_type": EntityType.ARTIST,
+            "entity_name": "Test Artist",
+            "relation_counts": {},
+            "entity_metadata": None,
+            "aliases": None,
+            "groups": None,
+            "members": None,
+            "parent_label": None,
+            "countries": None,
+            "genres": None,
+            "styles": None,
+        }
+
+        mock_result = Mock(spec=Result)
+        mock_mappings = Mock()
+        mock_mappings.all.return_value = [row]
+        mock_result.mappings.return_value = mock_mappings
+        mock_execute.return_value = mock_result
+
+        with patch.object(RuntimeEntityDB, "model_validate") as mock_validate:
+            mock_entity_db = Mock()
+            mock_domain_entity = Mock()
+            mock_entity_db.to_domain.return_value = mock_domain_entity
+            mock_validate.return_value = mock_entity_db
+
+            # WHEN
+            result = await self.repository.search_multi([internal_id])
+
+            # THEN
+            assert result == [mock_domain_entity]
+            mock_validate.assert_called_once_with(dict(row))
+            mock_entity_db.to_domain.assert_called_once()

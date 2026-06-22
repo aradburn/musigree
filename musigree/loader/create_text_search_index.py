@@ -1,7 +1,6 @@
 import asyncio
 import atexit
 import logging
-import sys
 
 from sqlalchemy.exc import OperationalError
 
@@ -64,14 +63,8 @@ def create_text_search_index() -> None:
 
     with asyncio.Runner() as runner:
         # Setup Cache
-        runner.run(CacheManager.setup_cache(offline_config))
-        cache = CacheManager.get_cache()
-        if cache is None:
-            log.error("Cache not set")
-            sys.exit()
+        runner.run(CacheManager.setup_and_clear_cache(offline_config))
 
-        log.debug("Clearing cache")
-        runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))
         # runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
 

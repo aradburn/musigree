@@ -224,11 +224,11 @@ class RuntimeDatabaseHelper(ABC):
                 async with (
                     RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
                 ):
-                    for index in table.indexes:
-                        await conn.run_sync(
-                            index.drop,
-                            checkfirst=True,
-                        )
+                    # for index in table.indexes:
+                    #     await conn.run_sync(
+                    #         index.drop,
+                    #         checkfirst=True,
+                    #     )
                     # noinspection PyTypeChecker
                     await conn.run_sync(
                         table.drop,
@@ -361,6 +361,8 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             dict: The network data.
         """
+
+        log.debug("get_network")
 
         try:
             entity = await entity_repository.get_by_entity_id_and_entity_type(

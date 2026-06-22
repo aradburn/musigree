@@ -25,10 +25,11 @@ import random
 from collections.abc import Sequence
 from typing import Any, AsyncGenerator
 
-from sqlalchemy import Result, select, tuple_, update, Select, delete, func, null
+from sqlalchemy import Result, select, update, Select, delete, func, null
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
@@ -152,12 +153,12 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         async for row in result:
             yield row[0], row[1]
 
-    async def get_by_id(self, id_: int) -> RuntimeEntity:
+    async def get_by_id(self, _id: int) -> RuntimeEntity:
         """
         Retrieves an entity by its internal ID.
 
         Args:
-            id_: The internal ID of the entity to retrieve.
+            _id: The internal ID of the entity to retrieve.
 
         Returns:
             RuntimeEntity: The retrieved entity.
@@ -165,7 +166,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Raises:
             NotFoundError: If no entity is found with the given ID.
         """
-        query = select(RuntimeEntityTable).where(RuntimeEntityTable.id == id_)
+        query = select(RuntimeEntityTable).where(RuntimeEntityTable.id == _id)
         return await self._get_one_by_query(query)
 
     async def get_by_entity_id_and_entity_type(
@@ -184,11 +185,8 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Raises:
             NotFoundError: If no entity is found with the given ID and type.
         """
-        query = select(RuntimeEntityTable).where(
-            (RuntimeEntityTable.entity_id == entity_id)
-            & (RuntimeEntityTable.entity_type == entity_type)
-        )
-        return await self._get_one_by_query(query)
+        _id = to_entity_internal_id(entity_id, entity_type)
+        return await self.get_by_id(_id)
 
     async def get_ids(self) -> Sequence[int]:
         """
@@ -383,20 +381,19 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         await self.execute(delete(self.schema_class).where(RuntimeEntityTable.id == id_))
         await self._session.flush()
 
-    async def search_multi(self, entity_keys: list[tuple[int, EntityType]]) -> list[RuntimeEntity]:
+    async def search_multi(self, ids: list[int]) -> list[RuntimeEntity]:
         """
-        Retrieves multiple entities based on a list of entity keys.
+        Retrieves multiple entities based on a list of internal ids.
 
         Args:
-            entity_keys: A list of tuples, where each tuple contains an
-                external entity ID and an entity type.
+            ids: A list of ids, where each id is a mapping from an
+                external entity ID and entity type.
 
         Returns:
             List[RuntimeEntity]: A list of retrieved entities.
         """
-        if not entity_keys:
+        if not ids:
             return []
-        composite_keys = [(entity_id, entity_type.value) for entity_id, entity_type in entity_keys]
         # Select every column required by RuntimeEntityDB except the (potentially
         # large) entity_metadata, which is returned as NULL to avoid loading it.
         query = select(
@@ -413,9 +410,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             RuntimeEntityTable.countries,
             RuntimeEntityTable.genres,
             RuntimeEntityTable.styles,
-        ).where(
-            tuple_(RuntimeEntityTable.entity_id, RuntimeEntityTable.entity_type).in_(composite_keys)
-        )
+        ).where(RuntimeEntityTable.id.in_(ids))
         result: Result = await self.execute(query)
         # mappings() yields a dict per row; scalars() would return only the first
         # column (entity_id) and break model_validate.

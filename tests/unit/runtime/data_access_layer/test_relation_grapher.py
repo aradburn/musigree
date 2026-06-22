@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
 import pytest
 
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.relation_grapher import RelationGrapher
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
@@ -19,7 +20,7 @@ class TestRelationGrapher:
     def mock_center_entity(self) -> RuntimeEntity:
         """Create a mock center entity for testing."""
         return RuntimeEntity(
-            id=1,
+            id=to_entity_internal_id(123, EntityType.ARTIST),
             entity_id=123,
             entity_type=EntityType.ARTIST,
             entity_name="Test Artist",
@@ -141,11 +142,14 @@ class TestRelationGrapher:
         """Test the static search_entities method."""
         # Given
         mock_repository = AsyncMock()
-        entity_keys = {(123, EntityType.ARTIST), (456, EntityType.LABEL)}
+        ids_to_visit = {
+            to_entity_internal_id(123, EntityType.ARTIST),
+            to_entity_internal_id(456, EntityType.LABEL),
+        }
 
         mock_entities = [
             RuntimeEntity(
-                id=1,
+                id=to_entity_internal_id(123, EntityType.ARTIST),
                 entity_id=123,
                 entity_type=EntityType.ARTIST,
                 entity_name="Artist 1",
@@ -156,7 +160,7 @@ class TestRelationGrapher:
                 styles=None,
             ),
             RuntimeEntity(
-                id=2,
+                id=to_entity_internal_id(456, EntityType.LABEL),
                 entity_id=456,
                 entity_type=EntityType.LABEL,
                 entity_name="Label 1",
@@ -170,7 +174,7 @@ class TestRelationGrapher:
         mock_repository.search_multi.return_value = mock_entities
 
         # When
-        result = await RelationGrapher.search_entities(mock_repository, entity_keys)
+        result = await RelationGrapher.search_entities(mock_repository, ids_to_visit)
 
         # Then
         assert len(result) == 2
@@ -182,8 +186,8 @@ class TestRelationGrapher:
         """Test search_entities with large batch that gets chunked."""
         # Given
         mock_repository = AsyncMock()
-        # Create 1500 entity keys to trigger batching (step size is 1000)
-        entity_keys = {(i, EntityType.ARTIST) for i in range(1500)}
+        # Create 1500 internal ids to trigger batching (step size is 1000)
+        ids_to_visit = {to_entity_internal_id(i, EntityType.ARTIST) for i in range(1500)}
 
         mock_entities_batch1 = [Mock() for _ in range(1000)]
         mock_entities_batch2 = [Mock() for _ in range(500)]
@@ -193,7 +197,7 @@ class TestRelationGrapher:
         ]
 
         # When
-        result = await RelationGrapher.search_entities(mock_repository, entity_keys)
+        result = await RelationGrapher.search_entities(mock_repository, ids_to_visit)
 
         # Then
         assert len(result) == 1500
@@ -217,7 +221,7 @@ class TestRelationGrapher:
 
         entities = [
             RuntimeEntity(
-                id=1,
+                id=to_entity_internal_id(123, EntityType.ARTIST),
                 entity_id=123,
                 entity_type=EntityType.ARTIST,
                 entity_name="Valid Artist",
@@ -228,7 +232,7 @@ class TestRelationGrapher:
                 styles=None,
             ),
             RuntimeEntity(
-                id=2,
+                id=to_entity_internal_id(456, EntityType.LABEL),
                 entity_id=456,
                 entity_type=EntityType.LABEL,
                 entity_name="Valid Label",
@@ -242,7 +246,7 @@ class TestRelationGrapher:
 
         # Add entities to visit set
         for entity in entities:
-            grapher.entity_keys_to_visit.add(entity.entity_key)
+            grapher.ids_to_visit.add(entity.id)
 
         # When
         grapher.process_entities(distance=1, entities=entities)
@@ -250,9 +254,9 @@ class TestRelationGrapher:
         # Then
         assert len(grapher.nodes) == 2
         for entity in entities:
-            assert entity.entity_key in grapher.nodes
-            assert isinstance(grapher.nodes[entity.entity_key], TrellisNode)
-            assert grapher.nodes[entity.entity_key].distance == 1
+            assert entity.id in grapher.nodes
+            assert isinstance(grapher.nodes[entity.id], TrellisNode)
+            assert grapher.nodes[entity.id].distance == 1
 
     def test_process_entities_pruned_entities(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
@@ -272,7 +276,7 @@ class TestRelationGrapher:
 
         entities = [
             RuntimeEntity(
-                id=1,
+                id=to_entity_internal_id(123, EntityType.ARTIST),
                 entity_id=123,
                 entity_type=EntityType.ARTIST,
                 entity_name="Various",
@@ -283,7 +287,7 @@ class TestRelationGrapher:
                 styles=None,
             ),
             RuntimeEntity(
-                id=2,
+                id=to_entity_internal_id(456, EntityType.LABEL),
                 entity_id=456,
                 entity_type=EntityType.LABEL,
                 entity_name="Various Artists - Test",
@@ -294,7 +298,7 @@ class TestRelationGrapher:
                 styles=None,
             ),
             RuntimeEntity(
-                id=3,
+                id=to_entity_internal_id(789, EntityType.ARTIST),
                 entity_id=789,
                 entity_type=EntityType.ARTIST,
                 entity_name="Valid Artist",
@@ -308,7 +312,7 @@ class TestRelationGrapher:
 
         # Add entities to visit set
         for entity in entities:
-            grapher.entity_keys_to_visit.add(entity.entity_key)
+            grapher.ids_to_visit.add(entity.id)
 
         # When
         grapher.process_entities(distance=1, entities=entities)
@@ -316,10 +320,10 @@ class TestRelationGrapher:
         # Then
         # Only the valid artist should remain
         assert len(grapher.nodes) == 1
-        assert (789, EntityType.ARTIST) in grapher.nodes
+        assert to_entity_internal_id(789, EntityType.ARTIST) in grapher.nodes
         # Pruned entities should be removed from visit set
-        assert (123, EntityType.ARTIST) not in grapher.entity_keys_to_visit
-        assert (456, EntityType.LABEL) not in grapher.entity_keys_to_visit
+        assert to_entity_internal_id(123, EntityType.ARTIST) not in grapher.ids_to_visit
+        assert to_entity_internal_id(456, EntityType.LABEL) not in grapher.ids_to_visit
 
     def test_process_relations_valid_relations(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
@@ -365,10 +369,10 @@ class TestRelationGrapher:
         assert len(grapher.links) == 2
         assert "link1" in grapher.links
         assert "link2" in grapher.links
-        # New entity keys should be added to visit set
-        assert (123, EntityType.ARTIST) in grapher.entity_keys_to_visit
-        assert (456, EntityType.LABEL) in grapher.entity_keys_to_visit
-        assert (789, EntityType.ARTIST) in grapher.entity_keys_to_visit
+        # New internal entity ids should be added to visit set
+        assert to_entity_internal_id(123, EntityType.ARTIST) in grapher.ids_to_visit
+        assert to_entity_internal_id(456, EntityType.LABEL) in grapher.ids_to_visit
+        assert to_entity_internal_id(789, EntityType.ARTIST) in grapher.ids_to_visit
 
     def test_prune_roles_with_many_nodes(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
@@ -388,7 +392,7 @@ class TestRelationGrapher:
 
         # Simulate many nodes to trigger pruning
         for i in range(30):  # More than max_nodes / 4 (25)
-            grapher.nodes[(i, EntityType.ARTIST)] = Mock()
+            grapher.nodes[i] = Mock()
 
         provisional_role_names = ["Artist", "Producer", "Released On"]
 
@@ -404,7 +408,7 @@ class TestRelationGrapher:
         """Test pruning of Sublabel Of for artist entities."""
         # Given
         artist_entity = RuntimeEntity(
-            id=1,
+            id=to_entity_internal_id(123, EntityType.ARTIST),
             entity_id=123,
             entity_type=EntityType.ARTIST,  # Artist type
             entity_name="Test Artist",
@@ -428,7 +432,7 @@ class TestRelationGrapher:
 
         # Simulate many nodes to trigger pruning
         for i in range(30):  # More than max_nodes / 4
-            grapher.nodes[(i, EntityType.ARTIST)] = Mock()
+            grapher.nodes[i] = Mock()
 
         provisional_role_names = ["Artist", "Sublabel Of"]
 
@@ -455,7 +459,7 @@ class TestRelationGrapher:
 
         # Create entities with aliases
         entity1 = RuntimeEntity(
-            id=1,
+            id=to_entity_internal_id(123, EntityType.ARTIST),
             entity_id=123,
             entity_type=EntityType.ARTIST,
             entity_name="Main Artist",
@@ -467,7 +471,7 @@ class TestRelationGrapher:
             styles=None,
         )
         entity2 = RuntimeEntity(
-            id=2,
+            id=to_entity_internal_id(456, EntityType.ARTIST),
             entity_id=456,
             entity_type=EntityType.ARTIST,
             entity_name="Alias Artist",
@@ -481,8 +485,8 @@ class TestRelationGrapher:
 
         node1 = TrellisNode(entity1, 0)
         node2 = TrellisNode(entity2, 1)
-        grapher.nodes[(123, EntityType.ARTIST)] = node1
-        grapher.nodes[(456, EntityType.ARTIST)] = node2
+        grapher.nodes[entity1.id] = node1
+        grapher.nodes[entity2.id] = node2
 
         # When
         grapher.find_clusters()
@@ -509,9 +513,9 @@ class TestRelationGrapher:
             )
 
         # Add some data
-        grapher.nodes[(123, EntityType.ARTIST)] = Mock()
+        grapher.nodes[mock_center_entity.id] = Mock()
         grapher.links["test_link"] = Mock()
-        grapher.entity_keys_to_visit.add((456, EntityType.LABEL))
+        grapher.ids_to_visit.add(to_entity_internal_id(456, EntityType.LABEL))
         grapher.should_break_loop = True
 
         # When
@@ -520,7 +524,7 @@ class TestRelationGrapher:
         # Then
         assert len(grapher.nodes) == 0
         assert len(grapher.links) == 0
-        assert len(grapher.entity_keys_to_visit) == 0
+        assert len(grapher.ids_to_visit) == 0
         assert grapher.should_break_loop is False
 
     def test_property_accessors(
@@ -623,8 +627,8 @@ class TestRelationGrapher:
 
         mock_relation_repo = AsyncMock()
         mock_node = TrellisNode(mock_center_entity, 0)
-        grapher.nodes[mock_center_entity.entity_key] = mock_node
-        grapher.entity_keys_to_visit.add(mock_center_entity.entity_key)
+        grapher.nodes[mock_center_entity.id] = mock_node
+        grapher.ids_to_visit.add(mock_center_entity.id)
 
         mock_relations = [
             RuntimeRelationResult(
@@ -681,8 +685,8 @@ class TestRelationGrapher:
             )
 
         mock_node = TrellisNode(mock_center_entity, 0)
-        grapher.nodes[mock_center_entity.entity_key] = mock_node
-        grapher.entity_keys_to_visit.add(mock_center_entity.entity_key)
+        grapher.nodes[mock_center_entity.id] = mock_node
+        grapher.ids_to_visit.add(mock_center_entity.id)
 
         mock_structural_relations = {
             "struct_link1": RuntimeRelationResult(
@@ -740,23 +744,11 @@ class TestRelationGrapher:
         # Then
         assert len(relation_links) == 0  # Should do nothing
 
-    def test_build_trellis(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
+    def test_build_trellis(self, mock_role_cache: Mock) -> None:
         """Test build_trellis method."""
         # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        # Create test entities and nodes
         entity1 = RuntimeEntity(
-            id=1,
+            id=to_entity_internal_id(123, EntityType.ARTIST),
             entity_id=123,
             entity_type=EntityType.ARTIST,
             entity_name="Artist 1",
@@ -767,10 +759,10 @@ class TestRelationGrapher:
             styles=None,
         )
         entity2 = RuntimeEntity(
-            id=2,
-            entity_id=456,
-            entity_type=EntityType.LABEL,
-            entity_name="Label 1",
+            id=to_entity_internal_id(789, EntityType.ARTIST),
+            entity_id=789,
+            entity_type=EntityType.ARTIST,
+            entity_name="Artist 2",
             relation_counts={},
             entity_metadata={},
             countries=None,
@@ -778,17 +770,28 @@ class TestRelationGrapher:
             styles=None,
         )
 
+        with patch(
+            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
+        ):
+            grapher = RelationGrapher(
+                center_entity=entity1,
+                degree=1,
+                link_ratio=10,
+                max_nodes=100,
+                role_names=["Artist"],
+            )
+
         node1 = TrellisNode(entity1, 0)
         node2 = TrellisNode(entity2, 1)
-        grapher.nodes[entity1.entity_key] = node1
-        grapher.nodes[entity2.entity_key] = node2
+        grapher.nodes[entity1.id] = node1
+        grapher.nodes[entity2.id] = node2
 
         # Create a link between them
         relation = RuntimeRelationResult(
             entity_one_id=123,
             entity_one_type=EntityType.ARTIST,
-            entity_two_id=456,
-            entity_two_type=EntityType.LABEL,
+            entity_two_id=789,
+            entity_two_type=EntityType.ARTIST,
             releases={"release1": 3},
             role="Artist",
             distance=None,
@@ -799,13 +802,15 @@ class TestRelationGrapher:
         grapher.build_trellis()
 
         # Then
-        # Check that the trellis structure is built correctly
         assert "link1" in node1.links
         assert "link1" in node2.links
-        assert node2 in node1.children  # node2 is at higher distance
-        assert node1 in node2.parents  # node1 is at lower distance
-        assert node1.subgraph_size is not None
+        assert node2 in node1.children
+        assert node1 in node2.parents
+        assert node1.subgraph_size == 2
         assert node2.subgraph_size is not None
+        assert entity1.id in grapher.nodes
+        assert entity2.id in grapher.nodes
+        assert len(grapher.links) == 1
 
     def test_test_loop_conditions(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
@@ -825,7 +830,7 @@ class TestRelationGrapher:
 
         # Test test_loop_one - should break when too many nodes
         for i in range(15):  # More than max_nodes
-            grapher.nodes[(i, EntityType.ARTIST)] = Mock()
+            grapher.nodes[i] = Mock()
 
         grapher.test_loop_one(distance=1)
         assert grapher.should_break_loop is True

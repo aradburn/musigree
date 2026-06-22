@@ -17,7 +17,6 @@ The loader is responsible for:
 import asyncio
 import datetime
 import logging
-import sys
 from collections.abc import Coroutine
 from functools import partial
 from pathlib import Path
@@ -288,8 +287,6 @@ def offline_loader_main() -> None:
 
     log_banner()
 
-    # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
-    # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
     offline_config = PostgresDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
@@ -298,14 +295,8 @@ def offline_loader_main() -> None:
         asyncio_atexit.register(shutdown_offline_loader, loop=loop)
         try:
             # Setup Cache
-            runner.run(CacheManager.setup_cache(offline_config))
-            cache = CacheManager.get_cache()
-            if cache is None:
-                log.error("Cache not set")
-                sys.exit()
+            runner.run(CacheManager.setup_and_clear_cache(offline_config))
 
-            log.debug("Clearing cache")
-            runner.run(CacheManager.clear())
             runner.run(OfflineDatabaseManager.setup_database(offline_config))
 
             assert OfflineDatabaseManager.offline_database_helper is not None, (

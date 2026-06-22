@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_domain.relation import RelationDB
 from musigree.runtime.data_access_layer.runtime_relation_data_access import (
@@ -63,9 +64,10 @@ class TestSearchMulti:
         mock_role_cache.role_name_to_role_id_lookup = {"Alias": 1}
 
         mock_repo = MagicMock()
+        internal_id = to_entity_internal_id(1, EntityType.ARTIST)
         internal = RuntimeRelationInternal(
             id=1,
-            subject=100,
+            subject=internal_id,
             role="Alias",
             object=200,
             release_id=10,
@@ -75,22 +77,22 @@ class TestSearchMulti:
 
         result = await RuntimeRelationDataAccess.search_multi(
             relation_repository=mock_repo,
-            entity_keys=[(1, EntityType.ARTIST)],
+            ids=[internal_id],
             role_names=["Alias"],
         )
 
         assert len(result) == 1
         assert isinstance(result[0], RuntimeRelation)
-        mock_repo.find_by_entity_and_roles.assert_called()
+        mock_repo.find_by_entity_and_roles.assert_called_once_with(internal_id, [1])
 
     @pytest.mark.asyncio
-    async def test_search_multi_empty_entity_keys_asserts(self) -> None:
-        """Test search_multi with empty entity_keys raises AssertionError."""
+    async def test_search_multi_empty_ids_asserts(self) -> None:
+        """Test search_multi with empty ids raises AssertionError."""
         mock_repo = MagicMock()
         with pytest.raises(AssertionError):
             await RuntimeRelationDataAccess.search_multi(
                 relation_repository=mock_repo,
-                entity_keys=[],
+                ids=[],
                 role_names=["Alias"],
             )
 
@@ -101,6 +103,6 @@ class TestSearchMulti:
         with pytest.raises(AssertionError):
             await RuntimeRelationDataAccess.search_multi(
                 relation_repository=mock_repo,
-                entity_keys=[(1, EntityType.ARTIST)],
+                ids=[to_entity_internal_id(1, EntityType.ARTIST)],
                 role_names=[],
             )

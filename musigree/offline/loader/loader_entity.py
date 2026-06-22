@@ -1,9 +1,10 @@
 import logging
+import multiprocessing
 from pathlib import Path
 from typing import Callable, Any
 
 from musigree import utils
-from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_REPORTING_SIZE
+from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
@@ -20,6 +21,7 @@ from musigree.offline.loader.worker_entity_pass_two import (
     process_entity_pass_two_worker,
 )
 from musigree.offline.loader.worker_entity_updater import update_entities_worker
+from musigree.offline.loader.worker_token_inserter import worker_token_inserter
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_database.offline_transaction import offline_transaction
@@ -186,22 +188,59 @@ class LoaderEntity(LoaderBase):
     async def loader_create_text_search_tokens(cls, text_search_path: Path) -> None:
         log.debug("loader entity create text search tokens")
 
-        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
-        # OfflineDatabaseManager.runtime_database_helper.text_search_index = text_search_index
+        assert OfflineDatabaseManager.offline_database_helper is not None, (
+            "offline_database_helper must be initialized before calling initialize()"
+        )
 
-        inserted_count = 0
+        async with offline_transaction():
+            offline_token_repository = TokenRepository()
+            initial_count = await offline_token_repository.count()
+        if initial_count > 0:
+            log.info("Offline token table not empty, skip loading")
+            log.debug(f"Offline token repository count: {initial_count}")
+            return
+
+        text_search_index = TextSearchIndex.load_text_search_index_from_file(text_search_path)
+        # OfflineDatabaseManager.offline_database_helper.text_search_index = text_search_index
+
+        worker = worker_token_inserter
+
+        async def flush(chunk: list[Token], processed: int) -> None:
+            batch_tokens = utils.batched(chunk, BULK_INSERT_BATCH_SIZE)
+            worker_coroutines = utils.worker_generator(worker, batch_tokens, total_count)
+            assert OfflineDatabaseManager._threading_model is not None, (
+                "OfflineDatabaseManager _threading_model must be initialized"
+            )
+            await utils.queue_worker_functions(
+                multiprocessing.cpu_count(),
+                worker_coroutines,
+                OfflineDatabaseManager._threading_model,
+            )
+            log.info(f"transferred {processed} of {total_count} tokens")
+
+        tokens: list[Token] = []
+        processed_count = 0
+
         total_count = 0
 
         for _token, entity_ids in text_search_index.token_index.items():
             total_count += len(entity_ids)
+        log.debug(f"loading {total_count} tokens...")
+
+        for token, entity_ids in text_search_index.token_index.items():
+            for entity_id in entity_ids:
+                token_entry = Token(token=token, entity_id=entity_id)
+                tokens.append(token_entry)
+
+                if len(tokens) >= BULK_LOAD_CHUNK_SIZE:
+                    processed_count += len(tokens)
+                    await flush(tokens, processed_count)
+                    tokens.clear()
+
+        if tokens:
+            processed_count += len(tokens)
+            await flush(tokens, processed_count)
 
         async with offline_transaction():
-            token_repository = TokenRepository()
-            for token, entity_ids in text_search_index.token_index.items():
-                for entity_id in entity_ids:
-                    token_entry = Token(token=token, entity_id=entity_id)
-                    await token_repository.create(token_entry)
-                    inserted_count += 1
-                    if inserted_count % BULK_REPORTING_SIZE == 0:
-                        """Log every BULK_REPORTING_SIZE."""
-                        log.debug(f"text search processed {inserted_count} of {total_count}")
+            repository_count = await offline_token_repository.count()
+        log.debug(f"offline token repository count: {repository_count}")

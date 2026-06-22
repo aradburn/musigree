@@ -2,8 +2,6 @@ import logging
 from typing import Any
 
 from musigree.library.cache.role_cache import RoleCache
-from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_domain.relation import RelationDB
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
@@ -23,7 +21,7 @@ class RuntimeRelationDataAccess:
         cls,
         *,
         relation_repository: RuntimeRelationRepository,
-        entity_keys: list[tuple[int, EntityType]],
+        ids: list[int],
         role_names: list[str],
     ) -> list[RuntimeRelation]:
         """
@@ -35,13 +33,13 @@ class RuntimeRelationDataAccess:
 
         Args:
             relation_repository: The repository to use for runtime_database operations.
-            entity_keys: List of (entity_id, entity_type) tuples to search for.
+            ids: List of ids to search for.
             role_names: List of role names to filter by.
 
         Returns:
             list[RuntimeRelation]: List of relations matching the criteria.
         """
-        assert entity_keys
+        assert ids
         assert role_names
 
         relation_internals: list[RuntimeRelationInternal] = []
@@ -50,12 +48,7 @@ class RuntimeRelationDataAccess:
             RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names
         ]
 
-        for entity_id, entity_type in entity_keys:
-            _id = to_entity_internal_id(entity_id, entity_type)
-            # entity = entity_repository.get_by_entity_id_and_entity_type(
-            #     entity_id, entity_type
-            # )
-            # log.debug(f"find_by_entity_and_roles: {_id} {role_ids}")
+        for _id in ids:
             entity_relations = await relation_repository.find_by_entity_and_roles(_id, role_ids)
             # log.debug(f"    found entity_relations: {entity_relations}")
             relation_internals.extend(entity_relations)

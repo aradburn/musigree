@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
@@ -413,3 +414,15 @@ class CacheManager:
     def create_cache_hkey(domain_name: str, id_: str) -> str:
         # Key is domain:id
         return f"{domain_name}{CACHE_KEY_SEPARATOR}{id_}"
+
+    @classmethod
+    async def setup_and_clear_cache(cls, config: Configuration) -> None:
+        # Setup Cache
+        await cls.setup_cache(config)
+        cache = cls.get_cache()
+        if cache is None:
+            log.error("Cache not set")
+            sys.exit()
+        else:
+            log.debug("Clearing cache")
+            await CacheManager.clear()

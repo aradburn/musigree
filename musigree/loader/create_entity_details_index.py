@@ -1,7 +1,6 @@
 import asyncio
 import atexit
 import logging
-import sys
 
 from musigree.config import (
     Configuration,
@@ -26,14 +25,7 @@ async def create_entity_details_index(config: Configuration) -> None:
     log.info(f"Using {config.__class__.__name__} for offline database")
 
     # Setup Cache
-    await CacheManager.setup_cache(config)
-    cache = CacheManager.get_cache()
-    if cache is None:
-        log.error("Cache not set")
-        sys.exit()
-    else:
-        log.debug("Clearing cache")
-        await CacheManager.clear()
+    await CacheManager.setup_and_clear_cache(config)
 
     await OfflineDatabaseManager.setup_database(config)
 

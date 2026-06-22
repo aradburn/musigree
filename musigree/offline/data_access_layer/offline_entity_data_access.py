@@ -26,6 +26,7 @@ represent the different types of entities.
 
 import logging
 import re
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
@@ -44,6 +45,7 @@ from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.offline_domain.release import Release
+from musigree.offline.offline_domain.token import Token
 
 # TODO tidy up
 log = logging.getLogger(__name__)
@@ -641,3 +643,15 @@ class OfflineEntityDataAccess:
                 await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
 
         return name
+
+    @staticmethod
+    def get_offline_token_dicts_from_offline_tokens(
+        token_list: list[Token],
+    ) -> list[dict[str, Any]]:
+        token_entry_dict_list: list[dict[str, Any]] = []
+
+        for token_entry in token_list:
+            token_entry_dict = token_entry.model_dump()
+            token_entry_dict_list.append(token_entry_dict)
+
+        return token_entry_dict_list

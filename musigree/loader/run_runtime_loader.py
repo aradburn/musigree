@@ -17,7 +17,6 @@ The loader is responsible for:
 import asyncio
 import datetime
 import logging
-import sys
 from collections.abc import Coroutine
 from functools import partial
 from pathlib import Path
@@ -209,8 +208,6 @@ def runtime_loader_main() -> None:
 
     log_banner()
 
-    # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
-    # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
     offline_config = PostgresDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
@@ -221,14 +218,8 @@ def runtime_loader_main() -> None:
         asyncio_atexit.register(shutdown_runtime_loader, loop=runner.get_loop())
 
         # Setup Cache
-        runner.run(CacheManager.setup_cache(offline_config))
-        cache = CacheManager.get_cache()
-        if cache is None:
-            log.error("Cache not set")
-            sys.exit()
+        runner.run(CacheManager.setup_and_clear_cache(offline_config))
 
-        log.debug("Clearing cache")
-        runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))
         runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
 
@@ -238,17 +229,9 @@ def runtime_loader_main() -> None:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        # runner.run(
-        #     OfflineDatabaseManager.offline_database_helper.create_tables(
-        #         ALL_OFFLINE_DATABASE_TABLE_NAMES
-        #     )
-        # )
+
         # Drop runtime tables manually if needed
-        # runner.run(
-        #     RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-        #         ALL_RUNTIME_DATABASE_TABLE_NAMES
-        #     )
-        # )
+        # Create all runtime tables
         runner.run(
             RuntimeDatabaseManager.runtime_database_helper.create_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES
