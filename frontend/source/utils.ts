@@ -194,7 +194,7 @@ export const expandProfileURLs = (str: string): string => {
 };
 
 export const expandLinkReferences = (str: string): string => {
-    // Converts a text ref [a12345=Artist Name]  or [l12345=Label Name] into am entity link with
+    // Converts a text ref [a12345=Artist Name]  or [l12345=Label Name] into an entity link with
     // the referred to artist name using createEntityLink(entity_key, name)
     // Multiple refs are handled
     const regexp = /\[([aAlL])(\d+)=(.*?)]/g;
@@ -219,11 +219,29 @@ export const expandLinkReferences = (str: string): string => {
     return expanded;
 };
 
+export const expandMasterReferences = (str: string): string => {
+    // Converts a text ref [m12345=Master Record Text] into just the master record text
+    // Multiple refs are handled
+    const regexp = /\[([mM])(\d+)=(.*?)]/g;
+    const matches = Array.from(str.matchAll(regexp));
+    let expanded = String(str);
+    for (const match of matches) {
+        if (match[0] && match[1] && match[2] && match[3]) {
+            const _prefix = match[1].toLowerCase();
+            const _masterId = match[2];
+            const providedText = match[3];
+            expanded = expanded.replace(match[0], providedText);
+        }
+    }
+    return expanded;
+};
+
 export const expandProfileReferences = (str: string): string => {
     // Performs multiple conversions in sequence
     str = expandCommas(str);
     str = expandProfileURLs(str);
     str = expandLinkReferences(str);
+    str = expandMasterReferences(str);
     str = expandBold(str);
     str = expandStrong(str);
     str = expandItalic(str);

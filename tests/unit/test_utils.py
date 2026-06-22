@@ -1,10 +1,12 @@
+import asyncio
 import datetime
 import enum
+import threading
 import time
 from collections.abc import AsyncGenerator
 from functools import partial
 from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import requests
@@ -16,6 +18,7 @@ from musigree.constants import (
     DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
+    ThreadingModel,
 )
 from musigree.library.fields.entity_type import EntityType
 from musigree.utils import (
@@ -853,57 +856,73 @@ def _test_failing_worker_function(
     raise ValueError("Test error")
 
 
-def _test_delay_worker_function(
+_processed_batches: list[list[int]] = []
+_concurrency_lock = threading.Lock()
+_active_workers = 0
+_max_active_workers = 0
+
+
+def _reset_concurrency_tracking() -> None:
+    global _active_workers, _max_active_workers
+    _active_workers = 0
+    _max_active_workers = 0
+
+
+def _test_tracking_worker_function(
+    records: list[int], _processed_count: int, _total_count: int
+) -> None:
+    """Test worker function that records processed batches."""
+    _processed_batches.append(records)
+
+
+def _test_concurrency_worker_function(
     _records: list[int], _processed_count: int, _total_count: int
 ) -> None:
-    """Test worker function that simulates some work."""
-    time.sleep(0.01)  # Small delay to simulate work
+    """Test worker function that tracks peak concurrent execution."""
+    global _active_workers, _max_active_workers
+    with _concurrency_lock:
+        _active_workers += 1
+        _max_active_workers = max(_max_active_workers, _active_workers)
+    time.sleep(0.02)
+    with _concurrency_lock:
+        _active_workers -= 1
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_basic_operation() -> None:
-    """Test queue_worker_functions with basic partial function processing."""
+    """Test queue_worker_functions processes all worker partials."""
+    _processed_batches.clear()
 
-    # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-    # We can only test that the function completes without error
-
-    # Create partial functions using worker_generator
     def records_generator() -> Any:
         yield [1, 2, 3]
         yield [4, 5]
         yield [6]
 
-    worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 6)
+    worker_partials = utils.worker_generator(
+        _test_tracking_worker_function, records_generator(), 6
+    )
 
-    # Run the queue worker functions
-    # This should complete without error
-    await utils.queue_worker_functions(2, worker_partials)
+    await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify results in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert sorted(_processed_batches, key=lambda batch: batch[0]) == [[1, 2, 3], [4, 5], [6]]
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_concurrency() -> None:
     """Test queue_worker_functions respects concurrency limits."""
-
-    # Note: This test uses ProcessPoolExecutor, so we can't easily track concurrency
-    # across processes in unit tests
+    _reset_concurrency_tracking()
 
     def records_generator() -> Any:
         for i in range(5):
             yield [i]
 
-    worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 5)
+    worker_partials = utils.worker_generator(
+        _test_concurrency_worker_function, records_generator(), 5
+    )
 
-    # Run with concurrency limit of 2
-    # This should complete without error
-    await utils.queue_worker_functions(2, worker_partials)
+    await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify concurrency limits in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert _max_active_workers <= 2
 
 
 @pytest.mark.asyncio
@@ -917,48 +936,40 @@ async def test_queue_worker_functions_empty_generator() -> None:
 
     worker_partials = utils.worker_generator(_test_worker_function, empty_generator(), 0)
 
-    # Should complete without error
-    await utils.queue_worker_functions(2, worker_partials)
+    await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_single_worker() -> None:
     """Test queue_worker_functions with single worker."""
-
-    # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
+    _reset_concurrency_tracking()
 
     def records_generator() -> Any:
         for i in range(3):
             yield [i]
 
-    worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 3)
+    worker_partials = utils.worker_generator(
+        _test_concurrency_worker_function, records_generator(), 3
+    )
 
-    # Run with single worker
-    # This should complete without error
-    await utils.queue_worker_functions(1, worker_partials)
+    await utils.queue_worker_functions(1, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify sequential execution in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert _max_active_workers == 1
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_exception_handling() -> None:
-    """Test queue_worker_functions handles exceptions in worker functions."""
-
-    # Note: This test uses ProcessPoolExecutor, so exceptions are propagated
-    # from the worker processes back to the main process
+    """Test queue_worker_functions propagates worker exceptions."""
 
     def mixed_generator() -> Any:
-        yield [1]  # Working worker
-        yield [2]  # Failing worker
-        yield [3]  # Working worker
+        yield [1]
+        yield [2]
+        yield [3]
 
-    # Create worker partials with mixed functions
     worker_partials = []
     processed_count = 0
     for i, records in enumerate(mixed_generator()):
-        if i == 1:  # Second item should fail
+        if i == 1:
             worker_partials.append(
                 partial(_test_failing_worker_function, records, processed_count, 3)
             )
@@ -966,94 +977,146 @@ async def test_queue_worker_functions_exception_handling() -> None:
             worker_partials.append(partial(_test_worker_function, records, processed_count, 3))
         processed_count += len(records)
 
-    # The function should propagate exceptions from worker processes
     with pytest.raises(ValueError, match="Test error"):
-        await utils.queue_worker_functions(2, worker_partials)
+        await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_zero_concurrency() -> None:
-    """Test queue_worker_functions with zero concurrency creates one worker."""
-
-    # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
+    """Test queue_worker_functions clamps zero concurrency to one worker."""
+    _reset_concurrency_tracking()
 
     def records_generator() -> Any:
         for i in range(2):
             yield [i]
 
-    worker_partials = utils.worker_generator(_test_worker_function, records_generator(), 2)
+    worker_partials = utils.worker_generator(
+        _test_concurrency_worker_function, records_generator(), 2
+    )
 
-    # Run with zero concurrency (should default to 1 worker)
-    # This should complete without error
-    await utils.queue_worker_functions(0, worker_partials)
+    await utils.queue_worker_functions(0, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify execution in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert _max_active_workers == 1
+
+
+@pytest.mark.asyncio
+async def test_queue_worker_functions_max_concurrency_clamped() -> None:
+    """Test queue_worker_functions clamps concurrency above eight."""
+    _reset_concurrency_tracking()
+
+    def records_generator() -> Any:
+        for i in range(12):
+            yield [i]
+
+    worker_partials = utils.worker_generator(
+        _test_concurrency_worker_function, records_generator(), 12
+    )
+
+    await utils.queue_worker_functions(20, worker_partials, threading_model=ThreadingModel.THREAD)
+
+    assert _max_active_workers <= 8
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_with_list_input() -> None:
     """Test queue_worker_functions with list of partial functions."""
-    # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
+    _processed_batches.clear()
 
-    # Create a list of partial functions directly
     worker_partials = [
-        partial(_test_worker_function, [1, 2], 0, 4),
-        partial(_test_worker_function, [3, 4], 2, 4),
+        partial(_test_tracking_worker_function, [1, 2], 0, 4),
+        partial(_test_tracking_worker_function, [3, 4], 2, 4),
     ]
 
-    # Run with multiple workers
-    # This should complete without error
-    await utils.queue_worker_functions(2, worker_partials)
+    await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify execution in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert sorted(_processed_batches, key=lambda batch: batch[0]) == [[1, 2], [3, 4]]
 
 
+@pytest.mark.asyncio
 async def test_queue_worker_functions_timing() -> None:
-    """Test queue_worker_functions includes timing functionality."""
+    """Test queue_worker_functions records processing duration."""
+    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
 
-    def worker_generator() -> Any:
-        yield [1]
+    with patch("musigree.utils.log.debug") as mock_log_debug:
+        await utils.queue_worker_functions(1, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    worker_partials = utils.worker_generator(_test_delay_worker_function, worker_generator(), 1)
-
-    # Mock the time.monotonic to verify timing is tracked
-    with patch("musigree.utils.time.monotonic") as mock_time:
-        # Provide enough mock values - asyncio's internal timing may call this many times
-        # Use itertools.cycle to provide infinite values
-        from itertools import cycle
-
-        mock_time.side_effect = cycle([0.0, 0.01, 0.02, 0.03, 0.04, 0.05])
-
-        await utils.queue_worker_functions(1, worker_partials)
-
-        # Verify time.monotonic was called for timing (at least start and end)
-        assert mock_time.call_count >= 2
+    timing_logged = any(
+        "total processing time" in str(call.args[0]) for call in mock_log_debug.call_args_list
+    )
+    assert timing_logged
 
 
 @pytest.mark.asyncio
 async def test_queue_worker_functions_large_number_of_tasks() -> None:
-    """Test queue_worker_functions handles large number of tasks efficiently."""
-    # Note: This test uses ProcessPoolExecutor, so results are not shared between processes
-
-    task_count = 10  # Reduced for faster testing
+    """Test queue_worker_functions handles many tasks."""
+    _processed_batches.clear()
+    task_count = 10
 
     def records_generator() -> Any:
         for i in range(task_count):
             yield [i]
 
-    worker_partials = utils.worker_generator(_test_worker_function, records_generator(), task_count)
+    worker_partials = utils.worker_generator(
+        _test_tracking_worker_function, records_generator(), task_count
+    )
 
-    # Run with multiple workers
-    # This should complete without error
-    await utils.queue_worker_functions(5, worker_partials)
+    with patch("musigree.utils.asyncio.sleep", new=AsyncMock()):
+        await utils.queue_worker_functions(5, worker_partials, threading_model=ThreadingModel.THREAD)
 
-    # Note: We can't easily verify execution in unit tests because
-    # the functions run in separate processes and don't share state
-    # This test serves as a basic smoke test
+    assert len(_processed_batches) == task_count
+
+
+@pytest.mark.asyncio
+async def test_queue_worker_functions_uses_thread_pool_by_default() -> None:
+    """Test queue_worker_functions uses ThreadPoolExecutor by default."""
+    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
+    mock_executor = MagicMock()
+
+    with (
+        patch("musigree.utils.ThreadPoolExecutor", return_value=mock_executor) as mock_thread_pool,
+        patch("musigree.utils.ProcessPoolExecutor") as mock_process_pool,
+        patch("musigree.utils.asyncio.sleep", new=AsyncMock()),
+    ):
+        mock_executor.__enter__.return_value = mock_executor
+        loop = asyncio.get_running_loop()
+
+        def immediate_run_in_executor(_executor: Any, func: Any, *args: Any) -> asyncio.Future[Any]:
+            future: asyncio.Future[Any] = loop.create_future()
+            future.set_result(func(*args))
+            return future
+
+        with patch.object(loop, "run_in_executor", side_effect=immediate_run_in_executor):
+            await utils.queue_worker_functions(2, worker_partials)
+
+        mock_thread_pool.assert_called_once_with(max_workers=2)
+        mock_process_pool.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_queue_worker_functions_uses_process_pool_when_requested() -> None:
+    """Test queue_worker_functions uses ProcessPoolExecutor for process model."""
+    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
+    mock_executor = MagicMock()
+    loop = asyncio.get_running_loop()
+
+    def immediate_run_in_executor(_executor: Any, func: Any, *args: Any) -> asyncio.Future[Any]:
+        future: asyncio.Future[Any] = loop.create_future()
+        future.set_result(func(*args))
+        return future
+
+    with (
+        patch("musigree.utils.ProcessPoolExecutor", return_value=mock_executor) as mock_process_pool,
+        patch("musigree.utils.ThreadPoolExecutor") as mock_thread_pool,
+        patch("musigree.utils.asyncio.sleep", new=AsyncMock()),
+        patch.object(loop, "run_in_executor", side_effect=immediate_run_in_executor),
+    ):
+        mock_executor.__enter__.return_value = mock_executor
+        await utils.queue_worker_functions(
+            2, worker_partials, threading_model=ThreadingModel.PROCESS
+        )
+
+        mock_process_pool.assert_called_once_with(max_workers=2)
+        mock_thread_pool.assert_not_called()
 
 
 # Worker Generator Tests

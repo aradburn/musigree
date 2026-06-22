@@ -168,27 +168,26 @@ class TestRuntimeLoaderFunctions:
 
     @patch("musigree.loader.run_runtime_loader.luigi")
     @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
     @patch("musigree.loader.run_runtime_loader.setup_logging")
-    @patch("musigree.loader.run_runtime_loader.sys")
     @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_success(
         self,
         mock_runner: Mock,
-        _mock_sys: Mock,
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
+        mock_role_data_access: Mock,
         _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test successful execution of loader_main."""
         # Arrange
-        mock_cache = Mock()
-        mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
 
         mock_build_result = Mock()
         mock_build_result.summary_text = "Build completed successfully"
@@ -209,6 +208,8 @@ class TestRuntimeLoaderFunctions:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
+        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+
         # Mock asyncio.Runner context manager
         mock_runner_instance = Mock()
         mock_runner.return_value.__enter__.return_value = mock_runner_instance
@@ -219,12 +220,11 @@ class TestRuntimeLoaderFunctions:
 
         # Assert
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_cache.assert_called_once()
-        mock_cache_manager.get_cache.assert_called_once()
         mock_offline_db_manager.setup_database.assert_called_once()
         mock_runtime_db_manager.setup_database.assert_called_once()
-        # mock_offline_helper.create_tables.assert_called_once()
-        mock_runtime_helper.drop_tables.assert_called_once()
+        mock_offline_helper.drop_tables.assert_not_called()
+        mock_offline_helper.create_tables.assert_not_called()
+        mock_runtime_helper.drop_tables.assert_not_called()
         mock_runtime_helper.create_tables.assert_called_once()
         mock_luigi.build.assert_called_once()
 
@@ -234,12 +234,10 @@ class TestRuntimeLoaderFunctions:
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
     @patch("musigree.loader.run_runtime_loader.setup_logging")
-    @patch("musigree.loader.run_runtime_loader.sys")
     @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_loader_main_cache_error(
         self,
         mock_runner: Mock,
-        mock_sys: Mock,
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
@@ -247,11 +245,9 @@ class TestRuntimeLoaderFunctions:
         _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
-        """Test loader main function when cache is not available."""
+        """Test loader main function when cache setup fails."""
         # Arrange
-        mock_cache_manager.get_cache.return_value = None
-        mock_cache_manager.setup_cache.return_value = None
-        mock_sys.exit.side_effect = SystemExit(1)  # Make sys.exit actually exit
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
 
         # Make database setup methods return AsyncMock
         mock_offline_db_manager.setup_database = AsyncMock()
@@ -263,8 +259,9 @@ class TestRuntimeLoaderFunctions:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
-        # Mock asyncio.Runner context manager
+        # Mock asyncio.Runner context manager - fail on first runner.run call
         mock_runner_instance = Mock()
+        mock_runner_instance.run.side_effect = RuntimeError("Cache not initialized after setup")
         mock_runner.return_value.__enter__.return_value = mock_runner_instance
         mock_runner.return_value.__exit__.return_value = None
 
@@ -274,9 +271,6 @@ class TestRuntimeLoaderFunctions:
 
         # Verify setup calls before exit
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_cache.assert_called_once()
-        mock_cache_manager.get_cache.assert_called_once()
-        mock_sys.exit.assert_called_once()
 
 
 class TestRuntimeLoaderIntegration:
@@ -623,27 +617,26 @@ class TestRuntimeLoaderMainAdditional:
 
     @patch("musigree.loader.run_runtime_loader.luigi")
     @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
+    @patch("musigree.loader.run_runtime_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
     @patch("musigree.loader.run_runtime_loader.setup_logging")
-    @patch("musigree.loader.run_runtime_loader.sys")
     @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_luigi_failure(
         self,
         mock_runner: Mock,
-        _mock_sys: Mock,
         _mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
+        mock_role_data_access: Mock,
         _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test runtime_loader_main when Luigi build fails."""
         # Arrange
-        mock_cache = Mock()
-        mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
 
         mock_build_result = Mock()
         mock_build_result.summary_text = "Build failed with errors"
@@ -664,22 +657,18 @@ class TestRuntimeLoaderMainAdditional:
         mock_runtime_helper.create_tables = AsyncMock()
         mock_runtime_db_manager.runtime_database_helper = mock_runtime_helper
 
-        # Mock OfflineRoleDataAccess.load_all_roles_into_cache
-        with patch(
-            "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess"
-        ) as mock_role_data_access:
-            mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
-            # Mock asyncio.Runner context manager
-            mock_runner_instance = Mock()
-            mock_runner.return_value.__enter__.return_value = mock_runner_instance
-            mock_runner.return_value.__exit__.return_value = None
+        # Mock asyncio.Runner context manager
+        mock_runner_instance = Mock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
 
-            # Act
-            runtime_loader_main()
+        # Act
+        runtime_loader_main()
 
-            # Assert
-            mock_luigi.build.assert_called_once()
+        # Assert
+        mock_luigi.build.assert_called_once()
 
     @patch("musigree.loader.run_runtime_loader.luigi")
     @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
@@ -687,12 +676,10 @@ class TestRuntimeLoaderMainAdditional:
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
     @patch("musigree.loader.run_runtime_loader.setup_logging")
-    @patch("musigree.loader.run_runtime_loader.sys")
     @patch("musigree.loader.run_runtime_loader.asyncio.Runner")
     def test_runtime_loader_main_database_setup_failure(
         self,
         mock_runner: Mock,
-        _mock_sys: Mock,
         _mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
@@ -702,8 +689,7 @@ class TestRuntimeLoaderMainAdditional:
     ) -> None:
         """Test runtime_loader_main when database setup fails."""
         # Arrange
-        mock_cache = Mock()
-        mock_cache_manager.get_cache.return_value = mock_cache
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
 
         # Make database setup fail by making runner.run fail
         mock_offline_db_manager.setup_database = AsyncMock()

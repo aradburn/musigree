@@ -40,9 +40,11 @@ class TestRuntimeDatabaseManager:
         assert result == 4
         mock_cpu_count.assert_called_once()
 
-    def test_get_concurrency_count_thread_model(self) -> None:
+    @patch("multiprocessing.cpu_count")
+    def test_get_concurrency_count_thread_model(self, mock_cpu_count: Mock) -> None:
         """Test get_concurrency_count returns 1 for thread model."""
         # Arrange
+        mock_cpu_count.return_value = 8
         RuntimeDatabaseManager._threading_model = ThreadingModel.THREAD
 
         # Act
@@ -50,6 +52,7 @@ class TestRuntimeDatabaseManager:
 
         # Assert
         assert result == 1
+        mock_cpu_count.assert_not_called()
 
     def test_get_concurrency_count_not_configured(self) -> None:
         """Test get_concurrency_count raises error when threading model not configured."""

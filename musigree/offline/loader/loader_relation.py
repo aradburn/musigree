@@ -93,8 +93,12 @@ class LoaderRelation(LoaderBase):
             process_relation_pass_one_worker, batched_release_ids, total_count
         )
 
+        assert OfflineDatabaseManager.offline_config is not None
+
         await utils.queue_worker_functions(
-            OfflineDatabaseManager.get_concurrency_count(), worker_coroutines
+            OfflineDatabaseManager.get_concurrency_count(),
+            worker_coroutines,
+            OfflineDatabaseManager.offline_config.THREADING_MODEL,
         )
 
     # noinspection Mypy

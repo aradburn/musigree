@@ -164,6 +164,8 @@ async def route__api__entity_type__network__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
+    log.debug("route__api__entity_type__network__entity_id")
+
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey(

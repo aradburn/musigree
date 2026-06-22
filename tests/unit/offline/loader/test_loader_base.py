@@ -6,16 +6,19 @@ which provides the foundation for data loading operations in the offline system.
 """
 
 import gzip
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from sqlalchemy.exc import DataError
 
+from musigree.constants import ThreadingModel
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
 
 class ConcreteLoaderBase(LoaderBase):
@@ -178,6 +181,16 @@ class TestProcessXml:
 class TestLoaderPassOneManager:
     """Test class for loader_pass_one_manager method."""
 
+    @pytest.fixture(autouse=True)
+    def offline_config(self) -> Generator[Mock, None, None]:
+        """Provide offline config required by queue_worker_functions."""
+        mock_config = Mock()
+        mock_config.THREADING_MODEL = ThreadingModel.THREAD
+        original_config = OfflineDatabaseManager.offline_config
+        OfflineDatabaseManager.offline_config = mock_config
+        yield mock_config
+        OfflineDatabaseManager.offline_config = original_config
+
     @pytest.fixture
     def mock_repository(self) -> Mock:
         """Fixture for mock repository."""
@@ -221,7 +234,7 @@ class TestLoaderPassOneManager:
         mock_batched.side_effect = lambda x, size: [list(x)]
         mock_worker_gen.return_value = []
 
-        with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
+        with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):
             with patch.object(
                 ConcreteLoaderBase, "get_insert_worker_function"
             ) as mock_insert_worker:
@@ -250,6 +263,10 @@ class TestLoaderPassOneManager:
                     mock_repository.count.assert_called()
                     mock_get_xml_path.assert_called_once_with(Path("/test"), "artist", "2023-01-01")
                     mock_insert_worker.assert_called_once()
+                    _mock_queue_worker.assert_awaited_once_with(
+                        2, [], ThreadingModel.THREAD
+                    )
+                    mock_delete_worker.assert_not_called()
 
     @patch("musigree.offline.loader.loader_base.offline_transaction")
     @patch("musigree.offline.loader.loader_base.LoaderUtils.get_xml_path")
@@ -282,7 +299,7 @@ class TestLoaderPassOneManager:
         mock_batched.side_effect = lambda x, size: [list(x)]
         mock_worker_gen.return_value = []
 
-        with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
+        with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):
             with patch.object(
                 ConcreteLoaderBase, "get_update_worker_function"
             ) as mock_update_worker:
@@ -307,6 +324,10 @@ class TestLoaderPassOneManager:
                     # Verify
                     assert result == 0
                     mock_update_worker.assert_called_once()
+                    _mock_queue_worker.assert_awaited_once_with(
+                        2, [], ThreadingModel.THREAD
+                    )
+                    mock_delete_worker.assert_not_called()
 
     @patch("musigree.offline.loader.loader_base.offline_transaction")
     @patch("musigree.offline.loader.loader_base.LoaderUtils.get_xml_path")
@@ -367,7 +388,9 @@ class TestLoaderPassOneManager:
                     assert result == 0
                     mock_delete_worker.assert_called_once()
                     # Should call queue_worker_functions twice: once for updates, once for deletes
-                    assert mock_queue_worker.call_count == 2
+                    assert mock_queue_worker.await_count == 2
+                    for call in mock_queue_worker.await_args_list:
+                        assert call.args[2] == ThreadingModel.THREAD
 
     async def test_get_set_of_ids_abstract_method(self) -> None:
         """Test that get_set_of_ids is properly implemented in concrete class."""

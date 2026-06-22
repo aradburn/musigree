@@ -284,10 +284,8 @@ class TestInitApp:
     @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
     @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
     @patch("musigree.app.fastapi_app.asyncio_atexit")
-    @patch("musigree.app.fastapi_app.sys.exit")
     async def test_init_app_success(
         self,
-        mock_sys_exit: Mock,
         mock_asyncio_atexit: Mock,
         mock_role_data_access: Mock,
         mock_runtime_db_manager: Mock,
@@ -297,10 +295,7 @@ class TestInitApp:
     ) -> None:
         """Test successful app initialization."""
         # Arrange
-        mock_cache = MagicMock()
-        mock_cache_manager.get_cache.return_value = mock_cache
-        mock_cache_manager.setup_cache = AsyncMock()
-        mock_cache_manager.clear = AsyncMock()
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
@@ -309,16 +304,25 @@ class TestInitApp:
 
         # Assert
         # Note: setup_logging is called in create_app, not init_app
-        mock_cache_manager.setup_cache.assert_awaited_once_with(test_config)
-        mock_cache_manager.get_cache.assert_called_once()
-        mock_cache_manager.clear.assert_awaited_once()
-        mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
-        mock_role_data_access.load_all_roles_into_cache.assert_called_once()
+        mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(test_config)
+        mock_runtime_db_manager.setup_database.assert_awaited_once_with(test_config)
+        mock_role_data_access.load_all_roles_into_cache.assert_awaited_once()
         mock_asyncio_atexit.register.assert_called_once()
-        mock_sys_exit.assert_not_called()
 
-    # Note: Additional test for cache not set would require complex async mocking
-    # The current coverage of 98% already covers the main functionality
+    @pytest.mark.asyncio
+    @patch("musigree.app.fastapi_app.CacheManager")
+    async def test_init_app_raises_when_cache_not_initialized(
+        self,
+        mock_cache_manager: Mock,
+        test_config: Configuration,
+    ) -> None:
+        """Test init_app propagates cache initialization failures."""
+        mock_cache_manager.setup_and_clear_cache = AsyncMock(
+            side_effect=RuntimeError("Cache not initialized after setup")
+        )
+
+        with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+            await init_app(test_config)
 
     @pytest.mark.asyncio
     @patch("musigree.app.fastapi_app.setup_logging")
@@ -337,10 +341,7 @@ class TestInitApp:
     ) -> None:
         """Test that runtime_database setup is called during initialization."""
         # Arrange
-        mock_cache = MagicMock()
-        mock_cache_manager.get_cache.return_value = mock_cache
-        mock_cache_manager.setup_cache = AsyncMock()
-        mock_cache_manager.clear = AsyncMock()
+        mock_cache_manager.setup_and_clear_cache = AsyncMock()
         mock_runtime_db_manager.setup_database = AsyncMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 

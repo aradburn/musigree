@@ -103,24 +103,61 @@ def get_load_runtime_table_stages(
         "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_load_runtime_table_stages()"
     )
 
+    # is_full = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_full()
+    # is_analyze = RuntimeDatabaseManager.runtime_database_helper.is_vacuum_analyze()
     text_search_path = data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     entity_details_path = data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
     stages: list[partial[Coroutine[Any, Any, None]]] = [
-        # Load roles into the runtime database
+        # 0 - Load roles into the runtime database
         partial(TransferManager.transfer_role),
-        # Load role cache in memory
+        # 1 - Load role cache in memory
         partial(RuntimeRoleDataAccess.load_all_roles_into_cache),
-        # Load text search index for entities
+        # 2 - Load text search index for entities
         partial(TransferManager.transfer_load_text_search_index, text_search_path),
-        # Load entities details into memory
+        # 3 - Load entities details into memory
         partial(TransferManager.transfer_load_entity_details_index, entity_details_path),
-        # Load entities details (countries, genres and styles) into the runtime database
+        # 4 - Database cleanup analyze
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.analyze,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        # 5 - Database cleanup optimize
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.optimize,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        # 6 - Load entities details (countries, genres and styles) into the runtime database
         partial(TransferManager.transfer_entity_details),
-        # Load entities into the runtime database
+        # 7 - Load entities into the runtime database
         partial(TransferManager.transfer_entity),
-        # Load relations into the runtime database
+        # 8 - Database cleanup analyze
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.analyze,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        # 9 - Database cleanup optimize
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.optimize,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        # 10 - Load relations into the runtime database
         partial(TransferManager.transfer_relation),
-        # TODO add db cleanup analyze etc + dbapi_con.execute("PRAGMA optimize;")
+        # 11 - Database cleanup analyze
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.analyze,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
+        # 12 - Database cleanup optimize
+        partial(
+            RuntimeDatabaseManager.runtime_database_helper.optimize,
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        ),
     ]
     return stages
 
@@ -172,8 +209,6 @@ def runtime_loader_main() -> None:
 
     log_banner()
 
-    # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
-    # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
     offline_config = PostgresDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
@@ -184,14 +219,12 @@ def runtime_loader_main() -> None:
         asyncio_atexit.register(shutdown_runtime_loader, loop=runner.get_loop())
 
         # Setup Cache
-        runner.run(CacheManager.setup_cache(offline_config))
-        cache = CacheManager.get_cache()
-        if cache is None:
-            log.error("Cache not set")
-            sys.exit()
+        try:
+            runner.run(CacheManager.setup_and_clear_cache(offline_config))
+        except RuntimeError as exc:
+            log.error("%s", exc)
+            sys.exit(1)
 
-        log.debug("Clearing cache")
-        runner.run(CacheManager.clear())
         runner.run(OfflineDatabaseManager.setup_database(offline_config))
         runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
 
@@ -201,16 +234,9 @@ def runtime_loader_main() -> None:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        # runner.run(
-        #     OfflineDatabaseManager.offline_database_helper.create_tables(
-        #         ALL_OFFLINE_DATABASE_TABLE_NAMES
-        #     )
-        # )
-        runner.run(
-            RuntimeDatabaseManager.runtime_database_helper.drop_tables(
-                ALL_RUNTIME_DATABASE_TABLE_NAMES
-            )
-        )
+
+        # Drop runtime tables manually if needed
+        # Create all runtime tables
         runner.run(
             RuntimeDatabaseManager.runtime_database_helper.create_tables(
                 ALL_RUNTIME_DATABASE_TABLE_NAMES

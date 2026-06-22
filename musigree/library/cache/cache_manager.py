@@ -321,7 +321,7 @@ class CacheManager:
         # noinspection PyUnreachableCode
         if cache_type == CacheType.MEMORY:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
-            log.info("Using memory cache")
+            # log.info("Using memory cache")
 
         elif cache_type == CacheType.REDIS:
             try:
@@ -381,7 +381,7 @@ class CacheManager:
         """
         if cls.cache is not None:
             await cls.cache.close()
-        log.info("Shutdown cache")
+        # log.info("Shutdown cache")
 
     @classmethod
     def get_cache(cls) -> BaseCache:
@@ -413,3 +413,15 @@ class CacheManager:
     def create_cache_hkey(domain_name: str, id_: str) -> str:
         # Key is domain:id
         return f"{domain_name}{CACHE_KEY_SEPARATOR}{id_}"
+
+    @classmethod
+    async def setup_and_clear_cache(cls, config: Configuration) -> None:
+        # Setup Cache
+        await cls.setup_cache(config)
+        cache = cls.get_cache()
+        if cache is None:
+            log.error("Cache not set")
+            raise RuntimeError("Cache not initialized after setup")
+
+        log.debug("Clearing cache")
+        await CacheManager.clear()

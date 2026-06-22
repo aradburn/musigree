@@ -74,10 +74,11 @@ class EntityDetailsIndex:
                 self.entity_countries[id_] = []
             if normalized_token not in self.countries_list:
                 self.countries_list.append(normalized_token)
+                log.debug(f"countries add: {normalized_token}")
             country_index = self.countries_list.index(normalized_token)
             if country_index not in self.entity_countries[id_]:
                 self.entity_countries[id_].append(country_index)
-            # print(f"country add: {id_}: {self.entity_countries[id_]}")
+                # log.debug(f"entity_countries add: {id_}: {self.entity_countries[id_]}")
 
     def index_genre(self, id_: int, genre: str) -> None:
         """
@@ -98,6 +99,7 @@ class EntityDetailsIndex:
                 self.entity_genres[id_] = []
             if normalized_token not in self.genres_list:
                 self.genres_list.append(normalized_token)
+                log.debug(f"genres add: {normalized_token}")
             genres_index = self.genres_list.index(normalized_token)
             if genres_index not in self.entity_genres[id_]:
                 self.entity_genres[id_].append(genres_index)
@@ -122,6 +124,7 @@ class EntityDetailsIndex:
                 self.entity_styles[id_] = []
             if normalized_token not in self.styles_list:
                 self.styles_list.append(normalized_token)
+                log.debug(f"styles add: {normalized_token}")
             styles_index = self.styles_list.index(normalized_token)
             if styles_index not in self.entity_styles[id_]:
                 self.entity_styles[id_].append(styles_index)

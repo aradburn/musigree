@@ -68,9 +68,7 @@ class TestRunOfflineLoadingProcess:
         async def noop() -> None:
             pass
 
-        mock_cache.setup_cache = AsyncMock(return_value=None)
-        mock_cache.get_cache = MagicMock(return_value=MagicMock())
-        mock_cache.clear = AsyncMock(return_value=None)
+        mock_cache.setup_and_clear_cache = AsyncMock(return_value=None)
         mock_offline_manager.setup_database = AsyncMock(return_value=None)
         mock_role_data_access.load_all_roles_into_cache = AsyncMock(return_value=None)
 
@@ -80,9 +78,7 @@ class TestRunOfflineLoadingProcess:
 
         mock_setup_logging.assert_called_once()
         mock_log_banner.assert_called_once()
-        mock_cache.setup_cache.assert_called_once_with(config)
-        mock_cache.get_cache.assert_called_once()
-        mock_cache.clear.assert_called_once()
+        mock_cache.setup_and_clear_cache.assert_awaited_once_with(config)
         mock_offline_manager.setup_database.assert_called_once_with(config)
         mock_atexit.register.assert_called_once()
         mock_role_data_access.load_all_roles_into_cache.assert_called_once()

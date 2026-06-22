@@ -4,8 +4,8 @@ import logging
 import sys
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
     Configuration,
+    PostgresReadOnlyDevelopmentConfiguration,
 )
 from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from musigree.library.cache.cache_manager import CacheManager
@@ -23,19 +23,10 @@ async def create_entity_details_index(config: Configuration) -> None:
 
     log_banner()
 
-    log.info("Using PostgresDevelopmentConfiguration")
-    # log.info(f"DATABASE_HOST: {os.getenv('MUSIGREE_DATABASE_HOST')}")
-    # log.info(f"DATABASE_NAME: {os.getenv('MUSIGREE_DATABASE_NAME')}")
+    log.info(f"Using {config.__class__.__name__} for offline database")
 
     # Setup Cache
-    await CacheManager.setup_cache(config)
-    cache = CacheManager.get_cache()
-    if cache is None:
-        log.error("Cache not set")
-        sys.exit()
-    else:
-        log.debug("Clearing cache")
-        await CacheManager.clear()
+    await CacheManager.setup_and_clear_cache(config)
 
     await OfflineDatabaseManager.setup_database(config)
 
@@ -49,5 +40,8 @@ async def create_entity_details_index(config: Configuration) -> None:
 
 
 if __name__ == "__main__":
-    _config = SqliteDevelopmentConfiguration()
-    asyncio.run(create_entity_details_index(_config))
+    try:
+        asyncio.run(create_entity_details_index(PostgresReadOnlyDevelopmentConfiguration()))
+    except RuntimeError as exc:
+        log.error("%s", exc)
+        sys.exit(1)

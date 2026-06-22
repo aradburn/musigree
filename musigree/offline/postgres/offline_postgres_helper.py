@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import shutil
 from pathlib import Path
 from typing import Type
@@ -166,14 +167,17 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # poolclass=NullPool,
                     # poolclass=StaticPool,
                     poolclass=AsyncAdaptedQueuePool,
-                    pool_size=OfflineDatabaseManager.get_concurrency_count() * 2,
+                    # pool_size=OfflineDatabaseManager.get_concurrency_count() * 2,
                     pool_timeout=30,
                     pool_recycle=1,
                     pool_pre_ping=True,
+                    pool_size=multiprocessing.cpu_count(),
+                    # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+                    max_overflow=0,
                     # echo_pool=True,
-                    # connect_args={
-                    #     "connect_timeout": 1000,
-                    # },
+                    connect_args={
+                        "connect_timeout": 100000,
+                    },
                     # isolation_level="REPEATABLE READ",
                     # isolation_level="SERIALIZABLE",
                     # execution_options={

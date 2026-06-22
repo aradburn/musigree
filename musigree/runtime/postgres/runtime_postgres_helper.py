@@ -384,11 +384,13 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """Drop the tables."""
 
     @staticmethod
-    async def vacuum(table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
+    async def vacuum(
+        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
+    ) -> None:
         """
         Initate a vacuum on a table.
         Args:
-            table_name: The name of the table to vacuum.
+            table_name: Optional, the name of the table to vacuum.
             is_full: If True, performs a full vacuum.
             is_analyze: If True, performs an analyze operation.
             engine: The SQLAlchemy async engine connected to the runtime_database.
@@ -400,7 +402,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             query += " FULL"
         if is_analyze:
             query += " ANALYZE"
-        query += " " + table_name
+        if table_name is not None:
+            query += " " + table_name
         query += ";"
 
         async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
@@ -426,6 +429,29 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             bool: True, as this is supported.
         """
         return True
+
+    @staticmethod
+    async def analyze(table_name: str | None, engine: AsyncEngine) -> None:
+        """
+        Initate a analyze on a table.
+        Args:
+            table_name: Optional, the name of the table to analyze.
+            engine: The SQLAlchemy async engine connected to the runtime_database.
+        """
+        log.debug(f"ANALYZE {table_name}")
+
+        if table_name is not None:
+            query = f"ANALYZE {table_name};"
+        else:
+            query = "ANALYZE;"
+
+        async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
+            await connection.execute(text(query))
+            await connection.commit()
+
+    @staticmethod
+    async def optimize(table_name: str | None, engine: AsyncEngine) -> None:
+        pass
 
     @staticmethod
     def generate_insert_query(

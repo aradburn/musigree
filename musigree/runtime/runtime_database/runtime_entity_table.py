@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import String, Index, Integer, JSON
+from sqlalchemy import String, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, class_mapper
 
 from musigree import utils
@@ -74,15 +74,15 @@ class RuntimeEntityTable(RuntimeBase):
     styles: Mapped[str] = mapped_column(String, nullable=True)
     """Styles associated with the entity."""
 
-    __table_args__: tuple[Index, dict] = (
-        Index(
-            "idx_runtime_entity_id_and_entity_type",
-            entity_id,
-            entity_type,
-            unique=True,
-        ),
-        {},
-    )
+    # __table_args__: tuple[Index, dict] = (
+    #     Index(
+    #         "idx_runtime_entity_id_and_entity_type",
+    #         entity_id,
+    #         entity_type,
+    #         unique=True,
+    #     ),
+    #     {},
+    # )
     """
     Additional table arguments, including:
         - idx_runtime_entity_id_and_entity_type: A unique index on the entity_id and

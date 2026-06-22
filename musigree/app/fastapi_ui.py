@@ -169,6 +169,8 @@ async def route__entity_type__entity_id(
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
+    log.debug("route__entity_type__entity_id")
+
     try:
         # Retrieve the network data for the entity.
         async with runtime_transaction():

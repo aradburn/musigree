@@ -24,7 +24,6 @@ The module uses the following components:
 """
 
 import logging
-import sys
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
@@ -368,14 +367,7 @@ async def init_app(config: Configuration) -> None:
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
 
     # Setup cache
-    await CacheManager.setup_cache(config)
-    cache = CacheManager.get_cache()
-    if cache is None:
-        log.error("Cache not set")
-        sys.exit()
-    else:
-        log.info("Clearing cache")
-        await CacheManager.clear()
+    await CacheManager.setup_and_clear_cache(config)
 
     # Setup Database
     await RuntimeDatabaseManager.setup_database(config)
