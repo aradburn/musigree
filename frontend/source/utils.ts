@@ -1,4 +1,4 @@
-import {networkManager} from "./core/singletons";
+import { networkManager } from "./core/singletons";
 
 import DOMPurify from "dompurify";
 
@@ -230,10 +230,7 @@ export const expandMasterReferences = (str: string): string => {
             const _prefix = match[1].toLowerCase();
             const _masterId = match[2];
             const providedText = match[3];
-            expanded = expanded.replace(
-                match[0],
-                providedText,
-            );
+            expanded = expanded.replace(match[0], providedText);
         }
     }
     return expanded;
