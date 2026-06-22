@@ -1,6 +1,7 @@
 import asyncio
 import atexit
 import logging
+import sys
 
 from musigree.config import (
     Configuration,
@@ -39,5 +40,8 @@ async def create_entity_details_index(config: Configuration) -> None:
 
 
 if __name__ == "__main__":
-    _config = PostgresReadOnlyDevelopmentConfiguration()
-    asyncio.run(create_entity_details_index(_config))
+    try:
+        asyncio.run(create_entity_details_index(PostgresReadOnlyDevelopmentConfiguration()))
+    except RuntimeError as exc:
+        log.error("%s", exc)
+        sys.exit(1)

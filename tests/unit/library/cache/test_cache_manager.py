@@ -699,6 +699,33 @@ class TestCacheManagerUncoveredMethods:
             await CacheManager.setup_cache(config)
 
     @pytest.mark.asyncio
+    async def test_setup_and_clear_cache_raises_when_cache_not_initialized(self) -> None:
+        """Test setup_and_clear_cache raises when cache is still unset after setup."""
+        config = MagicMock()
+
+        with (
+            patch.object(CacheManager, "setup_cache", new_callable=AsyncMock),
+            patch.object(CacheManager, "get_cache", return_value=None),
+        ):
+            with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+                await CacheManager.setup_and_clear_cache(config)
+
+    @pytest.mark.asyncio
+    async def test_setup_and_clear_cache_clears_initialized_cache(self) -> None:
+        """Test setup_and_clear_cache clears cache after successful setup."""
+        config = MagicMock()
+        mock_cache = MagicMock()
+
+        with (
+            patch.object(CacheManager, "setup_cache", new_callable=AsyncMock),
+            patch.object(CacheManager, "get_cache", return_value=mock_cache),
+            patch.object(CacheManager, "clear", new_callable=AsyncMock) as mock_clear,
+        ):
+            await CacheManager.setup_and_clear_cache(config)
+
+        mock_clear.assert_awaited_once()
+
+    @pytest.mark.asyncio
     async def test_cache_manager_clear_no_cache(self) -> None:
         """Test CacheManager clear when no cache is set."""
         # Ensure cache is not set

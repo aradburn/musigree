@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
@@ -422,7 +421,7 @@ class CacheManager:
         cache = cls.get_cache()
         if cache is None:
             log.error("Cache not set")
-            sys.exit()
-        else:
-            log.debug("Clearing cache")
-            await CacheManager.clear()
+            raise RuntimeError("Cache not initialized after setup")
+
+        log.debug("Clearing cache")
+        await CacheManager.clear()

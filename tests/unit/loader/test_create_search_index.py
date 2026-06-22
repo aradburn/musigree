@@ -77,8 +77,10 @@ class TestCreateSearchIndex:
     @patch("musigree.loader.create_text_search_index.atexit")
     @patch("musigree.loader.create_text_search_index.log_banner")
     @patch("musigree.loader.create_text_search_index.setup_logging")
+    @patch("musigree.loader.create_text_search_index.asyncio.Runner")
     def test_create_text_search_index_success(
         self,
+        mock_runner: MagicMock,
         mock_setup_logging: MagicMock,
         mock_log_banner: MagicMock,
         mock_atexit: MagicMock,
@@ -91,14 +93,16 @@ class TestCreateSearchIndex:
         async def noop() -> None:
             pass
 
-        mock_cache_manager.setup_cache = MagicMock(return_value=noop())
-        mock_cache_manager.get_cache.return_value = MagicMock()
-        mock_cache_manager.clear = MagicMock(return_value=noop())
+        mock_cache_manager.setup_and_clear_cache = MagicMock(return_value=noop())
         mock_offline_manager.setup_database = MagicMock(return_value=noop())
         mock_offline_manager.offline_database_helper = MagicMock()
         mock_loader = MagicMock()
         mock_loader.loader_create_text_search_index = MagicMock(return_value=noop())
         mock_loader_entity_cls.return_value = mock_loader
+
+        mock_runner_instance = MagicMock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
 
         with patch(
             "musigree.loader.create_text_search_index.PostgresReadOnlyDevelopmentConfiguration"
@@ -112,37 +116,37 @@ class TestCreateSearchIndex:
         mock_setup_logging.assert_called_once()
         mock_log_banner.assert_called_once()
         mock_atexit.register.assert_called_once()
-        mock_cache_manager.setup_cache.assert_called_once()
-        mock_cache_manager.get_cache.assert_called()
         mock_offline_manager.setup_database.assert_called_once()
         mock_loader.loader_create_text_search_index.assert_called_once()
+        assert mock_runner_instance.run.call_count >= 2
 
-    @patch("musigree.loader.create_text_search_index.sys")
     @patch("musigree.loader.create_text_search_index.CacheManager")
     @patch("musigree.loader.create_text_search_index.atexit")
     @patch("musigree.loader.create_text_search_index.log_banner")
     @patch("musigree.loader.create_text_search_index.setup_logging")
+    @patch("musigree.loader.create_text_search_index.asyncio.Runner")
     def test_create_text_search_index_exits_when_cache_not_set(
         self,
+        mock_runner: MagicMock,
         _mock_setup_logging: MagicMock,
         _mock_log_banner: MagicMock,
         _mock_atexit: MagicMock,
         mock_cache_manager: MagicMock,
-        mock_sys: MagicMock,
     ) -> None:
-        """create_text_search_index exits when CacheManager.get_cache() returns None."""
+        """create_text_search_index exits when cache setup fails."""
 
-        async def noop() -> None:
-            pass
+        async def raise_runtime_error() -> None:
+            raise RuntimeError("Cache not initialized after setup")
 
-        mock_cache_manager.setup_cache = MagicMock(return_value=noop())
-        mock_cache_manager.get_cache.return_value = None
-        mock_sys.exit.side_effect = SystemExit
+        mock_cache_manager.setup_and_clear_cache = MagicMock(return_value=raise_runtime_error())
+
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.run.side_effect = RuntimeError("Cache not initialized after setup")
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
 
         with patch(
             "musigree.loader.create_text_search_index.PostgresReadOnlyDevelopmentConfiguration"
         ):
             with pytest.raises(SystemExit):
                 create_text_search_index()
-
-        mock_sys.exit.assert_called_once()

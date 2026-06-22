@@ -17,6 +17,7 @@ The loader is responsible for:
 import asyncio
 import datetime
 import logging
+import sys
 from collections.abc import Coroutine
 from functools import partial
 from pathlib import Path
@@ -295,7 +296,11 @@ def offline_loader_main() -> None:
         asyncio_atexit.register(shutdown_offline_loader, loop=loop)
         try:
             # Setup Cache
-            runner.run(CacheManager.setup_and_clear_cache(offline_config))
+            try:
+                runner.run(CacheManager.setup_and_clear_cache(offline_config))
+            except RuntimeError as exc:
+                log.error("%s", exc)
+                sys.exit(1)
 
             runner.run(OfflineDatabaseManager.setup_database(offline_config))
 
