@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Self
 
 from musigree.library.full_text_search.text_search_utils import (
+    SEARCH_STOP_WORDS,
     normalise_search_content,
 )
 from musigree.utils import calculate_size
@@ -29,22 +30,8 @@ class TextSearchIndex:
         keys (list[int]): A list of all document IDs in the index, used for random access.
     """
 
-    STOP_WORDS = {
-        "the",
-        "and",
-        "a",
-        "of",
-        "studio",
-        "studios",
-        "productions",
-        "music",
-        "records",
-        "recordings",
-        "entertainment",
-    }
-    """
-        A set of common words (stop words) to be ignored during indexing and search.
-    """
+    STOP_WORDS = SEARCH_STOP_WORDS
+    """Common tokens ignored during indexing and search."""
 
     def __init__(self) -> None:
         """
@@ -71,6 +58,7 @@ class TextSearchIndex:
             text: The text content of the document.
         """
         # Save the original document to return when searched for
+        # log.debug(f"Text indexing: {id_}: {text}")
         self.save_document_text(id_, text)
         self.keys.append(id_)
 

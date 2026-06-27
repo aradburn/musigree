@@ -59,9 +59,10 @@ class TestTextSearchIndex:
         index = TextSearchIndex()
         index.index_entry(1, "Self-contained")
 
-        # Both hyphenated and split versions should be indexed
+        # Hyphens are not dropped
         assert 1 in index.documents
-        # Should contain both "self-contained" processing and "self contained"
+        # Should contain "self", "contained" and "self-contained"
+        assert "self-contained" in index.token_index
         assert "self" in index.token_index
         assert "contained" in index.token_index
 
