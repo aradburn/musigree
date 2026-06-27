@@ -12,5 +12,5 @@ log = logging.getLogger(__name__)
 if __name__ == "__main__":
     offline_config = PostgresReadOnlyDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
-    process = TransferManager().transfer_entity()
-    run_runtime_loading_process(offline_config, runtime_config, process, ["runtime_entity"])
+    process = TransferManager().transfer_optimize()
+    run_runtime_loading_process(offline_config, runtime_config, process, None)

@@ -1,45 +1,47 @@
 import asyncio
 import logging
 import sys
-from typing import Coroutine, Any
 
-import asyncio_atexit  # type: ignore
+import asyncio_atexit  # type: ignore[import-untyped]
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
+    PostgresReadOnlyDevelopmentConfiguration,
     Configuration,
+)
+from musigree.constants import (
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
-from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
+from musigree.offline.loader.loader_entity import LoaderEntity
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 
 
-async def shutdown_process_runner() -> None:
+async def shutdown_loader() -> None:
     """
-    Shuts down the application.
+    Shuts down the loader application.
 
     This function is called when the application is being shut down. It
     performs cleanup tasks such as closing database connections, shutting
     down the cache, and shutting down logging.
     """
-
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
     setup_logging()
-    log.info("######## OFFLINE LOADER SHUTDOWN START ########")
+    log.info("######## LOADER SHUTDOWN START ########")
     try:
-        if OfflineDatabaseManager.offline_database_helper is not None:
-            await OfflineDatabaseManager.shutdown_database()
+        await OfflineDatabaseManager.shutdown_database()
     except OperationalError:
         pass
 
     await CacheManager.shutdown_cache()
 
+    log.info("######## LOADER SHUTDOWN DONE ########")
     shutdown_logging()
-    log.info("######## OFFLINE LOADER SHUTDOWN DONE ########")
 
 
 async def _finalize_offline_loader_before_loop_close() -> None:
@@ -58,29 +60,25 @@ async def _finalize_offline_loader_before_loop_close() -> None:
     if pending:
         await asyncio.gather(*pending, return_exceptions=True)
     try:
-        await shutdown_process_runner()
+        await shutdown_loader()
     except KeyboardInterrupt:
         log.warning("Offline loader shutdown interrupted (database may not be fully closed)")
     except asyncio.CancelledError:
         raise
 
 
-def run_offline_loading_process(
-    offline_config: Configuration,
-    process: Coroutine[Any, Any, None],
-    table_names: list[str] | None = None,
-) -> None:
-    """Create loader asynchronously."""
-
+def create_text_search_index(offline_config: Configuration) -> None:
+    """Create text search index asynchronously."""
     setup_logging()
 
     log_banner()
 
-    log.info(f"Using {offline_config.__class__.__name__}")
+    log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
     with asyncio.Runner() as runner:
         loop = runner.get_loop()
-        asyncio_atexit.register(shutdown_process_runner, loop=loop)
+        asyncio_atexit.register(shutdown_loader, loop=loop)
+
         try:
             # Setup Cache
             try:
@@ -95,23 +93,19 @@ def run_offline_loading_process(
                 "offline_database_helper must be initialized"
             )
 
-            if table_names:
-                runner.run(
-                    OfflineDatabaseManager.offline_database_helper.create_tables(table_names)
-                )
-
-            runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
-
-            # Run the process
-            # Note: this is used to run a single part of the offline loading process,
-            # usually the whole process is ran by run_offline_loader()
-            runner.run(process)
-
+            # Copy text search index into runtime database
+            text_search_path = offline_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
+            runner.run(LoaderEntity().loader_create_text_search_index(text_search_path))
         finally:
-            asyncio_atexit.unregister(shutdown_process_runner, loop=loop)
+            asyncio_atexit.unregister(shutdown_loader, loop=loop)
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:
                 log.warning(
                     "Offline loader finalize interrupted; proceeding with event loop shutdown"
                 )
+
+
+if __name__ == "__main__":
+    _config = PostgresReadOnlyDevelopmentConfiguration()
+    create_text_search_index(_config)

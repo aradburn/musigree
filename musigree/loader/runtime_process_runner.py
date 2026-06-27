@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import sys
 from typing import Coroutine, Any
 
 import asyncio_atexit  # type: ignore
@@ -48,7 +50,30 @@ async def shutdown_process_runner() -> None:
     log.info("######## RUNTIME LOADER SHUTDOWN DONE ########")
 
 
-async def run_runtime_loading_process(
+async def _finalize_runtime_loader_before_loop_close() -> None:
+    """
+    Cancel loader tasks and release resources while the event loop is still usable.
+
+    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
+    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
+    avoids that path and drains pending tasks first.
+    """
+    loop = asyncio.get_running_loop()
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks(loop) if t is not current and not t.done()]
+    for task in pending:
+        task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+    try:
+        await shutdown_process_runner()
+    except KeyboardInterrupt:
+        log.warning("Runtime loader shutdown interrupted (database may not be fully closed)")
+    except asyncio.CancelledError:
+        raise
+
+
+def run_runtime_loading_process(
     offline_config: Configuration,
     runtime_config: Configuration,
     process: Coroutine[Any, Any, None],
@@ -63,30 +88,49 @@ async def run_runtime_loading_process(
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")
 
-    # Setup Cache
-    await CacheManager.setup_and_clear_cache(offline_config)
+    with asyncio.Runner() as runner:
+        loop = runner.get_loop()
+        asyncio_atexit.register(shutdown_process_runner, loop=loop)
+        try:
+            # Setup Cache
+            try:
+                runner.run(CacheManager.setup_and_clear_cache(offline_config))
+            except RuntimeError as exc:
+                log.error("%s", exc)
+                sys.exit(1)
 
-    await OfflineDatabaseManager.setup_database(offline_config)
-    await RuntimeDatabaseManager.setup_database(runtime_config)
+            runner.run(OfflineDatabaseManager.setup_database(offline_config))
+            runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
 
-    assert OfflineDatabaseManager.offline_database_helper is not None, (
-        "offline_database_helper must be initialized"
-    )
-    assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-        "runtime_database_helper must be initialized before calling initialize()"
-    )
+            assert OfflineDatabaseManager.offline_database_helper is not None, (
+                "offline_database_helper must be initialized"
+            )
+            assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+                "runtime_database_helper must be initialized before calling initialize()"
+            )
 
-    if table_names:
-        await RuntimeDatabaseManager.runtime_database_helper.create_tables(table_names)
+            if table_names:
+                runner.run(
+                    RuntimeDatabaseManager.runtime_database_helper.create_tables(table_names)
+                )
 
-    asyncio_atexit.register(shutdown_process_runner)
+            runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
-    await OfflineRoleDataAccess.load_all_roles_into_cache()
+            entity_details_path = (
+                runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
+            )
+            runner.run(TransferManager.transfer_load_entity_details_index(entity_details_path))
 
-    entity_details_path = runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
-    await TransferManager.transfer_load_entity_details_index(entity_details_path)
+            # Run the process
+            # Note: this is used to run a single part of the runtime loading process,
+            # usually the whole process is ran by run_runtime_loader()
+            runner.run(process)
 
-    # Run the process
-    # Note: this is used to run a single part of the runtime loading process,
-    # usually the whole process is ran by run_runtime_loader()
-    await process
+        finally:
+            asyncio_atexit.unregister(shutdown_process_runner, loop=loop)
+            try:
+                runner.run(_finalize_runtime_loader_before_loop_close())
+            except KeyboardInterrupt:
+                log.warning(
+                    "Runtime loader finalize interrupted; proceeding with event loop shutdown"
+                )

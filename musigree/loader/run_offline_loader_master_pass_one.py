@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from musigree.config import (
@@ -14,4 +13,4 @@ if __name__ == "__main__":
     _config = PostgresDevelopmentConfiguration()
     discogs_data_directory = _config.DATA_DIR / DISCOGS_DATA
     process = LoaderMaster().loader_master_pass_one(discogs_data_directory, "20260301")
-    asyncio.run(run_offline_loading_process(_config, process, ["master"]))
+    run_offline_loading_process(_config, process, ["master"])

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from musigree.config import (
@@ -14,4 +13,4 @@ if __name__ == "__main__":
     _config = PostgresDevelopmentConfiguration()
     text_search_path = _config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
     process = LoaderEntity().loader_create_text_search_tokens(text_search_path)
-    asyncio.run(run_offline_loading_process(_config, process, ["token"]))
+    run_offline_loading_process(_config, process, ["token"])
