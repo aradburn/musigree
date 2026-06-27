@@ -45,12 +45,12 @@ class TestEntityId:
 
     def test_to_entity_internal_id_artist_invalid_missing_label(self) -> None:
         """Test that artist cannot have missing label entity ID."""
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             to_entity_internal_id(MISSING_LABEL_ENTITY, EntityType.ARTIST)
 
     def test_to_entity_internal_id_artist_invalid_large_id(self) -> None:
         """Test that artist cannot have ID >= LABEL_ENTITY_ID_OFFSET."""
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             to_entity_internal_id(LABEL_ENTITY_ID_OFFSET, EntityType.ARTIST)
 
     def test_to_entity_external_id_artist(self) -> None:
