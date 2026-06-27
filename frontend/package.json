@@ -49,6 +49,7 @@
         "react": "^19.2.7",
         "react-arborist": "^3.10.5",
         "react-bootstrap": "^2.10.10",
+        "@reactour/tour": "^3.8.0",
         "react-dom": "^19.2.7",
         "text-case": "1.2.11"
     },
