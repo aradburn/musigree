@@ -20,6 +20,7 @@ import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
 import { musigreeManager } from "../core/singletons";
+import { MusigreeTourProvider } from "./Tour";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
@@ -175,9 +176,11 @@ const AppContent: React.FC = (): React.ReactElement => {
  */
 const App: React.FC = (): React.ReactElement => {
     return (
-        <WindowProvider>
-            <AppContent />
-        </WindowProvider>
+        <MusigreeTourProvider>
+            <WindowProvider>
+                <AppContent />
+            </WindowProvider>
+        </MusigreeTourProvider>
     );
 };
 

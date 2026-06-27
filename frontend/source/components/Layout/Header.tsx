@@ -78,6 +78,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
                         <div
                             className="d-flex flex-row"
                             role="button"
+                            data-tour="random"
                             onClick={handleRandom}
                         >
                             <i className="bi bi-shuffle px-1 py-0"></i>
@@ -102,6 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
                         <div
                             className="d-flex flex-row"
                             role="button"
+                            data-tour="help"
                             onClick={onShowHelp}
                         >
                             <i className="bi bi-question-circle px-1 py-0"></i>
