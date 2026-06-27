@@ -471,6 +471,219 @@ class TestGetIdByEntityTypeAndEntityName:
         )
 
 
+class TestFindEntityIdByEntityTypeAndEntityName:
+    """Test class for find_entity_id_by_entity_type_and_entity_name method."""
+
+    @pytest.fixture
+    def mock_entity_repository(self) -> AsyncMock:
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_token_repository(self) -> AsyncMock:
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_cache(self) -> Mock:
+        cache = Mock()
+        cache.get = AsyncMock()
+        cache.set = AsyncMock()
+        return cache
+
+    @staticmethod
+    def _search_results(*entries: tuple[str, str]) -> dict[str, tuple[dict[str, str], ...]]:
+        return {"results": tuple({"key": key, "name": name} for key, name in entries)}
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    async def test_find_entity_id_cache_hit(
+        self,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value="871")
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+        )
+
+        assert result == 871
+        mock_cache.get.assert_called_once_with("entity:artist/name/carl craig")
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.assert_not_called()
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    async def test_find_entity_id_cache_null_entry(
+        self,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=CACHE_ENTRY_IS_NULL)
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Missing Artist"
+        )
+
+        assert result is None
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.assert_not_called()
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    async def test_find_entity_id_direct_db_hit_skips_search(
+        self,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = 871
+
+        with patch(
+            "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+        ) as mock_search:
+            result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+            )
+
+        assert result == 871
+        mock_search.assert_not_called()
+        mock_cache.set.assert_called_once_with("entity:artist/name/carl craig", "871")
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+    )
+    async def test_find_entity_id_exact_search_match(
+        self,
+        mock_search: AsyncMock,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = None
+        mock_search.return_value = self._search_results(
+            ("label-7890", "Planet E"),
+            ("artist-871", "Carl Craig"),
+        )
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+        )
+
+        assert result == 871
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+    )
+    async def test_find_entity_id_normalized_search_match(
+        self,
+        mock_search: AsyncMock,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = None
+        mock_search.return_value = self._search_results(("artist-871", "carl craig"))
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig (3)"
+        )
+
+        assert result == 871
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+    )
+    async def test_find_entity_id_lowercase_search_match(
+        self,
+        mock_search: AsyncMock,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = None
+        mock_search.return_value = self._search_results(("artist-871", "CARL CRAIG"))
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+        )
+
+        assert result == 871
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+    )
+    async def test_find_entity_id_prefers_exact_match_over_normalized(
+        self,
+        mock_search: AsyncMock,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = None
+        mock_search.return_value = self._search_results(
+            ("artist-100", "carl craig"),
+            ("artist-871", "Carl Craig"),
+        )
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+        )
+
+        assert result == 871
+
+    @patch("musigree.offline.data_access_layer.offline_entity_data_access.CacheManager.get_cache")
+    @patch(
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntitySearch.search_entities"
+    )
+    async def test_find_entity_id_not_found_caches_null(
+        self,
+        mock_search: AsyncMock,
+        mock_get_cache: Mock,
+        mock_cache: Mock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
+    ) -> None:
+        mock_get_cache.return_value = mock_cache
+        mock_cache.get = AsyncMock(return_value=None)
+        mock_cache.set = AsyncMock()
+        mock_entity_repository.get_entity_id_by_entity_type_and_entity_name.return_value = None
+        mock_search.return_value = self._search_results(("artist-871", "Someone Else"))
+
+        result = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+            mock_entity_repository, mock_token_repository, EntityType.ARTIST, "Carl Craig"
+        )
+
+        assert result is None
+        mock_cache.set.assert_called_once_with(
+            "entity:artist/name/carl craig", CACHE_ENTRY_IS_NULL
+        )
+
+
 class TestCreateTextSearchIndex:
     """Test class for create_text_search_index method."""
 

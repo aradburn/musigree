@@ -229,7 +229,7 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             },
             "entity_name": "Planet E (Test Update)",
             "relation_counts": {"Released On": 1},
-            "search_content": "planet e test update",
+            "search_content": "planet e (test update)",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

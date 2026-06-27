@@ -427,9 +427,7 @@ class TestOfflineLoaderEdgeCases:
             assert len(stages) > 0
 
     @pytest.mark.asyncio
-    @patch("musigree.loader.run_offline_loader.asyncio.Runner")
     @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
-    @patch("musigree.loader.run_offline_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_offline_loader.CacheManager")
     @patch("musigree.loader.run_offline_loader.setup_logging")
     @patch("musigree.loader.run_offline_loader.shutdown_logging")
@@ -438,21 +436,14 @@ class TestOfflineLoaderEdgeCases:
         mock_shutdown_logging: Mock,
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
-        mock_runtime_db_manager: Mock,
         mock_offline_db_manager: Mock,
-        mock_runner: Mock,
     ) -> None:
         """Test successful execution of shutdown_offline_loader."""
         # Arrange
+        mock_offline_db_manager.offline_database_helper = Mock()
         mock_offline_db_manager.shutdown_database = AsyncMock()
-        mock_runtime_db_manager.shutdown_database = AsyncMock()
         mock_cache_manager.clear_cache = AsyncMock()
         mock_cache_manager.shutdown_cache = AsyncMock()
-
-        # Mock asyncio.Runner context manager
-        mock_runner_instance = Mock()
-        mock_runner.return_value.__enter__.return_value = mock_runner_instance
-        mock_runner.return_value.__exit__.return_value = None
 
         # Act
         await shutdown_offline_loader()
@@ -460,7 +451,6 @@ class TestOfflineLoaderEdgeCases:
         # Assert
         mock_setup_logging.assert_called_once()
         mock_offline_db_manager.shutdown_database.assert_called_once()
-        mock_runtime_db_manager.shutdown_database.assert_called_once()
         mock_cache_manager.clear_cache.assert_called_once()
         mock_cache_manager.shutdown_cache.assert_called_once()
         mock_shutdown_logging.assert_called_once()

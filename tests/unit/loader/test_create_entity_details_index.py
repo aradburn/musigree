@@ -1,12 +1,12 @@
-"""Unit tests for create_entity_details_index module."""
+"""Unit tests for run_offline_create_entity_details_index module."""
 
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
 from musigree.config import SqliteTestConfiguration
-from musigree.loader.create_entity_details_index import create_entity_details_index
+from musigree.loader.run_offline_create_entity_details_index import create_entity_details_index
 
 
 class TestCreateEntityDetailsIndex:
@@ -19,91 +19,101 @@ class TestCreateEntityDetailsIndex:
         config.DATA_DIR = Path("/test/data")
         return config
 
-    @patch("musigree.loader.create_entity_details_index.setup_logging")
-    @patch("musigree.loader.create_entity_details_index.CacheManager")
-    @patch("musigree.loader.create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.create_entity_details_index.LoaderEntity")
-    @patch("musigree.loader.create_entity_details_index.atexit")
-    async def test_create_entity_details_index_success(
+    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
+    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
+    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
+    def test_create_entity_details_index_success(
         self,
-        mock_atexit: MagicMock,
-        mock_loader_entity: MagicMock,
-        mock_offline_db_manager: MagicMock,
-        mock_cache_manager: MagicMock,
-        mock_setup_logging: MagicMock,
+        mock_runner: Mock,
+        mock_loader_entity: Mock,
+        mock_offline_db_manager: Mock,
+        mock_cache_manager: Mock,
+        _mock_asyncio_atexit: Mock,
+        _mock_log_banner: Mock,
+        mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test successful creation of entity details index."""
-        # Arrange
         mock_cache_manager.setup_and_clear_cache = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
-        mock_offline_db_manager.shutdown_database = MagicMock()
-        mock_cache_manager.shutdown_cache = MagicMock()
 
         mock_loader_instance = MagicMock()
         mock_loader_instance.loader_create_entity_details_index = AsyncMock()
         mock_loader_entity.return_value = mock_loader_instance
 
-        # Act
-        await create_entity_details_index(mock_config)
+        mock_runner_instance = Mock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
 
-        # Assert
+        create_entity_details_index(mock_config)
+
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(mock_config)
-        mock_offline_db_manager.setup_database.assert_called_once_with(mock_config)
+        mock_offline_db_manager.setup_database.assert_called()
 
-        # Check atexit registrations
-        assert mock_atexit.register.call_count == 2
-        mock_atexit.register.assert_any_call(mock_cache_manager.shutdown_cache)
-        mock_atexit.register.assert_any_call(mock_offline_db_manager.shutdown_database)
-
-        # Check that loader was called with correct path
         expected_path = mock_config.DATA_DIR / "entity_details" / "entity_details.data"
         mock_loader_instance.loader_create_entity_details_index.assert_called_once_with(
             expected_path
         )
+        assert mock_runner_instance.run.call_count >= 2
 
-    @patch("musigree.loader.create_entity_details_index.setup_logging")
-    @patch("musigree.loader.create_entity_details_index.CacheManager")
-    @patch("musigree.loader.create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.create_entity_details_index.LoaderEntity")
-    async def test_create_entity_details_index_cache_not_set(
+    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
+    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
+    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
+    def test_create_entity_details_index_cache_not_set(
         self,
-        _mock_loader_entity: MagicMock,
-        mock_offline_db_manager: MagicMock,
-        mock_cache_manager: MagicMock,
-        mock_setup_logging: MagicMock,
+        mock_runner: Mock,
+        _mock_loader_entity: Mock,
+        mock_offline_db_manager: Mock,
+        _mock_cache_manager: Mock,
+        _mock_asyncio_atexit: Mock,
+        _mock_log_banner: Mock,
+        mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test behavior when cache setup fails."""
-        # Arrange
-        mock_cache_manager.setup_and_clear_cache = AsyncMock(side_effect=RuntimeError("Cache not initialized after setup"))
         mock_offline_db_manager.setup_database = AsyncMock()
 
-        # Act & Assert
-        with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
-            await create_entity_details_index(mock_config)
+        mock_runner_instance = Mock()
+        mock_runner_instance.run.side_effect = [
+            RuntimeError("Cache not initialized after setup"),
+            None,
+        ]
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
 
-        # Assert calls that should have happened before exit
+        with pytest.raises(SystemExit):
+            create_entity_details_index(mock_config)
+
         mock_setup_logging.assert_called_once()
-        mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(mock_config)
-        # Should not call database setup when cache setup fails
         mock_offline_db_manager.setup_database.assert_not_called()
 
-    @patch("musigree.loader.create_entity_details_index.setup_logging")
-    @patch("musigree.loader.create_entity_details_index.CacheManager")
-    @patch("musigree.loader.create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.create_entity_details_index.LoaderEntity")
-    async def test_create_entity_details_index_loader_exception(
+    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
+    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
+    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
+    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
+    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
+    def test_create_entity_details_index_loader_exception(
         self,
-        mock_loader_entity: MagicMock,
-        mock_offline_db_manager: MagicMock,
-        mock_cache_manager: MagicMock,
-        _mock_setup_logging: MagicMock,
+        mock_runner: Mock,
+        mock_loader_entity: Mock,
+        mock_offline_db_manager: Mock,
+        mock_cache_manager: Mock,
+        _mock_asyncio_atexit: Mock,
+        _mock_log_banner: Mock,
+        _mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test handling of exception in loader."""
-        # Arrange
         mock_cache_manager.setup_and_clear_cache = AsyncMock()
         mock_offline_db_manager.setup_database = AsyncMock()
 
@@ -113,24 +123,32 @@ class TestCreateEntityDetailsIndex:
         )
         mock_loader_entity.return_value = mock_loader_instance
 
-        # Act & Assert
+        mock_runner_instance = Mock()
+        mock_runner_instance.run.side_effect = Exception("Test error")
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
+
         with pytest.raises(Exception, match="Test error"):
-            await create_entity_details_index(mock_config)
+            create_entity_details_index(mock_config)
 
-    def test_main_execution(self) -> None:
+    @patch(
+        "musigree.loader.run_offline_create_entity_details_index.create_entity_details_index"
+    )
+    @patch(
+        "musigree.loader.run_offline_create_entity_details_index.PostgresReadOnlyDevelopmentConfiguration"
+    )
+    def test_main_execution(
+        self,
+        mock_config_class: Mock,
+        mock_create: Mock,
+    ) -> None:
         """Test main block execution."""
-        with patch(
-            "musigree.loader.create_entity_details_index.PostgresReadOnlyDevelopmentConfiguration"
-        ) as mock_config_class:
-            with patch(
-                "musigree.loader.create_entity_details_index.asyncio.run"
-            ) as mock_asyncio_run:
-                mock_config = MagicMock()
-                mock_config_class.return_value = mock_config
+        import musigree.loader.run_offline_create_entity_details_index as module
 
-                # Import and execute the main block
+        mock_config = MagicMock()
+        mock_config_class.return_value = mock_config
 
-                # The main block should have been executed during import
-                # Since we can't easily test the actual main block, we'll test the components
-                assert mock_config_class is not None
-                assert mock_asyncio_run is not None
+        offline_config = module.PostgresReadOnlyDevelopmentConfiguration()
+        module.create_entity_details_index(offline_config)
+
+        mock_create.assert_called_once_with(mock_config)

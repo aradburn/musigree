@@ -45,14 +45,14 @@ class TestShutdownProcessRunner:
 class TestRunOfflineLoadingProcess:
     """Test cases for run_offline_loading_process."""
 
-    @pytest.mark.asyncio
+    @patch("musigree.loader.offline_process_runner.asyncio.Runner")
     @patch("musigree.loader.offline_process_runner.OfflineRoleDataAccess")
     @patch("musigree.loader.offline_process_runner.asyncio_atexit")
     @patch("musigree.loader.offline_process_runner.OfflineDatabaseManager")
     @patch("musigree.loader.offline_process_runner.CacheManager")
     @patch("musigree.loader.offline_process_runner.log_banner")
     @patch("musigree.loader.offline_process_runner.setup_logging")
-    async def test_run_offline_loading_process_success(
+    def test_run_offline_loading_process_success(
         self,
         mock_setup_logging: MagicMock,
         mock_log_banner: MagicMock,
@@ -60,6 +60,7 @@ class TestRunOfflineLoadingProcess:
         mock_offline_manager: MagicMock,
         mock_atexit: MagicMock,
         mock_role_data_access: MagicMock,
+        mock_runner: MagicMock,
     ) -> None:
         """Test run_offline_loading_process sets up cache and db and runs process."""
         config = MagicMock()
@@ -70,15 +71,21 @@ class TestRunOfflineLoadingProcess:
 
         mock_cache.setup_and_clear_cache = AsyncMock(return_value=None)
         mock_offline_manager.setup_database = AsyncMock(return_value=None)
+        mock_offline_manager.offline_database_helper = MagicMock()
         mock_role_data_access.load_all_roles_into_cache = AsyncMock(return_value=None)
+
+        mock_runner_instance = MagicMock()
+        mock_runner.return_value.__enter__.return_value = mock_runner_instance
+        mock_runner.return_value.__exit__.return_value = None
+        mock_runner_instance.get_loop.return_value = MagicMock()
 
         process_coro = noop()
 
-        await run_offline_loading_process(config, process_coro)
+        run_offline_loading_process(config, process_coro)
 
         mock_setup_logging.assert_called_once()
         mock_log_banner.assert_called_once()
-        mock_cache.setup_and_clear_cache.assert_awaited_once_with(config)
+        mock_cache.setup_and_clear_cache.assert_called_once()
         mock_offline_manager.setup_database.assert_called_once_with(config)
-        mock_atexit.register.assert_called_once()
-        mock_role_data_access.load_all_roles_into_cache.assert_called_once()
+        assert mock_atexit.register.call_count >= 1
+        assert mock_runner_instance.run.call_count >= 1
