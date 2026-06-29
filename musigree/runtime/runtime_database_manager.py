@@ -16,20 +16,20 @@ log = logging.getLogger(__name__)
 
 class RuntimeDatabaseManager:
     runtime_database_helper: RuntimeDatabaseHelper | None = None
-    _threading_model: ThreadingModel | None = None
+    threading_model: ThreadingModel | None = None
 
     @staticmethod
     def get_concurrency_count() -> int:
-        if RuntimeDatabaseManager._threading_model == ThreadingModel.PROCESS:
+        if RuntimeDatabaseManager.threading_model == ThreadingModel.PROCESS:
             return multiprocessing.cpu_count()
-        elif RuntimeDatabaseManager._threading_model == ThreadingModel.THREAD:
+        elif RuntimeDatabaseManager.threading_model == ThreadingModel.THREAD:
             return 1
         else:
             raise NotImplementedError("THREADING_MODEL not configured")
 
     @classmethod
     async def setup_database(cls, config: Configuration) -> None:
-        RuntimeDatabaseManager._threading_model = config.THREADING_MODEL
+        RuntimeDatabaseManager.threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different runtime_database.
         # noinspection PyUnreachableCode

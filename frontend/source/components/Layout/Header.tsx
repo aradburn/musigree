@@ -1,11 +1,11 @@
 /* @jsxImportSource react */
 
 import React from "react";
-import { Navbar, Container, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { Container, Navbar, OverlayTrigger, Tooltip } from "react-bootstrap";
 import SearchInput from "../Search/SearchInput";
-import { FSM } from "../../constants";
-import { version } from "../../version";
-import { useWindow } from "../../contexts/useWindow";
+import { FSM } from "@/constants.ts";
+import { version } from "@/version.ts";
+import { useWindow } from "@/contexts/useWindow.ts";
 
 interface HeaderProps {
     onShowHelp?: () => void;
@@ -78,6 +78,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
                         <div
                             className="d-flex flex-row"
                             role="button"
+                            data-tour="random"
                             onClick={handleRandom}
                         >
                             <i className="bi bi-shuffle px-1 py-0"></i>
@@ -102,6 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
                         <div
                             className="d-flex flex-row"
                             role="button"
+                            data-tour="help"
                             onClick={onShowHelp}
                         >
                             <i className="bi bi-question-circle px-1 py-0"></i>

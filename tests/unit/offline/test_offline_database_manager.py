@@ -17,13 +17,13 @@ class TestOfflineDatabaseManager:
     def setup_method() -> None:
         """Reset class variables before each test."""
         OfflineDatabaseManager.offline_database_helper = None
-        OfflineDatabaseManager._threading_model = None
+        OfflineDatabaseManager.threading_model = None
 
     @staticmethod
     def teardown_method() -> None:
         """Clean up after each test."""
         OfflineDatabaseManager.offline_database_helper = None
-        OfflineDatabaseManager._threading_model = None
+        OfflineDatabaseManager.threading_model = None
 
     # Test get_concurrency_count method
     @patch("multiprocessing.cpu_count")
@@ -31,7 +31,7 @@ class TestOfflineDatabaseManager:
         """Test get_concurrency_count returns CPU count for process threading model."""
         # Arrange
         mock_cpu_count.return_value = 4
-        OfflineDatabaseManager._threading_model = ThreadingModel.PROCESS
+        OfflineDatabaseManager.threading_model = ThreadingModel.PROCESS
 
         # Act
         result = OfflineDatabaseManager.get_concurrency_count()
@@ -43,7 +43,7 @@ class TestOfflineDatabaseManager:
     def test_get_concurrency_count_thread_model(self) -> None:
         """Test get_concurrency_count returns 1 for thread model."""
         # Arrange
-        OfflineDatabaseManager._threading_model = ThreadingModel.THREAD
+        OfflineDatabaseManager.threading_model = ThreadingModel.THREAD
 
         # Act
         result = OfflineDatabaseManager.get_concurrency_count()
@@ -54,7 +54,7 @@ class TestOfflineDatabaseManager:
     def test_get_concurrency_count_not_configured(self) -> None:
         """Test get_concurrency_count raises error when threading model not configured."""
         # Arrange
-        OfflineDatabaseManager._threading_model = None
+        OfflineDatabaseManager.threading_model = None
 
         # Act & Assert
         with pytest.raises(NotImplementedError, match="THREADING_MODEL not configured"):
@@ -99,7 +99,7 @@ class TestOfflineDatabaseManager:
 
         # Assert
         assert OfflineDatabaseManager.offline_database_helper == mock_helper_instance
-        assert OfflineDatabaseManager._threading_model == ThreadingModel.PROCESS
+        assert OfflineDatabaseManager.threading_model == ThreadingModel.PROCESS
         # Check that helper has the expected attributes set
         helper = OfflineDatabaseManager.offline_database_helper
         assert helper is not None

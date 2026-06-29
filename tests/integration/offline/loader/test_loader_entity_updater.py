@@ -64,7 +64,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             },
             "entity_name": "Linton Kwesi Johnson",
             "relation_counts": {"Compiled By": 1, "Compiled On": 1, "DJ Mix": 1},
-            "search_content": "linton kwesi johnson",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -129,7 +128,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
                 "Remix": 6,
                 "Written By": 5,
             },
-            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -165,7 +163,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_name": "New Test Artist",
             "entity_type": EntityType.ARTIST,
             "relation_counts": {},
-            "search_content": "new test artist",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -229,7 +226,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             },
             "entity_name": "Planet E (Test Update)",
             "relation_counts": {"Released On": 1},
-            "search_content": "planet e test update",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -266,7 +262,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             },
             "entity_name": "West West Side Music",
             "relation_counts": {"Mastered At": 1},
-            "search_content": "west west side music",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -300,7 +295,6 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_name": "New Label Test",
             "entity_type": EntityType.LABEL,
             "relation_counts": {},
-            "search_content": "new label test",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

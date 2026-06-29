@@ -334,4 +334,59 @@ describe("SearchInput", () => {
         // But we can verify the escape key closes the dropdown
         expect(searchInput).toHaveAttribute("aria-expanded", "false");
     });
+
+    it("selects the first result when Enter is pressed", async () => {
+        const mockResults = [
+            { name: "Artist 1", key: "a-1234", type: "artist" },
+            { name: "Artist 2", key: "a-5678", type: "artist" },
+        ];
+
+        vi.mocked(useSearchApiModule.default).mockReturnValue({
+            results: mockResults,
+            loading: false,
+            error: null,
+        });
+
+        render(<SearchInput />);
+
+        const searchInput = screen.getByPlaceholderText("Search");
+        await user.type(searchInput, "artist");
+        fireEvent.keyDown(searchInput, { key: "Enter" });
+
+        expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+        expect(searchInput).toHaveValue("Artist 1");
+    });
+
+    it("waits for search to finish before selecting the first result on Enter", async () => {
+        const mockResults = [
+            { name: "Artist 1", key: "a-1234", type: "artist" },
+        ];
+
+        vi.mocked(useSearchApiModule.default).mockReturnValue({
+            results: [],
+            loading: true,
+            error: null,
+        });
+
+        const { rerender } = render(<SearchInput />);
+
+        const searchInput = screen.getByPlaceholderText("Search");
+        await user.type(searchInput, "artist");
+        fireEvent.keyDown(searchInput, { key: "Enter" });
+
+        expect(mockDispatchEvent).not.toHaveBeenCalled();
+
+        vi.mocked(useSearchApiModule.default).mockReturnValue({
+            results: mockResults,
+            loading: false,
+            error: null,
+        });
+
+        rerender(<SearchInput />);
+
+        await waitFor(() => {
+            expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
+            expect(searchInput).toHaveValue("Artist 1");
+        });
+    });
 });

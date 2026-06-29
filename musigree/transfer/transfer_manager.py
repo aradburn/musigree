@@ -343,3 +343,17 @@ class TransferManager:
             entity_details_path
         )
         RuntimeDatabaseManager.runtime_database_helper.entity_details_index = entity_details_index
+
+    @staticmethod
+    async def transfer_optimize() -> None:
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling transfer_optimize()"
+        )
+        assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
+            "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling transfer_optimize()"
+        )
+
+        return await RuntimeDatabaseManager.runtime_database_helper.optimize(
+            None,
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+        )

@@ -38,7 +38,6 @@ class TestEntityRepository:
             entity_metadata={"profile": "Test profile"},
             relation_counts={"performer": 5},
             entities={},
-            search_content="test artist",
         )
 
     @pytest.fixture
@@ -52,7 +51,6 @@ class TestEntityRepository:
         table_mock.entity_metadata = {"profile": "Test profile"}
         table_mock.relation_counts = {"performer": 5}
         table_mock.entities = {}
-        table_mock.search_content = "test artist"
         return table_mock
 
     @pytest.fixture
@@ -270,24 +268,6 @@ class TestEntityRepository:
             # Assert
             assert result == expected_ids
             mock_session.execute.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_find_by_search_content_success(
-        self, entity_repository: EntityRepository, mock_entity: Entity
-    ) -> None:
-        """Test successful find_by_search_content execution."""
-        # Arrange
-        search_content = "test artist"
-
-        with patch.object(entity_repository, "_get_all_by_query") as mock_get_all:
-            mock_get_all.return_value = [mock_entity]
-
-            # Act
-            result = await entity_repository.find_by_search_content(search_content)
-
-            # Assert
-            assert result == [mock_entity]
-            mock_get_all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_batched_ids_success(self, entity_repository: EntityRepository) -> None:

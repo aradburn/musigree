@@ -102,6 +102,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         role = RuntimeRole.model_validate(instance)
 
         # Cache the result
+        # noinspection PyTypeChecker
         await cache.hset(role_key_str, instance)
 
         return role

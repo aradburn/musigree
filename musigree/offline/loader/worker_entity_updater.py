@@ -64,9 +64,6 @@ from typing import Any
 from deepdiff import DeepDiff
 
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.library.full_text_search.text_search_utils import (
-    normalise_search_content,
-)
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.entity_table import EntityTable
@@ -141,10 +138,6 @@ async def update_entities_worker_async(
                     update_payload[EntityTable.entity_name.key] = db_entity.entity_name
                     """Update the entity name."""
 
-                    # Update search_content
-                    db_entity.search_content = normalise_search_content(updated_entity.entity_name)
-                    update_payload[EntityTable.search_content.key] = db_entity.search_content
-                    """Update the search content."""
                     is_changed = True
                     """Set the changed flag."""
 

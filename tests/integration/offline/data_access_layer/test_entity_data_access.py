@@ -8,6 +8,7 @@ from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.token_repository import TokenRepository
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
 
@@ -23,11 +24,11 @@ class TestEntityDataAccess(AbstractDatabaseTest):
             index = await OfflineEntityDataAccess.create_text_search_index(entity_repository)
 
         # THEN
-        assert len(index.token_index.items()) == 7221
+        assert len(index.token_index.items()) == 20550
         assert len(index.documents.items()) == 6216
 
     @pytest.mark.asyncio
-    async def test_get_id_by_entity_type_and_entity_name(
+    async def test_get_id_by_entity_type_and_entity_name_1(
         self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
@@ -44,6 +45,94 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
+    async def test_get_id_by_entity_type_and_entity_name_2(
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+    ) -> None:
+        entity_type = EntityType.ARTIST
+        entity_name = "fall"
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            actual = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                entity_repository, entity_type, entity_name
+            )
+
+        # THEN
+        expected = None
+        assert actual == expected
+
+    @pytest.mark.asyncio
+    async def test_get_id_by_entity_type_and_entity_name_3(
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+    ) -> None:
+        entity_type = EntityType.ARTIST
+        entity_name = "the Fall"
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            actual = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                entity_repository, entity_type, entity_name
+            )
+
+        # THEN
+        expected = None
+        assert actual == expected
+
+    @pytest.mark.asyncio
+    async def test_find_entity_id_by_entity_type_and_entity_name_1(
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+    ) -> None:
+        entity_type = EntityType.ARTIST
+        entity_name = "Joker, The (3)"
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            token_repository = TokenRepository()
+            actual = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                entity_repository, token_repository, entity_type, entity_name
+            )
+
+        # THEN
+        expected = 8526
+        assert actual == expected
+
+    @pytest.mark.asyncio
+    async def test_find_entity_id_by_entity_type_and_entity_name_2(
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+    ) -> None:
+        entity_type = EntityType.ARTIST
+        entity_name = "fall"
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            token_repository = TokenRepository()
+            actual = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                entity_repository, token_repository, entity_type, entity_name
+            )
+
+        # THEN
+        expected = 2228
+        assert actual == expected
+
+    @pytest.mark.asyncio
+    async def test_find_entity_id_by_entity_type_and_entity_name_3(
+        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+    ) -> None:
+        entity_type = EntityType.ARTIST
+        entity_name = "the Fall"
+
+        async with offline_transaction():
+            entity_repository = EntityRepository()
+            token_repository = TokenRepository()
+            actual = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                entity_repository, token_repository, entity_type, entity_name
+            )
+
+        # THEN
+        expected = 2228
+        assert actual == expected
+
+    @pytest.mark.asyncio
     async def test_resolve_entity_references_1(
         self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
     ) -> None:
@@ -56,7 +145,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
+            token_repository = TokenRepository()
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -83,7 +173,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
+            token_repository = TokenRepository()
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -111,7 +202,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
+            token_repository = TokenRepository()
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
             actual = entity.entities
 
         # THEN
@@ -136,7 +228,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
+            token_repository = TokenRepository()
+            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
             actual = entity.entities
 
         # THEN

@@ -33,10 +33,13 @@ from sqlalchemy.exc import IntegrityError
 from musigree.constants import BULK_REPORTING_SIZE, CACHE_ENTRY_IS_NULL
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.library.fields.entity_id import to_entity_label_internal_id
+from musigree.library.fields.entity_id import to_entity_label_internal_id, to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
-from musigree.library.full_text_search.text_search_utils import normalise_search_content
+from musigree.library.full_text_search.text_search_utils import (
+    normalise_search_content,
+    remove_stop_words,
+)
 from musigree.offline.data_access_layer.offline_entity_search import OfflineEntitySearch
 from musigree.offline.data_access_layer.offline_master_data_access import OfflineMasterDataAccess
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
@@ -64,7 +67,7 @@ class OfflineEntityDataAccess:
 
     @staticmethod
     async def resolve_entity_references(
-        entity_repository: EntityRepository, entity: Entity
+        entity_repository: EntityRepository, token_repository: TokenRepository, entity: Entity
     ) -> bool:
         """
         Resolves entity references within an entity's data structure.
@@ -76,6 +79,7 @@ class OfflineEntityDataAccess:
 
         Args:
             entity_repository (EntityRepository): The repository for entity database operations.
+            token_repository (TokenRepository): The repository for entity name tokens.
             entity (Entity): The entity object to resolve references in.
 
         Returns:
@@ -94,13 +98,16 @@ class OfflineEntityDataAccess:
                     continue
                 if section not in entity.entities:
                     continue
-                for entity_name in entity.entities[section].keys():
-                    id_ = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
-                        entity_repository, entity.entity_type, entity_name
-                    )
-                    if id_:
-                        entity.entities[section][entity_name] = id_
-                        is_resolved = True
+                for entity_name, id_ in entity.entities[section].items():
+                    if id_ is None or id_ == 0 or id_ == "":
+                        updated_entity_id = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                            entity_repository, token_repository, entity.entity_type, entity_name
+                        )
+                        if updated_entity_id:
+                            entity.entities[section][entity_name] = to_entity_internal_id(
+                                updated_entity_id, entity.entity_type
+                            )
+                            is_resolved = True
             return is_resolved
         elif entity.entity_type == EntityType.LABEL:
             is_resolved = False
@@ -109,13 +116,16 @@ class OfflineEntityDataAccess:
                     continue
                 if section not in entity.entities:
                     continue
-                for entity_name in entity.entities[section].keys():
-                    id_ = await OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name(
-                        entity_repository, entity.entity_type, entity_name
-                    )
-                    if id_:
-                        entity.entities[section][entity_name] = id_
-                        is_resolved = True
+                for entity_name, id_ in entity.entities[section].items():
+                    if id_ is None or id_ == 0 or id_ == -1 or id_ == "":
+                        updated_entity_id = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                            entity_repository, token_repository, entity.entity_type, entity_name
+                        )
+                        if updated_entity_id:
+                            entity.entities[section][entity_name] = to_entity_internal_id(
+                                updated_entity_id, entity.entity_type
+                            )
+                            is_resolved = True
             return is_resolved
         else:
             raise ValueError
@@ -331,44 +341,97 @@ class OfflineEntityDataAccess:
         entity_type: EntityType,
         entity_name: str,
     ) -> int | None:
-        # Normalize first
         normalised_entity_name = normalise_search_content(entity_name)
+        entity_name_lower = entity_name.lower()
+        normalised_entity_name_lower = normalised_entity_name.lower()
+        normalised_entity_name_lower_minus_stop_words = normalise_search_content(
+            remove_stop_words(normalised_entity_name_lower)
+        )
+        # log.debug(f"normalised_entity_name_lower_minus_stop_words: {normalised_entity_name_lower_minus_stop_words}")
 
-        # Try to get from cache first
         cache = CacheManager.get_cache()
-        cache_key_str = CacheManager.create_cache_hkey("entity", f"name/{normalised_entity_name}")
+        cache_key_str = CacheManager.create_cache_hkey(
+            "entity", f"{entity_type.name.lower()}/name/{normalised_entity_name}"
+        )
         entity_id_str: str | None = await cache.get(cache_key_str)
         if entity_id_str == CACHE_ENTRY_IS_NULL:
             return None
         if entity_id_str is not None:
             return int(entity_id_str)
 
-        # Not found in search results so far
         entity_id_str = CACHE_ENTRY_IS_NULL
 
         try:
-            search_data = await OfflineEntitySearch.search_entities(
-                entity_repository, token_repository, normalised_entity_name
+            direct_id = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
+                entity_type, entity_name
             )
-            for result_entry in search_data["results"]:
-                result_dict: dict[str, str] = dict[str, str](result_entry)
-                key = result_dict["key"]
-                name = result_dict["name"]
-                key_parts = key.split("-")
-                candidate_entity_type = EntityType.from_str(key_parts[0])
+            if direct_id is not None:
+                entity_id_str = str(direct_id)
+            else:
+                search_data = await OfflineEntitySearch.search_entities(
+                    entity_repository, token_repository, normalised_entity_name
+                )
+                key_prefix = "artist-" if entity_type == EntityType.ARTIST else "label-"
+                match_priority = 6
 
-                if candidate_entity_type == entity_type and entity_name == name:
-                    entity_id_str = key_parts[1]
-                    break
+                for result_entry in search_data["results"]:
+                    # log.debug(f"search result_entry: {result_entry}")
+                    key = result_entry["key"]
+                    if not key.startswith(key_prefix):
+                        continue
 
-        except NotFoundError as _ex:
+                    candidate_id = key[len(key_prefix) :]
+                    name = result_entry["name"]
+                    name_lower = name.lower()
+                    name_lower_minus_stop_words = normalise_search_content(
+                        remove_stop_words(name_lower)
+                    )
+                    # log.debug(f"name_lower_minus_stop_words: {name_lower_minus_stop_words}")
+
+                    if entity_name == name:
+                        entity_id_str = candidate_id
+                        break
+
+                    if match_priority > 1 and normalised_entity_name == name:
+                        entity_id_str = candidate_id
+                        match_priority = 1
+                    elif match_priority > 2 and entity_name_lower == name_lower:
+                        entity_id_str = candidate_id
+                        match_priority = 2
+                    elif match_priority > 3 and normalised_entity_name_lower == name_lower:
+                        entity_id_str = candidate_id
+                        match_priority = 3
+                    elif match_priority > 4 and (
+                        (normalised_entity_name_lower in name_lower)
+                        or (name.lower() in normalised_entity_name_lower)
+                    ):
+                        entity_id_str = candidate_id
+                        match_priority = 4
+                    elif (
+                        match_priority > 5
+                        and normalised_entity_name_lower_minus_stop_words
+                        == name_lower_minus_stop_words
+                    ):
+                        entity_id_str = candidate_id
+                        match_priority = 5
+        except IntegrityError:
+            # Handle potential database errors.
+            log.warning(
+                f"find_entity_id_by_entity_type_and_entity_name Integrity Error for id: {entity_id_str}"
+            )
+            await entity_repository.rollback()
+        except DatabaseError:
+            # Handle potential database errors.
+            log.warning(
+                f"find_entity_id_by_entity_type_and_entity_name Database Error for id: {entity_id_str}"
+            )
+            await entity_repository.rollback()
+        except NotFoundError:
             entity_id_str = CACHE_ENTRY_IS_NULL
 
-        # Not found in search results so far
         if entity_id_str is None:
             entity_id_str = CACHE_ENTRY_IS_NULL
 
-        # Cache the result
         if entity_id_str is not None:
             await cache.set(cache_key_str, entity_id_str)
 

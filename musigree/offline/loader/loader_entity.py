@@ -208,13 +208,13 @@ class LoaderEntity(LoaderBase):
         async def flush(chunk: list[Token], processed: int) -> None:
             batch_tokens = utils.batched(chunk, BULK_INSERT_BATCH_SIZE)
             worker_coroutines = utils.worker_generator(worker, batch_tokens, total_count)
-            assert OfflineDatabaseManager._threading_model is not None, (
-                "OfflineDatabaseManager _threading_model must be initialized"
+            assert OfflineDatabaseManager.threading_model is not None, (
+                "OfflineDatabaseManager threading_model must be initialized"
             )
             await utils.queue_worker_functions(
                 multiprocessing.cpu_count(),
                 worker_coroutines,
-                OfflineDatabaseManager._threading_model,
+                OfflineDatabaseManager.threading_model,
             )
             log.info(f"transferred {processed} of {total_count} tokens")
 
@@ -232,7 +232,7 @@ class LoaderEntity(LoaderBase):
                 token_entry = Token(token=token, entity_id=entity_id)
                 tokens.append(token_entry)
 
-                if len(tokens) >= BULK_LOAD_CHUNK_SIZE:
+                if len(tokens) >= BULK_LOAD_CHUNK_SIZE / 2:
                     processed_count += len(tokens)
                     await flush(tokens, processed_count)
                     tokens.clear()

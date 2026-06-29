@@ -30,13 +30,15 @@ def to_entity_internal_id(entity_id: int, entity_type: EntityType) -> int:
         The internal entity ID.
 
     Raises:
-        AssertionError: If the entity ID is invalid for the given entity type.
-                         Specifically, for artists, if the ID is `MISSING_LABEL_ENTITY`
-                         or if it's greater than or equal to `LABEL_ENTITY_ID_OFFSET`.
+        ValueError: If the entity ID is invalid for the given entity type.
+                    Specifically, for artists, if the ID is `MISSING_LABEL_ENTITY`
+                    or if it's greater than or equal to `LABEL_ENTITY_ID_OFFSET`.
     """
     if entity_type == EntityType.ARTIST:
-        assert entity_id != MISSING_LABEL_ENTITY
-        assert entity_id < LABEL_ENTITY_ID_OFFSET
+        if entity_id == MISSING_LABEL_ENTITY:
+            raise ValueError("entity_id cannot be MISSING_LABEL_ENTITY")
+        if entity_id >= LABEL_ENTITY_ID_OFFSET:
+            raise ValueError("entity_id cannot be higher than LABEL_ENTITY_ID_OFFSET")
         return entity_id
     else:
         if entity_id != MISSING_LABEL_ENTITY:

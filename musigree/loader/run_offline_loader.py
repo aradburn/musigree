@@ -49,7 +49,6 @@ from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
 from musigree.offline.offline_database import ReleaseTable, EntityTable, RelationTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
@@ -232,12 +231,6 @@ async def shutdown_offline_loader() -> None:
     except OperationalError:
         pass
 
-    try:
-        if RuntimeDatabaseManager.runtime_database_helper is not None:
-            await RuntimeDatabaseManager.shutdown_database()
-    except OperationalError:
-        pass
-
     await CacheManager.clear_cache()
     await CacheManager.shutdown_cache()
 
@@ -292,8 +285,10 @@ def offline_loader_main() -> None:
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
     with asyncio.Runner() as runner:
+        # Register shutdown
         loop = runner.get_loop()
         asyncio_atexit.register(shutdown_offline_loader, loop=loop)
+
         try:
             # Setup Cache
             try:

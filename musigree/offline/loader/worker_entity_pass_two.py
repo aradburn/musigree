@@ -64,6 +64,7 @@ from musigree.offline.data_access_layer.offline_entity_data_access import Offlin
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
 
@@ -103,6 +104,7 @@ async def process_entity_pass_two_worker_async(
     async with offline_transaction():
         """Ensure that database operations are performed within a transaction."""
         entity_repository = EntityRepository()
+        token_repository = TokenRepository()
         """Instance of EntityRepository for database operations on entities."""
 
         for _id in ids:
@@ -112,7 +114,7 @@ async def process_entity_pass_two_worker_async(
                 """Attempt to process the entity."""
                 entity = await entity_repository.get_by_id(_id)
                 """Retrieve the entity."""
-                await worker_pass_two_single(entity_repository, entity, proc_name)
+                await worker_pass_two_single(entity_repository, token_repository, entity, proc_name)
                 """Process the entity."""
                 count += 1
                 # """Increment the entity counter."""
@@ -129,7 +131,10 @@ async def process_entity_pass_two_worker_async(
 
 
 async def worker_pass_two_single(
-    entity_repository: EntityRepository, entity: Entity, _proc_name: str
+    entity_repository: EntityRepository,
+    token_repository: TokenRepository,
+    entity: Entity,
+    _proc_name: str,
 ) -> None:
     """
     Processes a single entity in the second pass.
@@ -140,6 +145,7 @@ async def worker_pass_two_single(
 
     Args:
         entity_repository (EntityRepository): The repository for entity operations.
+        token_repository (TokenRepository): The repository for entity name tokens.
         entity (Entity): The entity to process.
         _proc_name (str): The name of the current process.
 
@@ -149,7 +155,9 @@ async def worker_pass_two_single(
     # if LOGGING_TRACE:
     # log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await OfflineEntityDataAccess.resolve_entity_references(entity_repository, entity)
+    changed = await OfflineEntityDataAccess.resolve_entity_references(
+        entity_repository, token_repository, entity
+    )
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""

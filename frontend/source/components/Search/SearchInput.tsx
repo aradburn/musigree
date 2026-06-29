@@ -1,11 +1,11 @@
 /** @jsxImportSource react */
-import React, { useState, useRef, useEffect } from "react";
-import { Form, Spinner, Overlay, Popover } from "react-bootstrap";
-import { TYPEAHEAD } from "../../constants";
-import useSearchApi from "./hooks/useSearchApi";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Form, Overlay, Popover, Spinner } from "react-bootstrap";
+import { TYPEAHEAD } from "@/constants.ts";
 import type { SearchResult as SearchResultType } from "./hooks/useSearchApi";
+import useSearchApi from "./hooks/useSearchApi";
 import SearchResult from "./SearchResult";
-import { RequestNetworkEvent } from "../../network/events";
+import { RequestNetworkEvent } from "@/network/events.ts";
 
 interface SearchInputProps {
     placeholder?: string;
@@ -26,9 +26,42 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
     const inputRef = useRef<HTMLInputElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const pendingEnterRef = useRef(false);
 
     // Use our custom hook to fetch search results
     const { results, loading, error } = useSearchApi(query);
+
+    const selectResult = useCallback((result: SearchResultType): void => {
+        setQuery(result.name);
+        setShowResults(false);
+        setSelectedIndex(-1);
+        pendingEnterRef.current = false;
+
+        // Trigger network event similar to jQuery implementation
+        if (result.key) {
+            const pushHistory = true;
+            window.dispatchEvent(
+                new RequestNetworkEvent(result.key, pushHistory),
+            );
+        }
+    }, []);
+
+    const actionTopResult = useCallback((): void => {
+        if (results.length === 0) return;
+        setSelectedIndex(0);
+        selectResult(results[0]);
+    }, [results, selectResult]);
+
+    // Complete a deferred Enter once the in-flight search finishes
+    useEffect(() => {
+        if (!pendingEnterRef.current || loading) return;
+
+        pendingEnterRef.current = false;
+        if (results.length > 0) {
+            setSelectedIndex(0);
+            selectResult(results[0]);
+        }
+    }, [loading, results, selectResult]);
 
     // Close the results dropdown when clicking outside
     useEffect(() => {
@@ -56,6 +89,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         const value = event.target.value;
         setQuery(value);
         setSelectedIndex(-1); // Reset selection on input change
+        pendingEnterRef.current = false;
 
         if (value.length >= TYPEAHEAD.MIN_QUERY_LENGTH) {
             setShowResults(true);
@@ -68,6 +102,21 @@ const SearchInput: React.FC<SearchInputProps> = ({
     const handleKeyDown = (
         event: React.KeyboardEvent<HTMLInputElement>,
     ): void => {
+        if (event.key === "Enter") {
+            if (query.length < TYPEAHEAD.MIN_QUERY_LENGTH) return;
+
+            event.preventDefault();
+            setShowResults(true);
+
+            if (loading) {
+                pendingEnterRef.current = true;
+                return;
+            }
+
+            actionTopResult();
+            return;
+        }
+
         if (!showResults || results.length === 0) return;
 
         // Arrow down
@@ -84,32 +133,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
             setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
         }
 
-        // Enter key
-        else if (event.key === "Enter") {
-            event.preventDefault();
-            if (selectedIndex >= 0 && selectedIndex < results.length) {
-                selectResult(results[selectedIndex]);
-            }
-        }
-
         // Escape key
         else if (event.key === "Escape") {
             event.preventDefault();
+            pendingEnterRef.current = false;
             setShowResults(false);
-        }
-    };
-
-    // Handle selection
-    const selectResult = (result: SearchResultType): void => {
-        setQuery(result.name);
-        setShowResults(false);
-
-        // Trigger network event similar to jQuery implementation
-        if (result.key) {
-            const pushHistory = true;
-            window.dispatchEvent(
-                new RequestNetworkEvent(result.key, pushHistory),
-            );
         }
     };
 
@@ -118,6 +146,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         setQuery("");
         setShowResults(false);
         setSelectedIndex(-1);
+        pendingEnterRef.current = false;
 
         if (inputRef.current) {
             inputRef.current.focus();

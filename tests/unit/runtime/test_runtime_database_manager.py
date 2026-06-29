@@ -17,13 +17,13 @@ class TestRuntimeDatabaseManager:
     def setup_method() -> None:
         """Reset class variables before each test."""
         RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
-        RuntimeDatabaseManager._threading_model = None  # type: ignore
+        RuntimeDatabaseManager.threading_model = None  # type: ignore
 
     @staticmethod
     def teardown_method() -> None:
         """Clean up after each test."""
         RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
-        RuntimeDatabaseManager._threading_model = None  # type: ignore
+        RuntimeDatabaseManager.threading_model = None  # type: ignore
 
     # Test get_concurrency_count method
     @patch("multiprocessing.cpu_count")
@@ -31,7 +31,7 @@ class TestRuntimeDatabaseManager:
         """Test get_concurrency_count returns CPU count for process threading model."""
         # Arrange
         mock_cpu_count.return_value = 4
-        RuntimeDatabaseManager._threading_model = ThreadingModel.PROCESS
+        RuntimeDatabaseManager.threading_model = ThreadingModel.PROCESS
 
         # Act
         result = RuntimeDatabaseManager.get_concurrency_count()
@@ -45,7 +45,7 @@ class TestRuntimeDatabaseManager:
         """Test get_concurrency_count returns 1 for thread model."""
         # Arrange
         mock_cpu_count.return_value = 8
-        RuntimeDatabaseManager._threading_model = ThreadingModel.THREAD
+        RuntimeDatabaseManager.threading_model = ThreadingModel.THREAD
 
         # Act
         result = RuntimeDatabaseManager.get_concurrency_count()
@@ -57,7 +57,7 @@ class TestRuntimeDatabaseManager:
     def test_get_concurrency_count_not_configured(self) -> None:
         """Test get_concurrency_count raises error when threading model not configured."""
         # Arrange
-        RuntimeDatabaseManager._threading_model = None  # type: ignore
+        RuntimeDatabaseManager.threading_model = None  # type: ignore
 
         # Act & Assert
         with pytest.raises(NotImplementedError, match="THREADING_MODEL not configured"):
@@ -106,7 +106,7 @@ class TestRuntimeDatabaseManager:
 
         # Assert
         assert RuntimeDatabaseManager.runtime_database_helper == mock_helper_instance
-        assert RuntimeDatabaseManager._threading_model == ThreadingModel.PROCESS
+        assert RuntimeDatabaseManager.threading_model == ThreadingModel.PROCESS
 
         mock_postgres_helper.assert_called_once()
         mock_helper_instance.setup_database.assert_called_once_with(mock_config)

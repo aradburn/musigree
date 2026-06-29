@@ -1,4 +1,7 @@
-from musigree.library.full_text_search.text_search_utils import normalise_search_content
+from musigree.library.full_text_search.text_search_utils import (
+    normalise_search_content,
+    remove_stop_words,
+)
 
 
 class TestTextSearchUtils:
@@ -9,32 +12,34 @@ class TestTextSearchUtils:
         result = normalise_search_content("Hello World")
         assert result == "hello world"
 
-    def test_normalise_search_content_with_punctuation_1(self) -> None:
-        """Test normalization with punctuation that should be removed."""
+    def test_normalise_search_content_strips_numeric_catalog_number(self) -> None:
+        """Test that purely numeric parenthesised catalog numbers are removed."""
         result = normalise_search_content("Hello, World (5)")
         assert result == "hello world"
 
-    def test_normalise_search_content_with_punctuation_2(self) -> None:
-        """Test normalization with punctuation that should be removed."""
+    def test_normalise_search_content_preserves_punctuation(self) -> None:
+        """Test that general punctuation is preserved."""
         result = normalise_search_content("Hello, World!")
-        assert result == "hello world"
+        assert result == "hello world!"
 
-    def test_normalise_search_content_with_punctuation_3(self) -> None:
-        """Test normalization with punctuation that should be removed."""
-        result = normalise_search_content(
-            "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890!@#$%^&*()_+-=[]{}|;':\",.<>?/"
+    def test_normalise_search_content_preserves_special_characters(self) -> None:
+        """Test that special characters outside strip patterns are preserved."""
+        input_text = (
+            "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ "
+            "1234567890!@#$%^&*()_+-=[]{}|;':\",.<>?/"
         )
-        assert result == "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz 1234567890-"
+        result = normalise_search_content(input_text)
+        assert result == input_text.lower()
 
-    def test_normalise_search_content_with_punctuation_4(self) -> None:
-        """Test normalization with punctuation that should be removed."""
+    def test_normalise_search_content_strips_not_on_label(self) -> None:
+        """Test that 'not on label' text is removed while other punctuation remains."""
         result = normalise_search_content("Hello, World (not on label)")
         assert result == "hello world"
 
-    def test_normalise_search_content_with_punctuation_5(self) -> None:
-        """Test normalization with punctuation that should be removed."""
-        result = normalise_search_content("Hello, World self-released")
-        assert result == "hello world"
+    def test_normalise_search_content_strips_self_released(self) -> None:
+        """Test that 'self-released' and spaced variants are removed."""
+        assert normalise_search_content("Hello, World self-released") == "hello world"
+        assert normalise_search_content("Hello, World self released") == "hello world"
 
     def test_normalise_search_content_with_leading_trailing_spaces(self) -> None:
         """Test normalization with leading and trailing spaces."""
@@ -64,10 +69,7 @@ class TestTextSearchUtils:
     def test_normalise_search_content_special_characters(self) -> None:
         """Test normalization with various special characters."""
         result = normalise_search_content("Hello@#$%^&*()World")
-        # The exact result depends on STRIP_PATTERN in utils
-        assert result.lower() == result  # Should be lowercase
-        assert "hello" in result
-        assert "world" in result
+        assert result == "hello@#$%^&*()world"
 
     def test_normalise_search_content_unicode_characters(self) -> None:
         """Test normalization with unicode characters."""
@@ -96,16 +98,17 @@ class TestTextSearchUtils:
     def test_normalise_search_content_hyphenated_words(self) -> None:
         """Test normalization with hyphenated words."""
         result = normalise_search_content("Self-contained")
-        assert "self" in result
-        assert "contained" in result
+        assert result == "self-contained"
 
     def test_normalise_search_content_apostrophes(self) -> None:
         """Test normalization with apostrophes."""
         result = normalise_search_content("Don't can't won't")
-        # The exact behavior depends on STRIP_PATTERN
-        assert "don" in result or "dont" in result
-        assert "can" in result or "cant" in result
-        assert "won" in result or "wont" in result
+        assert result == "don't can't won't"
+
+    def test_normalise_search_content_preserves_alphanumeric_catalog_number(self) -> None:
+        """Test that non-numeric parenthesised catalog numbers are preserved."""
+        result = normalise_search_content("Hello, World (CAT123)")
+        assert result == "hello world (cat123)"
 
     def test_normalise_search_content_music_terms(self) -> None:
         """Test normalization with music-related terms."""
@@ -113,3 +116,37 @@ class TestTextSearchUtils:
         assert "beatles" in result
         assert "rolling" in result
         assert "stones" in result
+
+    def test_remove_stop_words_removes_common_words(self) -> None:
+        """Test that common stop words are removed from a phrase."""
+        result = remove_stop_words("the beatles and the rolling stones")
+        assert result == "beatles rolling stones"
+
+    def test_remove_stop_words_removes_music_industry_terms(self) -> None:
+        """Test that music-industry stop words are removed."""
+        result = remove_stop_words("abbey road studio music records entertainment")
+        assert result == "abbey road"
+
+    def test_remove_stop_words_preserves_non_stop_words(self) -> None:
+        """Test that non-stop words are kept unchanged."""
+        result = remove_stop_words("pink floyd dark side")
+        assert result == "pink floyd dark side"
+
+    def test_remove_stop_words_empty_string(self) -> None:
+        """Test that an empty string returns an empty string."""
+        assert remove_stop_words("") == ""
+
+    def test_remove_stop_words_only_stop_words(self) -> None:
+        """Test that a string of only stop words returns an empty string."""
+        assert remove_stop_words("the and a of") == ""
+
+    def test_remove_stop_words_case_sensitive(self) -> None:
+        """Test that stop-word matching is case-sensitive."""
+        result = remove_stop_words("The Beatles")
+        assert result == "The Beatles"
+
+    def test_remove_stop_words_after_normalisation(self) -> None:
+        """Test stop-word removal on already normalised text."""
+        normalised = normalise_search_content("The Beatles at Abbey Road Studios")
+        result = remove_stop_words(normalised)
+        assert result == "beatles at abbey road"

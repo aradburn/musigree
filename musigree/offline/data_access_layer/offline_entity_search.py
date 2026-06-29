@@ -126,9 +126,11 @@ class OfflineEntitySearch:
 
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(search_text)
+        # log.debug(f"normalized_query: {normalized_query}")
         analyzed_query = [
             token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
         ]
+        # log.debug(f"analyzed_query: {analyzed_query}")
 
         # Handle empty query after filtering stop words
         if not analyzed_query:
@@ -137,12 +139,15 @@ class OfflineEntitySearch:
         result_sets = await OfflineEntitySearch.get_lists_of_ids_from_token_db(
             token_repository, analyzed_query
         )
+        # log.debug(f"result_sets: {result_sets}")
 
         # all tokens must be in the document
         search_results: list[tuple[int, str]] = []
         document_results: set[int] = set.intersection(*result_sets)
         for id_ in document_results:
             name = await OfflineEntityDataAccess.get_entity_name_by_id(entity_repository, id_)
+            # log.debug(f"id_: {id_}, name: {name}")
+
             if name is not None:
                 document_entry = (id_, name)
                 search_results.append(document_entry)

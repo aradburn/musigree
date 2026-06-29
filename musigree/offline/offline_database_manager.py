@@ -17,15 +17,15 @@ log = logging.getLogger(__name__)
 
 class OfflineDatabaseManager:
     offline_database_helper: OfflineDatabaseHelper | None = None
-    _threading_model: ThreadingModel | None = None
+    threading_model: ThreadingModel | None = None
     """Configuration used during setup; workers use it for cache re-initialization."""
     offline_config: Configuration | None = None
 
     @staticmethod
     def get_concurrency_count() -> int:
-        if OfflineDatabaseManager._threading_model == ThreadingModel.PROCESS:
+        if OfflineDatabaseManager.threading_model == ThreadingModel.PROCESS:
             return multiprocessing.cpu_count()
-        elif OfflineDatabaseManager._threading_model == ThreadingModel.THREAD:
+        elif OfflineDatabaseManager.threading_model == ThreadingModel.THREAD:
             return 1
         else:
             raise NotImplementedError("THREADING_MODEL not configured")
@@ -33,7 +33,7 @@ class OfflineDatabaseManager:
     @classmethod
     async def setup_database(cls, config: Configuration) -> None:
         OfflineDatabaseManager.offline_config = config
-        OfflineDatabaseManager._threading_model = config.THREADING_MODEL
+        OfflineDatabaseManager.threading_model = config.THREADING_MODEL
 
         # Based on configuration, use a different database.
         # noinspection PyUnreachableCode

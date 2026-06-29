@@ -46,7 +46,6 @@ class TestWorkerEntityUpdater:
             },
             "relation_counts": {},
             "entities": {},
-            "search_content": "test artist",
         }
 
     @pytest.fixture
@@ -62,7 +61,6 @@ class TestWorkerEntityUpdater:
             entity_metadata={"real_name": "Old Real Name", "profile": "Old profile"},
             relation_counts={},
             entities={},
-            search_content="old artist name",
         )
 
     @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
@@ -172,7 +170,6 @@ class TestWorkerEntityUpdater:
             "entity_metadata": {"same": "metadata"},
             "relation_counts": {},
             "entities": {},
-            "search_content": "same name",
         }
         existing_entity = Entity(
             id=1,
@@ -182,7 +179,6 @@ class TestWorkerEntityUpdater:
             entity_metadata={"same": "metadata"},
             relation_counts={},
             entities={},
-            search_content="same name",
         )
 
         mock_repo = AsyncMock(spec=EntityRepository)
@@ -329,7 +325,6 @@ class TestWorkerEntityUpdater:
             entity_metadata={},
             relation_counts={},
             entities={},
-            search_content="old name",
         )
 
         updated_entity = Entity(
@@ -340,7 +335,6 @@ class TestWorkerEntityUpdater:
             entity_metadata={},
             relation_counts={},
             entities={},
-            search_content="new name",
         )
 
         # Test that names are different

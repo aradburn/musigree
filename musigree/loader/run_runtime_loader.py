@@ -29,7 +29,7 @@ from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
     SqliteDevelopmentConfiguration,
-    PostgresDevelopmentConfiguration,
+    PostgresReadOnlyDevelopmentConfiguration,
 )
 from musigree.constants import (
     TEXT_SEARCH_DATA,
@@ -191,6 +191,29 @@ async def shutdown_runtime_loader() -> None:
     log.info("######## RUNTIME LOADER SHUTDOWN DONE ########")
 
 
+async def _finalize_runtime_loader_before_loop_close() -> None:
+    """
+    Cancel loader tasks and release resources while the event loop is still usable.
+
+    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
+    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
+    avoids that path and drains pending tasks first.
+    """
+    loop = asyncio.get_running_loop()
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks(loop) if t is not current and not t.done()]
+    for task in pending:
+        task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+    try:
+        await shutdown_runtime_loader()
+    except KeyboardInterrupt:
+        log.warning("Runtime loader shutdown interrupted (database may not be fully closed)")
+    except asyncio.CancelledError:
+        raise
+
+
 def runtime_loader_main() -> None:
     """
     The main function for the Musigree data loader application.
@@ -209,62 +232,71 @@ def runtime_loader_main() -> None:
 
     log_banner()
 
-    offline_config = PostgresDevelopmentConfiguration()
+    offline_config = PostgresReadOnlyDevelopmentConfiguration()
     runtime_config = SqliteDevelopmentConfiguration()
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")
 
     with asyncio.Runner() as runner:
         # Register shutdown
-        asyncio_atexit.register(shutdown_runtime_loader, loop=runner.get_loop())
+        loop = runner.get_loop()
+        asyncio_atexit.register(shutdown_runtime_loader, loop=loop)
 
-        # Setup Cache
         try:
-            runner.run(CacheManager.setup_and_clear_cache(offline_config))
-        except RuntimeError as exc:
-            log.error("%s", exc)
-            sys.exit(1)
+            # Setup Cache
+            try:
+                runner.run(CacheManager.setup_and_clear_cache(offline_config))
+            except RuntimeError as exc:
+                log.error("%s", exc)
+                sys.exit(1)
 
-        runner.run(OfflineDatabaseManager.setup_database(offline_config))
-        runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
+            runner.run(OfflineDatabaseManager.setup_database(offline_config))
+            runner.run(RuntimeDatabaseManager.setup_database(runtime_config))
 
-        assert OfflineDatabaseManager.offline_database_helper is not None, (
-            "offline_database_helper must be initialized before calling initialize()"
-        )
-        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
-            "runtime_database_helper must be initialized before calling initialize()"
-        )
-
-        # Drop runtime tables manually if needed
-        # Create all runtime tables
-        runner.run(
-            RuntimeDatabaseManager.runtime_database_helper.create_tables(
-                ALL_RUNTIME_DATABASE_TABLE_NAMES
+            assert OfflineDatabaseManager.offline_database_helper is not None, (
+                "offline_database_helper must be initialized before calling initialize()"
             )
-        )
-        # Load roles, may be empty if no roles in offline_database yet
-        runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
+            assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+                "runtime_database_helper must be initialized before calling initialize()"
+            )
 
-        # Run the loader process between these dates
-        start_date = datetime.date(2026, 3, 1)
-        # start_date = datetime.date(2023, 10, 1)
-        end_date = datetime.date(2026, 3, 1)
-        # end_date = datetime.datetime.now()
-        runtime_data_directory: str = str(runtime_config.DATA_DIR)
-        tasks = [
-            RuntimeLoaderSetupTask(
-                data_directory=runtime_data_directory, start_date=start_date, end_date=end_date
-            ),
-        ]
-        luigi_run_result = luigi.build(
-            tasks,
-            detailed_summary=True,
-            local_scheduler=True,
-            log_level="WARNING",
-        )
-        log.info(luigi_run_result.summary_text)
+            # Drop runtime tables manually if needed
+            # Create all runtime tables
+            runner.run(
+                RuntimeDatabaseManager.runtime_database_helper.create_tables(
+                    ALL_RUNTIME_DATABASE_TABLE_NAMES
+                )
+            )
+            # Load roles, may be empty if no roles in offline_database yet
+            runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
-        runner.close()
+            # Run the loader process between these dates
+            start_date = datetime.date(2026, 3, 1)
+            # start_date = datetime.date(2023, 10, 1)
+            end_date = datetime.date(2026, 3, 1)
+            # end_date = datetime.datetime.now()
+            runtime_data_directory: str = str(runtime_config.DATA_DIR)
+            tasks = [
+                RuntimeLoaderSetupTask(
+                    data_directory=runtime_data_directory, start_date=start_date, end_date=end_date
+                ),
+            ]
+            luigi_run_result = luigi.build(
+                tasks,
+                detailed_summary=True,
+                local_scheduler=True,
+                log_level="WARNING",
+            )
+            log.info(luigi_run_result.summary_text)
+
+        finally:
+            asyncio_atexit.unregister(shutdown_runtime_loader, loop=loop)
+            try:
+                runner.run(_finalize_runtime_loader_before_loop_close())
+            except KeyboardInterrupt:
+                log.warning(
+                    "Offline loader finalize interrupted; proceeding with event loop shutdown"
+                )
 
 
 if __name__ == "__main__":

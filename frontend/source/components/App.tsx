@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Container, Row } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -15,11 +15,12 @@ import { WindowProvider } from "../contexts/WindowContext";
 import { useWindow } from "../contexts/useWindow";
 import { LoadingProvider } from "../contexts/LoadingContext";
 import { EntityProvider } from "../contexts/EntityContext";
-import { FSM, DOM_IDS } from "../constants";
+import { DOM_IDS, FSM } from "../constants";
 import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
-import { musigreeManager } from "../core/singletons";
+import { musigreeManager } from "@/core";
+import { MusigreeTourProvider } from "./Tour";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
@@ -171,13 +172,14 @@ const AppContent: React.FC = (): React.ReactElement => {
 
 /**
  * Main App component that serves as the container for the React application.
- * During migration, this will gradually replace the existing jQuery-based UI.
  */
 const App: React.FC = (): React.ReactElement => {
     return (
-        <WindowProvider>
-            <AppContent />
-        </WindowProvider>
+        <MusigreeTourProvider>
+            <WindowProvider>
+                <AppContent />
+            </WindowProvider>
+        </MusigreeTourProvider>
     );
 };
 

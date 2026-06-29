@@ -1,11 +1,12 @@
 from typing import Any
+
 from sqlalchemy import String, Index, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.int_enum import IntEnum
+from musigree.offline.offline_database.base_table import OfflineBase
 
 
 class EntityTable(OfflineBase):
@@ -26,7 +27,6 @@ class EntityTable(OfflineBase):
         relation_counts (Mapped[dict | list]): Counts of relations to other entities.
         entity_metadata (Mapped[dict | list]): Additional metadata about the entity.
         entities (Mapped[dict | list]): Information about related entities.
-        search_content (Mapped[str]): Content used for full-text search operations.
         __table_args__ (tuple): Additional table arguments including indexes.
     """
 
@@ -61,10 +61,6 @@ class EntityTable(OfflineBase):
     entities: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
     """
      Information about related entities.
-    """
-    search_content: Mapped[str] = mapped_column(String, nullable=False)
-    """
-     Content used for full-text search operations.
     """
 
     __table_args__: tuple[Index, Index, dict[str, Any]] = (

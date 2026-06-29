@@ -841,6 +841,7 @@ class TestRelationGrapher:
         # Test test_loop_two - should break when too many relations
         # max_links = max_nodes * link_ratio = 10 * 2 = 20
         many_relations = {f"link_{i}": Mock() for i in range(25)}  # More than max_links (20)
+        # noinspection Mypy
         grapher.test_loop_two(
             distance=2, relations=many_relations
         )  # Use distance > 1 to trigger the condition
