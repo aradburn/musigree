@@ -1,11 +1,11 @@
 /* @jsxImportSource react */
 
 import React from "react";
-import {Container, Navbar, OverlayTrigger, Tooltip} from "react-bootstrap";
+import { Container, Navbar, OverlayTrigger, Tooltip } from "react-bootstrap";
 import SearchInput from "../Search/SearchInput";
-import {FSM} from "@/constants.ts";
-import {version} from "@/version.ts";
-import {useWindow} from "@/contexts/useWindow.ts";
+import { FSM } from "@/constants.ts";
+import { version } from "@/version.ts";
+import { useWindow } from "@/contexts/useWindow.ts";
 
 interface HeaderProps {
     onShowHelp?: () => void;
@@ -14,8 +14,8 @@ interface HeaderProps {
 /**
  * Header UI component.
  */
-export const Header: React.FC<HeaderProps> = ({onShowHelp}) => {
-    const {state: windowState} = useWindow();
+export const Header: React.FC<HeaderProps> = ({ onShowHelp }) => {
+    const { state: windowState } = useWindow();
 
     const handleRandom = (e: React.MouseEvent<HTMLDivElement>): void => {
         e.preventDefault();
@@ -36,10 +36,8 @@ export const Header: React.FC<HeaderProps> = ({onShowHelp}) => {
         >
             <Container fluid className={containerClassName}>
                 {/* Brand section */}
-                <div
-                    className="px-0 px-md-2 py-0 col-lg-2 col-md-2 col-sm-2 col-2 order-1 order-md-1">
-                    <div
-                        className="d-flex flex-row navbar-brand align-items-center px-0 py-0">
+                <div className="px-0 px-md-2 py-0 col-lg-2 col-md-2 col-sm-2 col-2 order-1 order-md-1">
+                    <div className="d-flex flex-row navbar-brand align-items-center px-0 py-0">
                         <span className="text-body px-sm-2 px-1 py-0">
                             <i className="navbar-brand-icon bi bi-snow3"></i>
                         </span>
@@ -55,14 +53,12 @@ export const Header: React.FC<HeaderProps> = ({onShowHelp}) => {
                 </div>
 
                 {/* Navbar title section */}
-                <div
-                    className="navbar-title flex-grow-1 d-flex justify-content-center px-sm-2 px-0 py-0 h-100 d-inline-block col-lg-5 col-md-5 col-sm-9 col-9 order-2 order-md-2">
+                <div className="navbar-title flex-grow-1 d-flex justify-content-center px-sm-2 px-0 py-0 h-100 d-inline-block col-lg-5 col-md-5 col-sm-9 col-9 order-2 order-md-2">
                     <span id="navbar-title"></span>
                 </div>
 
                 {/* Search section */}
-                <div
-                    className="justify-content-center px-2 py-2 flex-grow-1 col-lg-3 col-md-3 col-sm-11 col-11 order-4 order-md-3">
+                <div className="justify-content-center px-2 py-2 flex-grow-1 col-lg-3 col-md-3 col-sm-11 col-11 order-4 order-md-3">
                     <SearchInput
                         placeholder="Search for artists, labels, etc."
                         className="w-100"
@@ -70,8 +66,7 @@ export const Header: React.FC<HeaderProps> = ({onShowHelp}) => {
                 </div>
 
                 {/* Random button section */}
-                <div
-                    className="navbar-text navbar-right px-2 py-0 fs-5 d-flex justify-content-center col-lg-1 col-md-1 col-sm-1 col-1 order-3 order-md-4">
+                <div className="navbar-text navbar-right px-2 py-0 fs-5 d-flex justify-content-center col-lg-1 col-md-1 col-sm-1 col-1 order-3 order-md-4">
                     <OverlayTrigger
                         placement="bottom"
                         overlay={
