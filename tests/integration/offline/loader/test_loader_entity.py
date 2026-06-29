@@ -3,9 +3,9 @@ import pytest
 from musigree import utils
 from musigree.config import SqliteTestConfiguration
 from musigree.constants import DISCOGS_DATA
-from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
+from musigree.offline.offline_domain.entity import Entity
 
 
 # noinspection HttpUrlsUsage
@@ -72,7 +72,6 @@ class TestLoaderEntity:
             },
             "entity_name": "Josh Wink",
             "relation_counts": {},
-            "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -115,7 +114,6 @@ class TestLoaderEntity:
             },
             "entity_name": "Seefeel",
             "relation_counts": {},
-            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -145,7 +143,6 @@ class TestLoaderEntity:
             },
             "entity_name": "Planet E",
             "relation_counts": {},
-            "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

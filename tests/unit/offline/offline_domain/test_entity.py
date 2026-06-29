@@ -19,7 +19,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         assert entity.id == 1
@@ -29,7 +28,6 @@ class TestEntity:
         assert entity.relation_counts == {}
         assert entity.entity_metadata == {}
         assert entity.entities == {}
-        assert entity.search_content == "test artist content"
 
     def test_entity_key_property(self) -> None:
         """Test entity_key property."""
@@ -41,7 +39,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test label content",
         )
 
         assert entity.entity_key == (456, EntityType.LABEL)
@@ -56,7 +53,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         assert entity.json_entity_key == "artist-789"
@@ -95,7 +91,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={"members": ["Member1", "Member2", "Member3"]},
-            search_content="test artist content",
         )
 
         assert entity.size == 3
@@ -110,7 +105,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={"members": ["Member1", "Member2"]},
-            search_content="test artist content",
         )
 
         assert entity.size == 2
@@ -125,7 +119,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={"sublabels": ["Sublabel1", "Sublabel2"]},
-            search_content="test label content",
         )
 
         assert entity.size == 2
@@ -140,7 +133,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         assert entity.size == 0
@@ -155,7 +147,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         domain_entity = entity.to_domain()
@@ -171,7 +162,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         db_entity = entity.to_db()
@@ -187,7 +177,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test artist content",
         )
 
         serialized_type = entity.serialize_entity_type(EntityType.ARTIST)
@@ -203,7 +192,6 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities=[],  # Not a dict; defensive branch
-            search_content="test",
         )
         assert entity.size == 0
 
@@ -217,6 +205,5 @@ class TestEntity:
             relation_counts={},
             entity_metadata={},
             entities=None,  # Not a dict; defensive branch
-            search_content="test",
         )
         assert entity.size == 0

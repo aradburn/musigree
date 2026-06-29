@@ -75,7 +75,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
             },
             "entity_name": "Linton Kwesi Johnson",
             "relation_counts": {"Compiled By": 1, "Compiled On": 1, "DJ Mix": 1},
-            "search_content": "linton kwesi johnson",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -138,7 +137,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
                 "Remix": 6,
                 "Written By": 5,
             },
-            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -236,7 +234,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
                 "Remix": 2,
                 "Written By": 1,
             },
-            "search_content": "throbbing gristle",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -274,7 +271,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
             },
             "entity_name": "Planet E",
             "relation_counts": {"Released On": 1},
-            "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -309,7 +305,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
             },
             "entity_name": "West West Side Music",
             "relation_counts": {"Mastered At": 1},
-            "search_content": "west west side music",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -365,7 +360,6 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
                 "Licensed From": 1,
                 "Released On": 1,
             },
-            "search_content": "hubba hubba",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

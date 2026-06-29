@@ -49,6 +49,7 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
             {"key": "artist-785", "name": "Wax Doctor"},
             {"key": "artist-46488", "name": "Wax Poetic"},
             {"key": "artist-242216", "name": "Lord Wax"},
+            {"key": "artist-4009", "name": "Microbots"},
             {"key": "artist-25723", "name": "Freshmess On Wax"},
             {"key": "artist-759", "name": "Nightmares On Wax"},
             {"key": "label-10693", "name": "Wax Magazine"},
@@ -58,8 +59,8 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
             {"key": "label-111", "name": "Mo Wax"},
             {"key": "label-290481", "name": "Mo Wax Recordings"},
         ]
-        assert 14 == len(results["results"])
-        assert expected == list(results["results"])
+        assert len(results["results"]) == 15
+        assert list(results["results"]) == expected
 
     @pytest.mark.asyncio
     async def test_text_search_lookup_2(
@@ -90,5 +91,5 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
             {"key": "artist-8526", "name": "Joker, The (3)"},
             {"key": "artist-129882", "name": "Joker, The (4)"},
         ]
-        assert 3 == len(results["results"])
-        assert expected == list(results["results"])
+        assert len(results["results"]) == 3
+        assert list(results["results"]) == expected

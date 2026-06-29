@@ -137,6 +137,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
 
         if not (instance := result.scalar()):
             raise NotFoundError
+        # noinspection PyTypeChecker
         return int(instance)
 
     async def find_by_id(self, relation_id: int) -> RuntimeRelationInternal:

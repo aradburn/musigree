@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Sequence, AsyncGenerator
 from typing import Any
 
@@ -125,13 +126,30 @@ class EntityRepository(BaseRepository[EntityTable]):
             AsyncGenerator[tuple[int, str]]: An async iterator yielding tuples of
                 (entity ID, entity name).
         """
-        query = select(EntityTable.id, EntityTable.entity_name)
+        query = select(EntityTable.id, EntityTable.entity_name, EntityTable.entity_metadata)
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for partition in result.partitions():
-            # partition is an iterable that will be at most 1000 items
+            # partition is an iterable that will be at most BULK_YIELD_SIZE items
             tuples: list[tuple[int, str]] = []
             for row in partition:
                 tuples.append((row[0], row[1]))
+                entity_metadata: dict[str, Any] = row[2]
+                if entity_metadata is not None:
+                    if "name_variations" in entity_metadata:
+                        name_variation_list: list[str] | None = entity_metadata["name_variations"]
+                        if name_variation_list:
+                            for name_variation in name_variation_list:
+                                tuples.append((row[0], name_variation))
+                                if name_variation == "NULL":
+                                    log.debug(f"name_variation: {row[0]}: {name_variation}")
+                    if "real_name" in entity_metadata:
+                        real_name: str | None = entity_metadata["real_name"]
+                        if real_name is not None:
+                            split_real_names = re.split(r",|&|and|/|&amp;", real_name)
+                            for split_name in split_real_names:
+                                tuples.append((row[0], split_name.strip()))
+                                if split_name == "NULL":
+                                    log.debug(f"split_name is NULL: {row[0]}: {split_name}")
             yield tuples
 
     async def get_by_id(self, id_: int) -> Entity:
@@ -285,19 +303,6 @@ class EntityRepository(BaseRepository[EntityTable]):
             select(EntityTable.entity_name).where(EntityTable.id == id_)
         )
         return result.scalar_one_or_none()
-
-    async def find_by_search_content(self, search_string: str) -> list[Entity]:
-        """
-        Finds entities whose search content matches the given string.
-
-        Args:
-            search_string: The string to search for in the search content.
-
-        Returns:
-            List[Entity]: A list of entities matching the search string.
-        """
-        query = select(EntityTable).where(EntityTable.search_content.match(search_string))
-        return await self._get_all_by_query(query)
 
     async def create(self, entity: Entity) -> Entity:
         """

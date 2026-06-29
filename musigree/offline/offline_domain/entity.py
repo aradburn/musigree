@@ -49,8 +49,6 @@ class _EntityBase(InternalDomainObject):
             attributes.
         entities (dict): Related entities. For example, an artist might
             have a list of members, or a label might have a list of sublabels.
-        search_content (str): Content used for searching the entity. This is a
-            preprocessed string that can be used for full-text search operations.
     """
 
     entity_id: StrictInt
@@ -59,7 +57,6 @@ class _EntityBase(InternalDomainObject):
     relation_counts: dict[str, Any]
     entity_metadata: dict[str, Any]
     entities: dict[str, Any]
-    search_content: str
 
     @field_serializer("entity_type", when_used="json")
     def serialize_entity_type(self, entity_type: EntityType) -> str:

@@ -41,7 +41,6 @@ class TestEntityTableRepr:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="test content",
         )
         result = row.__repr__()
         assert isinstance(result, str)

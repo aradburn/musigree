@@ -15,6 +15,7 @@ import pytest
 
 from musigree.constants import CACHE_ENTRY_IS_NULL
 from musigree.exceptions import NotFoundError
+from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.offline_domain.entity import Entity
@@ -37,7 +38,6 @@ class TestResolveEntityReferences:
             relation_counts={},
             entity_metadata={},
             entities=entities or {},
-            search_content="test entity content",
         )
 
     @pytest.fixture
@@ -45,8 +45,13 @@ class TestResolveEntityReferences:
         """Fixture for mock entity repository."""
         return AsyncMock()
 
+    @pytest.fixture
+    def mock_token_repository(self) -> AsyncMock:
+        """Fixture for mock token repository."""
+        return AsyncMock()
+
     async def test_resolve_entity_references_no_entities(
-        self, mock_entity_repository: AsyncMock
+        self, mock_entity_repository: AsyncMock, mock_token_repository: AsyncMock
     ) -> None:
         """Test resolve_entity_references with entity that has no entities dict."""
         # Create entity and manually override the entities field to None using object.__setattr__
@@ -54,48 +59,57 @@ class TestResolveEntityReferences:
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
         object.__setattr__(entity, "entities", None)
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is False
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
     async def test_resolve_entity_references_empty_entities(
-        self, mock_entity_repository: AsyncMock
+        self, mock_entity_repository: AsyncMock, mock_token_repository: AsyncMock
     ) -> None:
         """Test resolve_entity_references with empty entities dict."""
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is False
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_artist_aliases(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references for artist with aliases."""
         entities = {"aliases": {"alias1": "", "alias2": ""}}
         entity = self.create_test_entity(EntityType.ARTIST, entities=entities)
 
-        # Mock the get_id method to return different IDs
-        mock_get_id.side_effect = [123, 456]
+        mock_find_entity_id.side_effect = [123, 456]
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is True
         assert isinstance(entity.entities, dict)
         assert entity.entities["aliases"]["alias1"] == 123
         assert entity.entities["aliases"]["alias2"] == 456
-        assert mock_get_id.call_count == 2
+        assert mock_find_entity_id.call_count == 2
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_artist_groups_and_members(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references for artist with groups and members."""
         entities = {
@@ -104,10 +118,11 @@ class TestResolveEntityReferences:
         }
         entity = self.create_test_entity(EntityType.ARTIST, entities=entities)
 
-        # Mock the get_id method to return different IDs
-        mock_get_id.side_effect = [101, 102, 201, 202]
+        mock_find_entity_id.side_effect = [101, 102, 201, 202]
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is True
         assert isinstance(entity.entities, dict)
@@ -115,13 +130,16 @@ class TestResolveEntityReferences:
         assert entity.entities["groups"]["group2"] == 102
         assert entity.entities["members"]["member1"] == 201
         assert entity.entities["members"]["member2"] == 202
-        assert mock_get_id.call_count == 4
+        assert mock_find_entity_id.call_count == 4
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_label_parent_and_sublabels(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references for label with parent and sublabels."""
         entities = {
@@ -130,64 +148,74 @@ class TestResolveEntityReferences:
         }
         entity = self.create_test_entity(EntityType.LABEL, entities=entities)
 
-        # Mock the get_id method to return different IDs
-        mock_get_id.side_effect = [301, 401, 402]
+        mock_find_entity_id.side_effect = [301, 401, 402]
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is True
         assert isinstance(entity.entities, dict)
-        assert entity.entities["parent_label"]["parent1"] == 301
-        assert entity.entities["sublabels"]["sub1"] == 401
-        assert entity.entities["sublabels"]["sub2"] == 402
-        assert mock_get_id.call_count == 3
+        assert entity.entities["parent_label"]["parent1"] == to_entity_internal_id(
+            301, EntityType.LABEL
+        )
+        assert entity.entities["sublabels"]["sub1"] == to_entity_internal_id(401, EntityType.LABEL)
+        assert entity.entities["sublabels"]["sub2"] == to_entity_internal_id(402, EntityType.LABEL)
+        assert mock_find_entity_id.call_count == 3
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_no_ids_found(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references when no IDs are found."""
         entities = {"aliases": {"alias1": "", "alias2": ""}}
         entity = self.create_test_entity(EntityType.ARTIST, entities=entities)
 
-        # Mock the get_id method to return None (not found)
-        mock_get_id.return_value = None
+        mock_find_entity_id.return_value = None
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is False
-        # Original values should remain unchanged
         assert isinstance(entity.entities, dict)
         assert entity.entities["aliases"]["alias1"] == ""
         assert entity.entities["aliases"]["alias2"] == ""
-        assert mock_get_id.call_count == 2
+        assert mock_find_entity_id.call_count == 2
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_mixed_results(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references with mixed found and not found results."""
         entities = {"aliases": {"alias1": "", "alias2": "", "alias3": ""}}
         entity = self.create_test_entity(EntityType.ARTIST, entities=entities)
 
-        # Mock the get_id method to return mixed results
-        mock_get_id.side_effect = [123, None, 456]
+        mock_find_entity_id.side_effect = [123, None, 456]
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
-        assert result is True  # At least one was resolved
+        assert result is True
         assert isinstance(entity.entities, dict)
         assert entity.entities["aliases"]["alias1"] == 123
-        assert entity.entities["aliases"]["alias2"] == ""  # Unchanged
+        assert entity.entities["aliases"]["alias2"] == ""
         assert entity.entities["aliases"]["alias3"] == 456
-        assert mock_get_id.call_count == 3
+        assert mock_find_entity_id.call_count == 3
 
     async def test_resolve_entity_references_non_dict_entities(
-        self, mock_entity_repository: AsyncMock
+        self, mock_entity_repository: AsyncMock, mock_token_repository: AsyncMock
     ) -> None:
         """Test resolve_entity_references when entities is not a dict."""
         # Create entity and manually override the entities field to string using object.__setattr__
@@ -195,10 +223,11 @@ class TestResolveEntityReferences:
         entity = self.create_test_entity(EntityType.ARTIST, entities={})
         object.__setattr__(entity, "entities", "not_a_dict")
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is False
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
 
 class TestResolveReleaseReferences:
@@ -779,11 +808,19 @@ class TestAdditionalEdgeCases:
         """Fixture for mock entity repository."""
         return AsyncMock()
 
+    @pytest.fixture
+    def mock_token_repository(self) -> AsyncMock:
+        """Fixture for mock token repository."""
+        return AsyncMock()
+
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_with_empty_alias_value(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
         """Test resolve_entity_references with empty alias values."""
         entities = {"aliases": {"": "some_value", "valid_alias": ""}}
@@ -791,16 +828,16 @@ class TestAdditionalEdgeCases:
             EntityType.ARTIST, entities=entities
         )
 
-        # Mock get_id to return None for empty values
-        mock_get_id.return_value = None
+        mock_find_entity_id.return_value = None
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
-        # Should return False since no valid processing occurred
         assert result is False
 
     async def test_resolve_entity_references_with_nested_empty_dict(
-        self, mock_entity_repository: AsyncMock
+        self, mock_entity_repository: AsyncMock, mock_token_repository: AsyncMock
     ) -> None:
         """Test resolve_entity_references with nested empty dictionaries."""
         entities: dict[str, Any] = {"aliases": {}, "groups": {}, "members": {}}
@@ -808,28 +845,33 @@ class TestAdditionalEdgeCases:
             EntityType.ARTIST, entities=entities
         )
 
-        result = await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+        result = await OfflineEntityDataAccess.resolve_entity_references(
+            mock_entity_repository, mock_token_repository, entity
+        )
 
         assert result is False
 
     @patch(
-        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.get_id_by_entity_type_and_entity_name"
+        "musigree.offline.data_access_layer.offline_entity_data_access.OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name"
     )
     async def test_resolve_entity_references_with_exception(
-        self, mock_get_id: AsyncMock, mock_entity_repository: AsyncMock
+        self,
+        mock_find_entity_id: AsyncMock,
+        mock_entity_repository: AsyncMock,
+        mock_token_repository: AsyncMock,
     ) -> None:
-        """Test resolve_entity_references when get_id raises an exception."""
+        """Test resolve_entity_references when find_entity_id raises an exception."""
         entities = {"aliases": {"alias1": ""}}
         entity = TestResolveEntityReferences.create_test_entity(
             EntityType.ARTIST, entities=entities
         )
 
-        # Mock the get_id method to raise an exception
-        mock_get_id.side_effect = Exception("Database error")
+        mock_find_entity_id.side_effect = Exception("Database error")
 
-        # Exception should propagate since it's not handled in the implementation
         with pytest.raises(Exception, match="Database error"):
-            await OfflineEntityDataAccess.resolve_entity_references(mock_entity_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(
+                mock_entity_repository, mock_token_repository, entity
+            )
 
 
 class TestLogging:
@@ -883,7 +925,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -906,7 +947,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -985,7 +1025,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_label = Entity(
             id=2,
@@ -995,7 +1034,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_artist2 = Entity(
             id=3,
@@ -1005,7 +1043,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
 
         mock_find_entity_id.return_value = 871
@@ -1102,7 +1139,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
 
         # First call: find_entity_id_by_entity_type_and_entity_name for [a=Carl Craig] -> returns 871
@@ -1410,7 +1446,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_label = Entity(
             id=2,
@@ -1420,7 +1455,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
 
         mock_find_entity_id.return_value = 871
@@ -1501,7 +1535,6 @@ class TestProcessProfileLinks:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
 
         mock_find_entity_id.return_value = 871
@@ -1545,7 +1578,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -1572,7 +1604,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"profile": ""},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -1599,7 +1630,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"profile": profile},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
         mock_find_entity_id.return_value = 871
@@ -1633,7 +1663,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"profile": profile},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -1659,7 +1688,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"profile": profile},
             entities={},
-            search_content="",
         )
         mock_label = Entity(
             id=2,
@@ -1669,7 +1697,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.side_effect = [mock_entity, mock_label]
         mock_find_entity_id.return_value = 871
@@ -1693,7 +1720,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"profile": None},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 
@@ -1717,7 +1743,6 @@ class TestGetByEntityIdAndEntityType:
             relation_counts={},
             entity_metadata={"other_key": "value"},
             entities={},
-            search_content="",
         )
         mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_entity
 

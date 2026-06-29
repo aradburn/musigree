@@ -88,7 +88,6 @@ class TestDatabaseEntity(AbstractDatabaseTest):
                 "Remix": 1,
                 "Written By": 1,
             },
-            "search_content": "josh wink",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -150,7 +149,6 @@ class TestDatabaseEntity(AbstractDatabaseTest):
                 "Remix": 6,
                 "Written By": 5,
             },
-            "search_content": "seefeel",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -187,7 +185,6 @@ class TestDatabaseEntity(AbstractDatabaseTest):
             "entity_name": "Planet E",
             "id": 1000000001,
             "relation_counts": {"Released On": 1},
-            "search_content": "planet e",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected
@@ -226,7 +223,6 @@ class TestDatabaseEntity(AbstractDatabaseTest):
             "entity_type": "EntityType.LABEL",
             "id": 1000138147,
             "relation_counts": {"Published By": 2},
-            "search_content": "warner/chappell",
         }
         expected = utils.normalize_dict(expected_entity)
         assert actual == expected

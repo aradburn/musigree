@@ -101,6 +101,8 @@ async def route__api__entity_type__details__entity_id(
             )
     except NotFoundError:
         raise NotFoundError(message="Entity details not found") from None
+    except ValueError:
+        raise NotFoundError(message="Entity details not found") from None
 
     # Convert the entity to a dictionary format suitable for API response
     result_entity_data: dict[str, Any] = {
@@ -273,7 +275,7 @@ async def route__api__search(
         ...,  # The '...' indicates the parameter is required
         title="The string to search for",
         min_length=2,
-        max_length=20,
+        max_length=130,
     ),
     _: None = Depends(rate_limiter(max_requests=120, period=60)),
 ) -> dict[str, Any]:

@@ -861,12 +861,14 @@ class TestFastAPIAPI:
                 {"key": "artist-496270", "name": "Morris Gould"},
                 {"key": "artist-33927", "name": "Stephen Morris"},
                 {"key": "artist-3723", "name": "Chris Morris"},
+                {"key": "artist-3898", "name": "Joy Division"},
                 {"key": "artist-3985", "name": "Mixmaster Morris"},
                 {"key": "artist-27005", "name": "Morris Nightingale"},
                 {"key": "artist-444670", "name": "Craig Morris"},
                 {"key": "artist-2922503", "name": "Paul Morris (17)"},
                 {"key": "artist-175123", "name": "Leo \"Swift\" Morris"},
                 {"key": "artist-249982", "name": "Leo Swift Morris"},
+                {"key": "artist-953", "name": "Irresistible Force, The"},
             ]
         }
         # We are not testing results sort order here, so we can just check the results
@@ -899,12 +901,14 @@ class TestFastAPIAPI:
                 {"key": "artist-496270", "name": "Morris Gould"},
                 {"key": "artist-33927", "name": "Stephen Morris"},
                 {"key": "artist-3723", "name": "Chris Morris"},
+                {"key": "artist-3898", "name": "Joy Division"},
                 {"key": "artist-3985", "name": "Mixmaster Morris"},
                 {"key": "artist-27005", "name": "Morris Nightingale"},
                 {"key": "artist-444670", "name": "Craig Morris"},
                 {"key": "artist-2922503", "name": "Paul Morris (17)"},
                 {"key": "artist-175123", "name": "Leo \"Swift\" Morris"},
                 {"key": "artist-249982", "name": "Leo Swift Morris"},
+                {"key": "artist-953", "name": "Irresistible Force, The"},
             ]
         }
         # We are not testing results sort order here, so we can just check the results

@@ -51,8 +51,8 @@ URLIFY_REGEX = re.compile(r"\s+", re.MULTILINE)
 # Remove unwanted characters from the string.
 # Any digits in round brackets are removed, and
 # any "not on label" or "self-released are removed.
-STRIP_PATTERN = re.compile(r"\(\d+\)|not on label|self[\s\- ]+released|[^\w \-]+|_")
-# STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
+SEARCH_STRIP_PATTERN = re.compile(r"\(\d+\)|[(]?not on label[)]?|[(]?self[\s\- ]+released[)]?")
+# SEARCH_STRIP_PATTERN = re.compile(r"(\(\d+\)|[^(\w\s)]+)")
 # REMOVE_PUNCTUATION = re.compile(r"[^\w\s]")
 WORD_PATTERN = re.compile(r"\s+")
 T = TypeVar("T")

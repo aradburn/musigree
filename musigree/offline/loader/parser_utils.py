@@ -230,7 +230,7 @@ class ParserUtils:
         Returns:
             str, optional: The string value, or None if the element is None or has no text.
         """
-        if element is not None:
+        if element is not None and element.text != "NULL":
             return element.text or None
         return None
 

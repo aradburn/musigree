@@ -370,6 +370,8 @@ class RuntimeDatabaseHelper(ABC):
             )
         except NotFoundError:
             return None
+        except ValueError:
+            return None
         if entity is None:
             return None
         if not on_mobile:

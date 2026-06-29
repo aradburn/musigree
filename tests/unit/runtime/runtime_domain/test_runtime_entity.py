@@ -135,7 +135,6 @@ def test_to_runtime_entity_dict() -> None:
         relation_counts={},
         entity_metadata={},
         entities={},
-        search_content="label",
     )
     mock_index = MagicMock()
     mock_index.get_countries_for_id = MagicMock(return_value="US, UK")

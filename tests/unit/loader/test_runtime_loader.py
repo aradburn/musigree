@@ -20,8 +20,6 @@ from musigree.loader.run_runtime_loader import (
     load_runtime_tables,
     runtime_loader_main,
 )
-
-
 from musigree.runtime.data_access_layer.runtime_role_data_access import RuntimeRoleDataAccess
 from musigree.transfer.transfer_manager import TransferManager
 
@@ -116,7 +114,7 @@ class TestRuntimeLoaderFunctions:
     ) -> None:
         """Test successful creation of load runtime table stages."""
         # Arrange
-        mock_helper = _configure_runtime_db_helper(mock_db_manager)
+        _configure_runtime_db_helper(mock_db_manager)
 
         _configure_transfer_manager_mocks(mock_transfer_manager)
 
@@ -505,7 +503,7 @@ class TestRuntimeLoaderEdgeCases:
         # Arrange
         data_directory = Path("/test/data")
 
-        mock_helper = _configure_runtime_db_helper(mock_db_manager)
+        _configure_runtime_db_helper(mock_db_manager)
 
         with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:
             with patch(
