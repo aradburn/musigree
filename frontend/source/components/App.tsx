@@ -1,26 +1,26 @@
 /** @jsxImportSource react */
-import React, { useState, useEffect } from "react";
-import { Container, Row } from "react-bootstrap";
+import React, {useEffect, useState} from "react";
+import {Container, Row} from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-import { Header } from "./Layout/Header.tsx";
-import { SidebarLeft } from "./Layout/SidebarLeft";
-import { SidebarRight } from "./Layout/SidebarRight";
-import { HelpModal } from "./Modals/HelpModal";
-import { NetworkView } from "./Visualization/NetworkView";
+import {Header} from "./Layout/Header.tsx";
+import {SidebarLeft} from "./Layout/SidebarLeft";
+import {SidebarRight} from "./Layout/SidebarRight";
+import {HelpModal} from "./Modals/HelpModal";
+import {NetworkView} from "./Visualization/NetworkView";
 import LoadingAnimation from "./Visualization/LoadingAnimation";
-import { RolesOverlay } from "./Overlays/RolesOverlay";
-import { NetworkProvider } from "../contexts/NetworkContext";
-import { WindowProvider } from "../contexts/WindowContext";
-import { useWindow } from "../contexts/useWindow";
-import { LoadingProvider } from "../contexts/LoadingContext";
-import { EntityProvider } from "../contexts/EntityContext";
-import { FSM, DOM_IDS } from "../constants";
-import { setSvgSize } from "../svg";
-import type { TreeConfig } from "../roles";
-import { resetNetworkTransform } from "@/network/init.ts";
-import { musigreeManager } from "../core/singletons";
-import { MusigreeTourProvider } from "./Tour";
+import {RolesOverlay} from "./Overlays/RolesOverlay";
+import {NetworkProvider} from "../contexts/NetworkContext";
+import {WindowProvider} from "../contexts/WindowContext";
+import {useWindow} from "../contexts/useWindow";
+import {LoadingProvider} from "../contexts/LoadingContext";
+import {EntityProvider} from "../contexts/EntityContext";
+import {DOM_IDS, FSM} from "../constants";
+import {setSvgSize} from "../svg";
+import type {TreeConfig} from "../roles";
+import {resetNetworkTransform} from "@/network/init.ts";
+import {musigreeManager} from "@/core";
+import {MusigreeTourProvider} from "./Tour";
 
 // Extending the Window interface is handled in init.ts already
 // We're just importing the TreeConfig type for our internal usage
@@ -39,7 +39,7 @@ const AppContent: React.FC = (): React.ReactElement => {
     const [rolesConfig, setRolesConfig] = useState<TreeConfig>();
     const [isSidebarRightCollapsed, setIsSidebarRightCollapsed] =
         useState<boolean>(false);
-    const { state: windowState } = useWindow();
+    const {state: windowState} = useWindow();
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {
@@ -114,21 +114,26 @@ const AppContent: React.FC = (): React.ReactElement => {
                 <EntityProvider>
                     <Container fluid className="d-flex flex-column h-sm-100">
                         <Row>
-                            <Header onShowHelp={handleShowHelp} />
+                            <Header onShowHelp={handleShowHelp}/>
                         </Row>
 
-                        <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
-                            <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
-                                <div className="flex-sm-column flex-row h-sm-100">
+                        <Row
+                            className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
+                            <div
+                                className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
+                                <div
+                                    className="flex-sm-column flex-row h-sm-100">
                                     {/* sidebar left panel */}
-                                    <SidebarLeft />
+                                    <SidebarLeft/>
                                 </div>
                             </div>
 
-                            <div className="main-container flex-sm-fill p-0 order-sm-2 order-1">
-                                <div className="flex-sm-column flex-row h-sm-100">
-                                    <NetworkView />
-                                    <LoadingAnimation />
+                            <div
+                                className="main-container flex-sm-fill p-0 order-sm-2 order-1">
+                                <div
+                                    className="flex-sm-column flex-row h-sm-100">
+                                    <NetworkView/>
+                                    <LoadingAnimation/>
                                 </div>
                             </div>
 
@@ -139,7 +144,8 @@ const AppContent: React.FC = (): React.ReactElement => {
                                         : "sidebar-right-container"
                                 } p-0 order-sm-3 order-2`}
                             >
-                                <div className="flex-sm-column flex-row h-sm-100">
+                                <div
+                                    className="flex-sm-column flex-row h-sm-100">
                                     {/* sidebar right panel */}
                                     <SidebarRight
                                         isCollapsed={isSidebarRightCollapsed}
@@ -172,13 +178,12 @@ const AppContent: React.FC = (): React.ReactElement => {
 
 /**
  * Main App component that serves as the container for the React application.
- * During migration, this will gradually replace the existing jQuery-based UI.
  */
 const App: React.FC = (): React.ReactElement => {
     return (
         <MusigreeTourProvider>
             <WindowProvider>
-                <AppContent />
+                <AppContent/>
             </WindowProvider>
         </MusigreeTourProvider>
     );

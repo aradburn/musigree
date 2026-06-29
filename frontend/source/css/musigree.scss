@@ -63,6 +63,25 @@ body {
     cursor: pointer;
 }
 
+.reactour__popover span {
+    line-height: 2rem !important;
+}
+
+.reactour__popover > div > div > button {
+    height: 24px;
+    line-height: 0px;
+    border: 0.1rem solid #2F4F4F !important;
+    border-radius: 8px !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    background: #DFE3DE !important;
+}
+
+.reactour__close-button {
+    top: 1rem !important;
+    right: 1rem !important;
+}
+
 .navbar {
     background-image: linear-gradient($mg-navbar-top-color 0%, $mg-navbar-bottom-color 100%);
 }

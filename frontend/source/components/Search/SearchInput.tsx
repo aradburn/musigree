@@ -1,11 +1,11 @@
 /** @jsxImportSource react */
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Form, Spinner, Overlay, Popover } from "react-bootstrap";
-import { TYPEAHEAD } from "../../constants";
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {Form, Overlay, Popover, Spinner} from "react-bootstrap";
+import {TYPEAHEAD} from "@/constants.ts";
+import type {SearchResult as SearchResultType} from "./hooks/useSearchApi";
 import useSearchApi from "./hooks/useSearchApi";
-import type { SearchResult as SearchResultType } from "./hooks/useSearchApi";
 import SearchResult from "./SearchResult";
-import { RequestNetworkEvent } from "../../network/events";
+import {RequestNetworkEvent} from "@/network/events.ts";
 
 interface SearchInputProps {
     placeholder?: string;
@@ -17,9 +17,9 @@ interface SearchInputProps {
  * This replaces the jQuery-based typeahead implementation
  */
 const SearchInput: React.FC<SearchInputProps> = ({
-    placeholder = "Search",
-    className = "",
-}): React.ReactElement => {
+                                                     placeholder = "Search",
+                                                     className = "",
+                                                 }): React.ReactElement => {
     const [query, setQuery] = useState<string>("");
     const [showResults, setShowResults] = useState<boolean>(false);
     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
@@ -29,7 +29,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
     const pendingEnterRef = useRef(false);
 
     // Use our custom hook to fetch search results
-    const { results, loading, error } = useSearchApi(query);
+    const {results, loading, error} = useSearchApi(query);
 
     const selectResult = useCallback((result: SearchResultType): void => {
         setQuery(result.name);
@@ -156,8 +156,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
     return (
         <div className={`${className}`}>
             <Form className="container-fluid">
-                <div className="input-group flex-nowrap border border-secondary">
-                    <span className="bg-light-subtle opacity-50 input-group-text px-2 py-0">
+                <div
+                    className="input-group flex-nowrap border border-secondary">
+                    <span
+                        className="bg-light-subtle opacity-50 input-group-text px-2 py-0">
                         {loading ? (
                             <Spinner
                                 as="span"
@@ -214,7 +216,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             >
                 <Popover
                     id="search-results"
-                    style={{ minWidth: inputRef.current?.offsetWidth }}
+                    style={{minWidth: inputRef.current?.offsetWidth}}
                     ref={popoverRef}
                 >
                     <Popover.Body className="search-results-body p-0">

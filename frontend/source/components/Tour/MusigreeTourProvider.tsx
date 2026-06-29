@@ -1,25 +1,34 @@
 /** @jsxImportSource react */
 import React from "react";
-import { TourProvider, components } from "@reactour/tour";
-import { onboardingTourSteps } from "./steps";
-import { OnboardingTourController } from "./OnboardingTourController";
-import { markOnboardingTourCompleted } from "./onboardingTourStorage";
+import {components, TourProvider} from "@reactour/tour";
+import {onboardingTourSteps} from "./steps";
+import {OnboardingTourController} from "./OnboardingTourController";
+import {markOnboardingTourCompleted} from "./onboardingTourStorage";
 
 type NavigationProps = React.ComponentProps<typeof components.Navigation>;
 
 const TourNavigation: React.FC<NavigationProps> = (props) => {
-    const { setIsOpen } = props;
+    const {setIsOpen, currentStep, steps} = props;
 
     return (
         <div>
             <components.Navigation {...props} />
-            <button
-                type="button"
-                className="btn btn-link btn-sm text-secondary p-0 mt-2"
-                onClick={() => setIsOpen(false)}
-            >
-                Skip tour
-            </button>
+            <div
+                className="d-flex flex-row align-items-center justify-content-between px-0 py-0 mt-2">
+
+                <span>
+                    <button
+                        type="button"
+                        className="btn btn-link btn-sm text-secondary p-0"
+                        onClick={() => setIsOpen(false)}
+                    >
+                        Skip tour
+                    </button>
+                </span>
+                <span
+                    className="mb-0">Step {currentStep + 1} of {steps.length}
+                </span>
+            </div>
         </div>
     );
 };
@@ -30,13 +39,14 @@ interface MusigreeTourProviderProps {
 
 /** Wraps the app with reactour and first-visit onboarding behavior. */
 export const MusigreeTourProvider: React.FC<MusigreeTourProviderProps> = ({
-    children,
-}) => {
+                                                                              children,
+                                                                          }) => {
     return (
         <TourProvider
             steps={onboardingTourSteps}
-            components={{ Navigation: TourNavigation }}
-            showBadge
+            components={{Navigation: TourNavigation}}
+            showBadge={false}
+            showDots={false}
             showCloseButton
             scrollSmooth
             beforeClose={() => {
@@ -45,17 +55,26 @@ export const MusigreeTourProvider: React.FC<MusigreeTourProviderProps> = ({
             styles={{
                 popover: (base) => ({
                     ...base,
+                    border: "0.2rem solid #2F4F4F",
                     borderRadius: 8,
-                    padding: 16,
-                    maxWidth: 320,
+                    padding: "2rem",
+                    maxWidth: "32rem",
+                    "--reactour-accent": "#2F4F4F",
+                    backgroundColor: "#F9FBFA",
+                    className: "tour-popover",
+                }),
+                maskWrapper: (base) => ({
+                    ...base,
+                    color: "#2F4F4FAA",
                 }),
                 maskArea: (base) => ({
                     ...base,
                     rx: 8,
                 }),
             }}
+            padding={{popover: [-30, -20]}}
         >
-            <OnboardingTourController />
+            <OnboardingTourController/>
             {children}
         </TourProvider>
     );
