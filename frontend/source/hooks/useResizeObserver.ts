@@ -532,7 +532,8 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         }
 
         // Set up ResizeObserver if available
-        if ("ResizeObserver" in window) {
+        const hasResizeObserver = typeof ResizeObserver !== "undefined";
+        if (hasResizeObserver) {
             const observer = new ResizeObserver(([entry]) => {
                 updateSizeFromEntry(entry);
             });
@@ -541,19 +542,19 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
             observerRef.current = observer;
             observedElementRef.current = element;
             // ResizeObserver will fire automatically, no need for additional RAF
+        } else {
+            // Fallback when ResizeObserver is unavailable (client-event-listeners)
+            const handleWindowResize = (): void => {
+                const measuredSize = measureElement(element);
+                if (measuredSize) {
+                    updateSize(measuredSize);
+                }
+            };
+
+            window.addEventListener("resize", handleWindowResize);
+            windowResizeHandlerRef.current = handleWindowResize;
+            observedElementRef.current = element;
         }
-
-        // Set up window resize listener as backup (works alongside ResizeObserver)
-        const handleWindowResize = (): void => {
-            const measuredSize = measureElement(element);
-            if (measuredSize) {
-                updateSize(measuredSize);
-            }
-        };
-
-        // We already checked window is defined above (line 375)
-        window.addEventListener("resize", handleWindowResize);
-        windowResizeHandlerRef.current = handleWindowResize;
 
         // Delayed measurement as fallback in case element wasn't fully laid out
         // This works alongside ResizeObserver to catch edge cases

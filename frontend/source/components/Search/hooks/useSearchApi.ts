@@ -23,8 +23,12 @@ interface SearchApiResponse {
 interface SearchApiResult {
     results: SearchResult[];
     loading: boolean;
-    error: string | undefined;
+    error: string | null;
 }
+
+const isAbortError = (err: unknown): boolean =>
+    (err instanceof DOMException || err instanceof Error) &&
+    err.name === "AbortError";
 
 /**
  * Custom hook for fetching search results from the API with debouncing
@@ -38,7 +42,7 @@ export const useSearchApi = (
 ): SearchApiResult => {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | undefined>(undefined);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         // Don't search if query is too short
@@ -52,6 +56,8 @@ export const useSearchApi = (
         // Set loading state immediately
         setLoading(true);
 
+        const abortController = new AbortController();
+
         // Setup debounce timer
         const timerId = setTimeout(() => {
             const fetchData = async (): Promise<void> => {
@@ -62,31 +68,49 @@ export const useSearchApi = (
                         encodeURIComponent(query),
                     );
 
-                    const response = await fetch(url);
+                    const response = await fetch(url, {
+                        signal: abortController.signal,
+                    });
+
+                    if (abortController.signal.aborted) {
+                        return;
+                    }
 
                     if (!response.ok) {
                         throw new Error(`API error: ${response.status}`);
                     }
 
                     const data = (await response.json()) as SearchApiResponse;
+                    if (abortController.signal.aborted) {
+                        return;
+                    }
                     setResults(data.results || []);
                     setError(null);
                 } catch (err) {
+                    // Ignore aborted requests (stale query or unmount)
+                    if (isAbortError(err)) {
+                        return;
+                    }
                     console.error("Search API error:", err);
                     setResults([]);
                     setError(
                         err instanceof Error ? err.message : "Unknown error",
                     );
                 } finally {
-                    setLoading(false);
+                    if (!abortController.signal.aborted) {
+                        setLoading(false);
+                    }
                 }
             };
 
             void fetchData();
         }, debounceTime);
 
-        // Cleanup function to cancel the timer if component unmounts or query changes
-        return (): void => clearTimeout(timerId);
+        // Cleanup: cancel debounce timer and in-flight fetch on query change/unmount
+        return (): void => {
+            clearTimeout(timerId);
+            abortController.abort();
+        };
     }, [query, debounceTime]); // Re-run effect when query or debounceTime changes
 
     return { results, loading, error };

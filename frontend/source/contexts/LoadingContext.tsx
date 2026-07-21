@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import { LoadingContext } from "./loadingContextInstance";
 
@@ -46,12 +46,15 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
         };
     }, [toggleLoading]);
 
-    const value = {
-        isLoading,
-        showLoading,
-        hideLoading,
-        toggleLoading,
-    };
+    const value = useMemo(
+        () => ({
+            isLoading,
+            showLoading,
+            hideLoading,
+            toggleLoading,
+        }),
+        [isLoading, showLoading, hideLoading, toggleLoading],
+    );
 
     return (
         <LoadingContext.Provider value={value}>

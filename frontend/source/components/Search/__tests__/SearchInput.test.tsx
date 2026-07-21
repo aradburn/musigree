@@ -19,24 +19,18 @@ vi.mock("../hooks/useSearchApi", () => ({
     default: vi.fn(),
 }));
 
-// Mock the Overlay component from react-bootstrap to avoid DOM manipulation issues
-vi.mock("react-bootstrap", async () => {
-    const originalModule = await vi.importActual("react-bootstrap");
-    return {
-        ...(originalModule as Record<string, unknown>),
-        Overlay: ({
-            children,
-            show,
-        }: {
-            children: ReactNode;
-            show: boolean;
-        }) => {
-            return show ? (
-                <div data-testid="overlay-mock">{children}</div>
-            ) : null;
-        },
-    };
-});
+// Mock Overlay via direct import path to avoid DOM portal issues
+vi.mock("react-bootstrap/Overlay", () => ({
+    default: ({
+        children,
+        show,
+    }: {
+        children: ReactNode;
+        show: boolean;
+    }) => {
+        return show ? <div data-testid="overlay-mock">{children}</div> : null;
+    },
+}));
 
 // Mock the RequestNetworkEvent
 class MockRequestNetworkEvent extends Event {

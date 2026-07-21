@@ -672,7 +672,27 @@ describe("useResizeObserver", () => {
     });
 
     describe("window resize listener", () => {
-        it("should add window resize listener when element is available", () => {
+        it("should not add window resize listener when ResizeObserver is available", () => {
+            const div = document.createElement("div");
+            div.getBoundingClientRect =
+                getBoundingClientRectSpy as () => DOMRect;
+            const ref = { current: div };
+
+            renderHook(() => useResizeObserver({ ref }));
+
+            expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+                "resize",
+                expect.any(Function),
+            );
+        });
+
+        it("should add window resize listener when ResizeObserver is unavailable", () => {
+            delete (global as { ResizeObserver?: unknown }).ResizeObserver;
+            if (global.window) {
+                delete (global.window as { ResizeObserver?: unknown })
+                    .ResizeObserver;
+            }
+
             const div = document.createElement("div");
             div.getBoundingClientRect =
                 getBoundingClientRectSpy as () => DOMRect;
@@ -686,7 +706,13 @@ describe("useResizeObserver", () => {
             );
         });
 
-        it("should update size when window resize event fires", () => {
+        it("should update size when window resize event fires without ResizeObserver", () => {
+            delete (global as { ResizeObserver?: unknown }).ResizeObserver;
+            if (global.window) {
+                delete (global.window as { ResizeObserver?: unknown })
+                    .ResizeObserver;
+            }
+
             const div = document.createElement("div");
             div.getBoundingClientRect =
                 getBoundingClientRectSpy as () => DOMRect;
@@ -729,7 +755,13 @@ describe("useResizeObserver", () => {
             expect(result.current.height).toBe(250);
         });
 
-        it("should remove window resize listener on cleanup", () => {
+        it("should remove window resize listener on cleanup when ResizeObserver is unavailable", () => {
+            delete (global as { ResizeObserver?: unknown }).ResizeObserver;
+            if (global.window) {
+                delete (global.window as { ResizeObserver?: unknown })
+                    .ResizeObserver;
+            }
+
             const div = document.createElement("div");
             div.getBoundingClientRect =
                 getBoundingClientRectSpy as () => DOMRect;
@@ -749,7 +781,13 @@ describe("useResizeObserver", () => {
             );
         });
 
-        it("should remove window resize listener when element becomes null", () => {
+        it("should remove window resize listener when element becomes null without ResizeObserver", () => {
+            delete (global as { ResizeObserver?: unknown }).ResizeObserver;
+            if (global.window) {
+                delete (global.window as { ResizeObserver?: unknown })
+                    .ResizeObserver;
+            }
+
             const div = document.createElement("div");
             div.getBoundingClientRect =
                 getBoundingClientRectSpy as () => DOMRect;
@@ -1100,7 +1138,7 @@ describe("useResizeObserver", () => {
     });
 
     describe("integration scenarios", () => {
-        it("should handle ResizeObserver and window resize together", async () => {
+        it("should rely on ResizeObserver without a window resize listener", async () => {
             vi.useRealTimers();
             const div = document.createElement("div");
             div.getBoundingClientRect =
@@ -1118,6 +1156,11 @@ describe("useResizeObserver", () => {
                     expect(callback).toBeDefined();
                 },
                 { timeout: 1000 },
+            );
+
+            expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+                "resize",
+                expect.any(Function),
             );
 
             // ResizeObserver callback
@@ -1139,30 +1182,6 @@ describe("useResizeObserver", () => {
                 },
                 { timeout: 1000 },
             );
-
-            // Window resize
-            getBoundingClientRectSpy.mockReturnValueOnce({
-                width: 200,
-                height: 300,
-                top: 0,
-                left: 0,
-                bottom: 300,
-                right: 200,
-                x: 0,
-                y: 0,
-                toJSON: vi.fn(),
-            } as DOMRect);
-
-            const resizeHandler = addEventListenerSpy.mock.calls.find(
-                (call) => call[0] === "resize",
-            )?.[1] as () => void;
-
-            act(() => {
-                resizeHandler();
-            });
-
-            expect(result.current.width).toBe(200);
-            expect(result.current.height).toBe(300);
         });
 
         it("should work when ResizeObserver is not available", () => {
@@ -1375,13 +1394,10 @@ describe("useResizeObserver", () => {
 
             // Should have disconnected observer
             expect(disconnectSpy).toHaveBeenCalled();
-            // Should have removed window resize listener
-            const resizeHandler = addEventListenerSpy.mock.calls.find(
-                (call) => call[0] === "resize",
-            )?.[1] as () => void;
-            expect(removeEventListenerSpy).toHaveBeenCalledWith(
+            // Window resize listener is only registered without ResizeObserver
+            expect(addEventListenerSpy).not.toHaveBeenCalledWith(
                 "resize",
-                resizeHandler,
+                expect.any(Function),
             );
         });
 
@@ -2445,7 +2461,16 @@ describe("useResizeObserver", () => {
         });
 
         describe("window event listener cleanup", () => {
+            const withoutResizeObserver = (): void => {
+                delete (global as { ResizeObserver?: unknown }).ResizeObserver;
+                if (global.window) {
+                    delete (global.window as { ResizeObserver?: unknown })
+                        .ResizeObserver;
+                }
+            };
+
             it("should remove window resize listener on unmount", () => {
+                withoutResizeObserver();
                 const div = document.createElement("div");
                 div.getBoundingClientRect =
                     getBoundingClientRectSpy as () => DOMRect;
@@ -2480,6 +2505,7 @@ describe("useResizeObserver", () => {
             });
 
             it("should remove window resize listener when element changes", () => {
+                withoutResizeObserver();
                 const div1 = document.createElement("div");
                 div1.getBoundingClientRect =
                     getBoundingClientRectSpy as () => DOMRect;
@@ -2521,6 +2547,7 @@ describe("useResizeObserver", () => {
             });
 
             it("should remove window resize listener when element becomes null", () => {
+                withoutResizeObserver();
                 const div = document.createElement("div");
                 div.getBoundingClientRect =
                     getBoundingClientRectSpy as () => DOMRect;
@@ -2558,6 +2585,7 @@ describe("useResizeObserver", () => {
             });
 
             it("should remove window resize listener when trigger becomes false", () => {
+                withoutResizeObserver();
                 const div = document.createElement("div");
                 div.getBoundingClientRect =
                     getBoundingClientRectSpy as () => DOMRect;
@@ -2609,26 +2637,17 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // Verify resources were set up
+                // Verify observer was set up (no window resize when ResizeObserver exists)
                 expect(observeSpy).toHaveBeenCalled();
-                expect(addEventListenerSpy).toHaveBeenCalled();
-
-                const resizeHandler = addEventListenerSpy.mock.calls.find(
-                    (call) => call[0] === "resize",
-                )?.[1] as () => void;
+                expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+                    "resize",
+                    expect.any(Function),
+                );
 
                 unmount();
 
-                // All resources should be cleaned up
+                // Observer should be cleaned up
                 expect(disconnectSpy).toHaveBeenCalled();
-                if (resizeHandler) {
-                    expect(removeEventListenerSpy).toHaveBeenCalledWith(
-                        "resize",
-                        resizeHandler,
-                    );
-                }
-                // setTimeout cleanup is handled by the implementation's cleanup function
-                // The important resources (observer, event listeners) are verified above
             });
 
             it("should clean up all resources when element changes", () => {
@@ -2648,11 +2667,6 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // Get resources from first setup
-                const firstResizeHandler = addEventListenerSpy.mock.calls.find(
-                    (call) => call[0] === "resize",
-                )?.[1] as () => void;
-
                 // Change to different element
                 const div2 = document.createElement("div");
                 div2.getBoundingClientRect =
@@ -2665,16 +2679,8 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // All previous resources should be cleaned up
+                // Previous observer should be cleaned up
                 expect(disconnectSpy).toHaveBeenCalled();
-                if (firstResizeHandler) {
-                    expect(removeEventListenerSpy).toHaveBeenCalledWith(
-                        "resize",
-                        firstResizeHandler,
-                    );
-                }
-                // setTimeout cleanup is handled by the implementation's cleanup function
-                // The important resources (observer, event listeners) are verified above
             });
 
             it("should clean up all resources when element becomes null", () => {
@@ -2694,15 +2700,7 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // Get resources
-                const resizeHandler = addEventListenerSpy.mock.calls.find(
-                    (call) => call[0] === "resize",
-                )?.[1] as () => void;
-                const lastResult =
-                    setTimeoutSpy.mock.results[
-                        setTimeoutSpy.mock.results.length - 1
-                    ];
-                const timeoutId = lastResult?.value as number | undefined;
+                expect(observeSpy).toHaveBeenCalled();
 
                 // Make element null
                 ref.current = null;
@@ -2712,27 +2710,22 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // All resources should be cleaned up
+                // Observer should be cleaned up
                 expect(disconnectSpy).toHaveBeenCalled();
-                expect(removeEventListenerSpy).toHaveBeenCalledWith(
-                    "resize",
-                    resizeHandler,
-                );
-                if (timeoutId !== undefined) {
-                    expect(clearTimeoutSpy).toHaveBeenCalledWith(timeoutId);
-                }
             });
 
             it("should not leak resources when rapidly changing elements", () => {
-                const div1 = document.createElement("div");
-                div1.getBoundingClientRect =
-                    getBoundingClientRectSpy as () => DOMRect;
-                const ref1 = { current: div1 };
+                const elements = Array.from({ length: 5 }, () => {
+                    const div = document.createElement("div");
+                    div.getBoundingClientRect =
+                        getBoundingClientRectSpy as () => DOMRect;
+                    return { current: div };
+                });
 
                 const { rerender } = renderHook(
                     ({ ref: refProp }) => useResizeObserver({ ref: refProp }),
                     {
-                        initialProps: { ref: ref1 },
+                        initialProps: { ref: elements[0] },
                     },
                 );
 
@@ -2740,35 +2733,16 @@ describe("useResizeObserver", () => {
                     vi.runAllTimers();
                 });
 
-                // Rapidly change elements multiple times
-                for (let i = 2; i <= 5; i++) {
-                    const div = document.createElement("div");
-                    div.getBoundingClientRect =
-                        getBoundingClientRectSpy as () => DOMRect;
-                    const ref = { current: div };
-
-                    rerender({ ref });
-
+                // Rapidly change elements
+                for (let i = 1; i < elements.length; i++) {
+                    rerender({ ref: elements[i] });
                     act(() => {
                         vi.runAllTimers();
                     });
                 }
 
-                // Each change should have cleaned up previous resources
-                // Verify that cleanup was called multiple times (at least once per change)
-                // Note: Some resources may not be set up on every change, so we check
-                // that cleanup was called, not that it matches exactly
+                // Observer should have been disconnected for previous elements
                 expect(disconnectSpy.mock.calls.length).toBeGreaterThan(0);
-                expect(
-                    removeEventListenerSpy.mock.calls.length,
-                ).toBeGreaterThan(0);
-                // clearTimeout may not be called if timeout wasn't set up yet
-                // but if timeouts were set, they should be cleared
-                if (setTimeoutSpy.mock.calls.length > 0) {
-                    expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(
-                        0,
-                    );
-                }
             });
         });
     });

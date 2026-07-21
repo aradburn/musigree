@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import debounce from "debounce";
 import { DOM_IDS, INIT, SVG } from "../constants";
@@ -42,15 +42,17 @@ interface WindowProviderProps {
 export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
     const [state, setState] = useState<WindowState>(initialState);
     const stateRef = useRef<WindowState>(state);
+    // Keep ref in sync during render so resize handler always sees latest state
+    stateRef.current = state;
 
     // Calculate window and SVG dimensions
-    const calculateDimensions = (): WindowState => {
+    const calculateDimensions = useCallback((): WindowState => {
         const dpr = window.devicePixelRatio || 1;
         const svgContainer = document.getElementById("svg-container-fluid");
 
         if (!svgContainer) {
             return {
-                ...state,
+                ...stateRef.current,
                 dpr,
             };
         }
@@ -78,44 +80,48 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
             svgDimensions,
             isMobile,
         };
-    };
+    }, []);
 
-    // Handle window resize (single listener: dimensions + navbar height CSS var)
-    const handleResize = debounce((): void => {
-        console.log("WindowContext handleResize()");
-        try {
-            // Update dimensions state
-            const newState = calculateDimensions();
-            setState(newState);
-            stateRef.current = newState;
+    // Stable debounced resize handler (single listener: dimensions + navbar height)
+    const handleResize = useMemo(
+        () =>
+            debounce((): void => {
+                console.log("WindowContext handleResize()");
+                try {
+                    // Update dimensions state
+                    const newState = calculateDimensions();
+                    setState(newState);
+                    stateRef.current = newState;
 
-            // Setup window dimensions on SVG element
-            setSvgSize(DOM_IDS.SVG_ID);
-            // Reset network visualization
-            resetNetworkTransform();
+                    // Setup window dimensions on SVG element
+                    setSvgSize(DOM_IDS.SVG_ID);
+                    // Reset network visualization
+                    resetNetworkTransform();
 
-            // Update navbar height CSS variable for layout
-            updateNavbarHeightVar();
+                    // Update navbar height CSS variable for layout
+                    updateNavbarHeightVar();
 
-            // Dispatch resize event
-            window.dispatchEvent(new ResizeEvent());
-        } catch (error: unknown) {
-            const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : typeof error === "string"
-                      ? error
-                      : JSON.stringify(error);
-            console.error("Error during window resize:", errorMessage);
-        }
-    }, INIT.DEBOUNCE_DELAY);
+                    // Dispatch resize event
+                    window.dispatchEvent(new ResizeEvent());
+                } catch (error: unknown) {
+                    const errorMessage =
+                        error instanceof Error
+                            ? error.message
+                            : typeof error === "string"
+                              ? error
+                              : JSON.stringify(error);
+                    console.error("Error during window resize:", errorMessage);
+                }
+            }, INIT.DEBOUNCE_DELAY),
+        [calculateDimensions],
+    );
 
     // Initialize dimensions on mount and set up resize listener
     useEffect(() => {
         // Calculate initial dimensions
-        const initialState = calculateDimensions();
-        setState(initialState);
-        stateRef.current = initialState;
+        const nextState = calculateDimensions();
+        setState(nextState);
+        stateRef.current = nextState;
 
         // Set navbar height CSS variable on mount
         updateNavbarHeightVar();
@@ -130,17 +136,15 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         return (): void => {
             window.removeEventListener("resize", handleResize as () => void);
         };
-        // Mount-only: register a single debounced resize listener for the app lifetime
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
-    }, []);
+    }, [calculateDimensions, handleResize]);
 
-    // Update state ref whenever state changes
-    useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
+    const contextValue = useMemo(
+        () => ({ state, handleResize }),
+        [state, handleResize],
+    );
 
     return (
-        <WindowContext.Provider value={{ state, handleResize }}>
+        <WindowContext.Provider value={contextValue}>
             {children}
         </WindowContext.Provider>
     );
