@@ -1,15 +1,14 @@
 /** @jsxImportSource react */
-import React, { useEffect, useState } from "react";
-import { Container, Row } from "react-bootstrap";
+import React, { lazy, Suspense, useEffect, useState } from "react";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { Header } from "./Layout/Header.tsx";
 import { SidebarLeft } from "./Layout/SidebarLeft";
 import { SidebarRight } from "./Layout/SidebarRight";
-import { HelpModal } from "./Modals/HelpModal";
 import { NetworkView } from "./Visualization/NetworkView";
 import LoadingAnimation from "./Visualization/LoadingAnimation";
-import { RolesOverlay } from "./Overlays/RolesOverlay";
 import { NetworkProvider } from "../contexts/NetworkContext";
 import { WindowProvider } from "../contexts/WindowContext";
 import { useWindow } from "../contexts/useWindow";
@@ -19,11 +18,18 @@ import { DOM_IDS, FSM } from "../constants";
 import { setSvgSize } from "../svg";
 import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
-import { musigreeManager } from "@/core";
+import { musigreeManager } from "@/core/singletons";
 import { MusigreeTourProvider } from "./Tour";
 
-// Extending the Window interface is handled in init.ts already
-// We're just importing the TreeConfig type for our internal usage
+/** Lazy-load heavy conditional UI (bundle-dynamic-imports) */
+const HelpModal = lazy(() =>
+    import("./Modals/HelpModal").then((m) => ({ default: m.HelpModal })),
+);
+const RolesOverlay = lazy(() =>
+    import("./Overlays/RolesOverlay").then((m) => ({
+        default: m.RolesOverlay,
+    })),
+);
 
 /** Versioned localStorage key for return-visitor flag (client-localstorage-schema) */
 const HAS_VISITED_BEFORE_KEY = "hasVisitedBefore:v1";
@@ -96,7 +102,6 @@ const AppContent: React.FC = (): React.ReactElement => {
     const handleToggleSidebarRight = (): void => {
         const newCollapsedState = !isSidebarRightCollapsed;
         setIsSidebarRightCollapsed(newCollapsedState);
-
         musigreeManager.isSidebarRightCollapsed = newCollapsedState;
 
         // Setup window dimensions on SVG element
@@ -151,18 +156,27 @@ const AppContent: React.FC = (): React.ReactElement => {
                                 </div>
                             </div>
 
-                            {/* Use the React components for overlays */}
-                            <RolesOverlay
-                                roles={rolesConfig}
-                                show={showRolesOverlay}
-                                onHide={(): void => setShowRolesOverlay(false)}
-                            />
+                            {showRolesOverlay ? (
+                                <Suspense fallback={null}>
+                                    <RolesOverlay
+                                        roles={rolesConfig}
+                                        show={showRolesOverlay}
+                                        onHide={(): void =>
+                                            setShowRolesOverlay(false)
+                                        }
+                                    />
+                                </Suspense>
+                            ) : null}
                         </Row>
 
-                        <HelpModal
-                            show={showHelpModal}
-                            onHide={handleHideHelp}
-                        />
+                        {showHelpModal ? (
+                            <Suspense fallback={null}>
+                                <HelpModal
+                                    show={showHelpModal}
+                                    onHide={handleHideHelp}
+                                />
+                            </Suspense>
+                        ) : null}
                     </Container>
                 </EntityProvider>
             </LoadingProvider>

@@ -23,8 +23,8 @@ export const pruneSimData = (simData: SimData): SimData => {
     console.log("pruning initial node size: ", simData.nodeMap.size);
     console.log("pruning initial link size: ", simData.linkMap.size);
 
-    for (var maxDist of [3, 2, 1]) {
-        for (var minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
+    for (const maxDist of [3, 2, 1]) {
+        for (const minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
             simData = prune(simData, maxDist, minLinks);
         }
     }
@@ -83,6 +83,7 @@ const prune = (
             console.log("    aborted pruning");
         }
 
+        const nodeKeysToPruneSet = new Set(nodeKeysToPrune);
         nodeKeysToPrune.forEach((key) => {
             simData.nodeMap.delete(key);
         });
@@ -94,8 +95,8 @@ const prune = (
 
         Array.from(simData.linkMap.values()).forEach((link) => {
             if (
-                (link.source && nodeKeysToPrune.includes(link.source.key)) ||
-                (link.target && nodeKeysToPrune.includes(link.target.key))
+                (link.source && nodeKeysToPruneSet.has(link.source.key)) ||
+                (link.target && nodeKeysToPruneSet.has(link.target.key))
             ) {
                 linkKeysToPrune.push(link.key);
                 link.source.hasMissing = true;
@@ -111,6 +112,7 @@ const prune = (
         });
         //         console.log("pruned links: ", linkKeysToPrune.length);
 
+        const intermediateNodesToPruneSet = new Set(intermediateNodesToPrune);
         intermediateNodesToPrune.forEach((key) => {
             simData.nodeMap.delete(key);
         });
@@ -122,9 +124,9 @@ const prune = (
         Array.from(simData.linkMap.values()).forEach((link) => {
             if (
                 (link.source &&
-                    intermediateNodesToPrune.includes(link.source.key)) ||
+                    intermediateNodesToPruneSet.has(link.source.key)) ||
                 (link.target &&
-                    intermediateNodesToPrune.includes(link.target.key))
+                    intermediateNodesToPruneSet.has(link.target.key))
             ) {
                 intermediateLinksToPrune.push(link.key);
                 link.source.hasMissing = true;

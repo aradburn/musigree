@@ -166,22 +166,22 @@ export const NetworkProvider = ({
 
         // Helper function for gravity strength calculation
         function calculateGravityStrength(d: SimNode): number {
-            var dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
-            var scaling = dist / 10.0;
-            var minDimension = Math.min(
+            const dist = d.distance ? 4 - clamp(d.distance, 0, 3) : 1.0;
+            const scaling = dist / 10.0;
+            const minDimension = Math.min(
                 musigreeManager.svgDimensions[0],
                 musigreeManager.svgDimensions[1],
             );
-            var maxDimension = Math.max(
+            const maxDimension = Math.max(
                 musigreeManager.svgDimensions[0],
                 musigreeManager.svgDimensions[1],
             );
-            var xyScale = minDimension / maxDimension;
-            var maxDist = Math.hypot(
+            const xyScale = minDimension / maxDimension;
+            const maxDist = Math.hypot(
                 musigreeManager.svgDimensions[0] / 2.0,
                 musigreeManager.svgDimensions[1] / 2.0,
             );
-            var radialDistance =
+            const radialDistance =
                 musigreeManager.svgDimensions[0] >=
                 musigreeManager.svgDimensions[1]
                     ? Math.hypot(
@@ -196,7 +196,7 @@ export const NetworkProvider = ({
                               xyScale,
                           d.y - musigreeManager.svgDimensions[1] / 2.0,
                       );
-            var scaledRadialDistance = (maxDist - radialDistance) / maxDist;
+            const scaledRadialDistance = (maxDist - radialDistance) / maxDist;
             //             var radialDistance =
             //                 (maxDimension -
             //                     Math.max(
@@ -204,7 +204,7 @@ export const NetworkProvider = ({
             //                         Math.abs(d.y - musigreeManager.svgDimensions[1] / 2.0),
             //                     )) /
             //                 maxDimension;
-            var result =
+            const result =
                 scaledRadialDistance * scaling * gravStrengthMultiplier * 0.5;
             // console.log(d.x, d.y);
             // console.log(result);

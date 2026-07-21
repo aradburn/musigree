@@ -13,7 +13,7 @@ const localStorageMock = {
 
 Object.defineProperty(window, "localStorage", { value: localStorageMock });
 
-const renderTourTargets = (): void => {
+const setupTourTargets = (): void => {
     document.body.innerHTML = `
         <nav id="nav-top"></nav>
         <input id="musigree-search" />
@@ -27,7 +27,7 @@ describe("MusigreeTourProvider", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorageMock.getItem.mockReturnValue(null);
-        renderTourTargets();
+        setupTourTargets();
     });
 
     it("shows the welcome step for first-time visitors", async () => {

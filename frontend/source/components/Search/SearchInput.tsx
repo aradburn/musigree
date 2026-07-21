@@ -1,6 +1,9 @@
 /** @jsxImportSource react */
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Form, Overlay, Popover, Spinner } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
+import Overlay from "react-bootstrap/Overlay";
+import Popover from "react-bootstrap/Popover";
+import Spinner from "react-bootstrap/Spinner";
 import { TYPEAHEAD } from "@/constants.ts";
 import type { SearchResult as SearchResultType } from "./hooks/useSearchApi";
 import useSearchApi from "./hooks/useSearchApi";

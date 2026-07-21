@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { ReactNode } from "react";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
@@ -47,35 +48,58 @@ vi.mock("../../../network/events", () => ({
     }),
 }));
 
-// We need to mock react-bootstrap to handle OverlayTrigger and Tooltip
-vi.mock("react-bootstrap", () => {
-    return {
-        Navbar: ({ children, className }) => (
-            <nav data-testid="navbar" className={className}>
-                {children}
-            </nav>
-        ),
-        Container: ({ children, fluid }) => (
-            <div
-                data-testid="container"
-                className={fluid ? "container-fluid" : "container"}
-            >
-                {children}
-            </div>
-        ),
-        OverlayTrigger: ({ children, overlay }) => (
-            <div data-testid="overlay-trigger">
-                {children}
-                <div data-testid="tooltip-content">
-                    {overlay.props.children}
-                </div>
-            </div>
-        ),
-        Tooltip: ({ id, children }) => (
-            <div data-testid={`tooltip-${id}`}>{children}</div>
-        ),
-    };
-});
+// Mock react-bootstrap subpath imports (direct imports for tree-shaking)
+vi.mock("react-bootstrap/Navbar", () => ({
+    default: ({
+        children,
+        className,
+    }: {
+        children: ReactNode;
+        className?: string;
+    }) => (
+        <nav data-testid="navbar" className={className}>
+            {children}
+        </nav>
+    ),
+}));
+
+vi.mock("react-bootstrap/Container", () => ({
+    default: ({
+        children,
+        fluid,
+    }: {
+        children: ReactNode;
+        fluid?: boolean;
+    }) => (
+        <div
+            data-testid="container"
+            className={fluid ? "container-fluid" : "container"}
+        >
+            {children}
+        </div>
+    ),
+}));
+
+vi.mock("react-bootstrap/OverlayTrigger", () => ({
+    default: ({
+        children,
+        overlay,
+    }: {
+        children: ReactNode;
+        overlay: { props: { children: ReactNode } };
+    }) => (
+        <div data-testid="overlay-trigger">
+            {children}
+            <div data-testid="tooltip-content">{overlay.props.children}</div>
+        </div>
+    ),
+}));
+
+vi.mock("react-bootstrap/Tooltip", () => ({
+    default: ({ id, children }: { id?: string; children: ReactNode }) => (
+        <div data-testid={`tooltip-${id}`}>{children}</div>
+    ),
+}));
 
 describe("Header Component", () => {
     // Setup mocks for window and document

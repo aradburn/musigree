@@ -83,6 +83,8 @@ labels using information derived from the Discogs.com database.">
     loaded #}
     {# Uncomment the service you want to use, or configure via template
     variables #}
+
+    {%- if is_production %}
     <script>
         window.op = window.op || function () {
             var n = [];
@@ -111,6 +113,7 @@ labels using information derived from the Discogs.com database.">
     </script>
 
     <script src="https://openpanel.dev/op1.js" defer async></script>
+    {%- endif %}
 
     {# Umami #}
     {#

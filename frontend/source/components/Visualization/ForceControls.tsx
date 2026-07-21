@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import React, { useCallback } from "react";
-import { Form } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 import { FORCE } from "../../constants";
 import { useNetwork } from "../../contexts/useNetwork";
 import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";

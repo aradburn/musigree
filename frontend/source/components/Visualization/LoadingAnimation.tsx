@@ -124,6 +124,8 @@ const LoadingAnimation = (): null => {
 
         // Update the loading animation
         update(data, extent);
+        // update is stable enough for loading toggles; recreating it each render is intentional
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when isLoading changes
     }, [isLoading]);
 
     // Update the loading animation with new data

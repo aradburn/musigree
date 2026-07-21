@@ -60,11 +60,8 @@ const createSelectionMock = (): any => {
     };
 
     // Make functions return the same object to ensure spies are preserved
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     selectionMock.append.mockReturnValue(selectionMock);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     selectionMock.select.mockReturnValue(selectionMock);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     selectionMock.selectAll.mockReturnValue(selectionMock);
 
     return selectionMock;

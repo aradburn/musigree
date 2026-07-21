@@ -89,7 +89,10 @@ describe("useSearchApi", () => {
 
         // Wait for the hook to update with the fetched results
         await waitFor(() => {
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test%20query");
+            expect(fetchSpy).toHaveBeenCalledWith(
+                "/api/search/test%20query",
+                expect.objectContaining({ signal: expect.any(AbortSignal) }),
+            );
             expect(result.current.results).toEqual(mockResults);
             expect(result.current.loading).toBe(false);
             expect(result.current.error).toBeNull();
@@ -149,11 +152,9 @@ describe("useSearchApi", () => {
         });
 
         // Change the query multiple times in quick succession
-        act(() => {
-            rerender({ query: "test1" });
-            rerender({ query: "test2" });
-            rerender({ query: "test3" });
-        });
+        rerender({ query: "test1" });
+        rerender({ query: "test2" });
+        rerender({ query: "test3" });
 
         // Advance time by less than debounce time - no fetch should happen yet
         act(() => {
@@ -173,8 +174,11 @@ describe("useSearchApi", () => {
         // Should only be called once with the latest query
         await waitFor(() => {
             expect(fetchSpy).toHaveBeenCalledTimes(1);
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test3");
         });
+        expect(fetchSpy).toHaveBeenCalledWith(
+            "/api/search/test3",
+            expect.objectContaining({ signal: expect.any(AbortSignal) }),
+        );
     });
 
     // Test custom debounce time
@@ -226,7 +230,10 @@ describe("useSearchApi", () => {
         });
 
         await waitFor(() => {
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test");
+            expect(fetchSpy).toHaveBeenCalledWith(
+                "/api/search/test",
+                expect.objectContaining({ signal: expect.any(AbortSignal) }),
+            );
             expect(result.current.results).toEqual(mockResults);
             expect(result.current.loading).toBe(false);
             expect(result.current.error).toBeNull();
@@ -252,6 +259,7 @@ describe("useSearchApi", () => {
         await waitFor(() => {
             expect(fetchSpy).toHaveBeenCalledWith(
                 "/api/search/test%20%26%20query%20%2B%20special",
+                expect.objectContaining({ signal: expect.any(AbortSignal) }),
             );
             expect(result.current.loading).toBe(false);
         });
@@ -272,7 +280,10 @@ describe("useSearchApi", () => {
         });
 
         await waitFor(() => {
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test");
+            expect(fetchSpy).toHaveBeenCalledWith(
+                "/api/search/test",
+                expect.objectContaining({ signal: expect.any(AbortSignal) }),
+            );
             expect(result.current.results).toEqual([]);
             expect(result.current.loading).toBe(false);
             expect(result.current.error).toBeNull();
@@ -317,6 +328,39 @@ describe("useSearchApi", () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
+    // Test that fetch is called with an AbortSignal and aborted on unmount
+    it("should pass AbortSignal to fetch and abort on unmount", async () => {
+        const fetchSpy = vi
+            .spyOn(global, "fetch")
+            .mockResolvedValue(createFetchResponse({ results: [] }));
+
+        const { result, unmount } = renderHook(() =>
+            useSearchApi("signal test"),
+        );
+
+        // Effect should set loading immediately for a valid query
+        expect(result.current.loading).toBe(true);
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        await act(async () => {
+            vi.advanceTimersByTime(MOCK_CONSTANTS.TIMING.TYPEAHEAD_DEBOUNCE);
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+        });
+        expect(fetchSpy).toHaveBeenCalledWith(
+            "/api/search/signal%20test",
+            expect.objectContaining({ signal: expect.any(AbortSignal) }),
+        );
+        const signal = (fetchSpy.mock.calls[0][1] as RequestInit).signal;
+        expect(signal?.aborted).toBe(false);
+
+        unmount();
+        expect(signal?.aborted).toBe(true);
+    });
     // Test for query change resets debounce timer
     it("should reset debounce timer when query changes", async () => {
         const fetchSpy = vi
@@ -335,9 +379,7 @@ describe("useSearchApi", () => {
         });
 
         // Change query - this should reset the timer
-        act(() => {
-            rerender({ query: "second" });
-        });
+        rerender({ query: "second" });
 
         // Advance time by less than full debounce time again
         act(() => {
@@ -359,7 +401,10 @@ describe("useSearchApi", () => {
         // Should have been called once with the latest query
         await waitFor(() => {
             expect(fetchSpy).toHaveBeenCalledTimes(1);
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/second");
         });
+        expect(fetchSpy).toHaveBeenCalledWith(
+            "/api/search/second",
+            expect.objectContaining({ signal: expect.any(AbortSignal) }),
+        );
     });
 });

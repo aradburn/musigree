@@ -1,6 +1,7 @@
 /** @jsxImportSource react */
 import React from "react";
-import { Modal, Button } from "react-bootstrap";
+import Modal from "react-bootstrap/Modal";
+import Button from "react-bootstrap/Button";
 
 interface HelpModalProps {
     show?: boolean;
@@ -12,11 +13,11 @@ interface HelpModalProps {
  * This is based on modal-help.html from the original jQuery implementation.
  */
 export const HelpModal: React.FC<HelpModalProps> = ({
-    show = false,
-    onHide = (): void => {
-        return;
-    },
-}): React.ReactElement => {
+                                                        show = false,
+                                                        onHide = (): void => {
+                                                            return;
+                                                        },
+                                                    }): React.ReactElement => {
     const handleClose = (): void => {
         onHide();
     };
@@ -39,11 +40,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 </p>
 
                 <p>
-                    All of <strong>Musigree</strong>'s data is derived from the{" "}
+                    All of <strong>Musigree</strong>'s data is derived from
+                    the{" "}
                     <a
-                        href="http://discogs.com"
+                        href="https://discogs.com"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                     >
                         Discogs.com
                     </a>{" "}
@@ -73,9 +75,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     <strong>Musigree</strong> would also be impossible without
                     the generous public data dump that{" "}
                     <a
-                        href="http://discogs.com"
+                        href="https://discogs.com"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                     >
                         Discogs.com
                     </a>{" "}
@@ -85,7 +87,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 <p>
                     This data is made available under the Creative Commons{" "}
                     <a
-                        href="http://creativecommons.org/about/cc0"
+                        href="https://creativecommons.org/about/cc0"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
@@ -94,11 +96,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 </p>
 
                 <p>
-                    If something is not working, please file a bug report on{" "}
+                    If something is not working, please file a bug report
+                    on{" "}
                     <a
                         href="https://github.com/aradburn/musigree/issues"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                     >
                         Github
                     </a>
@@ -109,9 +112,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     If any artist or label information is missing or incorrect,
                     it can be updated on{" "}
                     <a
-                        href="http://discogs.com"
+                        href="https://discogs.com"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                     >
                         Discogs.com
                     </a>
@@ -126,7 +129,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     <a
                         href="https://github.com/aradburn/musigree"
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                     >
                         GitHub.
                     </a>

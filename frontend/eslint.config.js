@@ -1,18 +1,20 @@
-import eslint from "@eslint/js";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
-import prettierPlugin from "eslint-plugin-prettier";
+import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
 import prettierConfig from "eslint-config-prettier";
-import globals from "globals";
-import testingLibrary from "eslint-plugin-testing-library";
+import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import testingLibrary from "eslint-plugin-testing-library";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const testFiles = [
+    "**/__tests__/**/*.{ts,tsx}",
+    "**/tests/**/*.{ts,tsx}",
+];
 
-export default [
-    // Base ESLint configuration
+const testingLibraryReact = testingLibrary.configs["flat/react"];
+
+export default defineConfig(
     {
         ignores: ["**/dist/**", "**/node_modules/**"],
         linterOptions: {
@@ -20,42 +22,17 @@ export default [
         },
     },
 
-    // JavaScript files (during transition)
-    {
-        files: ["**/*.{js,jsx}"],
-        languageOptions: {
-            ecmaVersion: "latest",
-            sourceType: "module",
-            globals: {
-                ...globals.browser,
-                ...globals.es2021,
-            },
-        },
-        plugins: {
-            prettier: prettierPlugin,
-        },
-        rules: {
-            ...eslint.configs.recommended.rules,
-            "prefer-const": "warn",
-            "no-unused-vars": "warn",
-            "prettier/prettier": "warn",
-        },
-    },
+    js.configs.recommended,
 
-    // TypeScript files
+    // App source: type-aware TypeScript linting (excludes tests)
     {
         files: ["**/*.{ts,tsx}"],
-        ignores: [
-            "**/__tests__/*.{test,spec}.{ts,tsx}",
-            "**/tests/**/*.{ts,tsx}",
-        ],
+        ignores: testFiles,
+        extends: [...tseslint.configs.recommendedTypeChecked],
         languageOptions: {
-            parser: tsparser,
             parserOptions: {
-                ecmaVersion: "latest",
-                sourceType: "module",
-                project: "./tsconfig.json",
-                tsconfigRootDir: __dirname,
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
             },
             globals: {
                 ...globals.browser,
@@ -63,14 +40,13 @@ export default [
             },
         },
         plugins: {
-            "@typescript-eslint": tseslint,
+            "react-hooks": reactHooks,
             "react-refresh": reactRefresh,
-            prettier: prettierPlugin,
         },
         rules: {
-            ...eslint.configs.recommended.rules,
-            ...tseslint.configs["recommended"].rules,
-            ...tseslint.configs["recommended-requiring-type-checking"].rules,
+            // Classic hooks rules only (not React Compiler rules from flat.recommended)
+            "react-hooks/rules-of-hooks": "error",
+            "react-hooks/exhaustive-deps": "warn",
             "@typescript-eslint/no-explicit-any": "error",
             "@typescript-eslint/explicit-function-return-type": "error",
             "@typescript-eslint/no-unused-vars": [
@@ -88,55 +64,47 @@ export default [
             ],
             "prefer-const": "error",
             "react-refresh/only-export-components": "error",
-            "prettier/prettier": "error",
         },
     },
 
-    // Test files specific configuration
+    // Tests: Testing Library rules; keep TypeScript rules relaxed like before
     {
-        files: [
-            "**/__tests__/*.{test,spec}.{ts,tsx}",
-            "**/__tests__/setup/*.{ts,tsx}",
-            "**/tests/**/*.{ts,tsx}",
-        ],
+        files: testFiles,
+        extends: [tseslint.configs.disableTypeChecked],
         plugins: {
-            "@typescript-eslint": tseslint,
-            prettier: prettierPlugin,
-            "testing-library": testingLibrary,
+            "@typescript-eslint": tseslint.plugin,
+            ...testingLibraryReact.plugins,
         },
         languageOptions: {
-            parser: tsparser,
+            parser: tseslint.parser,
             parserOptions: {
-                ecmaVersion: "latest",
-                sourceType: "module",
-                project: "./tsconfig.json",
-                tsconfigRootDir: __dirname,
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
             },
             globals: {
                 ...globals.browser,
                 ...globals.es2021,
                 ...globals.node,
-                describe: "readonly",
-                it: "readonly",
-                expect: "readonly",
-                vi: "readonly",
-                beforeEach: "readonly",
-                afterEach: "readonly",
-                beforeAll: "readonly",
-                afterAll: "readonly",
+                ...globals.vitest,
             },
         },
         rules: {
+            ...testingLibraryReact.rules,
             "@typescript-eslint/no-explicit-any": "off",
             "@typescript-eslint/no-unused-vars": "off",
             "@typescript-eslint/unbound-method": "off",
             "@typescript-eslint/explicit-function-return-type": "off",
             "@typescript-eslint/no-unsafe-return": "off",
+            "@typescript-eslint/no-unused-expressions": "off",
+            "@typescript-eslint/no-unsafe-function-type": "off",
+            "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
             "testing-library/no-node-access": "off",
             "testing-library/no-container": "off",
+            "no-unused-expressions": "off",
+            "no-unused-vars": "off",
         },
     },
 
-    // Apply Prettier config last to ensure it takes precedence
+    // Disable Prettier-conflicting rules; formatting stays in the format script
     prettierConfig,
-];
+);

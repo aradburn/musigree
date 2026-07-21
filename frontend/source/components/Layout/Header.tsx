@@ -1,7 +1,10 @@
 /* @jsxImportSource react */
 
 import React from "react";
-import { Container, Navbar, OverlayTrigger, Tooltip } from "react-bootstrap";
+import Container from "react-bootstrap/Container";
+import Navbar from "react-bootstrap/Navbar";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 import SearchInput from "../Search/SearchInput";
 import { FSM } from "@/constants.ts";
 import { version } from "@/version.ts";
