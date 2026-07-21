@@ -149,11 +149,9 @@ describe("useSearchApi", () => {
         });
 
         // Change the query multiple times in quick succession
-        act(() => {
-            rerender({ query: "test1" });
-            rerender({ query: "test2" });
-            rerender({ query: "test3" });
-        });
+        rerender({ query: "test1" });
+        rerender({ query: "test2" });
+        rerender({ query: "test3" });
 
         // Advance time by less than debounce time - no fetch should happen yet
         act(() => {
@@ -173,8 +171,8 @@ describe("useSearchApi", () => {
         // Should only be called once with the latest query
         await waitFor(() => {
             expect(fetchSpy).toHaveBeenCalledTimes(1);
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/test3");
         });
+        expect(fetchSpy).toHaveBeenCalledWith("/api/search/test3");
     });
 
     // Test custom debounce time
@@ -335,9 +333,7 @@ describe("useSearchApi", () => {
         });
 
         // Change query - this should reset the timer
-        act(() => {
-            rerender({ query: "second" });
-        });
+        rerender({ query: "second" });
 
         // Advance time by less than full debounce time again
         act(() => {
@@ -359,7 +355,7 @@ describe("useSearchApi", () => {
         // Should have been called once with the latest query
         await waitFor(() => {
             expect(fetchSpy).toHaveBeenCalledTimes(1);
-            expect(fetchSpy).toHaveBeenCalledWith("/api/search/second");
         });
+        expect(fetchSpy).toHaveBeenCalledWith("/api/search/second");
     });
 });

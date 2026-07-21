@@ -30,7 +30,8 @@
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "strict": false,
-        "sourceMap": false
+        "sourceMap": false,
+        "ignoreDeprecations": "6.0"
     },
     "include": [
         "source/**/*.ts",

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 
 import { SidebarRight } from "../../Layout/SidebarRight";
@@ -47,9 +47,9 @@ describe("SidebarRight + EntityProvider integration", () => {
         });
 
         // Title updates to entity name
-        await waitFor(() =>
-            expect(screen.getByText("Integration Artist")).toBeInTheDocument(),
-        );
+        expect(
+            await screen.findByText("Integration Artist"),
+        ).toBeInTheDocument();
         // Some fields
         expect(screen.getByText("Artist")).toBeInTheDocument();
         expect(screen.getByText("UK")).toBeInTheDocument();

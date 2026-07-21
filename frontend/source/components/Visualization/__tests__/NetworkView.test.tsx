@@ -1,6 +1,6 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render } from "@testing-library/react";
 
 // Define mocks
 const initNetworkMock = vi.fn();
@@ -45,10 +45,6 @@ import { DOM_IDS } from "../../../constants";
 describe("NetworkView Component", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-    });
-
-    afterEach(() => {
-        cleanup();
     });
 
     it("renders with the correct ID", () => {

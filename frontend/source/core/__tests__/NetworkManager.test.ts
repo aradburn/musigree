@@ -6,6 +6,7 @@ import type {
     SimNode,
     SimLink,
 } from "../../network/data";
+import type { Simulation, ZoomBehavior } from "d3";
 import { NodeType } from "../../network/data";
 import { RequestNetworkEvent } from "../../network/events";
 import { NetworkManager } from "../NetworkManager";
@@ -112,7 +113,7 @@ describe("NetworkManager", () => {
         });
 
         it("should get and set forceLayout", () => {
-            const mockForceLayout = {} as d3.Simulation<SimNode, SimLink>;
+            const mockForceLayout = {} as Simulation<SimNode, SimLink>;
 
             expect(manager.forceLayout).toBeNull();
             manager.forceLayout = mockForceLayout;
@@ -138,7 +139,7 @@ describe("NetworkManager", () => {
         });
 
         it("should get and set zoom", () => {
-            const mockZoom = {} as d3.ZoomBehavior<SVGGElement, unknown>;
+            const mockZoom = {} as ZoomBehavior<SVGGElement, unknown>;
 
             expect(manager.zoom).toBeNull();
             manager.zoom = mockZoom;
@@ -210,7 +211,7 @@ describe("NetworkManager", () => {
             it("should stop force layout", () => {
                 const mockForceLayout = {
                     stop: vi.fn(),
-                } as unknown as d3.Simulation<SimNode, SimLink>;
+                } as unknown as Simulation<SimNode, SimLink>;
 
                 manager.forceLayout = mockForceLayout;
                 manager.dispose();

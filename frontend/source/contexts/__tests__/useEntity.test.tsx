@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
 import { describe, it, expect, vi } from "vitest";
+import type { ReactNode } from "react";
 import { renderHook } from "@testing-library/react";
 import { useEntity } from "../useEntity";
 import {
@@ -42,7 +43,7 @@ describe("useEntity", () => {
         };
 
         // Create a wrapper with the EntityContext.Provider
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
+        const wrapper = ({ children }: { children: ReactNode }) => (
             <EntityContext.Provider value={mockContextValue}>
                 {children}
             </EntityContext.Provider>

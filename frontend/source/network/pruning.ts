@@ -23,8 +23,8 @@ export const pruneSimData = (simData: SimData): SimData => {
     console.log("pruning initial node size: ", simData.nodeMap.size);
     console.log("pruning initial link size: ", simData.linkMap.size);
 
-    for (var maxDist of [3, 2, 1]) {
-        for (var minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
+    for (const maxDist of [3, 2, 1]) {
+        for (const minLinks of [1, 2, 3, 4, 5, 10, 100, 1000000]) {
             simData = prune(simData, maxDist, minLinks);
         }
     }

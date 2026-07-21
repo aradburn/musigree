@@ -130,6 +130,8 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         return (): void => {
             window.removeEventListener("resize", handleResize as () => void);
         };
+        // Mount-only: register a single debounced resize listener for the app lifetime
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
     }, []);
 
     // Update state ref whenever state changes

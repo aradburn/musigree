@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
 import { describe, it, expect, vi } from "vitest";
+import type { ReactNode } from "react";
 import { render, renderHook } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { useLoading } from "../useLoading";
@@ -43,7 +44,7 @@ describe("useLoading", () => {
         };
 
         // Create a wrapper with the LoadingContext.Provider
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
+        const wrapper = ({ children }: { children: ReactNode }) => (
             <LoadingContext.Provider value={mockContextValue}>
                 {children}
             </LoadingContext.Provider>

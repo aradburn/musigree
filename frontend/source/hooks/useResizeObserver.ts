@@ -594,6 +594,7 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         // trigger forces re-measurement when it changes
         // Note: This effect also checks ref.current directly, so it will work even
         // if elementVersion doesn't update (e.g., when element is available on first render)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- measure helpers close over latest size via refs
     }, [box, ref, trigger, elementVersion]);
 
     return size;

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { ReactNode } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
@@ -27,7 +28,7 @@ vi.mock("react-bootstrap", async () => {
             children,
             show,
         }: {
-            children: React.ReactNode;
+            children: ReactNode;
             show: boolean;
         }) => {
             return show ? (

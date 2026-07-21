@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
 import { describe, it, expect, vi } from "vitest";
+import type { ReactNode } from "react";
 import { renderHook } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { useWindow } from "../useWindow";
@@ -47,7 +48,7 @@ describe("useWindow", () => {
         };
 
         // Create a wrapper with the WindowContext.Provider
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
+        const wrapper = ({ children }: { children: ReactNode }) => (
             <WindowContext.Provider value={mockContextValue}>
                 {children}
             </WindowContext.Provider>
