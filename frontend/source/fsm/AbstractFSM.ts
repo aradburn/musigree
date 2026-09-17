@@ -145,11 +145,20 @@ export abstract class AbstractFSM {
             transition: this.transition.bind(this) as TransitionFunction,
         };
 
-        // Call the corresponding method on the current state if it exists
+        // Call the corresponding method on the current state if it exists.
+        // Look up via a record so the handler is not stored as an unbound method.
         const methodKey = event.replace(/-([a-z])/g, (_, letter: string) =>
             letter.toUpperCase(),
         );
-        const stateMethod = this._state[methodKey as keyof State];
+        const stateHandlers = this._state as unknown as Record<
+            string,
+            ((
+                context: StateContext,
+                data: EventData,
+                ...extra: unknown[]
+            ) => void) | undefined
+        >;
+        const stateMethod = stateHandlers[methodKey];
 
         if (typeof stateMethod === "function") {
             stateMethod.call(this._state, context, data, ...args);

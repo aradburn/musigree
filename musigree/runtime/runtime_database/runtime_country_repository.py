@@ -8,12 +8,14 @@ from musigree.runtime.runtime_database.runtime_country_table import RuntimeCount
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_country import RuntimeCountry
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeCountryRepository(RuntimeBaseRepository[RuntimeCountryTable]):
+# noinspection PyTypeChecker
+class RuntimeCountryRepository(RuntimeBaseRepository["RuntimeCountryTable"]):
     """
     Repository for managing RuntimeCountry objects in the runtime runtime_database.
 
@@ -29,7 +31,7 @@ class RuntimeCountryRepository(RuntimeBaseRepository[RuntimeCountryTable]):
         schema_class (Type[RuntimeCountryTable]): The SQLAlchemy table class for runtime countries.
     """
 
-    schema_class = RuntimeCountryTable
+    schema_class = mapped_entity(RuntimeCountryTable)
     """The SQLAlchemy table class for runtime countries."""
 
     async def all(self) -> AsyncGenerator[RuntimeCountry, None]:
@@ -55,7 +57,7 @@ class RuntimeCountryRepository(RuntimeBaseRepository[RuntimeCountryTable]):
         Raises:
             NotFoundError: If no country is found with the given ID.
         """
-        query = select(RuntimeCountryTable).where(RuntimeCountryTable.id == id_)
+        query = select(mapped_entity(RuntimeCountryTable)).where(RuntimeCountryTable.id == id_)
 
         result: Result[tuple[int]] = await self.execute(query)
 
@@ -77,7 +79,9 @@ class RuntimeCountryRepository(RuntimeBaseRepository[RuntimeCountryTable]):
         Raises:
             NotFoundError: If no country is found with the given name.
         """
-        query = select(RuntimeCountryTable).where(RuntimeCountryTable.country_name == name)
+        query = select(mapped_entity(RuntimeCountryTable)).where(
+            RuntimeCountryTable.country_name == name
+        )
         result: Result[tuple[RuntimeCountry]] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

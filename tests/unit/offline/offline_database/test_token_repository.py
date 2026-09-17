@@ -5,19 +5,24 @@ This module tests the TokenRepository class which manages Token objects
 in the offline database.
 """
 
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy.engine import Result
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import DatabaseError
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database.token_table import TokenTable
 from musigree.offline.offline_domain.token import Token
 
 
+# noinspection PyTypeChecker
 class TestTokenRepository:
     """Test class for TokenRepository."""
 
@@ -32,9 +37,9 @@ class TestTokenRepository:
         return Token(token="test_token", entity_id=12345)
 
     @pytest.fixture
-    def mock_token_table(self) -> TokenTable:
+    def mock_token_table(self) -> Mock:
         """Create a mock token table record."""
-        table_mock = Mock(spec=TokenTable)
+        table_mock = Mock()
         table_mock.token = "test_token"
         table_mock.entity_id = 12345
         return table_mock
@@ -48,15 +53,16 @@ class TestTokenRepository:
     async def test_all_success(
         self,
         token_repository: TokenRepository,
-        mock_token_table: TokenTable,
+        mock_token_table: Mock,
         mock_token: Token,
     ) -> None:
         """Test successful all() method execution."""
-        async def mock_iterator() -> AsyncGenerator[TokenTable, Any]:
+
+        async def mock_iterator() -> AsyncGenerator[Mock, Any]:
             yield mock_token_table
 
-        with patch.object(token_repository, "_all", return_value=mock_iterator()):
-            with patch.object(Token, "model_validate", return_value=mock_token):
+        with patch.object(BaseRepository, "_all", return_value=mock_iterator()):
+            with patch.object(BaseModel, "model_validate", return_value=mock_token):
                 results = []
                 async for t in token_repository.all():
                     results.append(t)
@@ -66,7 +72,7 @@ class TestTokenRepository:
     @pytest.mark.asyncio
     async def test_count_success(self, token_repository: TokenRepository) -> None:
         """Test count returns integer."""
-        with patch.object(token_repository, "execute", AsyncMock()) as mock_execute:
+        with patch.object(OfflineSession, "execute", AsyncMock()) as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalar.return_value = 42
             mock_execute.return_value = mock_result
@@ -76,7 +82,7 @@ class TestTokenRepository:
     @pytest.mark.asyncio
     async def test_count_non_integer_raises(self, token_repository: TokenRepository) -> None:
         """Test count raises DatabaseError when result is not integer."""
-        with patch.object(token_repository, "execute", AsyncMock()) as mock_execute:
+        with patch.object(OfflineSession, "execute", AsyncMock()) as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalar.return_value = "not_an_int"
             mock_execute.return_value = mock_result
@@ -86,7 +92,7 @@ class TestTokenRepository:
     @pytest.mark.asyncio
     async def test_get_by_token_success(self, token_repository: TokenRepository) -> None:
         """Test get_by_token returns list of entity ids."""
-        with patch.object(token_repository, "execute", AsyncMock()) as mock_execute:
+        with patch.object(OfflineSession, "execute", AsyncMock()) as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = [100, 200]
             mock_execute.return_value = mock_result
@@ -97,11 +103,13 @@ class TestTokenRepository:
     async def test_get_random_id_returns_id(self, token_repository: TokenRepository) -> None:
         """Test get_random_id returns entity id when count > 0."""
         with patch.object(token_repository, "count", AsyncMock(return_value=10)):
-            with patch.object(token_repository, "execute", AsyncMock()) as mock_execute:
+            with patch.object(OfflineSession, "execute", AsyncMock()) as mock_execute:
                 mock_result = Mock(spec=Result)
                 mock_result.scalar_one_or_none.return_value = 999
                 mock_execute.return_value = mock_result
-                with patch("musigree.offline.offline_database.token_repository.random") as mock_random:
+                with patch(
+                    "musigree.offline.offline_database.token_repository.random"
+                ) as mock_random:
                     mock_random.randint.return_value = 5
                     result = await token_repository.get_random_id()
                     assert result == 999
@@ -111,13 +119,11 @@ class TestTokenRepository:
         self,
         token_repository: TokenRepository,
         mock_token: Token,
-        mock_token_table: TokenTable,
+        mock_token_table: Mock,
     ) -> None:
         """Test successful create execution."""
-        with patch.object(
-            token_repository, "_save", AsyncMock(return_value=mock_token_table)
-        ):
-            with patch.object(Token, "model_validate", return_value=mock_token):
+        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_token_table)):
+            with patch.object(BaseModel, "model_validate", return_value=mock_token):
                 result = await token_repository.create(mock_token)
                 assert result == mock_token
 

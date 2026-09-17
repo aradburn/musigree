@@ -5,20 +5,25 @@ This module tests the EntityRepository class which manages Entity objects
 in the offline runtime_database, including CRUD operations and specialized queries.
 """
 
-from unittest.mock import AsyncMock, Mock, patch, PropertyMock
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result, select
 
 from musigree import utils
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.entity_table import EntityTable
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_domain.entity import Entity
 
 
+# noinspection PyTypeChecker
 class TestEntityRepository:
     """Test class for EntityRepository."""
 
@@ -41,9 +46,9 @@ class TestEntityRepository:
         )
 
     @pytest.fixture
-    def mock_entity_table(self) -> EntityTable:
+    def mock_entity_table(self) -> Mock:
         """Create a mock entity table record."""
-        table_mock = Mock(spec=EntityTable)
+        table_mock = Mock()
         table_mock.id = 1
         table_mock.entity_id = 12345
         table_mock.entity_type = EntityType.ARTIST
@@ -67,19 +72,19 @@ class TestEntityRepository:
     async def test_get_one_by_query_success(
         self,
         entity_repository: EntityRepository,
-        mock_entity_table: EntityTable,
+        mock_entity_table: Mock,
         mock_entity: Entity,
     ) -> None:
         """Test successful _get_one_by_query execution."""
         # Arrange
-        query = select(EntityTable).where(EntityTable.id == 1)
+        query = select(mapped_entity(EntityTable)).where(EntityTable.id == 1)
 
-        with patch.object(entity_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = mock_entity_table
             mock_execute.return_value = mock_result
 
-            with patch.object(Entity, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_entity_instance = Mock()
                 mock_entity_instance.to_domain.return_value = mock_entity
                 mock_validate.return_value = mock_entity_instance
@@ -96,9 +101,9 @@ class TestEntityRepository:
     async def test_get_one_by_query_not_found(self, entity_repository: EntityRepository) -> None:
         """Test _get_one_by_query when no entity is found."""
         # Arrange
-        query = select(EntityTable).where(EntityTable.id == 999)
+        query = select(mapped_entity(EntityTable)).where(EntityTable.id == 999)
 
-        with patch.object(entity_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = None
             mock_execute.return_value = mock_result
@@ -111,19 +116,19 @@ class TestEntityRepository:
     async def test_get_all_by_query_success(
         self,
         entity_repository: EntityRepository,
-        mock_entity_table: EntityTable,
+        mock_entity_table: Mock,
         mock_entity: Entity,
     ) -> None:
         """Test successful _get_all_by_query execution."""
         # Arrange
-        query = select(EntityTable).where(EntityTable.entity_type == EntityType.ARTIST)
+        query = select(mapped_entity(EntityTable)).where(EntityTable.entity_type == EntityType.ARTIST)
 
-        with patch.object(entity_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = [mock_entity_table]
             mock_execute.return_value = mock_result
 
-            with patch.object(Entity, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_entity_instance = Mock()
                 mock_entity_instance.to_domain.return_value = mock_entity
                 mock_validate.return_value = mock_entity_instance
@@ -140,9 +145,9 @@ class TestEntityRepository:
     async def test_get_all_by_query_empty_result(self, entity_repository: EntityRepository) -> None:
         """Test _get_all_by_query when no entities are found."""
         # Arrange
-        query = select(EntityTable).where(EntityTable.entity_type == EntityType.LABEL)
+        query = select(mapped_entity(EntityTable)).where(EntityTable.entity_type == EntityType.LABEL)
 
-        with patch.object(entity_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = []
             mock_execute.return_value = mock_result
@@ -167,7 +172,7 @@ class TestEntityRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            EntityRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
@@ -193,7 +198,7 @@ class TestEntityRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            EntityRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
@@ -258,7 +263,7 @@ class TestEntityRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            EntityRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
@@ -311,11 +316,11 @@ class TestEntityRepository:
     ) -> None:
         """Test successful create execution."""
         # Arrange
-        with patch.object(entity_repository, "_save") as mock_save:
-            mock_table_instance = Mock(spec=EntityTable)
+        with patch.object(BaseRepository, "_save") as mock_save:
+            mock_table_instance = Mock()
             mock_save.return_value = mock_table_instance
 
-            with patch.object(Entity, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_entity
 
                 # Act
@@ -335,7 +340,7 @@ class TestEntityRepository:
         payload = {"entity_name": "Updated Artist"}
 
         with patch.object(
-            EntityRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 

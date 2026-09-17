@@ -1,22 +1,26 @@
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
 from musigree.runtime.runtime_database.runtime_entity_table import RuntimeEntityTable
-from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntityDB
-
+from musigree.runtime.runtime_database.runtime_session import (
+    CTX_RUNTIME_SESSION,
+    RuntimeSession,
+)
 
 # Import the test utility
 
 
+# noinspection PyTypeChecker
 class TestRuntimeEntityRepository:
     """Unit tests for RuntimeEntityRepository class."""
 
@@ -28,9 +32,10 @@ class TestRuntimeEntityRepository:
         """Test that schema_class is correctly set."""
         # GIVEN/WHEN/THEN
         assert self.repository.schema_class == RuntimeEntityTable
+        assert mapped_entity(RuntimeEntityTable) is RuntimeEntityTable
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_id_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving an entity by ID when not found."""
         # GIVEN
@@ -47,7 +52,7 @@ class TestRuntimeEntityRepository:
             await self.repository.get_by_id(entity_id)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_id_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving an entity by ID."""
         # GIVEN
@@ -73,7 +78,7 @@ class TestRuntimeEntityRepository:
         mock_execute.return_value = mock_result
 
         # Mock the model validation and domain conversion
-        with patch.object(RuntimeEntityDB, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_entity_db = Mock()
             mock_domain_entity = Mock()
             mock_entity_db.to_domain.return_value = mock_domain_entity
@@ -88,7 +93,7 @@ class TestRuntimeEntityRepository:
             mock_entity_db.to_domain.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_count_by_type_success(self, mock_execute: Mock) -> None:
         """Test successfully counting entities by type."""
         # GIVEN
@@ -106,7 +111,7 @@ class TestRuntimeEntityRepository:
         assert result == expected_count
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_count_by_type_non_integer_error(self, mock_execute: Mock) -> None:
         """Test count_by_type when database returns non-integer."""
         # GIVEN
@@ -178,7 +183,7 @@ class TestRuntimeEntityRepository:
             CTX_RUNTIME_SESSION.reset(token)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_entity_id_and_entity_type_not_found(self, mock_execute: Mock) -> None:
         """Test get_by_entity_id_and_entity_type when entity not found."""
         # GIVEN
@@ -196,7 +201,7 @@ class TestRuntimeEntityRepository:
             await self.repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_entity_id_and_entity_type_success(self, mock_execute: Mock) -> None:
         """Test successfully getting entity by entity_id and entity_type."""
         # GIVEN
@@ -223,7 +228,7 @@ class TestRuntimeEntityRepository:
         mock_execute.return_value = mock_result
 
         # Mock the model validation and domain conversion
-        with patch.object(RuntimeEntityDB, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_entity_db = Mock()
             mock_domain_entity = Mock()
             mock_entity_db.to_domain.return_value = mock_domain_entity
@@ -238,7 +243,7 @@ class TestRuntimeEntityRepository:
             mock_entity_db.to_domain.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_type_and_name_not_found(self, mock_execute: Mock) -> None:
         """Test get_by_type_and_name when entity not found."""
         # GIVEN
@@ -256,7 +261,7 @@ class TestRuntimeEntityRepository:
             await self.repository.get_by_type_and_name(entity_type, entity_name)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_type_and_name_success(self, mock_execute: Mock) -> None:
         """Test successfully getting entity by type and name."""
         # GIVEN
@@ -283,7 +288,7 @@ class TestRuntimeEntityRepository:
         mock_execute.return_value = mock_result
 
         # Mock the model validation and domain conversion
-        with patch.object(RuntimeEntityDB, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_entity_db = Mock()
             mock_domain_entity = Mock()
             mock_entity_db.to_domain.return_value = mock_domain_entity
@@ -362,7 +367,7 @@ class TestRuntimeEntityRepository:
         assert result == []
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeEntityRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_search_multi_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving multiple entities by internal id."""
         # GIVEN
@@ -389,7 +394,7 @@ class TestRuntimeEntityRepository:
         mock_result.mappings.return_value = mock_mappings
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeEntityDB, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_entity_db = Mock()
             mock_domain_entity = Mock()
             mock_entity_db.to_domain.return_value = mock_domain_entity

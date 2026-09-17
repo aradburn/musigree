@@ -53,21 +53,6 @@ async def get_offline_session() -> AsyncSession:
         "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_offline_session()"
     )
 
-    # from sqlalchemy.ext.asyncio import (
-    #     async_scoped_session,
-    #     async_sessionmaker,
-    # )
-    #
-    # async_session_factory = async_sessionmaker(
-    #     OfflineDatabaseManager.offline_database_helper.offline_async_engine,
-    #     expire_on_commit=False,
-    # )
-    # get_async_scoped_session = async_scoped_session(
-    #     async_session_factory,
-    #     scopefunc=current_task,
-    # )
-    # return get_async_scoped_session()
-
     async_session_factory = (
         OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
     )

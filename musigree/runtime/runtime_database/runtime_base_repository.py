@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Generic, Type, AsyncGenerator
+from typing import Any, Generic, AsyncGenerator
 
 from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
@@ -26,9 +26,10 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
     It inherits from `RuntimeSession` to manage async runtime_database sessions and transactions.
 
     Attributes:
-        schema_class (Type[RuntimeConcreteTable]): The SQLAlchemy schema class
-            representing the runtime_database table that this repository interacts with.
-            This attribute must be set in subclasses.
+        schema_class: The SQLAlchemy mapped class for this repository.
+            Typed as ``Any`` because mapped classes use
+            ``DeclarativeAttributeIntercept``, which PyCharm does not treat as
+            ``type[Model]``.
 
     Type parameters:
         RuntimeConcreteTable: A type variable representing a concrete subclass of
@@ -36,7 +37,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             repository.
     """
 
-    schema_class: Type[RuntimeConcreteTable]
+    schema_class: Any
     """
     The SQLAlchemy schema class for the repository. This attribute must be
     set in subclasses to specify the table that the repository will interact with.
@@ -198,7 +199,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
             self._session.add(schema)
             await self._session.flush()
             await self._session.refresh(schema)
-            return schema
+            return schema  # type: ignore[no-any-return]
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 

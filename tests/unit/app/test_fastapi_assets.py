@@ -6,6 +6,7 @@ which handles static asset serving and template asset URL resolution for both
 development and production environments.
 """
 
+import builtins
 import json
 import os
 from pathlib import Path
@@ -47,7 +48,7 @@ class TestCreateAssetsRouter:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch("musigree.app.fastapi_assets.FRONTEND_DIR")
-    @patch("builtins.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     def test_create_assets_router_production(
         self,
         mock_file: Mock,
@@ -102,7 +103,7 @@ class TestCreateAssetsRouter:
         mock_frontend_dir.__truediv__ = Mock(return_value=Path("/fake/frontend/dist"))
 
         # Test and Assert
-        with patch("builtins.open", side_effect=OSError("File not found")):
+        with patch.object(builtins, "open", side_effect=OSError("File not found")):
             with pytest.raises(OSError, match="Manifest file not found"):
                 create_assets_router(config)
 
@@ -216,7 +217,7 @@ class TestProdAssetFunction:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch("musigree.app.fastapi_assets.FRONTEND_DIR")
-    @patch("builtins.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     def test_prod_asset_function_logging(
         self,
         mock_file: Mock,
@@ -251,7 +252,7 @@ class TestProdAssetFunction:
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch("musigree.app.fastapi_assets.FRONTEND_DIR")
-    @patch("builtins.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     def test_prod_asset_function_various_paths(
         self,
         mock_file: Mock,
@@ -336,7 +337,9 @@ class TestAssetRouterEndpoints:
         mock_frontend_dir.__truediv__ = Mock(return_value=Path("/fake/frontend/dist"))
 
         # Mock manifest file to avoid OSError
-        with patch("builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')):
+        with patch.object(
+            builtins, "open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
+        ):
             # Test
             router, templates = create_assets_router(config)
 
@@ -386,7 +389,9 @@ class TestLogging:
         mock_templates.env.globals.update = Mock()
 
         # Mock manifest file to avoid OSError
-        with patch("builtins.open", mock_open(read_data='{"main.js": {"file": "main.js"}}')):
+        with patch.object(
+            builtins, "open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
+        ):
             with patch("musigree.app.fastapi_assets.FRONTEND_DIR"):
                 # Test
                 create_assets_router(config)

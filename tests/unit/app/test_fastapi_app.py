@@ -3,14 +3,28 @@ Unit tests for musigree.app.fastapi_app module.
 """
 
 import logging
-from typing import Union, Awaitable, Callable
+from typing import Any, Union, Awaitable, Callable
 from unittest.mock import patch, AsyncMock, MagicMock, Mock
 
 import pytest
+from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
+from Secweb.CrossOriginOpenerPolicy import CrossOriginOpenerPolicy
+from Secweb.CrossOriginResourcePolicy import CrossOriginResourcePolicy
+from Secweb.ReferrerPolicy import ReferrerPolicy
+from Secweb.StrictTransportSecurity import HSTS
+from Secweb.XContentTypeOptions import XContentTypeOptions
+from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
+from Secweb.XFrameOptions import XFrame
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.testclient import TestClient
+
+# noinspection PyPackageRequirements
+from starlette.middleware.cors import CORSMiddleware
+
 # noinspection PyPackageRequirements
 from starlette.requests import Request
+
 # noinspection PyPackageRequirements
 from starlette.responses import JSONResponse, Response
 
@@ -20,8 +34,17 @@ from musigree.app.fastapi_app import (
     shutdown_application,
     templates,
 )
+from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import SqliteTestConfiguration, Configuration
 from musigree.exceptions import BaseError
+
+
+def _middleware_entry(app: FastAPI, middleware_class: type[Any]) -> Any:
+    """Return the registered Starlette middleware entry for a class."""
+    for entry in app.user_middleware:
+        if entry.cls is middleware_class:
+            return entry
+    raise AssertionError(f"{middleware_class.__name__} is not registered")
 
 
 class TestCreateApp:
@@ -32,31 +55,31 @@ class TestCreateApp:
         """Provide test configuration."""
         return SqliteTestConfiguration()
 
-    @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_basic_structure(
         self,
-        mock_setup_csp: Mock,
-        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that create_app returns a properly configured FastAPI instance."""
-        # Arrange
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
-        mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware") as mock_setup_csp,
+        ):
+            # Arrange
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
-        # Act
-        app = create_app(test_config)
+            # Act
+            app = create_app(test_config)
 
-        # Assert
-        assert isinstance(app, FastAPI)
-        assert app.title == "Musigree"  # type: ignore
-        assert app.description == "Musigree API for exploring music relationships"  # type: ignore
-        assert app.version == "1.0.0"  # type: ignore
+            # Assert
+            assert isinstance(app, FastAPI)
+            assert app.title == "Musigree"  # type: ignore
+            assert app.description == "Musigree API for exploring music relationships"  # type: ignore
+            assert app.version == "1.0.0"  # type: ignore
 
-        # Verify CSP middleware was set up
-        mock_setup_csp.assert_called_once_with(app, test_config)
+            # Verify CSP middleware was set up
+            mock_setup_csp.assert_called_once_with(app, test_config)
 
     @patch("musigree.app.fastapi_assets.create_assets_router")
     @patch("musigree.app.fastapi_app.setup_csp_middleware")
@@ -82,52 +105,98 @@ class TestCreateApp:
         # Check that middleware was added by checking user_middleware or routes
         assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
-    @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def test_create_app_development_cors(
         self,
-        _mock_setup_csp: Mock,
-        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test CORS configuration in development mode."""
-        # Arrange
-        test_config.PRODUCTION = False
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware"),
+        ):
+            # Arrange
+            test_config.PRODUCTION = False
 
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
-        mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
-        # Act
-        app = create_app(test_config)
+            # Act
+            app = create_app(test_config)
 
-        # Assert
-        assert isinstance(app, FastAPI)
-        # Check that middleware was added by checking user_middleware or routes
-        assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
+            # Assert
+            assert isinstance(app, FastAPI)
+            # Check that middleware was added by checking user_middleware or routes
+            assert hasattr(app, "user_middleware") or hasattr(app, "middleware")
 
-    @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_csp_middleware")
+    def test_create_app_registers_security_middleware(
+        self,
+        test_config: Configuration,
+    ) -> None:
+        """Test that security headers and compression middleware are registered."""
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware"),
+        ):
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+
+            app = create_app(test_config)
+
+            expected_classes = (
+                CORSMiddleware,
+                ReferrerPolicy,
+                HSTS,
+                XContentTypeOptions,
+                XDNSPrefetchControl,
+                XFrame,
+                CrossOriginEmbedderPolicy,
+                CrossOriginOpenerPolicy,
+                CrossOriginResourcePolicy,
+                PermissionsPolicy,
+                GZipMiddleware,
+            )
+            for middleware_class in expected_classes:
+                _middleware_entry(app, middleware_class)
+
+            assert _middleware_entry(app, ReferrerPolicy).kwargs["Option"] == [
+                "strict-origin-when-cross-origin"
+            ]
+            assert _middleware_entry(app, HSTS).kwargs["Option"] == {
+                "max-age": 2592000,
+                "includeSubDomains": True,
+                "preload": True,
+            }
+            assert _middleware_entry(app, XDNSPrefetchControl).kwargs["Option"] == "on"
+            assert _middleware_entry(app, XFrame).kwargs["Option"] == "DENY"
+            assert _middleware_entry(app, CrossOriginEmbedderPolicy).kwargs["Option"] == "unsafe-none"
+            assert _middleware_entry(app, CrossOriginOpenerPolicy).kwargs["Option"] == "same-origin"
+            assert _middleware_entry(app, CrossOriginResourcePolicy).kwargs["Option"] == "same-site"
+            assert _middleware_entry(app, GZipMiddleware).kwargs["minimum_size"] == 1000
+
     def test_create_app_routers_included(
         self,
-        _mock_setup_csp: Mock,
-        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that all routers are properly included."""
-        # Arrange
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
-        mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware"),
+        ):
+            # Arrange
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
-        # Act
-        app = create_app(test_config)
+            # Act
+            app = create_app(test_config)
 
-        # Assert
-        assert isinstance(app, FastAPI)
-        # Check that routes exist (the routers have been included)
-        # We should have routes from the included routers plus static files
-        assert len(app.routes) > 0
+            # Assert
+            assert isinstance(app, FastAPI)
+            # Check that routes exist (the routers have been included)
+            # We should have routes from the included routers plus static files
+            assert len(app.routes) > 0
 
 
 class TestExceptionHandlers:
@@ -139,20 +208,20 @@ class TestExceptionHandlers:
         return SqliteTestConfiguration()
 
     @pytest.fixture
-    @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     def app(
         self,
-        _mock_setup_csp: Mock,
-        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> FastAPI:
         """Create a test FastAPI app."""
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
-        mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware"),
+        ):
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
-        return create_app(test_config)
+            return create_app(test_config)
 
     @pytest.fixture
     def client(self, app: FastAPI) -> TestClient:
@@ -279,78 +348,71 @@ class TestInitApp:
         return SqliteTestConfiguration()
 
     @pytest.mark.asyncio
-    @patch("musigree.app.fastapi_app.setup_logging")
-    @patch("musigree.app.fastapi_app.CacheManager")
-    @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
-    @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
-    @patch("musigree.app.fastapi_app.asyncio_atexit")
     async def test_init_app_success(
         self,
-        mock_asyncio_atexit: Mock,
-        mock_role_data_access: Mock,
-        mock_runtime_db_manager: Mock,
-        mock_cache_manager: Mock,
-        _mock_setup_logging: Mock,
         test_config: Configuration,
     ) -> None:
         """Test successful app initialization."""
-        # Arrange
-        mock_cache_manager.setup_and_clear_cache = AsyncMock()
-        mock_runtime_db_manager.setup_database = AsyncMock()
-        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+        with (
+            patch("musigree.app.fastapi_app.setup_logging"),
+            patch("musigree.app.fastapi_app.CacheManager") as mock_cache_manager,
+            patch("musigree.app.fastapi_app.RuntimeDatabaseManager") as mock_runtime_db_manager,
+            patch("musigree.app.fastapi_app.RuntimeRoleDataAccess") as mock_role_data_access,
+            patch("musigree.app.fastapi_app.asyncio_atexit") as mock_asyncio_atexit,
+        ):
+            # Arrange
+            mock_cache_manager.setup_and_clear_cache = AsyncMock()
+            mock_runtime_db_manager.setup_database = AsyncMock()
+            mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
-        # Act
-        await init_app(test_config)
+            # Act
+            await init_app(test_config)
 
-        # Assert
-        # Note: setup_logging is called in create_app, not init_app
-        mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(test_config)
-        mock_runtime_db_manager.setup_database.assert_awaited_once_with(test_config)
-        mock_role_data_access.load_all_roles_into_cache.assert_awaited_once()
-        mock_asyncio_atexit.register.assert_called_once()
+            # Assert
+            # Note: setup_logging is called in create_app, not init_app
+            mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(test_config)
+            mock_runtime_db_manager.setup_database.assert_awaited_once_with(test_config)
+            mock_role_data_access.load_all_roles_into_cache.assert_awaited_once()
+            mock_asyncio_atexit.register.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("musigree.app.fastapi_app.CacheManager")
     async def test_init_app_raises_when_cache_not_initialized(
         self,
-        mock_cache_manager: Mock,
         test_config: Configuration,
     ) -> None:
         """Test init_app propagates cache initialization failures."""
-        mock_cache_manager.setup_and_clear_cache = AsyncMock(
-            side_effect=RuntimeError("Cache not initialized after setup")
-        )
+        with patch("musigree.app.fastapi_app.CacheManager") as mock_cache_manager:
+            mock_cache_manager.setup_and_clear_cache = AsyncMock(
+                side_effect=RuntimeError("Cache not initialized after setup")
+            )
 
-        with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
-            await init_app(test_config)
+            with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+                await init_app(test_config)
 
     @pytest.mark.asyncio
-    @patch("musigree.app.fastapi_app.setup_logging")
-    @patch("musigree.app.fastapi_app.CacheManager")
-    @patch("musigree.app.fastapi_app.RuntimeDatabaseManager")
-    @patch("musigree.app.fastapi_app.RuntimeRoleDataAccess")
-    @patch("musigree.app.fastapi_app.asyncio_atexit")
     async def test_init_app_database_setup_called(
         self,
-        _mock_asyncio_atexit: Mock,
-        mock_role_data_access: Mock,
-        mock_runtime_db_manager: Mock,
-        mock_cache_manager: Mock,
-        _mock_setup_logging: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that runtime_database setup is called during initialization."""
-        # Arrange
-        mock_cache_manager.setup_and_clear_cache = AsyncMock()
-        mock_runtime_db_manager.setup_database = AsyncMock()
-        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+        with (
+            patch("musigree.app.fastapi_app.setup_logging"),
+            patch("musigree.app.fastapi_app.CacheManager") as mock_cache_manager,
+            patch("musigree.app.fastapi_app.RuntimeDatabaseManager") as mock_runtime_db_manager,
+            patch("musigree.app.fastapi_app.RuntimeRoleDataAccess") as mock_role_data_access,
+            patch("musigree.app.fastapi_app.asyncio_atexit"),
+        ):
+            # Arrange
+            mock_cache_manager.setup_and_clear_cache = AsyncMock()
+            mock_runtime_db_manager.setup_database = AsyncMock()
+            mock_role_data_access.load_all_roles_into_cache = AsyncMock()
 
-        # Act
-        await init_app(test_config)
+            # Act
+            await init_app(test_config)
 
-        # Assert
-        mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
-        mock_role_data_access.load_all_roles_into_cache.assert_called_once()
+            # Assert
+            mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
+            mock_role_data_access.load_all_roles_into_cache.assert_called_once()
 
 
 class TestShutdownApplication:
@@ -429,34 +491,34 @@ class TestIntegrationScenarios:
         return SqliteTestConfiguration()
 
     @pytest.mark.asyncio
-    @patch("musigree.app.fastapi_assets.create_assets_router")
-    @patch("musigree.app.fastapi_app.setup_csp_middleware")
     async def test_exception_handlers_integration(
         self,
-        _mock_setup_csp: Mock,
-        mock_create_assets_router: Mock,
         test_config: Configuration,
     ) -> None:
         """Test that exception handlers are properly integrated into the app."""
-        # Arrange
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
-        mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
+        with (
+            patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
+            patch("musigree.app.fastapi_app.setup_csp_middleware"),
+        ):
+            # Arrange
+            mock_assets_router = MagicMock()
+            mock_assets_templates = MagicMock()
+            mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
-        # Act
-        app = create_app(test_config)
+            # Act
+            app = create_app(test_config)
 
-        # Assert
-        # Check that exception handlers are registered
-        assert BaseError in app.exception_handlers  # type: ignore
-        assert 404 in app.exception_handlers  # type: ignore
-        assert 500 in app.exception_handlers  # type: ignore
+            # Assert
+            # Check that exception handlers are registered
+            assert BaseError in app.exception_handlers  # type: ignore
+            assert 404 in app.exception_handlers  # type: ignore
+            assert 500 in app.exception_handlers  # type: ignore
 
-        # Test the handlers exist and are callable
-        base_error_handler = app.exception_handlers[BaseError]  # type: ignore
-        not_found_handler = app.exception_handlers[404]  # type: ignore
-        server_error_handler = app.exception_handlers[500]  # type: ignore
+            # Test the handlers exist and are callable
+            base_error_handler = app.exception_handlers[BaseError]  # type: ignore
+            not_found_handler = app.exception_handlers[404]  # type: ignore
+            server_error_handler = app.exception_handlers[500]  # type: ignore
 
-        assert callable(base_error_handler)
-        assert callable(not_found_handler)
-        assert callable(server_error_handler)
+            assert callable(base_error_handler)
+            assert callable(not_found_handler)
+            assert callable(server_error_handler)

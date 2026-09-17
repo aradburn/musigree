@@ -9,13 +9,15 @@ from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 
 
-class EntityRepository(BaseRepository[EntityTable]):
+# noinspection PyTypeChecker
+class EntityRepository(BaseRepository["EntityTable"]):
     """
     Repository for managing Entity objects in the runtime_database.
 
@@ -32,7 +34,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         schema_class (Type[EntityTable]): The SQLAlchemy table class for entities.
     """
 
-    schema_class = EntityTable
+    schema_class = mapped_entity(EntityTable)
     """
       The SQLAlchemy table class for entities.
     """
@@ -109,7 +111,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Yields:
             AsyncGenerator[Entity]: An async iterator yielding each entity.
         """
-        query = select(EntityTable)
+        query = select(mapped_entity(EntityTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for partition in result.partitions():
             # partition is an iterable that will be at most 1000 items
@@ -165,7 +167,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Raises:
             NotFoundError: If no entity is found with the given ID.
         """
-        query = select(EntityTable).where(EntityTable.id == id_)
+        query = select(mapped_entity(EntityTable)).where(EntityTable.id == id_)
         return await self._get_one_by_query(query)
 
     async def get_by_entity_id_and_entity_type(
@@ -184,7 +186,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         Raises:
             NotFoundError: If no entity is found with the given external ID and type.
         """
-        query = select(EntityTable).where(
+        query = select(mapped_entity(EntityTable)).where(
             (EntityTable.entity_id == entity_id) & (EntityTable.entity_type == entity_type)
         )
         return await self._get_one_by_query(query)
@@ -332,7 +334,7 @@ class EntityRepository(BaseRepository[EntityTable]):
             NotFoundError: If no entity is found with the given type and name.
         """
         query = (
-            select(EntityTable)
+            select(mapped_entity(EntityTable))
             .where(
                 (EntityTable.entity_type == entity_type) & (EntityTable.entity_name == entity_name)
             )
@@ -387,7 +389,7 @@ class EntityRepository(BaseRepository[EntityTable]):
         if not entity_keys:
             return []
         composite_keys = [(entity_id, entity_type.value) for entity_id, entity_type in entity_keys]
-        query = select(EntityTable).where(
+        query = select(mapped_entity(EntityTable)).where(
             tuple_(EntityTable.entity_id, EntityTable.entity_type).in_(composite_keys)
         )
         return await self._get_all_by_query(query)

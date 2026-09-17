@@ -186,16 +186,18 @@ class TestWorkerEntityPassThree:
                 assert mock_worker_single.call_count == len(ids)
 
     @pytest.mark.asyncio
-    @patch("musigree.constants.BULK_REPORTING_SIZE", 2)
     async def test_process_entity_pass_three_worker_with_reporting(
         self,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test process_entity_pass_three_worker with progress reporting."""
         # Arrange
-        with patch(
-            "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
-        ) as mock_offline_transaction:
+        with (
+            patch("musigree.constants.BULK_REPORTING_SIZE", 2),
+            patch(
+                "musigree.offline.loader.worker_entity_pass_three.offline_transaction"
+            ) as mock_offline_transaction,
+        ):
             mock_context = AsyncMock()
             mock_context.__aenter__ = AsyncMock(return_value=mock_context)
             mock_context.__aexit__ = AsyncMock(return_value=None)

@@ -707,7 +707,7 @@ class TestCacheManagerUncoveredMethods:
             patch.object(CacheManager, "setup_cache", new_callable=AsyncMock),
             patch.object(CacheManager, "get_cache", return_value=None),
         ):
-            with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+            with pytest.raises(AssertionError, match="Invalid cache"):
                 await CacheManager.setup_and_clear_cache(config)
 
     @pytest.mark.asyncio

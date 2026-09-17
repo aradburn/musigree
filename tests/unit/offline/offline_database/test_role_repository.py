@@ -5,20 +5,25 @@ This module tests the RoleRepository class which manages Role objects
 in the offline runtime_database.
 """
 
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.role_type import RoleType
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.role_repository import RoleRepository
 from musigree.offline.offline_database.role_table import RoleTable
 from musigree.offline.offline_domain.role import Role, RoleUncommitted
 
 
+# noinspection PyTypeChecker
 class TestRoleRepository:
     """Test class for RoleRepository."""
 
@@ -51,12 +56,11 @@ class TestRoleRepository:
         )
 
     @pytest.fixture
-    def mock_role_table(self) -> RoleTable:
+    def mock_role_table(self) -> Mock:
         """Create a mock role table record."""
-        table_mock = Mock(spec=RoleTable)
+        table_mock = Mock()
         table_mock.id = 1
         table_mock.role_name = "performer"
-        table_mock.role_description = "A performing artist"
         return table_mock
 
     @pytest.fixture
@@ -68,18 +72,18 @@ class TestRoleRepository:
     async def test_all_success(
         self,
         role_repository: RoleRepository,
-        mock_role_table: RoleTable,
+        mock_role_table: Mock,
         mock_role: Role,
     ) -> None:
         """Test successful all() method execution."""
         # Arrange
-        with patch.object(role_repository, "_all") as mock_all:
-            async def mock_async_iterator() -> AsyncGenerator[RoleTable, Any]:
+        with patch.object(BaseRepository, "_all") as mock_all:
+            async def mock_async_iterator() -> AsyncGenerator[Mock, Any]:
                 yield mock_role_table
 
             mock_all.return_value = mock_async_iterator()
 
-            with patch.object(Role, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_role
 
                 # Act
@@ -96,19 +100,19 @@ class TestRoleRepository:
     async def test_get_by_id_success(
         self,
         role_repository: RoleRepository,
-        mock_role_table: RoleTable,
+        mock_role_table: Mock,
         mock_role: Role,
     ) -> None:
         """Test successful get_by_id execution."""
         # Arrange
         role_id = 1
 
-        with patch.object(role_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = mock_role_table
             mock_execute.return_value = mock_result
 
-            with patch.object(Role, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_role
 
                 # Act
@@ -125,7 +129,7 @@ class TestRoleRepository:
         # Arrange
         role_id = 999
 
-        with patch.object(role_repository, "execute") as mock_execute:
+        with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = None
             mock_execute.return_value = mock_result
@@ -139,15 +143,15 @@ class TestRoleRepository:
         self,
         role_repository: RoleRepository,
         mock_role_uncommitted: RoleUncommitted,
-        mock_role_table: RoleTable,
+        mock_role_table: Mock,
         mock_role: Role,
     ) -> None:
         """Test successful create execution."""
         # Arrange
-        with patch.object(role_repository, "_save") as mock_save:
+        with patch.object(BaseRepository, "_save") as mock_save:
             mock_save.return_value = mock_role_table
 
-            with patch.object(Role, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_role
 
                 # Act
@@ -171,7 +175,7 @@ class TestRoleRepository:
     async def test_get_by_name_success(
         self,
         role_repository: RoleRepository,
-        mock_role_table: RoleTable,
+        mock_role_table: Mock,
         mock_role: Role,
     ) -> None:
         """Test successful get_by_name execution."""
@@ -180,12 +184,14 @@ class TestRoleRepository:
         mock_result.scalars.return_value.one_or_none.return_value = mock_role_table
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch.object(
-            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            patch.object(BaseModel, "model_validate", return_value=mock_role),
         ):
-            with patch.object(Role, "model_validate", return_value=mock_role):
-                result = await role_repository.get_by_name("performer")
-                assert result == mock_role
+            result = await role_repository.get_by_name("performer")
+            assert result == mock_role
 
     @pytest.mark.asyncio
     async def test_get_by_name_not_found(self, role_repository: RoleRepository) -> None:
@@ -195,11 +201,13 @@ class TestRoleRepository:
         mock_result.scalars.return_value.one_or_none.return_value = None
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch.object(
-            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            pytest.raises(NotFoundError),
         ):
-            with pytest.raises(NotFoundError):
-                await role_repository.get_by_name("nonexistent")
+            await role_repository.get_by_name("nonexistent")
 
     @pytest.mark.asyncio
     async def test_create_bulk_success(
@@ -212,22 +220,24 @@ class TestRoleRepository:
         mock_helper = Mock()
         mock_helper.generate_insert_bulk_query.return_value = Mock()
 
-        with patch.object(
-            RoleRepository, "_session", new_callable=PropertyMock, return_value=mock_session
-        ):
-            with patch(
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            patch(
                 "musigree.offline.offline_database_manager.OfflineDatabaseManager"
-            ) as mock_manager:
-                mock_manager.offline_database_helper = mock_helper
-                await role_repository.create_bulk([mock_role_uncommitted])
-                mock_helper.generate_insert_bulk_query.assert_called_once()
-                mock_session.execute.assert_called_once()
+            ) as mock_manager,
+        ):
+            mock_manager.offline_database_helper = mock_helper
+            await role_repository.create_bulk([mock_role_uncommitted])
+            mock_helper.generate_insert_bulk_query.assert_called_once()
+            mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_all_empty_result(self, role_repository: RoleRepository) -> None:
         """Test all() method with empty result."""
         # Arrange
-        with patch.object(role_repository, "_all") as mock_all:
+        with patch.object(BaseRepository, "_all") as mock_all:
             # noinspection PyUnreachableCode
             async def empty_async_iterator() -> AsyncGenerator[None, Any]:
                 return

@@ -47,11 +47,23 @@ The FastAPI router for the UI routes.
 This router is used to organize the UI routes and their related functionality.
 """
 
+UI_DEFAULT_ARTIST_ROLES = [
+    "Alias",
+    "Member Of",
+]
+UI_DEFAULT_LABEL_ROLES = [
+    "Sublabel Of",
+    "Released On",
+]
+"""
+Default roles to display if none are specified in the request.
+"""
+
 
 @router.get("/", response_class=HTMLResponse)
 async def route__index(
     request: Request,
-    roles: Annotated[list[str], Depends(get_roles)],
+    roles: Annotated[set[str], Depends(get_roles)],
     year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
 ) -> HTMLResponse:
     """
@@ -63,7 +75,7 @@ async def route__index(
 
     Args:
         request: The FastAPI request object.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
 
     Returns:
@@ -78,7 +90,7 @@ async def route__index(
     log.debug(f"network_js: {network_js}")
 
     roles_json = RoleCache.get_roles_json()
-    """Get the roles JSON data from the RoleCache."""
+    """Get all the roles JSON data from the RoleCache."""
     roles_js = f"var dgRoles = {roles_json};\n"
     # log.debug(f"roles_js: {roles_js}")
 
@@ -127,7 +139,7 @@ async def route__entity_type__entity_id(
     request: Request,
     entity_type: Annotated[EntityType, Depends(get_entity_type)],
     entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
+    roles: Annotated[set[str], Depends(get_roles)],
     year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
     on_mobile: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
@@ -142,7 +154,7 @@ async def route__entity_type__entity_id(
         request: The FastAPI request object.
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -171,6 +183,8 @@ async def route__entity_type__entity_id(
 
     log.debug("route__entity_type__entity_id")
 
+    roles_with_defaults = get_roles_with_defaults(roles, entity_type)
+
     try:
         # Retrieve the network data for the entity.
         async with runtime_transaction():
@@ -182,7 +196,7 @@ async def route__entity_type__entity_id(
                 entity_id,
                 entity_type,
                 on_mobile=on_mobile,
-                roles=roles,
+                roles=roles_with_defaults,
             )
     except NotFoundError as _ex:
         raise NotFoundError(message="Entity not found") from None
@@ -259,7 +273,7 @@ async def route__entity_type__entity_id(
 async def route__artist__entity_id(
     request: Request,
     entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
+    roles: Annotated[set[str], Depends(get_roles)],
     year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
     on_mobile: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
@@ -273,7 +287,7 @@ async def route__artist__entity_id(
     Args:
         request: The FastAPI request object.
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -293,7 +307,7 @@ async def route__artist__entity_id(
 async def route__label__entity_id(
     request: Request,
     entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
+    roles: Annotated[set[str], Depends(get_roles)],
     year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
     on_mobile: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
@@ -307,7 +321,7 @@ async def route__label__entity_id(
     Args:
         request: The FastAPI request object.
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -321,3 +335,14 @@ async def route__label__entity_id(
     return await route__entity_type__entity_id(
         request, EntityType.LABEL, entity_id, roles, year, on_mobile
     )
+
+
+def get_roles_with_defaults(roles: set[str], entity_type: EntityType) -> list[str]:
+    roles_result = roles
+    if len(roles) == 0:
+        if entity_type == EntityType.ARTIST:
+            roles_result = set(UI_DEFAULT_ARTIST_ROLES)
+        elif entity_type == EntityType.LABEL:
+            roles_result = set(UI_DEFAULT_LABEL_ROLES)
+
+    return list(sorted(roles_result))

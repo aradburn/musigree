@@ -6,13 +6,15 @@ from sqlalchemy import select, Result, update, delete
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.master_table import MasterTable
 from musigree.offline.offline_domain.master import Master
 
 log = logging.getLogger(__name__)
 
 
-class MasterRepository(BaseRepository[MasterTable]):
+# noinspection PyTypeChecker
+class MasterRepository(BaseRepository["MasterTable"]):
     """
     Repository for managing master objects in the runtime_database.
 
@@ -27,7 +29,7 @@ class MasterRepository(BaseRepository[MasterTable]):
         schema_class (Type[MasterTable]): The SQLAlchemy table class for masters.
     """
 
-    schema_class = MasterTable
+    schema_class = mapped_entity(MasterTable)
     """The SQLAlchemy table class for masters."""
 
     async def all(self) -> AsyncGenerator[list[Master], None]:
@@ -37,7 +39,7 @@ class MasterRepository(BaseRepository[MasterTable]):
         Yields:
             AsyncGenerator[master]: An async iterator yielding each master.
         """
-        query = select(MasterTable)
+        query = select(mapped_entity(MasterTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for partition in result.partitions():
             # partition is an iterable that will be at most 1000 items

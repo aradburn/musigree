@@ -1,16 +1,37 @@
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import Type
 
 from sqlalchemy import Table
+from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.ddl import DropTable
 from sqlalchemy.sql.dml import Insert
 
 from musigree.config import Configuration
-from musigree.offline.offline_database.base_table import OfflineBase, ConcreteTable
+from musigree.offline.offline_database.base_table import ConcreteTable, OfflineBase
 
 log = logging.getLogger(__name__)
+
+
+def _create_all_tables(
+    connection: Connection,
+    tables: Sequence[Table] | None = None,
+    *,
+    checkfirst: bool = True,
+) -> None:
+    """Create offline tables using a sync Connection from AsyncConnection.run_sync.
+
+    MetaData.create_all accepts Engine | Connection | MockConnection, which does
+    not match run_sync's Connection-first callable type. This adapter narrows
+    the bind so the call is type-safe.
+    """
+    OfflineBase.metadata.create_all(
+        bind=connection,
+        tables=tables,
+        checkfirst=checkfirst,
+    )
 
 
 class OfflineDatabaseHelper(ABC):
@@ -69,10 +90,10 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     async def create_tables(cls, tables: list[str]) -> None:
         """
-        Creates tables in the runtime_database.
+        Creates tables in the offline_database.
 
         Args:
-            tables: A list of table names to create. If None, all tables are created.
+            tables: A list of table names to create.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -83,68 +104,53 @@ class OfflineDatabaseHelper(ABC):
             "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
         )
 
-        if tables is None:
-            return
-
         for table in OfflineBase.metadata.tables:
             log.debug(f"table in metadata: {table}")
-        # noinspection PyTypeChecker
+
         table_definitions: list[Table] = [
             OfflineBase.metadata.tables[table_name] for table_name in tables
         ]
         for table_def in table_definitions:
             log.debug(f"creating table: {table_def.name}")
 
-        # noinspection PyTypeChecker
         async with (
             OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
         ):
-            # noinspection PyTypeChecker
             await conn.run_sync(
-                OfflineBase.metadata.create_all,
-                checkfirst=True,
+                _create_all_tables,
                 tables=table_definitions,
+                checkfirst=True,
             )
 
     @classmethod
     @abstractmethod
     async def drop_tables(cls, tables: list[str]) -> None:
         """
-        Drops tables from the runtime_database.
+        Drops tables from the offline_database.
 
         Args:
-            tables: A list of table names to drop. If None, all tables are dropped.
+            tables: A list of table names to drop.
         """
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
         assert OfflineDatabaseManager.offline_database_helper is not None, (
-            "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
+            "OfflineDatabaseManager.offline_database_helper must be initialized "
+            "before calling drop_tables()"
         )
         assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
-            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
+            "OfflineDatabaseManager.offline_database_helper.offline_async_engine "
+            "must be initialized before calling drop_tables()"
         )
 
-        if tables is not None:
-            # noinspection PyTypeChecker
-            table_definitions: list[Table] = [
-                OfflineBase.metadata.tables[table_name] for table_name in tables
-            ]
-            # noinspection PyTypeChecker
-            async with (
-                OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
-            ):
-                for table in table_definitions:
-                    log.debug(f"deleting table: {table.name}")
-                    await conn.execute(DropTable(table, if_exists=True))
-                await conn.commit()
-        else:
-            # noinspection PyTypeChecker
-            async with (
-                OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
-            ):
-                # noinspection PyTypeChecker
-                await conn.run_sync(OfflineBase.metadata.drop_all, checkfirst=True)
-                await conn.commit()
+        table_definitions: list[Table] = [
+            OfflineBase.metadata.tables[table_name] for table_name in tables
+        ]
+        async with (
+            OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
+        ):
+            for table in table_definitions:
+                log.debug(f"deleting table: {table.name}")
+                await conn.execute(DropTable(table, if_exists=True))
 
     @classmethod
     @abstractmethod
@@ -207,7 +213,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: Type[ConcreteTable],
-        values: list[dict],
+        values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
@@ -215,7 +221,7 @@ class OfflineDatabaseHelper(ABC):
 
         Args:
             schema_class: The table schema class.
-            values: The list of values to insert.
+            values_list: The list of values to insert.
             on_conflict_do_nothing: Whether to do nothing on conflict.
 
         Returns:

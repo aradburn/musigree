@@ -36,16 +36,6 @@ log = logging.getLogger(__name__)
 The logger for the dependencies module.
 """
 
-UI_DEFAULT_ROLES = [
-    "Alias",
-    "Member Of",
-    # 'Sublabel Of',
-    # 'Released On',
-]
-"""
-Default roles to display if none are specified in the request.
-"""
-
 
 def get_entity_type(entity_type_str: str) -> EntityType:
     try:
@@ -86,7 +76,7 @@ def get_year(year: str | None = None) -> tuple[int, int] | int | None:
     return year_result
 
 
-def get_roles(roles: str | None = None) -> list[str]:
+def get_roles(roles: str | None = None) -> set[str]:
     from musigree.library.cache.role_cache import RoleCache
 
     roles_result = set()
@@ -105,11 +95,8 @@ def get_roles(roles: str | None = None) -> list[str]:
             elif role in RoleCache.role_name_to_role_id_lookup.keys():
                 roles_result.add(role)
 
-    if len(roles_result) == 0:
-        roles_result = set(UI_DEFAULT_ROLES)
-    roles_list: list[str] = list(sorted(roles_result))
-    # log.debug(f"Requested roles: {roles}")
-    return roles_list
+    log.debug(f"Requested roles: {roles_result}")
+    return roles_result
 
 
 def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
@@ -155,18 +142,15 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         cache_key = f"ratelimit:{request.url.path}:{client_host}"
 
         try:
-            # Get current requests (handle Redis byte response)
-            current_requests = 0
+            # Get current requests
+            current_requests: int
             redis_value = await cache.get(cache_key)
             if redis_value:
-                # Convert bytes to string and then to int
+                # Convert to int
                 try:
-                    if isinstance(redis_value, bytes):
-                        current_requests = int(redis_value.decode("utf-8"))
-                    else:
-                        current_requests = int(str(redis_value))
+                    current_requests = int(redis_value)
                 except (ValueError, TypeError):
-                    pass
+                    current_requests = 0
             else:
                 current_requests = 0
 

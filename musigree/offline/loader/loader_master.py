@@ -14,14 +14,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.offline_database.master_repository import MasterRepository
-from musigree.offline.offline_database.master_table import MasterTable
-from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_master import ParserMaster
 from musigree.offline.loader.worker_master_deleter import delete_masters_worker
 from musigree.offline.loader.worker_master_inserter import insert_master_worker
 from musigree.offline.loader.worker_master_updater import update_master_worker
+from musigree.offline.offline_database.master_repository import MasterRepository
+from musigree.offline.offline_database.master_table import MasterTable
+from musigree.offline.offline_database.offline_transaction import offline_transaction
 
 log = logging.getLogger(__name__)
 """
@@ -44,7 +44,6 @@ class LoaderMaster(LoaderBase):
     # PUBLIC METHODS
 
     @classmethod
-    # @timeit
     async def loader_master_pass_one(
         cls, discogs_data_directory: Path, date: str, is_bulk_inserts: bool = False
     ) -> None:

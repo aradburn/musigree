@@ -136,7 +136,9 @@ class TestRoleNameFuzzyLookup:
 class TestFindRole:
     """Test class for find_role method."""
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner"
+    )
     @patch("musigree.offline.data_access_layer.offline_role_data_access.log")
     def test_find_role_direct_match(self, mock_log: Mock, mock_find_role_inner: Mock) -> None:
         """Test find_role with direct match on first try."""
@@ -151,7 +153,9 @@ class TestFindRole:
         mock_find_role_inner.assert_called_with("Vocals")
         mock_log.debug.assert_not_called()
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner"
+    )
     @patch("musigree.offline.data_access_layer.offline_role_data_access.log")
     def test_find_role_no_match(self, mock_log: Mock, mock_find_role_inner: Mock) -> None:
         """Test find_role with no match found."""
@@ -165,7 +169,9 @@ class TestFindRole:
         assert result is None
         mock_log.debug.assert_called_once_with("role not found: Unknown Role")
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner"
+    )
     def test_find_role_with_word_breakdown(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with word breakdown algorithm."""
 
@@ -184,7 +190,9 @@ class TestFindRole:
         assert result == "Vocals"
         assert mock_find_role_inner.call_count >= 2
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner"
+    )
     def test_find_role_low_score_threshold(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with score below threshold."""
         # Setup
@@ -196,7 +204,9 @@ class TestFindRole:
         # Assertions
         assert result is None
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.find_role_inner"
+    )
     def test_find_role_complex_sentence_split(self, mock_find_role_inner: Mock) -> None:
         """Test find_role with complex sentence that gets split."""
         # Setup - simulate a very long role name that needs splitting
@@ -232,7 +242,9 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.substitute_role_alternatives"
     )
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup"
+    )
     def test_find_role_inner_direct_lookup_success(
         self, mock_lookup: Mock, mock_substitute: Mock
     ) -> None:
@@ -252,7 +264,9 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.substitute_role_alternatives"
     )
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup"
+    )
     @patch(
         "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_fuzzy_lookup"
     )
@@ -277,7 +291,9 @@ class TestFindRoleInner:
     @patch(
         "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.substitute_role_alternatives"
     )
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup")
+    @patch(
+        "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_lookup"
+    )
     @patch(
         "musigree.offline.data_access_layer.offline_role_data_access.OfflineRoleDataAccess.role_name_fuzzy_lookup"
     )
@@ -368,48 +384,52 @@ class TestLoadAllRolesIntoCache:
         role.role_category = "Performance"
         return role
 
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.RoleCache")
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.offline_transaction")
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.RoleRepository")
-    @patch("musigree.offline.data_access_layer.offline_role_data_access.log")
     async def test_load_all_roles_into_cache_success(
         self,
-        mock_log: Mock,
-        mock_role_repository_class: Mock,
-        mock_transaction: Mock,
-        mock_role_cache: Mock,
         mock_role: Mock,
     ) -> None:
         """Test load_all_roles_into_cache with successful loading."""
-        # Setup
-        mock_role.id = 1
-        mock_role.role_name = "Vocals"
-        mock_role.role_category = "Performance"
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_role_data_access.RoleCache"
+            ) as mock_role_cache,
+            patch(
+                "musigree.offline.data_access_layer.offline_role_data_access.offline_transaction"
+            ) as mock_transaction,
+            patch(
+                "musigree.offline.data_access_layer.offline_role_data_access.RoleRepository"
+            ) as mock_role_repository_class,
+            patch("musigree.offline.data_access_layer.offline_role_data_access.log") as mock_log,
+        ):
+            # Setup
+            mock_role.id = 1
+            mock_role.role_name = "Vocals"
+            mock_role.role_category = "Performance"
 
-        async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
-            yield mock_role
+            async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+                yield mock_role
 
-        mock_repository = Mock()
-        mock_repository.all.return_value = async_roles_iterator()
-        mock_role_repository_class.return_value = mock_repository
+            mock_repository = Mock()
+            mock_repository.all.return_value = async_roles_iterator()
+            mock_role_repository_class.return_value = mock_repository
 
-        # Setup cache mocks
-        mock_role_cache.role_id_to_role_name_lookup = {}
-        mock_role_cache.role_id_to_role_category_lookup = {}
-        mock_role_cache.role_name_to_role_id_lookup = {}
-        mock_role_cache.role_name_set = set()
+            # Setup cache mocks
+            mock_role_cache.role_id_to_role_name_lookup = {}
+            mock_role_cache.role_id_to_role_category_lookup = {}
+            mock_role_cache.role_name_to_role_id_lookup = {}
+            mock_role_cache.role_name_set = set()
 
-        # Mock the transaction context
-        mock_transaction.return_value.__aenter__ = AsyncMock()
-        mock_transaction.return_value.__aexit__ = AsyncMock()
+            # Mock the transaction context
+            mock_transaction.return_value.__aenter__ = AsyncMock()
+            mock_transaction.return_value.__aexit__ = AsyncMock()
 
-        # Test
-        await OfflineRoleDataAccess.load_all_roles_into_cache()
+            # Test
+            await OfflineRoleDataAccess.load_all_roles_into_cache()
 
-        # Assertions
-        mock_log.debug.assert_any_call("Loading roles from offline RoleRepository")
-        # The async generator now works correctly and returns 1 role
-        mock_log.debug.assert_any_call("Loaded 1 roles from RoleRepository")
+            # Assertions
+            mock_log.debug.assert_any_call("Loading roles from offline RoleRepository")
+            # The async generator now works correctly and returns 1 role
+            mock_log.debug.assert_any_call("Loaded 1 roles from RoleRepository")
 
         # Verify method completed without error
         # In a real scenario, the cache would be populated

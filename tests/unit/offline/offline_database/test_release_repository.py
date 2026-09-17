@@ -5,19 +5,23 @@ This module tests the ReleaseRepository class which manages Release objects
 in the offline database.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy.engine import Result
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
+from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_domain.release import Release
 
 
+# noinspection PyTypeChecker
 class TestReleaseRepository:
     """Test class for ReleaseRepository."""
 
@@ -35,9 +39,9 @@ class TestReleaseRepository:
         )
 
     @pytest.fixture
-    def mock_release_table(self) -> ReleaseTable:
+    def mock_release_table(self) -> Mock:
         """Create a mock release table record."""
-        table_mock = Mock(spec=ReleaseTable)
+        table_mock = Mock()
         table_mock.release_id = 200
         table_mock.title = "Test Release"
         return table_mock
@@ -51,12 +55,12 @@ class TestReleaseRepository:
     async def test_all_success(
         self,
         release_repository: ReleaseRepository,
-        mock_release_table: ReleaseTable,
+        mock_release_table: Mock,
         mock_release: Release,
     ) -> None:
         """Test successful all() method execution."""
 
-        async def mock_partitions() -> AsyncGenerator[list, None]:
+        async def mock_partitions() -> AsyncGenerator[list]:
             yield [(mock_release_table,)]
 
         mock_result = Mock()
@@ -64,36 +68,36 @@ class TestReleaseRepository:
         mock_session = AsyncMock()
         mock_session.stream = AsyncMock(return_value=mock_result)
 
-        with patch.object(
-            ReleaseRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            patch.object(BaseModel, "model_validate", return_value=mock_release),
         ):
-            with patch.object(Release, "model_validate", return_value=mock_release):
-                results = []
-                async for batch in release_repository.all():
-                    results.extend(batch)
+            results = []
+            async for batch in release_repository.all():
+                results.extend(batch)
 
-                assert len(results) == 1
-                assert results[0] == mock_release
+            assert len(results) == 1
+            assert results[0] == mock_release
 
     @pytest.mark.asyncio
     async def test_get_by_id_success(
         self,
         release_repository: ReleaseRepository,
-        mock_release_table: ReleaseTable,
+        mock_release_table: Mock,
         mock_release: Release,
     ) -> None:
         """Test successful get_by_id execution."""
-        with patch.object(
-            release_repository, "_get", AsyncMock(return_value=mock_release_table)
-        ):
-            with patch.object(Release, "model_validate", return_value=mock_release):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=mock_release_table)):
+            with patch.object(BaseModel, "model_validate", return_value=mock_release):
                 result = await release_repository.get_by_id(200)
                 assert result == mock_release
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, release_repository: ReleaseRepository) -> None:
         """Test get_by_id when release is not found."""
-        with patch.object(release_repository, "_get", AsyncMock(return_value=None)):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=None)):
             with pytest.raises(NotFoundError):
                 await release_repository.get_by_id(999)
 
@@ -101,7 +105,7 @@ class TestReleaseRepository:
     async def test_get_by_master_id_success(
         self,
         release_repository: ReleaseRepository,
-        mock_release_table: ReleaseTable,
+        mock_release_table: Mock,
         mock_release: Release,
     ) -> None:
         """Test get_by_master_id returns list of releases."""
@@ -110,25 +114,25 @@ class TestReleaseRepository:
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch.object(
-            ReleaseRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            patch.object(BaseModel, "model_validate", return_value=mock_release),
         ):
-            with patch.object(Release, "model_validate", return_value=mock_release):
-                result = await release_repository.get_by_master_id(100)
-                assert result == [mock_release]
+            result = await release_repository.get_by_master_id(100)
+            assert result == [mock_release]
 
     @pytest.mark.asyncio
     async def test_create_success(
         self,
         release_repository: ReleaseRepository,
         mock_release: Release,
-        mock_release_table: ReleaseTable,
+        mock_release_table: Mock,
     ) -> None:
         """Test successful create execution."""
-        with patch.object(
-            release_repository, "_save", AsyncMock(return_value=mock_release_table)
-        ):
-            with patch.object(Release, "model_validate", return_value=mock_release):
+        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_release_table)):
+            with patch.object(BaseModel, "model_validate", return_value=mock_release):
                 result = await release_repository.create(mock_release)
                 assert result == mock_release
 
@@ -141,7 +145,7 @@ class TestReleaseRepository:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         with patch.object(
-            ReleaseRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+            OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
         ):
             result = await release_repository.get_ids()
             assert result == [1, 2, 3]
@@ -154,7 +158,7 @@ class TestReleaseRepository:
         mock_session.flush = AsyncMock()
 
         with patch.object(
-            ReleaseRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+            OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
         ):
             await release_repository.update(200, {"title": "Updated Title"})
             mock_session.execute.assert_called_once()
@@ -166,12 +170,14 @@ class TestReleaseRepository:
         mock_session = AsyncMock()
         mock_session.flush = AsyncMock()
 
-        with patch.object(
-            ReleaseRepository, "_session", new_callable=PropertyMock, return_value=mock_session
+        with (
+            patch.object(
+                OfflineSession, "_session", new_callable=PropertyMock, return_value=mock_session
+            ),
+            patch.object(OfflineSession, "execute", AsyncMock()),
         ):
-            with patch.object(release_repository, "execute", AsyncMock()):
-                await release_repository.delete_by_id(200)
-                mock_session.flush.assert_called_once()
+            await release_repository.delete_by_id(200)
+            mock_session.flush.assert_called_once()
 
     def test_schema_class_is_set(self, release_repository: ReleaseRepository) -> None:
         """Test that schema_class is properly set."""

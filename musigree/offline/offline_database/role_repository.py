@@ -5,13 +5,15 @@ from sqlalchemy import select, Result
 
 from musigree.exceptions import NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.role_table import RoleTable
 from musigree.offline.offline_domain.role import Role, RoleUncommitted
 
 log = logging.getLogger(__name__)
 
 
-class RoleRepository(BaseRepository[RoleTable]):
+# noinspection PyTypeChecker
+class RoleRepository(BaseRepository["RoleTable"]):
     """
     Repository for managing Role objects in the runtime_database.
 
@@ -26,7 +28,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         schema_class (Type[RoleTable]): The SQLAlchemy table class for roles.
     """
 
-    schema_class = RoleTable
+    schema_class = mapped_entity(RoleTable)
     """The SQLAlchemy table class for roles."""
 
     async def all(self) -> AsyncGenerator[Role, None]:
@@ -52,7 +54,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         Raises:
             NotFoundError: If no role is found with the given ID.
         """
-        query = select(RoleTable).where(RoleTable.id == role_id)
+        query = select(mapped_entity(RoleTable)).where(RoleTable.id == role_id)
 
         result: Result = await self.execute(query)
 
@@ -73,7 +75,7 @@ class RoleRepository(BaseRepository[RoleTable]):
         Raises:
             NotFoundError: If no role is found with the given name.
         """
-        query = select(RoleTable).where(RoleTable.role_name == name)
+        query = select(mapped_entity(RoleTable)).where(RoleTable.role_name == name)
         result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

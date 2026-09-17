@@ -7,13 +7,15 @@ from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_style_table import RuntimeStyleTable
 from musigree.runtime.runtime_domain.runtime_style import RuntimeStyle
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeStyleRepository(RuntimeBaseRepository[RuntimeStyleTable]):
+# noinspection PyTypeChecker
+class RuntimeStyleRepository(RuntimeBaseRepository["RuntimeStyleTable"]):
     """
     Repository for managing RuntimeStyle objects in the runtime runtime_database.
 
@@ -29,7 +31,7 @@ class RuntimeStyleRepository(RuntimeBaseRepository[RuntimeStyleTable]):
         schema_class (Type[RuntimeStyleTable]): The SQLAlchemy table class for runtime styles.
     """
 
-    schema_class = RuntimeStyleTable
+    schema_class = mapped_entity(RuntimeStyleTable)
     """The SQLAlchemy table class for runtime styles."""
 
     async def all(self) -> AsyncGenerator[RuntimeStyle, None]:
@@ -55,7 +57,7 @@ class RuntimeStyleRepository(RuntimeBaseRepository[RuntimeStyleTable]):
         Raises:
             NotFoundError: If no style is found with the given ID.
         """
-        query = select(RuntimeStyleTable).where(RuntimeStyleTable.id == id_)
+        query = select(mapped_entity(RuntimeStyleTable)).where(RuntimeStyleTable.id == id_)
 
         result: Result = await self.execute(query)
 
@@ -77,7 +79,7 @@ class RuntimeStyleRepository(RuntimeBaseRepository[RuntimeStyleTable]):
         Raises:
             NotFoundError: If no style is found with the given name.
         """
-        query = select(RuntimeStyleTable).where(RuntimeStyleTable.style_name == name)
+        query = select(mapped_entity(RuntimeStyleTable)).where(RuntimeStyleTable.style_name == name)
         result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

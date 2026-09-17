@@ -195,27 +195,28 @@ def create_app(config: Configuration) -> FastAPI:
     setup_csp_middleware(app, config)
 
     # Referrer policy
-    app.add_middleware(ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
+    add_app_middleware(app, ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
 
     # HSTS
-    app.add_middleware(
-        HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
+    add_app_middleware(
+        app, HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
     )
 
     # X-Content-Type-Options
-    app.add_middleware(XContentTypeOptions)
+    add_app_middleware(app, XContentTypeOptions)
 
-    app.add_middleware(XDNSPrefetchControl, Option="on")
+    add_app_middleware(app, XDNSPrefetchControl, Option="on")
 
     # Prevent clickjacking
-    app.add_middleware(XFrame, Option="DENY")
+    add_app_middleware(app, XFrame, Option="DENY")
 
-    app.add_middleware(CrossOriginEmbedderPolicy, Option="unsafe-none")
-    app.add_middleware(CrossOriginOpenerPolicy, Option="same-origin")
-    app.add_middleware(CrossOriginResourcePolicy, Option="same-site")
+    add_app_middleware(app, CrossOriginEmbedderPolicy, Option="unsafe-none")
+    add_app_middleware(app, CrossOriginOpenerPolicy, Option="same-origin")
+    add_app_middleware(app, CrossOriginResourcePolicy, Option="same-site")
 
     # Permissions Policy
-    app.add_middleware(
+    add_app_middleware(
+        app,
         PermissionsPolicy,
         Option={
             "accelerometer": [],
@@ -236,8 +237,7 @@ def create_app(config: Configuration) -> FastAPI:
     # b"sec-gpc": b"1",
     # b"dnt": b"1",
 
-    # noinspection PyTypeChecker
-    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    add_app_middleware(app, GZipMiddleware, minimum_size=1000)
 
     # Create assets router
     assets_router, assets_templates = create_assets_router(config)
@@ -280,7 +280,7 @@ def create_app(config: Configuration) -> FastAPI:
                 status_code=exc.status_code,
             )
 
-    # noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal,unused-parameter
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Any) -> Response:
         if request.url.path.startswith("/api/"):
@@ -310,7 +310,7 @@ def create_app(config: Configuration) -> FastAPI:
                 status_code=error.status_code,
             )
 
-    # noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal,unused-parameter
     @app.exception_handler(500)
     async def server_error_handler(request: Request, exc: Any) -> Response:
         error = BaseError(message="Server Error")

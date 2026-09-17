@@ -37,6 +37,7 @@ from musigree.app.fastapi_dependencies import (
     get_roles,
     get_year,
 )
+from musigree.app.fastapi_ui import get_roles_with_defaults
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
@@ -123,12 +124,12 @@ async def route__api__entity_type__details__entity_id(
     return result_entity_data
 
 
-# noinspection PyUnusedLocal
+# noinspection PyUnusedLocal,unused-parameter
 @router.get("/{entity_type_str}/network/{entity_id}")
 async def route__api__entity_type__network__entity_id(
     entity_type: Annotated[EntityType, Depends(get_entity_type)],
     entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
+    roles: Annotated[set[str], Depends(get_roles)],
     year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
     on_mobile: Annotated[bool, Query()] = False,
     _: None = Depends(rate_limiter(max_requests=60, period=60)),
@@ -142,7 +143,7 @@ async def route__api__entity_type__network__entity_id(
     Args:
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
         _: Dependency injection for rate limiting.
@@ -168,6 +169,8 @@ async def route__api__entity_type__network__entity_id(
 
     log.debug("route__api__entity_type__network__entity_id")
 
+    roles_with_defaults = get_roles_with_defaults(roles, entity_type)
+
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey(
@@ -187,7 +190,7 @@ async def route__api__entity_type__network__entity_id(
                 entity_id,
                 entity_type,
                 on_mobile=on_mobile,
-                roles=roles,
+                roles=roles_with_defaults,
             )
     except NotFoundError:
         raise NotFoundError(message="Entity network not found") from None

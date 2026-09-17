@@ -1,25 +1,32 @@
-from typing import AsyncGenerator
-from unittest.mock import Mock, patch, AsyncMock
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_relation_table import (
     RuntimeRelationTable,
 )
-from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
+from musigree.runtime.runtime_database.runtime_session import (
+    CTX_RUNTIME_SESSION,
+    RuntimeSession,
+)
 from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationUncommitted,
 )
+
 # Import the test utility
 from .test_utils import RoleCacheMockHelper
 
 
+# noinspection PyTypeChecker
 class TestRuntimeRelationRepository:
     """Unit tests for RuntimeRelationRepository class."""
 
@@ -55,7 +62,7 @@ class TestRuntimeRelationRepository:
             mock_result.scalars.return_value = mock_scalars
             mock_session.execute.return_value = mock_result
 
-            with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 expected_relation = RuntimeRelationDB(
                     id=relation_id,
                     subject=12345,
@@ -149,7 +156,7 @@ class TestRuntimeRelationRepository:
             CTX_RUNTIME_SESSION.reset(token)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_id_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relation by ID with lock."""
         # GIVEN
@@ -177,7 +184,7 @@ class TestRuntimeRelationRepository:
             assert result == mock_relation
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_key_with_role_name(self, mock_execute: Mock) -> None:
         """Test finding relation by key when role_name is provided."""
         # GIVEN
@@ -212,7 +219,7 @@ class TestRuntimeRelationRepository:
                 assert result == mock_relation
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_entity_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relations by entity ID."""
         # GIVEN
@@ -248,7 +255,7 @@ class TestRuntimeRelationRepository:
             assert len(result) == 2
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_entity_and_roles_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relations by entity ID and roles."""
         # GIVEN
@@ -318,7 +325,7 @@ class TestRuntimeRelationRepository:
                 mock_result.scalar_one_or_none.return_value = mock_instance
                 mock_session.execute.return_value = mock_result
 
-                with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+                with patch.object(BaseModel, "model_validate") as mock_validate:
                     mock_relation_db = Mock()
                     mock_relation_internal = Mock()
                     mock_relation_db.to_domain.return_value = mock_relation_internal
@@ -373,14 +380,14 @@ class TestRuntimeRelationRepository:
         mock_instance2.object = 22222
 
         # Mock async generator
-        async def async_generator() -> AsyncGenerator[Mock, None]:
+        async def async_generator() -> AsyncGenerator[Mock]:
             yield mock_instance1
             yield mock_instance2
 
-        with patch.object(RuntimeRelationRepository, "_all") as mock_all:
+        with patch.object(RuntimeBaseRepository, "_all") as mock_all:
             mock_all.return_value = async_generator()
 
-            with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 with patch.object(RuntimeRelationDB, "to_domain") as _mock_to_domain:
                     relation1 = Mock()
                     relation2 = Mock()

@@ -145,7 +145,7 @@ async def worker_pass_four_single(
     entity = await entity_repository.get_by_id(id_)
     metadata = entity.entity_metadata
     if metadata is not None:
-        profile = entity.entity_metadata.get("profile", None)
+        profile: str | None = entity.entity_metadata.get("profile")
         if profile:
             updated_profile = await OfflineEntityDataAccess.process_profile_links(
                 entity_repository, profile

@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import enum
+import logging
 import threading
 import time
 from collections.abc import AsyncGenerator
@@ -15,18 +16,18 @@ from sqlalchemy.orm import DeclarativeBase
 from musigree import utils
 from musigree.constants import (
     DISCOGS_ARTISTS_TYPE,
-    DISCOGS_RELEASES_TYPE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
+    DISCOGS_RELEASES_TYPE,
     ThreadingModel,
 )
 from musigree.library.fields.entity_type import EntityType
 from musigree.utils import (
     SkipFilter,
+    batched,
     normalize_dict,
     normalize_dict_list,
     normalize_str_list,
-    batched,
     strip_trailing_newline,
 )
 
@@ -133,9 +134,9 @@ def test_normalize_dict_02() -> None:
         "entity_type": "EntityType.LABEL",
         "metadata": {
             "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
-                       + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
-                       + "operations were moved to New Windsor in 2005. "
-                       + "Operated by Chief Engineer [a=Alan Douches].\n",
+            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+            + "operations were moved to New Windsor in 2005. "
+            + "Operated by Chief Engineer [a=Alan Douches].\n",
             "urls": ["http://www.westwestsidemusic.com/"],
         },
         "name": "West West Side Music",
@@ -148,9 +149,9 @@ def test_normalize_dict_02() -> None:
         "entity_type": "EntityType.LABEL",
         "metadata": {
             "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
-                       + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
-                       + "operations were moved to New Windsor in 2005. "
-                       + "Operated by Chief Engineer [a=Alan Douches].\n",
+            + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+            + "operations were moved to New Windsor in 2005. "
+            + "Operated by Chief Engineer [a=Alan Douches].\n",
             "urls": ["http://www.westwestsidemusic.com/"],
         },
         "name": "West West Side Music",
@@ -504,7 +505,7 @@ def test_normalize_dict_list_duplicate_entries() -> None:
 def test_normalize_dict_list_extreme_values() -> None:
     """Test normalize_dict_list with extreme numeric values."""
     input_list = [
-        {"max_int": 2 ** 63 - 1, "min_int": -(2 ** 63), "max_float": 1e308, "min_float": -1e308},
+        {"max_int": 2**63 - 1, "min_int": -(2**63), "max_float": 1e308, "min_float": -1e308},
         {"zero": 0, "neg_zero": -0.0, "inf": float("inf"), "neg_inf": float("-inf")},
     ]
     actual = utils.normalize_dict_list(input_list)
@@ -846,7 +847,6 @@ def test_normalize_empty_string() -> None:
 # Module-level worker functions for testing
 def _test_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
     """Test worker function that processes records."""
-    pass
 
 
 def _test_failing_worker_function(
@@ -898,9 +898,7 @@ async def test_queue_worker_functions_basic_operation() -> None:
         yield [4, 5]
         yield [6]
 
-    worker_partials = utils.worker_generator(
-        _test_tracking_worker_function, records_generator(), 6
-    )
+    worker_partials = utils.worker_generator(_test_tracking_worker_function, records_generator(), 6)
 
     await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
 
@@ -978,7 +976,9 @@ async def test_queue_worker_functions_exception_handling() -> None:
         processed_count += len(records)
 
     with pytest.raises(ValueError, match="Test error"):
-        await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
+        await utils.queue_worker_functions(
+            2, worker_partials, threading_model=ThreadingModel.THREAD
+        )
 
 
 @pytest.mark.asyncio
@@ -1037,8 +1037,10 @@ async def test_queue_worker_functions_timing() -> None:
     """Test queue_worker_functions records processing duration."""
     worker_partials = [partial(_test_worker_function, [1], 0, 1)]
 
-    with patch("musigree.utils.log.debug") as mock_log_debug:
-        await utils.queue_worker_functions(1, worker_partials, threading_model=ThreadingModel.THREAD)
+    with patch.object(logging.Logger, "debug") as mock_log_debug:
+        await utils.queue_worker_functions(
+            1, worker_partials, threading_model=ThreadingModel.THREAD
+        )
 
     timing_logged = any(
         "total processing time" in str(call.args[0]) for call in mock_log_debug.call_args_list
@@ -1061,7 +1063,9 @@ async def test_queue_worker_functions_large_number_of_tasks() -> None:
     )
 
     with patch("musigree.utils.asyncio.sleep", new=AsyncMock()):
-        await utils.queue_worker_functions(5, worker_partials, threading_model=ThreadingModel.THREAD)
+        await utils.queue_worker_functions(
+            5, worker_partials, threading_model=ThreadingModel.THREAD
+        )
 
     assert len(_processed_batches) == task_count
 
@@ -1105,7 +1109,9 @@ async def test_queue_worker_functions_uses_process_pool_when_requested() -> None
         return future
 
     with (
-        patch("musigree.utils.ProcessPoolExecutor", return_value=mock_executor) as mock_process_pool,
+        patch(
+            "musigree.utils.ProcessPoolExecutor", return_value=mock_executor
+        ) as mock_process_pool,
         patch("musigree.utils.ThreadPoolExecutor") as mock_thread_pool,
         patch("musigree.utils.asyncio.sleep", new=AsyncMock()),
         patch.object(loop, "run_in_executor", side_effect=immediate_run_in_executor),
@@ -1128,7 +1134,6 @@ def test_worker_generator_basic_operation() -> None:
     # Arrange
     def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
-        pass
 
     def test_records_generator() -> Any:
         """Generator that yields lists of test records."""
@@ -1153,7 +1158,6 @@ def test_worker_generator_empty_generator() -> None:
     # Arrange
     def mock_worker_function(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
-        pass
 
     # noinspection PyUnreachableCode
     def empty_records_generator() -> Any:
@@ -1175,7 +1179,6 @@ def test_worker_generator_single_record() -> None:
     # Arrange
     def mock_worker_function(_records: list[str], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
-        pass
 
     def single_record_generator() -> Any:
         """Generator that yields a single batch."""
@@ -1198,7 +1201,6 @@ def test_worker_generator_multiple_batches() -> None:
         _records: list[dict[str, Any]], _processed_count: int, _total_count: int
     ) -> None:
         """Mock worker function that processes records."""
-        pass
 
     def multiple_batches_generator() -> Any:
         """Generator that yields multiple batches of different sizes."""
@@ -1255,7 +1257,6 @@ def test_worker_generator_with_string_records() -> None:
         _records: list[str], _processed_count: int, _total_count: int
     ) -> None:
         """Mock worker function that processes string records."""
-        pass
 
     def string_records_generator() -> Any:
         """Generator that yields batches of string records."""
@@ -1281,7 +1282,6 @@ def test_worker_generator_with_empty_batches() -> None:
         _records: list[int], _processed_count: int, _total_count: int
     ) -> None:
         """Mock worker function that processes records."""
-        pass
 
     def mixed_batches_generator() -> Any:
         """Generator that yields some empty and some non-empty batches."""
@@ -1726,7 +1726,9 @@ def test_download_file_network_error(mock_get: MagicMock, mock_copyfileobj: Magi
 
 @patch("musigree.utils.shutil.copyfileobj")
 @patch("musigree.utils.requests.get")
-def test_download_file_with_buffered_writer(mock_get: MagicMock, mock_copyfileobj: MagicMock) -> None:
+def test_download_file_with_buffered_writer(
+    mock_get: MagicMock, mock_copyfileobj: MagicMock
+) -> None:
     """Test download_file works with BufferedWriter."""
     # Arrange
     mock_response = MagicMock()
@@ -1761,7 +1763,7 @@ async def test_async_worker_generator_basic_operation() -> None:
         """Mock worker function that processes records."""
         results.extend(records)
 
-    async def async_records_generator() -> AsyncGenerator[list[int], None]:
+    async def async_records_generator() -> AsyncGenerator[list[int]]:
         """Async generator that yields lists of test records."""
         yield [1, 2, 3]
         yield [4, 5]
@@ -1786,10 +1788,9 @@ async def test_async_worker_generator_empty_generator() -> None:
     # Arrange
     def mock_worker(_records: list[int], _processed_count: int, _total_count: int) -> None:
         """Mock worker function that processes records."""
-        pass
 
     # noinspection PyUnreachableCode
-    async def empty_async_generator() -> AsyncGenerator[list[int], None]:
+    async def empty_async_generator() -> AsyncGenerator[list[int]]:
         """Empty async generator."""
         return
         yield [0]  # This line is never reached
@@ -1811,7 +1812,7 @@ async def test_async_worker_generator_processed_count_tracking() -> None:
         """Worker function that tracks processed counts."""
         processed_counts.append(processed_count)
 
-    async def async_test_records_generator() -> AsyncGenerator[list[int], None]:
+    async def async_test_records_generator() -> AsyncGenerator[list[int]]:
         """Async generator that yields batches of different sizes."""
         yield [1, 2, 3]  # 3 records, processed_count should be 0
         yield [4, 5]  # 2 records, processed_count should be 3
@@ -1842,7 +1843,7 @@ async def test_async_worker_generator_with_string_records() -> None:
         """Mock worker function that processes string records."""
         results.extend(records)
 
-    async def async_string_records_generator() -> AsyncGenerator[list[str], None]:
+    async def async_string_records_generator() -> AsyncGenerator[list[str]]:
         """Async generator that yields batches of string records."""
         yield ["record1", "record2"]
         yield ["record3"]
@@ -1874,7 +1875,7 @@ async def test_async_worker_generator_large_batches() -> None:
         processed_counts.append(processed_count)
         batch_sizes.append(len(records))
 
-    async def async_large_batches_generator() -> AsyncGenerator[list[int], None]:
+    async def async_large_batches_generator() -> AsyncGenerator[list[int]]:
         """Async generator that yields large batches."""
         yield list(range(100))  # 100 records
         yield list(range(50))  # 50 records
@@ -2127,7 +2128,6 @@ class TestNormalizeDict:
         """Test normalize_dict with mock OfflineBase-like object."""
         # Skip this test as it's complex to mock the internal classes properly
         # The normalize_dict function handles domain objects correctly in actual usage
-        pass
 
     def test_normalize_dict_with_enum(self) -> None:
         """Test normalize_dict with enum object."""

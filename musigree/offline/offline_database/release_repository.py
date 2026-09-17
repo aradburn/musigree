@@ -6,13 +6,15 @@ from sqlalchemy import select, Result, update, delete
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 
 
-class ReleaseRepository(BaseRepository[ReleaseTable]):
+# noinspection PyTypeChecker
+class ReleaseRepository(BaseRepository["ReleaseTable"]):
     """
     Repository for managing Release objects in the runtime_database.
 
@@ -27,7 +29,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         schema_class (Type[ReleaseTable]): The SQLAlchemy table class for releases.
     """
 
-    schema_class = ReleaseTable
+    schema_class = mapped_entity(ReleaseTable)
     """The SQLAlchemy table class for releases."""
 
     async def all(self) -> AsyncGenerator[list[Release], None]:
@@ -37,7 +39,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         Yields:
             AsyncGenerator[Release]: An async iterator yielding each release.
         """
-        query = select(ReleaseTable)
+        query = select(mapped_entity(ReleaseTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for partition in result.partitions():
             # partition is an iterable that will be at most 1000 items
@@ -74,7 +76,7 @@ class ReleaseRepository(BaseRepository[ReleaseTable]):
         Returns:
             List[Release]: A list of releases associated with the master ID.
         """
-        query = select(ReleaseTable).where(ReleaseTable.master_id == master_id)
+        query = select(mapped_entity(ReleaseTable)).where(ReleaseTable.master_id == master_id)
         result: Result = await self._session.execute(query)
 
         instances = result.scalars().all()

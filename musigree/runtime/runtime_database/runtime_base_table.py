@@ -12,7 +12,7 @@ Key components:
       generically.
 """
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy.orm import DeclarativeBase
 
@@ -39,6 +39,17 @@ class RuntimeBase(DeclarativeBase):
     """
 
     pass
+
+
+def mapped_entity(cls: Any) -> Any:
+    """Return a mapped class as ``Any`` for use as a SQLAlchemy entity value.
+
+    Mapped classes use ``DeclarativeAttributeIntercept``. PyCharm treats that
+    metaclass object as an instance (``Self@object``) rather than ``type[Model]``,
+    so passing the class to ``select()`` or assigning it to ``schema_class``
+    fails type checking. This identity helper keeps runtime behavior unchanged.
+    """
+    return cls
 
 
 RuntimeConcreteTable = TypeVar("RuntimeConcreteTable", bound=RuntimeBase)

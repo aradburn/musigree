@@ -69,7 +69,6 @@ class LoaderRelation(LoaderBase):
     # PUBLIC METHODS
 
     @classmethod
-    # @timeit
     async def loader_relation_pass_one(cls) -> None:
         """
         Performs the first pass of loading relation data.
@@ -101,24 +100,20 @@ class LoaderRelation(LoaderBase):
             OfflineDatabaseManager.offline_config.THREADING_MODEL,
         )
 
-    # noinspection Mypy
     @staticmethod
-    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
+    def get_insert_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore[empty-body]
         pass
 
-    # noinspection Mypy
     @staticmethod
-    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore
+    def get_update_worker_function() -> Callable[[list[dict[str, Any]], int, int], None]:  # type: ignore[empty-body]
         pass
 
-    # noinspection Mypy
     @staticmethod
-    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:  # type: ignore
+    def get_delete_worker_function() -> Callable[[list[int], int, int], None]:  # type: ignore[empty-body]
         pass
 
-    # noinspection Mypy
     @classmethod
-    def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore[empty-body]
         """
         Placeholder for getting a set of IDs.
 

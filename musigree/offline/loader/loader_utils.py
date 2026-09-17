@@ -51,6 +51,7 @@ import logging
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from xml.etree.ElementTree import Element
 
 from musigree.offline.loader.parser_utils import ParserUtils
 
@@ -137,7 +138,7 @@ class LoaderUtils:
         return full_path_files
 
     @staticmethod
-    def get_iterator(discogs_data_directory: Path, tag: str, date: str) -> Iterator:
+    def get_iterator(discogs_data_directory: Path, tag: str, date: str) -> Iterator[Element]:
         """
         Creates an iterator for parsing a Discogs XML dump file.
 

@@ -419,9 +419,7 @@ class CacheManager:
         # Setup Cache
         await cls.setup_cache(config)
         cache = cls.get_cache()
-        if cache is None:
-            log.error("Cache not set")
-            raise RuntimeError("Cache not initialized after setup")
+        assert cache is not None, "Invalid cache"
 
         log.debug("Clearing cache")
         await CacheManager.clear()

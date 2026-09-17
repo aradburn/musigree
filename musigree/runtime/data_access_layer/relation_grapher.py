@@ -62,8 +62,8 @@ class RelationGrapher:
         self,
         center_entity: RuntimeEntity,
         degree: int,
-        link_ratio: int,
-        max_nodes: int,
+        link_ratio: int | None,
+        max_nodes: int | None,
         role_names: list[str],
     ):
         from musigree.runtime.runtime_database.runtime_database_helper import (
@@ -90,19 +90,12 @@ class RelationGrapher:
         self._structural_role_names: list[str] = []
         self._relational_role_names: list[str] = []
         if role_names:
-            # if isinstance(role_names, str):
-            #     role_names = (role_names,)
-            # elif not isinstance(role_names, collections_abc.Iterable):
-            #     role_names = (role_names,)
-            # role_names = tuple(role_names)
             assert all(_ in RoleCache.role_name_to_role_id_lookup.keys() for _ in role_names)
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
                     self._structural_role_names.append(role_name)
                 else:
                     self._relational_role_names.append(role_name)
-        # self.structural_role_names = tuple(structural_role_names)
-        # self.relational_role_names = tuple(relational_role_names)
         self._nodes: OrderedDict[int, TrellisNode] = OrderedDict()
         self._links: dict[str, RuntimeRelationResult] = {}
         self._should_break_loop = False
@@ -136,7 +129,6 @@ class RelationGrapher:
         log.debug(f"  {len(self._structural_role_names)} structural_role_names")
         log.debug(f"  {len(self._relational_role_names)} relational_role_names")
         provisional_role_names = self._relational_role_names
-        # provisional_roles = list(self.relational_role_names)
         self.report_search_start()
         self.clear()
         internal_id: int = to_entity_internal_id(
@@ -168,9 +160,6 @@ class RelationGrapher:
             self.ids_to_visit.clear()
             self.process_relations(relations)
         self.build_trellis()
-        # self.cross_reference(distance)
-        # pages = self.partition_trellis(distance)
-        # self.page_entities(pages)
         self.find_clusters()
         for node in self.nodes.values():
             expected_count = RuntimeEntityDataAccess.roles_to_relation_count(
@@ -454,7 +443,7 @@ class RelationGrapher:
         log.debug(f"    Max links: {self.max_links}")
         log.debug(f"    {len(self.all_roles)} Roles")
 
-    # noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal,unused-parameter
     def search_via_structural_roles(
         self,
         distance: int,

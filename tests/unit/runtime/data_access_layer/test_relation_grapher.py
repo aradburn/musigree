@@ -97,8 +97,8 @@ class TestRelationGrapher:
             grapher = RelationGrapher(
                 center_entity=mock_center_entity,
                 degree=1,
-                link_ratio=None,  # type: ignore
-                max_nodes=None,  # type: ignore
+                link_ratio=None,
+                max_nodes=None,
                 role_names=role_names,
             )
 
@@ -840,8 +840,8 @@ class TestRelationGrapher:
 
         # Test test_loop_two - should break when too many relations
         # max_links = max_nodes * link_ratio = 10 * 2 = 20
-        many_relations = {f"link_{i}": Mock() for i in range(25)}  # More than max_links (20)
-        # noinspection Mypy
+        many_relations: dict[str, RuntimeRelationResult] = {f"link_{i}": Mock() for i in
+                                                            range(25)}  # More than max_links (20)
         grapher.test_loop_two(
             distance=2, relations=many_relations
         )  # Use distance > 1 to trigger the condition

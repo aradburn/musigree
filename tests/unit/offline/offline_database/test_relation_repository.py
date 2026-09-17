@@ -5,23 +5,26 @@ This module tests the RelationRepository class which manages Relation objects
 in the offline_database, including CRUD operations and specialized queries.
 """
 
-from unittest.mock import AsyncMock, Mock, patch, PropertyMock
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result, select
 
 from musigree.config import SqliteTestConfiguration
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
+from musigree.offline.offline_database.base_table import mapped_entity
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.relation_table import RelationTable
 from musigree.offline.offline_domain.relation import (
-    RelationUncommitted,
-    RelationDB,
     RelationInternal,
+    RelationUncommitted,
 )
 
 
+# noinspection PyTypeChecker
 class TestRelationRepository:
     """Test class for RelationRepository."""
 
@@ -54,9 +57,9 @@ class TestRelationRepository:
         )
 
     @pytest.fixture
-    def mock_relation_table(self) -> RelationTable:
+    def mock_relation_table(self) -> Mock:
         """Create a mock relation table record."""
-        table_mock = Mock(spec=RelationTable)
+        table_mock = Mock()
         table_mock.id = 1
         table_mock.subject = 100
         table_mock.predicate = 1
@@ -72,23 +75,23 @@ class TestRelationRepository:
     async def test_get_one_by_query_success(
         self,
         relation_repository: RelationRepository,
-        mock_relation_table: RelationTable,
+        mock_relation_table: Mock,
         mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful _get_one_by_query execution."""
         # Arrange
-        query = select(RelationTable).where(RelationTable.id == 1)
+        query = select(mapped_entity(RelationTable)).where(RelationTable.id == 1)
 
         mock_session = AsyncMock()
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.one_or_none.return_value = mock_relation_table
             mock_session.execute.return_value = mock_result
 
-            with patch.object(RelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_relation_instance = Mock()
                 mock_relation_instance.to_domain.return_value = mock_relation_internal
                 mock_validate.return_value = mock_relation_instance
@@ -107,11 +110,11 @@ class TestRelationRepository:
     ) -> None:
         """Test _get_one_by_query when no relation is found."""
         # Arrange
-        query = select(RelationTable).where(RelationTable.id == 999)
+        query = select(mapped_entity(RelationTable)).where(RelationTable.id == 999)
 
         mock_session = AsyncMock()
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
@@ -126,23 +129,23 @@ class TestRelationRepository:
     async def test_get_all_by_query_success(
         self,
         relation_repository: RelationRepository,
-        mock_relation_table: RelationTable,
+        mock_relation_table: Mock,
         mock_relation_internal: RelationInternal,
     ) -> None:
         """Test successful _get_all_by_query execution."""
         # Arrange
-        query = select(RelationTable).where(RelationTable.subject == 100)
+        query = select(mapped_entity(RelationTable)).where(RelationTable.subject == 100)
 
         mock_session = AsyncMock()
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
             mock_result.scalars.return_value.all.return_value = [mock_relation_table]
             mock_session.execute.return_value = mock_result
 
-            with patch.object(RelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_relation_instance = Mock()
                 mock_relation_instance.to_domain.return_value = mock_relation_internal
                 mock_validate.return_value = mock_relation_instance
@@ -161,11 +164,11 @@ class TestRelationRepository:
     ) -> None:
         """Test _get_all_by_query when no relations are found."""
         # Arrange
-        query = select(RelationTable).where(RelationTable.subject == 999)
+        query = select(mapped_entity(RelationTable)).where(RelationTable.subject == 999)
 
         mock_session = AsyncMock()
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             mock_result = Mock(spec=Result)
@@ -227,7 +230,7 @@ class TestRelationRepository:
         mock_result = Mock()
         mock_result.all.return_value = [(1, 2), (2, 1)]
         mock_session.execute.return_value = mock_result
-        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock) as m:
             m.return_value = mock_session
             with patch.dict(
                 RoleCache.role_id_to_role_name_lookup,
@@ -247,7 +250,7 @@ class TestRelationRepository:
         mock_result = Mock()
         mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
-        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock) as m:
             m.return_value = mock_session
             result = await relation_repository.find_role_counts_by_entity(1)
         assert result == {}
@@ -262,12 +265,10 @@ class TestRelationRepository:
         mock_result = Mock()
         mock_result.all.return_value = [(1, 1), (99999, 5)]
         mock_session.execute.return_value = mock_result
-        with patch.object(RelationRepository, "_session", new_callable=PropertyMock) as m:
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock) as m:
             m.return_value = mock_session
             with patch.dict(RoleCache.role_id_to_role_name_lookup, {1: "performer"}, clear=True):
-                with patch(
-                    "musigree.offline.offline_database.relation_repository.log"
-                ) as mock_log:
+                with patch("musigree.offline.offline_database.relation_repository.log") as mock_log:
                     result = await relation_repository.find_role_counts_by_entity(5)
         assert result == {"performer": 1}
         mock_log.warning.assert_called_once()
@@ -327,7 +328,7 @@ class TestRelationRepository:
         mock_database_helper.generate_insert_query.return_value = mock_query
 
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             with patch(
@@ -363,7 +364,7 @@ class TestRelationRepository:
         mock_database_helper.generate_insert_bulk_query.return_value = mock_query
 
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             with patch(
@@ -391,7 +392,7 @@ class TestRelationRepository:
         mock_session = AsyncMock()
 
         with patch.object(
-            RelationRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
             # Act

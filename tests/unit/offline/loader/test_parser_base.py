@@ -11,7 +11,6 @@ from musigree.offline.loader.parser_utils import ParserUtils
 log = logging.getLogger(__name__)
 
 
-# noinspection PyUnresolvedReferences
 class TestParserBase:
     class DummyDomainClass:
         """A test domain class that accepts any keyword arguments."""
@@ -41,12 +40,12 @@ class TestParserBase:
         }
 
         @classmethod
-        def from_element(cls, element: Element | None) -> "TestParserBase.DummyParser":
+        def from_element(cls, element: Element | None) -> "TestParserBase.DummyDomainClass":
             """Create a DummyParser instance from an XML element (required by base class)."""
             if element is None:
                 raise ValueError("Element cannot be None")
             # Return a dummy parser instance to satisfy the base class contract
-            return cls()
+            return TestParserBase.DummyDomainClass()
 
         @classmethod
         def preprocess_data(cls, data: dict[str, Any], element: Element) -> dict[str, Any]:
@@ -91,11 +90,11 @@ class TestParserBase:
         """
         mock_file = io.BytesIO(xml_string.encode())
 
-        # noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal,unused-parameter,unused-parameter
         def mock_get_xml_path(*args: Any, **kwargs: Any) -> str:
             return "dummy_path.xml.gz"
 
-        # noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal,unused-parameter,unused-parameter
         def mock_open(*args: Any, **kwargs: Any) -> io.BytesIO:
             return mock_file  # type: ignore
 
@@ -161,7 +160,7 @@ class TestParserBase:
         instance = self.DummyParser.from_element(element)
 
         # THEN
-        assert isinstance(instance, self.DummyParser)
+        assert isinstance(instance, self.DummyDomainClass)
 
     def test_preprocess_data(self) -> None:
         """Test data preprocessing functionality."""

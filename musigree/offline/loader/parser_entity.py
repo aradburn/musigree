@@ -176,7 +176,7 @@ class ParserEntity(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element) -> Entity:  # type: ignore
+    def from_element(cls, element: Element) -> Entity:
         """
         Creates an `Entity` domain object from an XML element.
 
@@ -232,10 +232,10 @@ class ParserEntity(ParserBase):
             ):
                 if key in data:
                     data["entity_metadata"][key] = data.pop(key)
-            if "entity_name" in data and data.get("entity_name"):
-                name = data.get("entity_name")
-                if name is None:
-                    name = ""
+            # if "entity_name" in data and data.get("entity_name"):
+            #     name = data.get("entity_name")
+            #     if name is None:
+            #         name = ""
             if element.tag == "artist":
                 data["entity_type"] = EntityType.ARTIST
             elif element.tag == "label":

@@ -1,16 +1,19 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_role_repository import (
     RuntimeRoleRepository,
 )
 from musigree.runtime.runtime_database.runtime_role_table import RuntimeRoleTable
-from musigree.runtime.runtime_domain.runtime_role import RuntimeRole
+from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 
 
+# noinspection PyTypeChecker
 class TestRuntimeRoleRepository:
     """Unit tests for RuntimeRoleRepository class."""
 
@@ -24,7 +27,7 @@ class TestRuntimeRoleRepository:
         assert self.repository.schema_class == RuntimeRoleTable
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRoleRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving a role by ID."""
         # GIVEN
@@ -41,7 +44,7 @@ class TestRuntimeRoleRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeRole, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_role = Mock()
             mock_validate.return_value = expected_role
 
@@ -53,7 +56,7 @@ class TestRuntimeRoleRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRoleRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving a role by ID when not found."""
         # GIVEN
@@ -71,10 +74,8 @@ class TestRuntimeRoleRepository:
 
     @pytest.mark.asyncio
     @patch("musigree.runtime.runtime_database.runtime_role_repository.CacheManager.get_cache")
-    @patch.object(RuntimeRoleRepository, "execute")
-    async def test_get_by_name_from_cache(
-        self, mock_execute: Mock, mock_get_cache: Mock
-    ) -> None:
+    @patch.object(RuntimeSession, "execute")
+    async def test_get_by_name_from_cache(self, mock_execute: Mock, mock_get_cache: Mock) -> None:
         """Test successfully retrieving a role by name from cache."""
         # GIVEN
         role_name = "Producer"
@@ -94,7 +95,7 @@ class TestRuntimeRoleRepository:
         mock_cache.hgetall = AsyncMock(return_value=cached_role_dict)
         mock_get_cache.return_value = mock_cache
 
-        with patch.object(RuntimeRole, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_role = Mock()
             mock_validate.return_value = expected_role
 
@@ -109,7 +110,7 @@ class TestRuntimeRoleRepository:
 
     @pytest.mark.asyncio
     @patch("musigree.runtime.runtime_database.runtime_role_repository.CacheManager.get_cache")
-    @patch.object(RuntimeRoleRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_from_database(
         self, mock_execute: Mock, mock_get_cache: Mock
     ) -> None:
@@ -136,7 +137,7 @@ class TestRuntimeRoleRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeRole, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_role = Mock()
             mock_validate.return_value = expected_role
 
@@ -151,10 +152,8 @@ class TestRuntimeRoleRepository:
 
     @pytest.mark.asyncio
     @patch("musigree.runtime.runtime_database.runtime_role_repository.CacheManager.get_cache")
-    @patch.object(RuntimeRoleRepository, "execute")
-    async def test_get_by_name_not_found(
-        self, mock_execute: Mock, mock_get_cache: Mock
-    ) -> None:
+    @patch.object(RuntimeSession, "execute")
+    async def test_get_by_name_not_found(self, mock_execute: Mock, mock_get_cache: Mock) -> None:
         """Test get_by_name when role not found in database."""
         # GIVEN
         role_name = "NonexistentRole"
@@ -181,7 +180,7 @@ class TestRuntimeRoleRepository:
 
     @pytest.mark.asyncio
     @patch("musigree.runtime.runtime_database.runtime_role_repository.CacheManager.get_cache")
-    @patch.object(RuntimeRoleRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_cache_failure(
         self, mock_execute: Mock, mock_get_cache: Mock
     ) -> None:
@@ -208,7 +207,7 @@ class TestRuntimeRoleRepository:
         mock_cache.hgetall.assert_called_once_with(role_key_str)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRoleRepository, "_save")
+    @patch.object(RuntimeBaseRepository, "_save")
     async def test_create_success(self, mock_save: Mock) -> None:
         """Test successfully creating a new role."""
         # GIVEN
@@ -229,7 +228,7 @@ class TestRuntimeRoleRepository:
         mock_instance.role_subcategory = "NONE"
         mock_save.return_value = mock_instance
 
-        with patch.object(RuntimeRole, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_role = Mock()
             mock_validate.return_value = expected_role
 
@@ -285,7 +284,7 @@ class TestRuntimeRoleRepository:
         token = CTX_RUNTIME_SESSION.set(mock_session)
 
         try:
-            with patch.object(RuntimeRole, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 role1 = Mock()
                 role2 = Mock()
                 mock_validate.side_effect = [role1, role2]
@@ -310,7 +309,9 @@ class TestRuntimeRoleRepository:
         # GIVEN
         from musigree.library.cache.cache_manager import CacheManager
 
-        role_key_str = CacheManager.create_cache_hkey(RuntimeRoleTable.__tablename__, "role_name.key")
+        role_key_str = CacheManager.create_cache_hkey(
+            RuntimeRoleTable.__tablename__, "role_name.key"
+        )
         expected_key = f"{RuntimeRoleTable.__tablename__}:role_name.key"
 
         # WHEN/THEN
