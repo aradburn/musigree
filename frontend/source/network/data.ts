@@ -1,6 +1,6 @@
-import { networkManager } from "../core/singletons";
-import { getOuterRadius } from "./node";
-import type { APINetworkDataResponse } from "../api";
+import {networkManager} from "../core/singletons";
+import {getOuterRadius} from "./node";
+import type {APINetworkDataResponse} from "../api";
 
 /**
  * Enum for node types in the network graph
@@ -162,15 +162,19 @@ export const processAPINetworkDataResponse = (
     //     console.log("nodeMap:", nodeMap);
 
     const linkMap = new Map<LinkKey, NetworkLink>();
-    const processedLinks = apiNetworkDataResponse.links.map((link) => {
+    const processedLinks = apiNetworkDataResponse.links.filter((link) => {
         const source = nodeMap.get(link.source);
         const target = nodeMap.get(link.target);
         if (!source || !target) {
-            console.log("Invalid link:", link);
+            console.error("Invalid link:", link);
             console.log("source:", source);
             console.log("target:", target);
-            throw new Error("Invalid link: missing source or target node");
-        }
+            return false;
+        } else
+            return true;
+    }).map((link) => {
+        const source = nodeMap.get(link.source);
+        const target = nodeMap.get(link.target);
         const processedLink: NetworkLink = {
             key: link.key,
             role: link.role,
