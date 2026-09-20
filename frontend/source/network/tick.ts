@@ -5,9 +5,9 @@
  */
 
 import * as d3 from "d3";
-import { hideAllTooltips } from "./tooltips";
-import { musigreeManager, networkManager } from "../core/singletons";
-import type { SimNode, SimLink } from "./data";
+import {hideAllTooltips} from "./tooltips";
+import {musigreeManager, networkManager} from "../core/singletons";
+import type {SimLink, SimNode} from "./data";
 
 // Array of roles that should not be labeled in the visualization
 export const unlabeledRoles = ["Alias", "Member Of", "Sublabel Of"];
@@ -48,11 +48,11 @@ export const calculateSplineInner = (
  * @returns {string} - SVG path data string
  */
 export const generateSpline = (d: SimLink): string => {
-    const { x: sX, y: sY, radius: sR } = d.source;
-    const { x: tX, y: tY, radius: tR } = d.target;
+    const {x: sX, y: sY, radius: sR} = d.source;
+    const {x: tX, y: tY, radius: tR} = d.target;
 
     if (d.intermediate) {
-        const { x: cX, y: cY } = d.intermediate;
+        const {x: cX, y: cY} = d.intermediate;
         const [sXY0, sXY1] = calculateSplineInner(sX, sY, sR, cX, cY);
         const [tXY0, tXY1] = calculateSplineInner(tX, tY, tR, cX, cY);
         return `M ${sXY0},${sXY1} S ${cX},${cY} ${tXY0},${tXY1}`;
@@ -94,8 +94,8 @@ const onTickLink = function (this: Element, d: SimLink, _i: number): void {
     // Only update text labels if they exist and the link has a significant length
     const textLabels = group.selectAll("text");
     if (!textLabels.empty()) {
-        const { x: x1, y: y1 } = d.source;
-        const { x: x2, y: y2 } = d.target;
+        const {x: x1, y: y1} = d.source;
+        const {x: x2, y: y2} = d.target;
         const pathNode = path.node();
         const node = pathNode instanceof SVGPathElement ? pathNode : null;
 

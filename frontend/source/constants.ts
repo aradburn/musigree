@@ -48,10 +48,10 @@ export const MARKER = {
 export const GRADIENT = {
     COLOR: "#333",
     STOPS: [
-        { offset: "0%", opacity: "1.0" },
-        { offset: "50%", opacity: "0.333" },
-        { offset: "75%", opacity: "0.111" },
-        { offset: "100%", opacity: "0.0" },
+        {offset: "0%", opacity: "1.0"},
+        {offset: "50%", opacity: "0.333"},
+        {offset: "75%", opacity: "0.111"},
+        {offset: "100%", opacity: "0.0"},
     ],
 };
 
@@ -224,7 +224,7 @@ export const FORCE = {
         MAX: 2000, // Maximum distance for force calculations
         LINK: 60, // Default link distance
         LINK_ALIAS: -100, // Distance for alias relationships
-        LINK_RELEASED_ON: 180, // Distance for "Released On" relationships (LINK_DISTANCE * 3)
+        LINK_RELEASED_ON: 80, // Distance for "Released On" relationships, a bit more than LINK_DISTANCE
     },
     COLLIDE: {
         ITERATIONS: 2, // Number of collision detection iterations
