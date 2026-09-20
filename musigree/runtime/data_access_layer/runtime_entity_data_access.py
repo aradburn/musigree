@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from musigree.constants import CACHE_ENTRY_IS_NULL
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.cache_manager import CacheManager
+from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.offline_domain.entity import Entity
@@ -49,53 +50,72 @@ class RuntimeEntityDataAccess:
     def structural_roles_to_relations(
         entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
+        log.debug(f"            structural_roles_to_relations id       : {entity.id}")
         log.debug(f"            structural_roles_to_relations entity_id: {entity.entity_id}")
         # log.debug(f"            structural_roles_to_relations entities: {entity.entities}")
-        log.debug(f"            structural_roles_to_relations roles: {roles}")
+        log.debug(f"            structural_roles_to_relations roles    : {roles}")
         relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
             role = "Alias"
             if role in roles and "aliases" in entity.entities:
-                for entity_id in entity.entities["aliases"].values():
-                    if not entity_id:
+                for _id in entity.entities["aliases"].values():
+                    if not _id:
                         continue
-                    ids = sorted((entity_id, entity.entity_id))
-                    log.debug(f"            structural_roles_to_relations aliases: {ids}")
-                    relation = RuntimeRelationResult(
-                        entity_one_id=ids[0],
-                        entity_one_type=entity.entity_type,
-                        entity_two_id=ids[1],
-                        entity_two_type=entity.entity_type,
-                        releases=None,
-                        role=role,
-                        distance=None,
-                    )
-                    relations[relation.link_key] = relation
-            role = "Member Of"
-            if role in roles:
-                if "groups" in entity.entities:
-                    for entity_id in entity.entities["groups"].values():
-                        if not entity_id:
-                            continue
-                        log.debug(f"            structural_roles_to_relations groups: {entity_id}")
+                    entity_id, entity_type = to_entity_external_id(_id)
+                    if entity_id <= entity.entity_id:
+                        log.debug(
+                            f"            structural_roles_to_relations aliases: {entity_id}, {entity.entity_id}"
+                        )
+                        relation = RuntimeRelationResult(
+                            entity_one_id=entity_id,
+                            entity_one_type=entity_type,
+                            entity_two_id=entity.entity_id,
+                            entity_two_type=entity.entity_type,
+                            releases=None,
+                            role=role,
+                            distance=None,
+                        )
+                    else:
+                        log.debug(
+                            f"            structural_roles_to_relations aliases: {entity.entity_id}, {entity_id}"
+                        )
                         relation = RuntimeRelationResult(
                             entity_one_id=entity.entity_id,
                             entity_one_type=entity.entity_type,
                             entity_two_id=entity_id,
-                            entity_two_type=entity.entity_type,
+                            entity_two_type=entity_type,
+                            releases=None,
+                            role=role,
+                            distance=None,
+                        )
+                    relations[relation.link_key] = relation
+            role = "Member Of"
+            if role in roles:
+                if "groups" in entity.entities:
+                    for _id in entity.entities["groups"].values():
+                        if not _id:
+                            continue
+                        log.debug(f"            structural_roles_to_relations groups: {_id}")
+                        entity_id, entity_type = to_entity_external_id(_id)
+                        relation = RuntimeRelationResult(
+                            entity_one_id=entity.entity_id,
+                            entity_one_type=entity.entity_type,
+                            entity_two_id=entity_id,
+                            entity_two_type=entity_type,
                             releases=None,
                             role=role,
                             distance=None,
                         )
                         relations[relation.link_key] = relation
                 if "members" in entity.entities:
-                    for entity_id in entity.entities["members"].values():
-                        if not entity_id:
+                    for _id in entity.entities["members"].values():
+                        if not _id:
                             continue
-                        log.debug(f"            structural_roles_to_relations members: {entity_id}")
+                        log.debug(f"            structural_roles_to_relations members: {_id}")
+                        entity_id, entity_type = to_entity_external_id(_id)
                         relation = RuntimeRelationResult(
                             entity_one_id=entity_id,
-                            entity_one_type=entity.entity_type,
+                            entity_one_type=entity_type,
                             entity_two_id=entity.entity_id,
                             entity_two_type=entity.entity_type,
                             releases=None,
@@ -106,30 +126,30 @@ class RuntimeEntityDataAccess:
         elif entity.entity_type == EntityType.LABEL and "Sublabel Of" in roles:
             role = "Sublabel Of"
             if "parent_label" in entity.entities:
-                for entity_id in entity.entities["parent_label"].values():
-                    if not entity_id:
+                for _id in entity.entities["parent_label"].values():
+                    if not _id:
                         continue
-                    log.debug(
-                        f"            structural_roles_to_relations parent_label: {entity_id}"
-                    )
+                    log.debug(f"            structural_roles_to_relations parent_label: {_id}")
+                    entity_id, entity_type = to_entity_external_id(_id)
                     relation = RuntimeRelationResult(
                         entity_one_id=entity.entity_id,
                         entity_one_type=entity.entity_type,
                         entity_two_id=entity_id,
-                        entity_two_type=entity.entity_type,
+                        entity_two_type=entity_type,
                         releases=None,
                         role=role,
                         distance=None,
                     )
                     relations[relation.link_key] = relation
             if "sublabels" in entity.entities:
-                for entity_id in entity.entities["sublabels"].values():
-                    if not entity_id:
+                for _id in entity.entities["sublabels"].values():
+                    if not _id:
                         continue
-                    log.debug(f"            structural_roles_to_relations sublabels: {entity_id}")
+                    log.debug(f"            structural_roles_to_relations sublabels: {_id}")
+                    entity_id, entity_type = to_entity_external_id(_id)
                     relation = RuntimeRelationResult(
                         entity_one_id=entity_id,
-                        entity_one_type=entity.entity_type,
+                        entity_one_type=entity_type,
                         entity_two_id=entity.entity_id,
                         entity_two_type=entity.entity_type,
                         releases=None,

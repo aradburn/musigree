@@ -21,7 +21,10 @@ from musigree.runtime.runtime_domain.runtime_relation import (
 class TestGetRuntimeRelationDictsFromRelations:
     """Test get_runtime_relation_dicts_from_relations static method."""
 
-    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager.runtime_database_helper", MagicMock())
+    @patch(
+        "musigree.runtime.runtime_database_manager.RuntimeDatabaseManager.runtime_database_helper",
+        MagicMock(),
+    )
     def test_returns_list_of_dicts(self) -> None:
         """Test that relation_dbs are converted to runtime relation dicts."""
         relation_dbs = [
@@ -34,9 +37,7 @@ class TestGetRuntimeRelationDictsFromRelations:
                 year=2020,
             ),
         ]
-        result = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(
-            relation_dbs
-        )
+        result = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(relation_dbs)
         assert len(result) == 1
         assert isinstance(result[0], dict)
         assert result[0]["id"] == 1
@@ -45,7 +46,10 @@ class TestGetRuntimeRelationDictsFromRelations:
         assert result[0]["release_id"] == 10
         assert result[0]["year"] == 2020
 
-    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager.runtime_database_helper", MagicMock())
+    @patch(
+        "musigree.runtime.runtime_database_manager.RuntimeDatabaseManager.runtime_database_helper",
+        MagicMock(),
+    )
     def test_empty_list_returns_empty_list(self) -> None:
         """Test empty relation_dbs returns empty list."""
         result = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations([])
@@ -73,17 +77,59 @@ class TestSearchMulti:
             release_id=10,
             year=2020,
         )
-        mock_repo.find_by_entity_and_roles = AsyncMock(return_value=[internal])
+        mock_repo.find_by_entities_and_roles = AsyncMock(return_value=[internal])
 
         result = await RuntimeRelationDataAccess.search_multi(
             relation_repository=mock_repo,
             ids=[internal_id],
             role_names=["Alias"],
+            limit=100,
         )
 
         assert len(result) == 1
         assert isinstance(result[0], RuntimeRelation)
-        mock_repo.find_by_entity_and_roles.assert_called_once_with(internal_id, [1])
+        mock_repo.find_by_entities_and_roles.assert_called_once_with([internal_id], [1], 100)
+
+    @pytest.mark.asyncio
+    @patch("musigree.runtime.data_access_layer.runtime_relation_data_access.RoleCache")
+    async def test_search_multi_queries_all_ids_in_one_call(
+        self, mock_role_cache: MagicMock
+    ) -> None:
+        """Test search_multi fetches relations for all entity ids in a single repository call."""
+        mock_role_cache.role_name_to_role_id_lookup = {"Alias": 1, "Member Of": 2}
+
+        mock_repo = MagicMock()
+        id_one = to_entity_internal_id(1, EntityType.ARTIST)
+        id_two = to_entity_internal_id(2, EntityType.ARTIST)
+        internals = [
+            RuntimeRelationInternal(
+                id=1,
+                subject=id_one,
+                role="Alias",
+                object=200,
+                release_id=10,
+                year=2020,
+            ),
+            RuntimeRelationInternal(
+                id=2,
+                subject=id_two,
+                role="Member Of",
+                object=300,
+                release_id=11,
+                year=2021,
+            ),
+        ]
+        mock_repo.find_by_entities_and_roles = AsyncMock(return_value=internals)
+
+        result = await RuntimeRelationDataAccess.search_multi(
+            relation_repository=mock_repo,
+            ids=[id_one, id_two],
+            role_names=["Alias", "Member Of"],
+            limit=50,
+        )
+
+        assert len(result) == 2
+        mock_repo.find_by_entities_and_roles.assert_called_once_with([id_one, id_two], [1, 2], 50)
 
     @pytest.mark.asyncio
     async def test_search_multi_empty_ids_asserts(self) -> None:
@@ -94,6 +140,7 @@ class TestSearchMulti:
                 relation_repository=mock_repo,
                 ids=[],
                 role_names=["Alias"],
+                limit=10,
             )
 
     @pytest.mark.asyncio
@@ -105,4 +152,5 @@ class TestSearchMulti:
                 relation_repository=mock_repo,
                 ids=[to_entity_internal_id(1, EntityType.ARTIST)],
                 role_names=[],
+                limit=10,
             )

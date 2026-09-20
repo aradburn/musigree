@@ -52,6 +52,8 @@ UI_DEFAULT_ARTIST_ROLES = [
     "Member Of",
 ]
 UI_DEFAULT_LABEL_ROLES = [
+    "Alias",
+    "Member Of",
     "Sublabel Of",
     "Released On",
 ]

@@ -286,6 +286,83 @@ class TestRuntimeRelationRepository:
             assert len(result) == 1
 
     @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_success(self) -> None:
+        """Test successfully finding relations by multiple entity IDs and roles with a limit."""
+        # GIVEN
+        entity_ids = [12345, 67890]
+        role_ids = [3, 4]
+        limit = 10
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            mock_relations = [Mock(), Mock()]
+            mock_get_all.return_value = mock_relations
+
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(entity_ids, role_ids, limit)
+
+            # THEN
+            assert result == mock_relations
+            mock_get_all.assert_called_once()
+            query = mock_get_all.call_args[0][0]
+            compiled_sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+            compiled_sql_upper = compiled_sql.upper()
+            assert "UNION" in compiled_sql_upper
+            assert "UNION ALL" not in compiled_sql_upper
+            assert " OR " not in compiled_sql_upper
+            assert "LIMIT 10" in compiled_sql_upper
+            assert "12345" in compiled_sql
+            assert "67890" in compiled_sql
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_empty_roles(self) -> None:
+        """Test find_by_entities_and_roles with empty role list returns no results."""
+        # GIVEN
+        entity_ids = [12345]
+        role_ids: list[int] = []
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10
+            )
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_empty_ids(self) -> None:
+        """Test find_by_entities_and_roles with empty entity list returns no results."""
+        # GIVEN
+        entity_ids: list[int] = []
+        role_ids = [3, 4]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10
+            )
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_zero_limit(self) -> None:
+        """Test find_by_entities_and_roles with a non-positive limit returns no results."""
+        # GIVEN
+        entity_ids = [12345]
+        role_ids = [3]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(entity_ids, role_ids, limit=0)
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_create_success(self) -> None:
         """Test successfully creating a new relation."""
         # GIVEN

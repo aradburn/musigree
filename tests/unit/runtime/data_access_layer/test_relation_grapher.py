@@ -1,5 +1,6 @@
 """Unit tests for RelationGrapher class."""
 
+from collections import OrderedDict
 from typing import Any, Generator
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 
@@ -443,21 +444,9 @@ class TestRelationGrapher:
         assert "Sublabel Of" not in provisional_role_names
         assert "Artist" in provisional_role_names
 
-    def test_find_clusters(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
-        """Test find_clusters method."""
+    def test_find_clusters(self) -> None:
+        """Test find_clusters assigns a cluster to entities that have aliases."""
         # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        # Create entities with aliases
         entity1 = RuntimeEntity(
             id=to_entity_internal_id(123, EntityType.ARTIST),
             entity_id=123,
@@ -485,18 +474,18 @@ class TestRelationGrapher:
 
         node1 = TrellisNode(entity1, 0)
         node2 = TrellisNode(entity2, 1)
-        grapher.nodes[entity1.id] = node1
-        grapher.nodes[entity2.id] = node2
+        nodes: OrderedDict[int, TrellisNode] = OrderedDict()
+        nodes[entity1.id] = node1
+        nodes[entity2.id] = node2
 
         # When
-        grapher.find_clusters()
+        RelationGrapher.find_clusters(nodes)
 
         # Then
-        # The find_clusters method should assign the same cluster to entities that are aliases
-        # But since entity2 doesn't have entity1's ID in its cluster map,
-        # they won't be in the same cluster. Let's test that entity1 gets clustered.
+        # Entities with aliases are clustered; alias targets without their own
+        # aliases list are skipped by the current algorithm.
         assert node1.cluster > 0
-        # The clustering algorithm may not cluster entity2 if it doesn't have the right alias setup
+        assert node2.cluster == 0
 
     def test_clear_method(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
         """Test clear method resets all collections."""
@@ -652,21 +641,23 @@ class TestRelationGrapher:
                 # Make search_multi return an awaitable
                 mock_relation_access.search_multi = AsyncMock(return_value=mock_relations)
 
-                relation_links: dict[str, RuntimeRelationResult] = {}
+                relations: dict[str, RuntimeRelationResult] = {}
 
                 # When
                 await grapher.search_via_relational_roles(
                     relation_repository=mock_relation_repo,
                     distance=0,
                     provisional_roles=["Artist"],
-                    relation_links=relation_links,
+                    relations=relations,
                 )
 
         # Then
-        assert len(relation_links) == 1
-        link_key = list(relation_links.keys())[0]
-        assert relation_links[link_key].entity_one_id == 123
-        assert relation_links[link_key].entity_two_id == 456
+        assert len(relations) == 1
+        link_key = list(relations.keys())[0]
+        assert relations[link_key].entity_one_id == 123
+        assert relations[link_key].entity_two_id == 456
+        mock_relation_access.search_multi.assert_called_once()
+        assert mock_relation_access.search_multi.call_args.kwargs["limit"] == grapher.max_links
 
     def test_search_via_structural_roles(
         self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
@@ -832,7 +823,7 @@ class TestRelationGrapher:
         for i in range(15):  # More than max_nodes
             grapher.nodes[i] = Mock()
 
-        grapher.test_loop_one(distance=1)
+        grapher.check_nodes_size(distance=1)
         assert grapher.should_break_loop is True
 
         # Reset
@@ -840,14 +831,15 @@ class TestRelationGrapher:
 
         # Test test_loop_two - should break when too many relations
         # max_links = max_nodes * link_ratio = 10 * 2 = 20
-        many_relations: dict[str, RuntimeRelationResult] = {f"link_{i}": Mock() for i in
-                                                            range(25)}  # More than max_links (20)
-        grapher.test_loop_two(
+        many_relations: dict[str, RuntimeRelationResult] = {
+            f"link_{i}": Mock() for i in range(25)
+        }  # More than max_links (20)
+        grapher.check_relations_size(
             distance=2, relations=many_relations
         )  # Use distance > 1 to trigger the condition
         assert grapher.should_break_loop is True
 
         # Test with empty relations
         grapher.should_break_loop = False
-        grapher.test_loop_two(distance=1, relations={})
+        grapher.check_relations_size(distance=1, relations={})
         assert grapher.should_break_loop is True

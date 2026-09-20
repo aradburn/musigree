@@ -1,7 +1,8 @@
 import logging
 from typing import AsyncGenerator
 
-from sqlalchemy import Result, select, Select, delete
+from sqlalchemy import Result, Select, delete, select, union
+from sqlalchemy.sql.base import Executable
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.role_cache import RoleCache
@@ -66,7 +67,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
         return relation_db.to_domain()
 
     async def _get_all_by_query(
-        self, query: Select[tuple[RuntimeRelationTable]]
+        self,
+        query: Executable,
     ) -> list[RuntimeRelationInternal]:
         """
         Executes a query that should return multiple RuntimeRelations.
@@ -237,6 +239,45 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
                 RuntimeRelationTable.object,
             )
         )
+        return await self._get_all_by_query(query)
+
+    async def find_by_entities_and_roles(
+        self, ids: list[int], role_ids: list[int], limit: int
+    ) -> list[RuntimeRelationInternal]:
+        """
+        Retrieves relations associated with any of the given entity IDs and roles.
+
+        Uses a UNION of subject-side and object-side lookups so each branch can
+        use the corresponding (entity, predicate) index, then applies ordering
+        and ``limit`` to the combined result.
+
+        Args:
+            ids: The IDs of the entities.
+            role_ids: A list of role IDs to filter by.
+            limit: Maximum number of relations to return.
+
+        Returns:
+            List[RuntimeRelationInternal]: A list of relations associated with
+                any of the entities and matching the specified roles, capped
+                at ``limit``.
+        """
+        if not ids or not role_ids or limit <= 0:
+            return []
+
+        table = mapped_entity(RuntimeRelationTable)
+        subject_query = select(table).where(
+            RuntimeRelationTable.subject.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
+        )
+        object_query = select(table).where(
+            RuntimeRelationTable.object.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
+        )
+        combined = union(subject_query, object_query)
+        compound = combined.order_by(
+            combined.selected_columns.predicate,
+            combined.selected_columns.subject,
+            combined.selected_columns.object,
+        ).limit(limit)
+        query = select(table).from_statement(compound)
         return await self._get_all_by_query(query)
 
     async def create(
