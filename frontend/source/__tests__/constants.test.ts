@@ -1,22 +1,22 @@
-import { describe, it, expect } from "vitest";
+import {describe, expect, it} from "vitest";
 import {
-    DOM_IDS,
-    SVG_IDS,
-    SVG,
-    MARKER,
-    GRADIENT,
-    COLOR,
-    TIMING,
-    EXPORT,
-    LOADING,
-    TYPEAHEAD,
-    TREE,
-    RELATIONS,
-    FSM,
-    INIT,
     API,
-    MESSAGE,
+    COLOR,
+    DOM_IDS,
+    EXPORT,
     FORCE,
+    FSM,
+    GRADIENT,
+    INIT,
+    LOADING,
+    MARKER,
+    MESSAGE,
+    RELATIONS,
+    SVG,
+    SVG_IDS,
+    TIMING,
+    TREE,
+    TYPEAHEAD,
 } from "../constants";
 
 describe("constants", () => {
@@ -255,7 +255,7 @@ describe("constants", () => {
             expect(FORCE.DISTANCE.MAX).toBe(2000);
             expect(FORCE.DISTANCE.LINK).toBe(60);
             expect(FORCE.DISTANCE.LINK_ALIAS).toBe(-100);
-            expect(FORCE.DISTANCE.LINK_RELEASED_ON).toBe(180);
+            expect(FORCE.DISTANCE.LINK_RELEASED_ON).toBe(80);
             expect(FORCE.COLLIDE.ITERATIONS).toBe(2);
             expect(FORCE.COLLIDE.BUFFER).toBe(14);
             expect(FORCE.SIMULATION.THETA).toBe(0.9);
