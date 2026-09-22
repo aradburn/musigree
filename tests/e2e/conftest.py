@@ -10,9 +10,10 @@ import pytest
 import uvicorn
 
 from musigree.app.fastapi_app import create_app
-from musigree.config import Configuration, SqliteReadOnlyTestConfiguration
+from musigree.config import Configuration, SqliteReadOnlyTestConfiguration, SqliteTestConfiguration, \
+    PostgresTestConfiguration
 from musigree.constants import CacheType
-from musigree.logging_config import TEST_LOGGING_CONFIG
+from musigree.logging_config import TEST_LOGGING_CONFIG, setup_logging
 from tests.e2e.end_to_end_utils import TEST_SERVER_BASE_URL, TEST_SERVER_BASE_PORT
 
 log = logging.getLogger(__name__)
@@ -108,5 +109,17 @@ def base_url() -> str:
     return TEST_SERVER_BASE_URL
 
 
-# Reuse runtime_database fixtures from integration tests
-pytest_plugins = ["tests.integration.app.conftest"]
+@pytest.fixture(scope="class")
+def offline_config() -> Configuration:
+    """Provide the Postgres offline database configuration for tests."""
+    offline_config = PostgresTestConfiguration()
+    setup_logging(is_testing=True)
+    return offline_config
+
+
+@pytest.fixture(scope="class")
+def runtime_config() -> Configuration:
+    """Provide the Sqlite runtime database configuration for tests."""
+    runtime_config = SqliteTestConfiguration()
+    setup_logging(is_testing=True)
+    return runtime_config

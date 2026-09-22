@@ -21,11 +21,12 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Type, Any
+from typing import Any, Sequence, Type
 
-from sqlalchemy import Table
+from sqlalchemy import Connection, Table
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
-from sqlalchemy.sql.dml import ReturningInsert, Insert
+from sqlalchemy.sql.ddl import DropTable
+from sqlalchemy.sql.dml import Insert, ReturningInsert
 
 from musigree.config import Configuration
 from musigree.exceptions import NotFoundError
@@ -47,6 +48,25 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def _create_all_tables(
+    connection: Connection,
+    tables: Sequence[Table] | None = None,
+    *,
+    checkfirst: bool = True,
+) -> None:
+    """Create runtime tables using a sync Connection from AsyncConnection.run_sync.
+
+    MetaData.create_all accepts Engine | Connection | MockConnection, which does
+    not match run_sync's Connection-first callable type. This adapter narrows
+    the bind so the call is type-safe.
+    """
+    RuntimeBase.metadata.create_all(
+        bind=connection,
+        tables=tables,
+        checkfirst=checkfirst,
+    )
 
 
 class RuntimeDatabaseHelper(ABC):
@@ -183,15 +203,13 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
             "runtime_async_engine must be initialized before calling create_tables()"
         )
-        # noinspection PyTypeChecker
         async with (
             RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
         ):
-            # noinspection PyTypeChecker
             await conn.run_sync(
-                RuntimeBase.metadata.create_all,
-                checkfirst=True,
+                _create_all_tables,
                 tables=table_definitions,
+                checkfirst=True,
             )
 
     @classmethod
@@ -201,8 +219,7 @@ class RuntimeDatabaseHelper(ABC):
         Drops runtime_database tables.
 
         Args:
-            tables: An optional list of table names to drop. If None, all tables
-                defined in `RuntimeBase.metadata` will be dropped.
+            tables: A list of table names to drop.
         """
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -213,37 +230,15 @@ class RuntimeDatabaseHelper(ABC):
             "runtime_async_engine must be initialized before calling drop_tables()"
         )
 
-        if tables is not None:
-            # noinspection PyTypeChecker
-            table_definitions: list[Table] = [
-                RuntimeBase.metadata.tables[table_name] for table_name in tables
-            ]
+        table_definitions: list[Table] = [
+            RuntimeBase.metadata.tables[table_name] for table_name in tables
+        ]
+        async with (
+            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
+        ):
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
-                # noinspection PyTypeChecker
-                async with (
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
-                ):
-                    # for index in table.indexes:
-                    #     await conn.run_sync(
-                    #         index.drop,
-                    #         checkfirst=True,
-                    #     )
-                    # noinspection PyTypeChecker
-                    await conn.run_sync(
-                        table.drop,
-                        checkfirst=True,
-                    )
-        else:
-            # noinspection PyTypeChecker
-            async with (
-                RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
-            ):
-                # noinspection PyTypeChecker
-                await conn.run_sync(
-                    RuntimeBase.metadata.drop_all,
-                    checkfirst=True,
-                )
+                await conn.execute(DropTable(table, if_exists=True))
 
     @staticmethod
     @abstractmethod
@@ -322,7 +317,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: Type[RuntimeConcreteTable],
-        values: list[dict],
+        values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
@@ -330,7 +325,7 @@ class RuntimeDatabaseHelper(ABC):
 
         Args:
             schema_class: The schema class for the table.
-            values: A list of dictionaries, each containing values to insert.
+            values_list: A list of dictionaries, each containing values to insert.
             on_conflict_do_nothing: Whether to do nothing on conflict.
 
         Returns:
@@ -372,8 +367,7 @@ class RuntimeDatabaseHelper(ABC):
             return None
         except ValueError:
             return None
-        if entity is None:
-            return None
+
         if not on_mobile:
             max_nodes = RuntimeDatabaseHelper.MAX_NODES
             degree = RuntimeDatabaseHelper.MAX_DEGREE

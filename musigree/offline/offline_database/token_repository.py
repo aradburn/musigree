@@ -6,13 +6,15 @@ from sqlalchemy import Result, select, func
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.token_table import TokenTable
 from musigree.offline.offline_domain.token import Token
 
 log = logging.getLogger(__name__)
 
 
-class TokenRepository(BaseRepository[TokenTable]):
+# noinspection PyTypeChecker
+class TokenRepository(BaseRepository["TokenTable"]):
     """
     Repository for managing Token objects in the offline_database.
 
@@ -27,7 +29,7 @@ class TokenRepository(BaseRepository[TokenTable]):
         schema_class (Type[TokenTable]): The SQLAlchemy table class for offline tokens.
     """
 
-    schema_class = TokenTable
+    schema_class = mapped_entity(TokenTable)
     """The SQLAlchemy table class for offline tokens."""
 
     async def all(self) -> AsyncGenerator[Token, None]:

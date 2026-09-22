@@ -48,10 +48,9 @@ class TestOfflineLoaderFunctions:
         """
         return "2024-11-01"
 
-    @patch("musigree.loader.run_offline_loader.get_load_offline_table_stages")
     @pytest.mark.asyncio
     async def test_load_offline_tables_success(
-        self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
+        self, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of offline tables.
 
@@ -59,22 +58,24 @@ class TestOfflineLoaderFunctions:
         the execution of all loading stages when provided with valid
         data directory, date, and bulk insert settings.
         """
-        # Arrange
-        mock_stage1 = AsyncMock()
-        mock_stage2 = AsyncMock()
+        with patch(
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
+        ) as mock_get_stages:
+            # Arrange
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
 
-        mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2)]
+            mock_get_stages.return_value = [partial(mock_stage1), partial(mock_stage2)]
 
-        # Act
-        await load_offline_tables(mock_data_directory, mock_date, is_bulk_inserts=True)
+            # Act
+            await load_offline_tables(mock_data_directory, mock_date, is_bulk_inserts=True)
 
-        # Assert
-        mock_get_stages.assert_called_once_with(mock_data_directory, mock_date, True)
+            # Assert
+            mock_get_stages.assert_called_once_with(mock_data_directory, mock_date, True)
 
-    @patch("musigree.loader.run_offline_loader.get_load_offline_table_stages")
     @pytest.mark.asyncio
     async def test_load_offline_table_stage_success(
-        self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
+        self, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of a specific offline table stage.
 
@@ -82,130 +83,131 @@ class TestOfflineLoaderFunctions:
         a single stage from the available loading stages based on the
         provided stage index.
         """
-        # Arrange
-        mock_stage1 = AsyncMock()
-        mock_stage2 = AsyncMock()
-        mock_stage3 = AsyncMock()
+        with patch(
+            "musigree.loader.run_offline_loader.get_load_offline_table_stages"
+        ) as mock_get_stages:
+            # Arrange
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
+            mock_stage3 = AsyncMock()
 
-        mock_get_stages.return_value = [
-            partial(mock_stage1),
-            partial(mock_stage2),
-            partial(mock_stage3),
-        ]
+            mock_get_stages.return_value = [
+                partial(mock_stage1),
+                partial(mock_stage2),
+                partial(mock_stage3),
+            ]
 
-        # Act
-        await load_offline_table_stage(
-            mock_data_directory, mock_date, is_bulk_inserts=False, stage=1
-        )
+            # Act
+            await load_offline_table_stage(
+                mock_data_directory, mock_date, is_bulk_inserts=False, stage=1
+            )
 
-        # Assert
-        mock_get_stages.assert_called_once_with(mock_data_directory, mock_date, False)
+            # Assert
+            mock_get_stages.assert_called_once_with(mock_data_directory, mock_date, False)
         # Note: We can't easily assert which specific stage was called due to the way coroutines work
         # but we can verify the function was called with correct parameters
 
-    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
-    @patch("musigree.offline.loader.loader_entity.LoaderEntity")
-    @patch("musigree.offline.loader.loader_release.LoaderRelease")
-    @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     def test_get_load_offline_table_stages_success(
         self,
-        _mock_role_data_access: Mock,
-        mock_loader_relation: Mock,
-        mock_loader_release: Mock,
-        mock_loader_entity: Mock,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test successful creation of load offline table stages."""
-        # Arrange
-        mock_helper = Mock()
-        mock_helper.is_vacuum_full.return_value = False
-        mock_helper.is_vacuum_analyze.return_value = True
-        mock_helper.offline_async_engine = Mock()
-        mock_db_manager.offline_database_helper = mock_helper
+        with (
+            patch("musigree.loader.run_offline_loader.OfflineDatabaseManager") as mock_db_manager,
+            patch("musigree.offline.loader.loader_entity.LoaderEntity") as mock_loader_entity,
+            patch("musigree.offline.loader.loader_release.LoaderRelease") as mock_loader_release,
+            patch("musigree.offline.loader.loader_relation.LoaderRelation") as mock_loader_relation,
+            patch(
+                "musigree.loader.run_offline_loader.OfflineRoleDataAccess"
+            ) as _mock_role_data_access,
+        ):
+            # Arrange
+            mock_helper = Mock()
+            mock_helper.is_vacuum_full.return_value = False
+            mock_helper.is_vacuum_analyze.return_value = True
+            mock_helper.offline_async_engine = Mock()
+            mock_db_manager.offline_database_helper = mock_helper
 
-        # Mock vacuum method to return an AsyncMock coroutine
-        mock_helper.vacuum = AsyncMock()
+            # Mock vacuum method to return an AsyncMock coroutine
+            mock_helper.vacuum = AsyncMock()
 
-        # Mock the static/class methods to return AsyncMock coroutines
-        _mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_loader_entity.loader_entity_pass_one = AsyncMock()
-        mock_loader_entity.loader_entity_pass_two = AsyncMock()
-        mock_loader_entity.loader_entity_pass_three = AsyncMock()
-        mock_loader_entity.loader_create_text_search_index = AsyncMock()
-        mock_loader_release.loader_release_pass_one = AsyncMock()
-        mock_loader_release.loader_release_pass_two = AsyncMock()
-        mock_loader_relation.loader_relation_pass_one = AsyncMock()
+            # Mock the static/class methods to return AsyncMock coroutines
+            _mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+            mock_loader_entity.loader_entity_pass_one = AsyncMock()
+            mock_loader_entity.loader_entity_pass_two = AsyncMock()
+            mock_loader_entity.loader_entity_pass_three = AsyncMock()
+            mock_loader_entity.loader_create_text_search_index = AsyncMock()
+            mock_loader_release.loader_release_pass_one = AsyncMock()
+            mock_loader_release.loader_release_pass_two = AsyncMock()
+            mock_loader_relation.loader_relation_pass_one = AsyncMock()
 
-        # Act
-        result = get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
+            # Act
+            result = get_load_offline_table_stages(
+                mock_data_directory, mock_date, is_bulk_inserts=True
+            )
 
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) > 0
+            # Assert
+            assert isinstance(result, list)
+            assert len(result) > 0
 
-    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     def test_get_load_offline_table_stages_assertion_error_no_helper(
         self,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test get_load_offline_table_stages raises assertion error when helper is None."""
-        # Arrange
-        mock_db_manager.offline_database_helper = None
+        with patch("musigree.loader.run_offline_loader.OfflineDatabaseManager") as mock_db_manager:
+            # Arrange
+            mock_db_manager.offline_database_helper = None
 
-        # Act & Assert
-        with pytest.raises(AssertionError) as excinfo:
-            get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
+            # Act & Assert
+            with pytest.raises(AssertionError) as excinfo:
+                get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
 
-        assert "OfflineDatabaseManager.offline_database_helper must be initialized" in str(
-            excinfo.value
-        )
+            assert "OfflineDatabaseManager.offline_database_helper must be initialized" in str(
+                excinfo.value
+            )
 
-    @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
-    @patch("musigree.offline.loader.loader_entity.LoaderEntity")
-    @patch("musigree.offline.loader.loader_release.LoaderRelease")
-    @patch("musigree.offline.loader.loader_relation.LoaderRelation")
-    @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
-    @patch("musigree.offline.loader.loader_role.LoaderRole")
     def test_get_load_offline_table_stages_assertion_error_no_engine(
         self,
-        mock_loader_role: Mock,
-        mock_role_data_access: Mock,
-        mock_loader_relation: Mock,
-        mock_loader_release: Mock,
-        mock_loader_entity: Mock,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test get_load_offline_table_stages raises assertion error when engine is None."""
-        # Arrange
-        mock_helper = Mock()
-        mock_helper.offline_async_engine = None
-        mock_db_manager.offline_database_helper = mock_helper
+        with (
+            patch("musigree.loader.run_offline_loader.OfflineDatabaseManager") as mock_db_manager,
+            patch("musigree.offline.loader.loader_entity.LoaderEntity") as mock_loader_entity,
+            patch("musigree.offline.loader.loader_release.LoaderRelease") as mock_loader_release,
+            patch("musigree.offline.loader.loader_relation.LoaderRelation") as mock_loader_relation,
+            patch(
+                "musigree.loader.run_offline_loader.OfflineRoleDataAccess"
+            ) as mock_role_data_access,
+            patch("musigree.offline.loader.loader_role.LoaderRole") as mock_loader_role,
+        ):
+            # Arrange
+            mock_helper = Mock()
+            mock_helper.offline_async_engine = None
+            mock_db_manager.offline_database_helper = mock_helper
 
-        # Mock all the loader methods to avoid creating actual coroutines
-        mock_loader_role.load_roles_into_database = AsyncMock()
-        mock_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_loader_entity.loader_entity_pass_one = AsyncMock()
-        mock_loader_entity.loader_entity_pass_two = AsyncMock()
-        mock_loader_entity.loader_entity_pass_three = AsyncMock()
-        mock_loader_entity.loader_create_text_search_index = AsyncMock()
-        mock_loader_release.loader_release_pass_one = AsyncMock()
-        mock_loader_release.loader_release_pass_two = AsyncMock()
-        mock_loader_relation.loader_relation_pass_one = AsyncMock()
-        mock_helper.vacuum = AsyncMock()
+            # Mock all the loader methods to avoid creating actual coroutines
+            mock_loader_role.load_roles_into_database = AsyncMock()
+            mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+            mock_loader_entity.loader_entity_pass_one = AsyncMock()
+            mock_loader_entity.loader_entity_pass_two = AsyncMock()
+            mock_loader_entity.loader_entity_pass_three = AsyncMock()
+            mock_loader_entity.loader_create_text_search_index = AsyncMock()
+            mock_loader_release.loader_release_pass_one = AsyncMock()
+            mock_loader_release.loader_release_pass_two = AsyncMock()
+            mock_loader_relation.loader_relation_pass_one = AsyncMock()
+            mock_helper.vacuum = AsyncMock()
 
-        # Act & Assert
-        # The function should raise an assertion error when engine is None
-        with pytest.raises(AssertionError) as excinfo:
-            get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
+            # Act & Assert
+            # The function should raise an assertion error when engine is None
+            with pytest.raises(AssertionError) as excinfo:
+                get_load_offline_table_stages(mock_data_directory, mock_date, is_bulk_inserts=True)
 
-        assert "offline_async_engine must be initialized" in str(excinfo.value)
+            assert "offline_async_engine must be initialized" in str(excinfo.value)
 
     @patch("musigree.loader.run_offline_loader.luigi")
     @patch("musigree.loader.run_offline_loader.asyncio_atexit")

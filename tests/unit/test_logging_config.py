@@ -1,11 +1,12 @@
-from unittest.mock import patch, Mock
+import logging
+from unittest.mock import Mock, patch
 
 import pytest
 
 from musigree.logging_config import (
     LOGGING_CONFIG,
-    TEST_LOGGING_CONFIG,
     LOGGING_TRACE,
+    TEST_LOGGING_CONFIG,
     setup_logging,
     shutdown_logging,
 )
@@ -148,7 +149,7 @@ class TestLoggingConfig:
 
     @patch("logging.shutdown")
     @patch("logging.getLogger")
-    @patch("logging.root.manager.loggerDict", new={"test": Mock(), "another": Mock()})
+    @patch.object(logging.root.manager, "loggerDict", {"test": Mock(), "another": Mock()})
     def test_shutdown_logging_with_loggers(
         self, mock_get_logger: Mock, mock_shutdown: Mock
     ) -> None:
@@ -166,7 +167,7 @@ class TestLoggingConfig:
 
     @patch("logging.shutdown")
     @patch("logging.getLogger")
-    @patch("logging.root.manager.loggerDict", new={})
+    @patch.object(logging.root.manager, "loggerDict", {})
     def test_shutdown_logging_no_loggers(self, mock_get_logger: Mock, mock_shutdown: Mock) -> None:
         """Test shutdown_logging when no loggers exist."""
         mock_logger = Mock()

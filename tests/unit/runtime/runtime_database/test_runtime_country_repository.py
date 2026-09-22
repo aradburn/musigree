@@ -1,15 +1,19 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_country_repository import RuntimeCountryRepository
 from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
+from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 from musigree.runtime.runtime_domain.runtime_country import RuntimeCountry
 
 
+# noinspection PyTypeChecker
 class TestRuntimeCountryRepository:
     """Unit tests for RuntimeCountryRepository class."""
 
@@ -23,7 +27,7 @@ class TestRuntimeCountryRepository:
         assert self.repository.schema_class == RuntimeCountryTable
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "_all")
+    @patch.object(RuntimeBaseRepository, "_all")
     async def test_all(self, mock_all: Mock) -> None:
         """Test retrieving all countries."""
         # GIVEN
@@ -36,13 +40,13 @@ class TestRuntimeCountryRepository:
         mock_instance2.country_name = "United Kingdom"
 
         # Create an async generator for the mock
-        async def async_generator() -> AsyncGenerator[Mock, None]:
+        async def async_generator() -> AsyncGenerator[Mock]:
             for item in [mock_instance1, mock_instance2]:
                 yield item
 
         mock_all.return_value = async_generator()
 
-        with patch.object(RuntimeCountry, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_validate.side_effect = [
                 RuntimeCountry(id=1, country_name="United States"),
                 RuntimeCountry(id=2, country_name="United Kingdom"),
@@ -61,7 +65,7 @@ class TestRuntimeCountryRepository:
             assert result[1].country_name == "United Kingdom"
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving a country by ID."""
         # GIVEN
@@ -76,7 +80,7 @@ class TestRuntimeCountryRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeCountry, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_country = RuntimeCountry(id=country_id, country_name="United States")
             mock_validate.return_value = expected_country
 
@@ -88,7 +92,7 @@ class TestRuntimeCountryRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving a country by ID when not found."""
         # GIVEN
@@ -105,7 +109,7 @@ class TestRuntimeCountryRepository:
             await self.repository.get_by_id(country_id)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving a country by name."""
         # GIVEN
@@ -120,7 +124,7 @@ class TestRuntimeCountryRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeCountry, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_country = RuntimeCountry(id=1, country_name=country_name)
             mock_validate.return_value = expected_country
 
@@ -132,7 +136,7 @@ class TestRuntimeCountryRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving a country by name when not found."""
         # GIVEN
@@ -149,7 +153,7 @@ class TestRuntimeCountryRepository:
             await self.repository.get_by_name(country_name)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeCountryRepository, "_save")
+    @patch.object(RuntimeBaseRepository, "_save")
     async def test_create(self, mock_save: Mock) -> None:
         """Test creating a new country."""
         # GIVEN
@@ -159,7 +163,7 @@ class TestRuntimeCountryRepository:
         mock_instance.country_name = "United States"
         mock_save.return_value = mock_instance
 
-        with patch.object(RuntimeCountry, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_country = RuntimeCountry(id=1, country_name="United States")
             mock_validate.return_value = expected_country
 

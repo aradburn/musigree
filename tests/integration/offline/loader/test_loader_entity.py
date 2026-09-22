@@ -83,7 +83,7 @@ class TestLoaderEntity:
 
         iterator = LoaderUtils.get_iterator(discogs_data_directory, "artist", "testinsert")
         element = next(iterator)
-        while element.find("name").text != "Seefeel":
+        while element.find("name").text != "Seefeel":  # type: ignore[union-attr]
             element = next(iterator)
         entity = ParserEntity().from_element(element)
         actual = utils.normalize_dict(entity.model_dump(exclude={"id"}))

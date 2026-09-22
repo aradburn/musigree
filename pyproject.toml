@@ -1,6 +1,6 @@
 [project]
 name = "musigree"
-version = "1.0.84"
+version = "1.0.85"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
@@ -11,34 +11,34 @@ requires-python = "==3.13.11"
 readme = "README.md"
 
 dependencies = [
-    "fastapi==0.136.3",
-    "Secweb==1.30.10",
-    "sqlalchemy[asyncio]==2.0.50",
-    "psycopg[binary]==3.3.4",
+    "fastapi==0.141.1",
+    "secweb==1.30.10",
+    "sqlalchemy[asyncio]==2.0.54",
+    "psycopg[binary]==3.3.6",
     "aiosqlite==0.22.1",
-    "pydantic==2.13.4",
-    "pydantic-settings==2.14.1",
-    "redis[hiredis]==7.3.0",
-    "fakeredis==2.36.0",
-    "tornado==6.5.6",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "redis[hiredis]==8.1.0",
+    "fakeredis==2.38.0",
+    "tornado==6.5.10",
     "luigi==3.6.0",
     "sortedcontainers==2.4.0",
-    "deepdiff==8.6.1",
-    "RapidFuzz==3.14.5",
+    "deepdiff==9.1.0",
+    "rapidfuzz==3.14.6",
     "retrying==1.4.2",
-    "urllib3==2.7.0",
+    "urllib3==2.8.0",
     "requests==2.34.2",
     "python-dateutil==2.9.0.post0",
     "toolz==1.1.0",
     "Unidecode==1.4.0",
-    "python-dotenv==1.2.2",
-    "gunicorn==26.0.0",
-    "uvicorn==0.48.0",
+    "python-dotenv==1.2.3",
+    "gunicorn==26.2.0",
+    "uvicorn==0.53.0",
     "httpx==0.28.1",
     "jinja2==3.1.6",
     "asyncio-atexit==1.0.1",
     "asyncstdlib==3.14.0",
-    "types-python-dateutil>=2.9.0.20260518",
+    "types-python-dateutil==2.9.0.20260807",
 ]
 
 [project.urls]
@@ -71,22 +71,22 @@ norecursedirs = "tests/performance"
 [dependency-groups]
 dev = [
     "pg-temp==0.9.1",
-    "pytest==9.0.3",
+    "pytest==9.1.1",
     "pytest-mock==3.15.1",
     "pytest-asyncio==1.4.0",
     "pytest-cov==7.1.0",
-    "mypy==2.1.0",
-    "memray==1.19.3",
-    "pytest-memray==1.8.0",
+    "mypy==2.3.1",
+    "memray==1.20.0",
+    "pytest-memray==1.11.0",
     "sortedcontainers-stubs==2.4.3",
-    "types-requests==2.33.0.20260518",
-    "locust==2.44.0",
-    "ruff==0.15.15",
-    "hatchling==1.29.0",
+    "types-requests==2.33.0.20260906",
+    "locust==2.46.6",
+    "ruff==0.16.8",
+    "hatchling==1.32.4",
     "yappi==1.7.6",
     "pre-commit==4.4.0",
-    "playwright==1.58.0",
-    "pytest-playwright-asyncio==0.7.2",
+    "playwright==1.63.0",
+    "pytest-playwright-asyncio==0.9.0",
     "asgi-lifespan==2.1.0",
 ]
 reinstall-package = ["musigree"]

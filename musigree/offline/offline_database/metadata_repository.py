@@ -5,13 +5,15 @@ from sqlalchemy import Result, select, update
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.metadata_table import MetadataTable
 from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 
 log = logging.getLogger(__name__)
 
 
-class MetadataRepository(BaseRepository[MetadataTable]):
+# noinspection PyTypeChecker
+class MetadataRepository(BaseRepository["MetadataTable"]):
     """
     Repository for managing Metadata objects in the runtime_database.
 
@@ -26,7 +28,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         schema_class (Type[MetadataTable]): The SQLAlchemy table class for metadata.
     """
 
-    schema_class = MetadataTable
+    schema_class = mapped_entity(MetadataTable)
     """
     The SQLAlchemy table class for metadata.
     """
@@ -72,7 +74,7 @@ class MetadataRepository(BaseRepository[MetadataTable]):
         Raises:
             NotFoundError: If no metadata is found with the given key.
         """
-        query = select(MetadataTable).where(MetadataTable.metadata_key == key)
+        query = select(mapped_entity(MetadataTable)).where(MetadataTable.metadata_key == key)
         result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

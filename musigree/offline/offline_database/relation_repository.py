@@ -7,6 +7,7 @@ from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.offline_database.base_repository import BaseRepository
+from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.relation_table import RelationTable
 from musigree.offline.offline_domain.relation import (
     RelationUncommitted,
@@ -17,7 +18,8 @@ from musigree.offline.offline_domain.relation import (
 log = logging.getLogger(__name__)
 
 
-class RelationRepository(BaseRepository[RelationTable]):
+# noinspection PyTypeChecker
+class RelationRepository(BaseRepository["RelationTable"]):
     """
     Repository for managing Relation objects in the runtime_database.
 
@@ -34,7 +36,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         schema_class (Type[RelationTable]): The SQLAlchemy table class for relations.
     """
 
-    schema_class = RelationTable
+    schema_class = mapped_entity(RelationTable)
     """The SQLAlchemy table class for relations."""
 
     async def _get_one_by_query(self, query: Select[tuple[RelationTable]]) -> RelationInternal:
@@ -84,7 +86,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         Yields:
             AsyncGenerator[RelationDB]: An async iterator yielding each relation.
         """
-        query = select(RelationTable)
+        query = select(mapped_entity(RelationTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for partition in result.partitions():
             # partition is an iterable that will be at most 1000 items
@@ -106,7 +108,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         Raises:
             NotFoundError: If no relation is found with the given ID.
         """
-        query = select(RelationTable).where(RelationTable.id == relation_id)
+        query = select(mapped_entity(RelationTable)).where(RelationTable.id == relation_id)
         result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
@@ -152,8 +154,8 @@ class RelationRepository(BaseRepository[RelationTable]):
             NotFoundError: If no relation is found with the given ID.
         """
         query = (
-            select(RelationTable)
-            .with_for_update(of=RelationTable, nowait=True)
+            select(mapped_entity(RelationTable))
+            .with_for_update(of=mapped_entity(RelationTable), nowait=True)
             .where(RelationTable.id == relation_id)
         )
         return await self._get_one_by_query(query)
@@ -179,7 +181,7 @@ class RelationRepository(BaseRepository[RelationTable]):
             elif "role" in key:
                 role_name = key["role"]
                 key["role_id"] = RoleCache.role_name_to_role_id_lookup[role_name]
-        query = select(RelationTable).where(
+        query = select(mapped_entity(RelationTable)).where(
             (RelationTable.subject == key["subject"])
             & (RelationTable.predicate == key["role_id"])
             & (RelationTable.object == key["object"])
@@ -208,7 +210,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         #         year_clause |= cls.year.between(year[0], year[1])
         #     where_clause &= year_clause
         query = (
-            select(RelationTable)
+            select(mapped_entity(RelationTable))
             .where((RelationTable.subject == id_) | (RelationTable.object == id_))
             .order_by(
                 RelationTable.predicate,
@@ -292,7 +294,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         #         year_clause |= cls.year.between(year[0], year[1])
         #     where_clause &= year_clause
         query = (
-            select(RelationTable)
+            select(mapped_entity(RelationTable))
             .where(
                 ((RelationTable.subject == id_) | (RelationTable.object == id_))
                 & (RelationTable.predicate.in_(role_ids))
@@ -373,7 +375,7 @@ class RelationRepository(BaseRepository[RelationTable]):
         Args:
             id_: The ID of the entity whose relations should be deleted.
         """
-        query = delete(RelationTable).where(
+        query = delete(mapped_entity(RelationTable)).where(
             (RelationTable.subject == id_) | (RelationTable.object == id_)
         )
         await self._session.execute(query)

@@ -7,8 +7,9 @@ Wikipedia instruments, and Hornbostel Sachs classification system.
 It tests file loading, data parsing, role creation, and database operations.
 """
 
+import builtins
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch, mock_open
+from unittest.mock import AsyncMock, Mock, mock_open, patch
 
 import pytest
 
@@ -66,7 +67,7 @@ class TestLoaderRole:
         ["test_instruments.csv"],
     )
     @patch("musigree.offline.loader.loader_role.RoleDataUtils.normalise_role_names")
-    @patch("musigree.offline.loader.loader_role.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     @patch("musigree.offline.loader.loader_role.csv.DictReader")
     @patch("musigree.offline.loader.loader_role.csv.Sniffer")
     def test_load_wikipedia_instruments_success(
@@ -132,7 +133,7 @@ class TestLoaderRole:
         assert mock_file_open.call_count >= 1  # At least one file opened
         mock_normalise.assert_called()
 
-    @patch("musigree.offline.loader.loader_role.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     @patch("musigree.offline.loader.loader_role.json.load")
     def test_load_hornbostel_sachs_instruments_success(
         self, mock_json_load: Mock, mock_file_open: Mock
@@ -163,7 +164,7 @@ class TestLoaderRole:
         mock_json_load.assert_called_once()
 
     @patch("musigree.offline.loader.loader_role.LoaderUtils.get_role_paths")
-    @patch("musigree.offline.loader.loader_role.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     @patch("musigree.offline.loader.loader_role.csv.DictReader")
     @patch("musigree.offline.loader.loader_role.csv.Sniffer")
     @patch("musigree.offline.loader.loader_role.RoleDataUtils.normalise_role_names")
@@ -289,12 +290,12 @@ class TestLoaderRole:
         instruments_directory = Path("/nonexistent/path")
 
         # Execute & Verify
-        with patch("musigree.offline.loader.loader_role.open", side_effect=FileNotFoundError):
+        with patch.object(builtins, "open", side_effect=FileNotFoundError):
             with pytest.raises(FileNotFoundError):
                 LoaderRole.load_hornbostel_sachs_instruments(instruments_directory)
 
     @patch("musigree.offline.loader.loader_role.RoleDataUtils.normalise_role_names")
-    @patch("musigree.offline.loader.loader_role.open", new_callable=mock_open)
+    @patch.object(builtins, "open", new_callable=mock_open)
     @patch("musigree.offline.loader.loader_role.csv.DictReader")
     @patch("musigree.offline.loader.loader_role.csv.Sniffer")
     def test_load_wikipedia_instruments_empty_csv(

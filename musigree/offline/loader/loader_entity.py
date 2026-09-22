@@ -38,7 +38,6 @@ class LoaderEntity(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    # @timeit
     async def loader_entity_pass_one(
         cls, discogs_data_directory: Path, data_date: str, is_bulk_inserts: bool = False
     ) -> None:
@@ -105,19 +104,16 @@ class LoaderEntity(LoaderBase):
         return set_of_ids
 
     @classmethod
-    # @timeit
     async def loader_entity_pass_two(cls) -> None:
         log.debug("loader entity pass two")
         await cls.loader_start_workers(process_entity_pass_two_worker)
 
     @classmethod
-    # @timeit
     async def loader_entity_pass_three(cls) -> None:
         log.debug("loader entity pass three")
         await cls.loader_start_workers(process_entity_pass_three_worker)
 
     @classmethod
-    # @timeit
     async def loader_entity_pass_four(cls) -> None:
         log.debug("loader entity pass four")
         await cls.loader_start_workers(process_entity_pass_four_worker)
@@ -142,7 +138,6 @@ class LoaderEntity(LoaderBase):
         )
 
     @classmethod
-    # @timeit
     async def loader_create_text_search_index(cls, text_search_path: Path) -> None:
         log.debug("loader entity create text search index")
         if not text_search_path.exists():
@@ -152,7 +147,6 @@ class LoaderEntity(LoaderBase):
             log.debug("create text search index - skipping...")
 
     @classmethod
-    # @timeit
     async def loader_init_text_search_index_from_database(cls) -> TextSearchIndex:
         log.debug("loader entity init text search index from database")
 
@@ -164,7 +158,6 @@ class LoaderEntity(LoaderBase):
         return text_search_index
 
     @classmethod
-    # @timeit
     async def loader_create_entity_details_index(cls, entity_details_path: Path) -> None:
         log.debug("loader entity create entity details index")
         if not entity_details_path.exists():

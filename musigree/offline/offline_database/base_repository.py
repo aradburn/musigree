@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Generic, Type, AsyncGenerator
+from typing import Any, Generic, AsyncGenerator
 
 from sqlalchemy import delete, func, select, update, insert
 from sqlalchemy.engine import Result
@@ -24,11 +24,13 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
     The Session class implements the async runtime_database interaction layer.
 
     Attributes:
-        schema_class (Type[ConcreteTable]): The SQLAlchemy table class that this
-            repository manages. This must be set in subclasses.
+        schema_class: The SQLAlchemy mapped class for this repository.
+            Typed as ``Any`` because mapped classes use
+            ``DeclarativeAttributeIntercept``, which PyCharm does not treat as
+            ``type[Model]``.
     """
 
-    schema_class: Type[ConcreteTable]
+    schema_class: Any
     """
      The SQLAlchemy table class that this repository manages. This must be set in subclasses.
     """
@@ -141,7 +143,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
             self._session.add(schema)
             await self._session.flush()
             await self._session.refresh(schema)
-            return schema
+            return schema  # type: ignore[no-any-return]
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 

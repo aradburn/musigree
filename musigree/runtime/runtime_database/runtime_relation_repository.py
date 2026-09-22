@@ -1,7 +1,8 @@
 import logging
 from typing import AsyncGenerator
 
-from sqlalchemy import Result, select, Select, delete
+from sqlalchemy import Result, Select, delete, select, union
+from sqlalchemy.sql.base import Executable
 
 from musigree.exceptions import NotFoundError, DatabaseError
 from musigree.library.cache.role_cache import RoleCache
@@ -9,6 +10,7 @@ from musigree.runtime.runtime_database import RuntimeRelationTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationInternal,
@@ -18,7 +20,8 @@ from musigree.runtime.runtime_domain.runtime_relation import (
 log = logging.getLogger(__name__)
 
 
-class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
+# noinspection PyTypeChecker
+class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
     """
     Repository for managing RuntimeRelation objects in the runtime runtime_database.
 
@@ -37,7 +40,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             for runtime relations.
     """
 
-    schema_class = RuntimeRelationTable
+    schema_class = mapped_entity(RuntimeRelationTable)
     """The SQLAlchemy table class for runtime relations."""
 
     async def _get_one_by_query(
@@ -64,7 +67,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         return relation_db.to_domain()
 
     async def _get_all_by_query(
-        self, query: Select[tuple[RuntimeRelationTable]]
+        self,
+        query: Executable,
     ) -> list[RuntimeRelationInternal]:
         """
         Executes a query that should return multiple RuntimeRelations.
@@ -107,7 +111,9 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         Raises:
             NotFoundError: If no relation is found with the given ID.
         """
-        query = select(RuntimeRelationTable).where(RuntimeRelationTable.id == relation_id)
+        query = select(mapped_entity(RuntimeRelationTable)).where(
+            RuntimeRelationTable.id == relation_id
+        )
         result: Result = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
@@ -154,8 +160,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             NotFoundError: If no relation is found with the given ID.
         """
         query = (
-            select(RuntimeRelationTable)
-            .with_for_update(of=RuntimeRelationTable, nowait=True)
+            select(mapped_entity(RuntimeRelationTable))
+            .with_for_update(of=mapped_entity(RuntimeRelationTable), nowait=True)
             .where(RuntimeRelationTable.id == relation_id)
         )
         return await self._get_one_by_query(query)
@@ -181,7 +187,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             elif "role" in key:
                 role_name = key["role"]
                 key["role_id"] = RoleCache.role_name_to_role_id_lookup[role_name]
-        query = select(RuntimeRelationTable).where(
+        query = select(mapped_entity(RuntimeRelationTable)).where(
             (RuntimeRelationTable.subject == key["subject"])
             & (RuntimeRelationTable.predicate == key["role_id"])
             & (RuntimeRelationTable.object == key["object"])
@@ -199,7 +205,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             List[RuntimeRelationInternal]: A list of relations associated with
                 the entity.
         """
-        query = select(RuntimeRelationTable).where(
+        query = select(mapped_entity(RuntimeRelationTable)).where(
             (RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_)
         )
         return await self._get_all_by_query(query)
@@ -222,7 +228,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
             return []
 
         query = (
-            select(RuntimeRelationTable)
+            select(mapped_entity(RuntimeRelationTable))
             .where(
                 ((RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_))
                 & (RuntimeRelationTable.predicate.in_(role_ids))
@@ -233,6 +239,45 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
                 RuntimeRelationTable.object,
             )
         )
+        return await self._get_all_by_query(query)
+
+    async def find_by_entities_and_roles(
+        self, ids: list[int], role_ids: list[int], limit: int
+    ) -> list[RuntimeRelationInternal]:
+        """
+        Retrieves relations associated with any of the given entity IDs and roles.
+
+        Uses a UNION of subject-side and object-side lookups so each branch can
+        use the corresponding (entity, predicate) index, then applies ordering
+        and ``limit`` to the combined result.
+
+        Args:
+            ids: The IDs of the entities.
+            role_ids: A list of role IDs to filter by.
+            limit: Maximum number of relations to return.
+
+        Returns:
+            List[RuntimeRelationInternal]: A list of relations associated with
+                any of the entities and matching the specified roles, capped
+                at ``limit``.
+        """
+        if not ids or not role_ids or limit <= 0:
+            return []
+
+        table = mapped_entity(RuntimeRelationTable)
+        subject_query = select(table).where(
+            RuntimeRelationTable.subject.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
+        )
+        object_query = select(table).where(
+            RuntimeRelationTable.object.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
+        )
+        combined = union(subject_query, object_query)
+        compound = combined.order_by(
+            combined.selected_columns.predicate,
+            combined.selected_columns.subject,
+            combined.selected_columns.object,
+        ).limit(limit)
+        query = select(table).from_statement(compound)
         return await self._get_all_by_query(query)
 
     async def create(
@@ -306,7 +351,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository[RuntimeRelationTable]):
         Args:
             id_: The ID of the entity whose relations should be deleted.
         """
-        query = delete(RuntimeRelationTable).where(
+        query = delete(mapped_entity(RuntimeRelationTable)).where(
             (RuntimeRelationTable.subject == id_) | (RuntimeRelationTable.object == id_)
         )
         await self._session.execute(query)

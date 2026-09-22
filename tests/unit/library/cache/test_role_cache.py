@@ -3,16 +3,14 @@ Unit tests for musigree.library.cache.role_cache module.
 """
 
 import json
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import BaseModel
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
-from musigree.runtime.runtime_domain.runtime_role import (
-    RuntimeRoleJSTree,
-    RuntimeRoleJSTreeWrapper,
-)
+from musigree.runtime.runtime_domain.runtime_role import RuntimeRoleJSTree
 
 
 class TestRoleCache:
@@ -115,7 +113,7 @@ class TestRoleCache:
         assert "role_name" in role
         assert "role_category" in role
 
-    @patch.object(RuntimeRoleJSTreeWrapper, "model_dump_json")
+    @patch.object(BaseModel, "model_dump_json")
     def test_get_roles_json_success(self, mock_model_dump_json: Mock) -> None:
         """Test get_roles_json method."""
         # Arrange
@@ -129,7 +127,7 @@ class TestRoleCache:
         assert result == expected_json
         mock_model_dump_json.assert_called_once()
 
-    @patch.object(RuntimeRoleJSTreeWrapper, "model_dump_json")
+    @patch.object(BaseModel, "model_dump_json")
     def test_get_roles_json_wrapper_creation(self, mock_model_dump_json: Mock) -> None:
         """Test that get_roles_json creates proper wrapper."""
         # Arrange

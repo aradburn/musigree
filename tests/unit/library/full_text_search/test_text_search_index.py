@@ -1,6 +1,7 @@
+import builtins
 import math
 from pathlib import Path
-from unittest.mock import patch, mock_open, Mock
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
@@ -234,7 +235,7 @@ class TestTextSearchIndex:
     # Note: save_text_search_index_to_file method doesn't exist in the class
     # Only load_text_search_index_from_file is available
 
-    @patch("builtins.open", new_callable=mock_open, read_data=b"pickled_data")
+    @patch.object(builtins, "open", new_callable=mock_open, read_data=b"pickled_data")
     @patch("pickle.load")
     def test_load_text_search_index_from_file(
         self, mock_pickle_load: Mock, mock_file: Mock

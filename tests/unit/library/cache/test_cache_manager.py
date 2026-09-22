@@ -8,6 +8,7 @@ from musigree.constants import CacheType
 from musigree.library.cache.cache_manager import (
     BaseCache,
     CacheManager,
+    FakeRedisCache,
     RedisCache,
     SimpleCache,
 )
@@ -203,6 +204,32 @@ class TestRedisCache:
         )
         assert cache.default_timeout == 600
         assert cache._client is None
+
+
+class TestFakeRedisCache:
+    """Test cases for the async FakeRedis cache (redis-py 8 compatible)."""
+
+    @pytest.mark.asyncio
+    async def test_fake_redis_set_get_and_ping(self) -> None:
+        """FakeRedisCache uses fakeredis.aioredis and supports awaitable commands."""
+        cache = FakeRedisCache()
+        try:
+            assert await cache.ping() is True
+            await cache.set("key1", "value1", timeout=0)
+            assert await cache.get("key1") == "value1"
+        finally:
+            await cache.close()
+
+    @pytest.mark.asyncio
+    async def test_fake_redis_hset_hgetall(self) -> None:
+        """FakeRedisCache round-trips JSON hash payloads."""
+        cache = FakeRedisCache()
+        try:
+            payload = {"field1": "value1", "field2": 2}
+            await cache.hset("hash_key", payload, timeout=0)
+            assert await cache.hgetall("hash_key") == payload
+        finally:
+            await cache.close()
 
 
 class TestCacheManager:
@@ -463,6 +490,43 @@ class TestRedisCacheMethods:
         await redis_cache.clear()
 
     @pytest.mark.asyncio
+    async def test_close_flushes_and_aclose(self, redis_cache: RedisCache) -> None:
+        """Test close flushes the DB then releases the redis-py 8 async client."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.flushdb = AsyncMock()
+        mock_client.aclose = AsyncMock()
+
+        await redis_cache.close()
+
+        mock_client.flushdb.assert_called_once()
+        mock_client.aclose.assert_called_once()
+        assert redis_cache._client is None
+
+    @pytest.mark.asyncio
+    async def test_close_with_flush_exception(self, redis_cache: RedisCache) -> None:
+        """Test close still acloses when flushdb fails."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.flushdb = AsyncMock(side_effect=Exception("Redis error"))
+        mock_client.aclose = AsyncMock()
+
+        await redis_cache.close()
+
+        mock_client.aclose.assert_called_once()
+        assert redis_cache._client is None
+
+    @pytest.mark.asyncio
+    async def test_ping_success(self, redis_cache: RedisCache) -> None:
+        """Test ping awaits the async redis-py 8 client."""
+        assert redis_cache._client is not None
+        mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
+        mock_client.ping = AsyncMock(return_value=True)
+
+        assert await redis_cache.ping() is True
+        mock_client.ping.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_hgetall_value_not_found(self, redis_cache: RedisCache) -> None:
         """Test hgetall method when key doesn't exist."""
         assert redis_cache._client is not None
@@ -707,7 +771,7 @@ class TestCacheManagerUncoveredMethods:
             patch.object(CacheManager, "setup_cache", new_callable=AsyncMock),
             patch.object(CacheManager, "get_cache", return_value=None),
         ):
-            with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+            with pytest.raises(AssertionError, match="Invalid cache"):
                 await CacheManager.setup_and_clear_cache(config)
 
     @pytest.mark.asyncio

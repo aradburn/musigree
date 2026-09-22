@@ -645,6 +645,41 @@ describe("useResizeObserver", () => {
             expect(result.current.height).toBe(176);
         });
 
+        it("should ignore computed border width when border-style is none", () => {
+            const div = document.createElement("div");
+            div.getBoundingClientRect =
+                getBoundingClientRectSpy as () => DOMRect;
+            Object.defineProperty(window, "getComputedStyle", {
+                value: vi.fn(() => ({
+                    paddingTop: "0px",
+                    paddingBottom: "0px",
+                    paddingLeft: "0px",
+                    paddingRight: "0px",
+                    borderTopWidth: "16px",
+                    borderBottomWidth: "16px",
+                    borderLeftWidth: "16px",
+                    borderRightWidth: "16px",
+                    borderTopStyle: "none",
+                    borderBottomStyle: "none",
+                    borderLeftStyle: "none",
+                    borderRightStyle: "none",
+                })),
+                writable: true,
+            });
+            const ref = { current: div };
+
+            const { result } = renderHook(() =>
+                useResizeObserver({ ref, box: "content-box" }),
+            );
+
+            act(() => {
+                vi.runAllTimers();
+            });
+
+            expect(result.current.width).toBe(100);
+            expect(result.current.height).toBe(200);
+        });
+
         it("should not set size if element has invalid dimensions", () => {
             const div = document.createElement("div");
             div.getBoundingClientRect = vi.fn(() => ({

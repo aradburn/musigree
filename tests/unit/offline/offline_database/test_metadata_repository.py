@@ -5,19 +5,23 @@ This module tests the MetadataRepository class which manages Metadata objects
 in the offline runtime_database.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch, PropertyMock
-from datetime import datetime
+from pydantic import BaseModel
 
 from musigree.config import SqliteTestConfiguration
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
+from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.metadata_repository import MetadataRepository
 from musigree.offline.offline_database.metadata_table import MetadataTable
+from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 
 
+# noinspection PyTypeChecker
 class TestMetadataRepository:
     """Test class for MetadataRepository."""
 
@@ -46,9 +50,9 @@ class TestMetadataRepository:
         )
 
     @pytest.fixture
-    def mock_metadata_table(self) -> MetadataTable:
+    def mock_metadata_table(self) -> Mock:
         """Create a mock metadata table record."""
-        table_mock = Mock(spec=MetadataTable)
+        table_mock = Mock()
         table_mock.metadata_id = 1
         table_mock.metadata_key = "test_key"
         table_mock.metadata_value = "test_value"
@@ -64,18 +68,19 @@ class TestMetadataRepository:
     async def test_all_success(
         self,
         metadata_repository: MetadataRepository,
-        mock_metadata_table: MetadataTable,
+        mock_metadata_table: Mock,
         mock_metadata: Metadata,
     ) -> None:
         """Test successful all() method execution."""
         # Arrange
-        with patch.object(metadata_repository, "_all") as mock_all:
-            async def mock_async_iterator() -> AsyncGenerator[MetadataTable, None]:
+        with patch.object(BaseRepository, "_all") as mock_all:
+
+            async def mock_async_iterator() -> AsyncGenerator[Mock]:
                 yield mock_metadata_table
 
             mock_all.return_value = mock_async_iterator()
 
-            with patch.object(Metadata, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_metadata
 
                 # Act
@@ -92,17 +97,17 @@ class TestMetadataRepository:
     async def test_get_by_id_success(
         self,
         metadata_repository: MetadataRepository,
-        mock_metadata_table: MetadataTable,
+        mock_metadata_table: Mock,
         mock_metadata: Metadata,
     ) -> None:
         """Test successful get_by_id execution."""
         # Arrange
         metadata_id = 1
 
-        with patch.object(metadata_repository, "_get") as mock_get:
+        with patch.object(BaseRepository, "_get") as mock_get:
             mock_get.return_value = mock_metadata_table
 
-            with patch.object(Metadata, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_metadata
 
                 # Act
@@ -119,7 +124,7 @@ class TestMetadataRepository:
         # Arrange
         metadata_id = 999
 
-        with patch.object(metadata_repository, "_get") as mock_get:
+        with patch.object(BaseRepository, "_get") as mock_get:
             mock_get.return_value = None
 
             # Act & Assert
@@ -130,7 +135,7 @@ class TestMetadataRepository:
     async def test_get_by_key_success(
         self,
         metadata_repository: MetadataRepository,
-        mock_metadata_table: MetadataTable,
+        mock_metadata_table: Mock,
         mock_metadata: Metadata,
     ) -> None:
         """Test successful get_by_key execution."""
@@ -143,11 +148,11 @@ class TestMetadataRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            MetadataRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            with patch.object(Metadata, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_metadata
 
                 # Act
@@ -170,7 +175,7 @@ class TestMetadataRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            MetadataRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
@@ -183,15 +188,15 @@ class TestMetadataRepository:
         self,
         metadata_repository: MetadataRepository,
         mock_metadata_uncommitted: MetadataUncommitted,
-        mock_metadata_table: MetadataTable,
+        mock_metadata_table: Mock,
         mock_metadata: Metadata,
     ) -> None:
         """Test successful create execution."""
         # Arrange
-        with patch.object(metadata_repository, "_save") as mock_save:
+        with patch.object(BaseRepository, "_save") as mock_save:
             mock_save.return_value = mock_metadata_table
 
-            with patch.object(Metadata, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_validate.return_value = mock_metadata
 
                 # Act
@@ -206,7 +211,7 @@ class TestMetadataRepository:
     async def test_update_success(
         self,
         metadata_repository: MetadataRepository,
-        mock_metadata_table: MetadataTable,
+        mock_metadata_table: Mock,
         mock_metadata: Metadata,
     ) -> None:
         """Test successful update execution."""
@@ -218,11 +223,11 @@ class TestMetadataRepository:
         mock_session.execute.return_value = mock_result
 
         with patch.object(
-            MetadataRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            with patch.object(Metadata, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 mock_entity_instance = Mock()
                 mock_entity_instance.to_domain.return_value = mock_metadata
                 mock_validate.return_value = mock_entity_instance
@@ -248,9 +253,9 @@ class TestMetadataRepository:
     async def test_all_empty_result(self, metadata_repository: MetadataRepository) -> None:
         """Test all() method with empty result."""
         # Arrange
-        with patch.object(metadata_repository, "_all") as mock_all:
+        with patch.object(BaseRepository, "_all") as mock_all:
             # noinspection PyUnreachableCode
-            async def empty_async_iterator() -> AsyncGenerator[None, None]:
+            async def empty_async_iterator() -> AsyncGenerator[None]:
                 return
                 yield  # This yield will never be reached, creating an empty iterator
 
@@ -272,7 +277,7 @@ class TestMetadataRepository:
     ) -> None:
         """Test create execution with runtime_database error."""
         # Arrange
-        with patch.object(metadata_repository, "_save") as mock_save:
+        with patch.object(BaseRepository, "_save") as mock_save:
             mock_save.side_effect = DatabaseError(message="Save failed")
 
             # Act & Assert
@@ -290,7 +295,7 @@ class TestMetadataRepository:
         mock_session.execute.side_effect = DatabaseError(message="Update failed")
 
         with patch.object(
-            MetadataRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 

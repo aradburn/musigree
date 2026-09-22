@@ -6,6 +6,7 @@ which provides the base offline_database repository functionality for the offlin
 It tests initialization, error handling, and core functionality that can be tested in isolation.
 """
 
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch, PropertyMock
 
 import pytest
@@ -15,7 +16,8 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
-from musigree.offline.offline_database.base_table import OfflineBase, ConcreteTable
+from musigree.offline.offline_database.base_table import OfflineBase, mapped_entity
+from musigree.offline.offline_database.offline_session import OfflineSession
 
 
 class MockTable(OfflineBase):
@@ -28,24 +30,32 @@ class MockTable(OfflineBase):
     value = Column(Integer)
 
 
+# noinspection PyTypeChecker
+class ConcreteTestRepository(BaseRepository):
+    """Concrete repository used by BaseRepository unit tests."""
+
+    schema_class: Any = mapped_entity(MockTable)
+
+
+# noinspection PyTypeChecker
 class TestBaseRepository:
     """Test class for BaseRepository."""
 
+    def test_mapped_entity_returns_the_same_class(self) -> None:
+        """mapped_entity is an identity helper for type checkers."""
+        assert mapped_entity(MockTable) is MockTable
+
     def test_base_repository_init_success(self) -> None:
         """Test successful initialization of BaseRepository."""
-
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
             assert repo.schema_class == MockTable
 
     def test_base_repository_init_no_schema_class(self) -> None:
         """Test initialization fails without schema_class."""
 
         class BadRepository(BaseRepository):
-            schema_class: type[ConcreteTable] = None  # type: ignore  # Explicitly set to None to trigger the check
+            schema_class = None  # type: ignore[assignment]
 
         with pytest.raises(
             DatabaseError,
@@ -53,16 +63,13 @@ class TestBaseRepository:
         ):
             BadRepository()
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_count_success(self, mock_execute: AsyncMock) -> None:
         """Test successful count operation."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
 
             mock_result = Mock(spec=Result)
             mock_result.scalar.return_value = 5
@@ -76,16 +83,13 @@ class TestBaseRepository:
             mock_execute.assert_called_once()
             mock_result.scalar.assert_called_once()
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_count_non_integer_result(self, mock_execute: AsyncMock) -> None:
         """Test count operation with non-integer result."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
 
             mock_result = Mock(spec=Result)
             mock_result.scalar.return_value = "not_an_integer"
@@ -101,9 +105,6 @@ class TestBaseRepository:
     async def test_save_success(self) -> None:
         """Test successful save operation with proper mocking."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         # Mock session and schema creation
         mock_session = Mock()
         mock_session.add = Mock()
@@ -112,11 +113,11 @@ class TestBaseRepository:
         mock_table_instance = Mock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
             payload = {"name": "test", "value": 123}
 
             # Mock the schema class instantiation
@@ -136,17 +137,14 @@ class TestBaseRepository:
     async def test_save_integrity_error(self) -> None:
         """Test save operation with IntegrityError."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
             payload = {"name": "test"}
 
             # Mock the schema class to raise IntegrityError during instantiation
@@ -162,17 +160,14 @@ class TestBaseRepository:
     async def test_save_invalid_request_error(self) -> None:
         """Test save operation with InvalidRequestError."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
             payload = {"name": "test"}
 
             # Mock the schema class to raise InvalidRequestError during instantiation
@@ -186,17 +181,14 @@ class TestBaseRepository:
     async def test_save_all_success(self) -> None:
         """Test successful save_all operation."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
             payloads = [{"name": "test1"}, {"name": "test2"}]
 
             # Execute
@@ -208,17 +200,14 @@ class TestBaseRepository:
     async def test_save_all_integrity_error(self) -> None:
         """Test save_all operation with IntegrityError."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
             payloads = [{"name": "test1"}, {"name": "test2"}]
 
             # Mock the execute method to raise IntegrityError
@@ -232,17 +221,14 @@ class TestBaseRepository:
     async def test_commit(self) -> None:
         """Test commit operation."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
 
             # Execute
             await repo.commit()
@@ -253,17 +239,14 @@ class TestBaseRepository:
     async def test_rollback(self) -> None:
         """Test rollback operation."""
 
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
         mock_session = AsyncMock()
 
         with patch.object(
-            BaseRepository, "_session", new_callable=PropertyMock
+            OfflineSession, "_session", new_callable=PropertyMock
         ) as mock_session_prop:
             mock_session_prop.return_value = mock_session
 
-            repo = TestRepository()
+            repo = ConcreteTestRepository()
 
             # Execute
             await repo.rollback()
@@ -271,16 +254,13 @@ class TestBaseRepository:
             # Verify
             mock_session.rollback.assert_called_once()
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_update_integrity_error_during_execute(self, mock_execute: AsyncMock) -> None:
         """Test update operation with IntegrityError during execution."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
             mock_execute.side_effect = IntegrityError(
                 "Integrity error", None, Exception("Original error")
             )
@@ -289,34 +269,28 @@ class TestBaseRepository:
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_update_invalid_request_error_during_execute(
         self, mock_execute: AsyncMock
     ) -> None:
         """Test update operation with InvalidRequestError during execution."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
             mock_execute.side_effect = InvalidRequestError("Invalid request")
 
             # Execute & Verify
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_update_no_result(self, mock_execute: AsyncMock) -> None:
         """Test update operation when no record is found."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
 
             mock_result = Mock(spec=Result)
             mock_result.scalar_one_or_none.return_value = None
@@ -326,16 +300,13 @@ class TestBaseRepository:
             with pytest.raises(DatabaseError):
                 await repo._update("id", 1, {"name": "updated"})
 
-    @patch("musigree.offline.offline_database.base_repository.BaseRepository.execute")
+    @patch("musigree.offline.offline_database.offline_session.OfflineSession.execute")
     async def test_get_not_found(self, mock_execute: AsyncMock) -> None:
         """Test get operation when record is not found."""
 
         # Setup
-        class TestRepository(BaseRepository):
-            schema_class = MockTable
-
-        with patch.object(BaseRepository, "_session", new_callable=PropertyMock):
-            repo = TestRepository()
+        with patch.object(OfflineSession, "_session", new_callable=PropertyMock):
+            repo = ConcreteTestRepository()
 
             mock_result = Mock(spec=Result)
             mock_scalars = Mock()

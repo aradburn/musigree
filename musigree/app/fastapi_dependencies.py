@@ -23,11 +23,12 @@ The `rate_limiter` dependency interacts with the following components:
 
 import logging
 import time
-from typing import Callable
+from collections.abc import Awaitable, Callable
+from typing import Annotated
 
-from fastapi import Request, Response
+from fastapi import Depends, Path, Query, Request, Response
 
-from musigree.exceptions import RateLimitError, BadRequestError
+from musigree.exceptions import BadRequestError, RateLimitError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 
@@ -36,18 +37,13 @@ log = logging.getLogger(__name__)
 The logger for the dependencies module.
 """
 
-UI_DEFAULT_ROLES = [
-    "Alias",
-    "Member Of",
-    # 'Sublabel Of',
-    # 'Released On',
-]
-"""
-Default roles to display if none are specified in the request.
-"""
 
-
-def get_entity_type(entity_type_str: str) -> EntityType:
+def get_entity_type(
+    entity_type_str: Annotated[
+        str,
+        Path(description="Entity type, such as artist or label"),
+    ],
+) -> EntityType:
     try:
         entity_type = EntityType.from_str(entity_type_str.upper())
     except NotImplementedError:
@@ -56,7 +52,12 @@ def get_entity_type(entity_type_str: str) -> EntityType:
     return entity_type
 
 
-def get_entity_id(entity_id: str) -> int:
+def get_entity_id(
+    entity_id: Annotated[
+        str,
+        Path(description="Numeric entity ID"),
+    ],
+) -> int:
     if not entity_id.isnumeric():
         raise BadRequestError(message="Bad Entity Id")
 
@@ -64,7 +65,12 @@ def get_entity_id(entity_id: str) -> int:
     return entity_id_int
 
 
-def get_year(year: str | None = None) -> tuple[int, int] | int | None:
+def get_year(
+    year: Annotated[
+        str | None,
+        Query(description="Year or inclusive year range, for example 1990 or 1990-2000"),
+    ] = None,
+) -> tuple[int, int] | int | None:
     if year is None:
         return None
     year_result: tuple[int, int] | int | None
@@ -86,7 +92,16 @@ def get_year(year: str | None = None) -> tuple[int, int] | int | None:
     return year_result
 
 
-def get_roles(roles: str | None = None) -> list[str]:
+def get_roles(
+    roles: Annotated[
+        str | None,
+        Query(
+            description=(
+                "Comma-separated role names; commas in names can be escaped with a backslash"
+            )
+        ),
+    ] = None,
+) -> set[str]:
     from musigree.library.cache.role_cache import RoleCache
 
     roles_result = set()
@@ -96,23 +111,30 @@ def get_roles(roles: str | None = None) -> list[str]:
         for role_escaped in unescaped_value.split(","):
             role = role_escaped.replace("|", ",")
             # log.debug(f"Requested role: {role}")
-            if role in RoleCache.role_category_to_role_name_lookup.keys():
+            if role in RoleCache.role_category_to_role_name_lookup:
                 # log.debug(f"Requested role found: {role}")
                 for role_entry in RoleCache.role_category_to_role_name_lookup[role]:
                     # log.debug(f"Requested role_entry: {role_entry}")
-                    if role_entry in RoleCache.role_name_to_role_id_lookup.keys():
+                    if role_entry in RoleCache.role_name_to_role_id_lookup:
                         roles_result.add(role_entry)
-            elif role in RoleCache.role_name_to_role_id_lookup.keys():
+            elif role in RoleCache.role_name_to_role_id_lookup:
                 roles_result.add(role)
 
-    if len(roles_result) == 0:
-        roles_result = set(UI_DEFAULT_ROLES)
-    roles_list: list[str] = list(sorted(roles_result))
-    # log.debug(f"Requested roles: {roles}")
-    return roles_list
+    log.debug(f"Requested roles: {roles_result}")
+    return roles_result
 
 
-def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
+EntityTypeDep = Annotated[EntityType, Depends(get_entity_type)]
+EntityIdDep = Annotated[int, Depends(get_entity_id)]
+YearDep = Annotated[tuple[int, int] | int | None, Depends(get_year)]
+RolesDep = Annotated[set[str], Depends(get_roles)]
+OnMobileQuery = Annotated[
+    bool,
+    Query(description="Whether the request is from a mobile device"),
+]
+
+
+def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awaitable[None]]:
     """
     A dependency factory that enforces rate limiting on a FastAPI endpoint.
 
@@ -155,23 +177,20 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
         cache_key = f"ratelimit:{request.url.path}:{client_host}"
 
         try:
-            # Get current requests (handle Redis byte response)
-            current_requests = 0
+            # Get current requests
+            current_requests: int
             redis_value = await cache.get(cache_key)
             if redis_value:
-                # Convert bytes to string and then to int
+                # Convert to int
                 try:
-                    if isinstance(redis_value, bytes):
-                        current_requests = int(redis_value.decode("utf-8"))
-                    else:
-                        current_requests = int(str(redis_value))
+                    current_requests = int(redis_value)
                 except (ValueError, TypeError):
-                    pass
+                    current_requests = 0
             else:
                 current_requests = 0
 
             remaining = max_requests - current_requests
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
             log.warning(f"Redis error in rate limiter: {e}")
             # Fallback: allow request but log the error
             remaining = max_requests
@@ -186,7 +205,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
             # If TTL is a valid positive number, use it
             if isinstance(ttl_raw, int) and ttl_raw > 0:
                 ttl_value = ttl_raw
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
             log.warning(f"Redis TTL error in rate limiter: {e}")
             ttl_value = period
 
@@ -202,7 +221,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable:
                 # Set expiration if this is a new key
                 if current_requests == 0:
                     await cache.expire(cache_key, period)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
                 log.warning(f"Redis incr/expire error in rate limiter: {e}")
                 # Continue without incrementing - graceful degradation
             log.debug(f"key: {cache_key}, remaining: {remaining}, ttl: {ttl_value}")

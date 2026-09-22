@@ -53,7 +53,7 @@ class RuntimeRelationTable(RuntimeBase):
     """The ID of the object entity in the relation."""
     release_id: Mapped[int] = mapped_column(Integer, nullable=False)
     """The ID of the release associated with this entry."""
-    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """The year of the release."""
 
     __table_args__: tuple[Index, Index, dict] = (

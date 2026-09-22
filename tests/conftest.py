@@ -34,6 +34,7 @@ class AbstractDatabaseTest:
 @pytest.fixture(scope="class")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """Create an instance of the default event loop for the test session."""
+    # noinspection deprecation
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -90,7 +91,11 @@ async def offline_database_setup(
     # Teardown
     log.info("Tearing down offline database")
     await OfflineDatabaseManager.shutdown_database()
-    await CacheManager.shutdown_cache()
+    try:
+        await CacheManager.shutdown_cache()
+    except Exception as e:
+        log.exception(f"Error closing Redis client: {e}")
+
     shutdown_logging()
 
 
@@ -196,7 +201,11 @@ async def runtime_database_setup(
     # Teardown
     log.info("Tearing down runtime database")
     await RuntimeDatabaseManager.shutdown_database()
-    await CacheManager.shutdown_cache()
+    try:
+        await CacheManager.shutdown_cache()
+    except Exception as e:
+        log.exception(f"Error closing Redis client: {e}")
+
     shutdown_logging()
 
 

@@ -341,138 +341,146 @@ class TestGetIdByEntityTypeAndEntityName:
         """Fixture for mock entity repository."""
         return AsyncMock()
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
-    async def test_get_id_cache_hit(
-        self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
-    ) -> None:
+    async def test_get_id_cache_hit(self, mock_cache: Mock, mock_entity_repository: Mock) -> None:
         """Test get_id_by_entity_type_and_entity_name with cache hit."""
-        # Setup
-        mock_get_cache.return_value = mock_cache
-        mock_cache.get = AsyncMock(return_value="123")
+        with patch(
+            "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
+        ) as mock_get_cache:
+            # Setup
+            mock_get_cache.return_value = mock_cache
+            mock_cache.get = AsyncMock(return_value="123")
 
-        # Test
-        result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-            mock_entity_repository, EntityType.ARTIST, "Test Artist"
-        )
+            # Test
+            result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                mock_entity_repository, EntityType.ARTIST, "Test Artist"
+            )
 
-        # Assertions
-        assert result == 123
-        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
+            # Assertions
+            assert result == 123
+            mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_not_called()
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_null_entry(
-        self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
+        self, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
         """Test get_id_by_entity_type_and_entity_name with cache null entry."""
-        # Setup
-        mock_get_cache.return_value = mock_cache
-        # The cache stores CACHE_ENTRY_IS_NULL as a string, but the code tries to convert to int
-        # which will fail. This test simulates a cache miss instead since null entries
-        # can't be properly handled by the current implementation.
-        mock_cache.get = AsyncMock(return_value=None)
-        mock_cache.set = AsyncMock()
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
-            message="Entity not found"
-        )
+        with patch(
+            "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
+        ) as mock_get_cache:
+            # Setup
+            mock_get_cache.return_value = mock_cache
+            # The cache stores CACHE_ENTRY_IS_NULL as a string, but the code tries to convert to int
+            # which will fail. This test simulates a cache miss instead since null entries
+            # can't be properly handled by the current implementation.
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.set = AsyncMock()
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
+                NotFoundError(message="Entity not found")
+            )
 
-        # Test
-        result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-            mock_entity_repository, EntityType.ARTIST, "Test Artist"
-        )
+            # Test
+            result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                mock_entity_repository, EntityType.ARTIST, "Test Artist"
+            )
 
-        # Assertions
-        assert result is None
-        mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once()
-        mock_cache.set.assert_called_once_with(
-            "entity:artist:Test Artist:id", CACHE_ENTRY_IS_NULL
-        )
+            # Assertions
+            assert result is None
+            mock_cache.get.assert_called_once_with("entity:artist:Test Artist:id")
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once()
+            mock_cache.set.assert_called_once_with(
+                "entity:artist:Test Artist:id", CACHE_ENTRY_IS_NULL
+            )
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_hit(
-        self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
+        self, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
         """Test get_id_by_entity_type_and_entity_name with cache miss but database hit."""
-        # Setup
-        mock_get_cache.return_value = mock_cache
-        mock_cache.get = AsyncMock(return_value=None)
-        mock_cache.set = AsyncMock()
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.return_value = 456
+        with patch(
+            "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
+        ) as mock_get_cache:
+            # Setup
+            mock_get_cache.return_value = mock_cache
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.set = AsyncMock()
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.return_value = 456
 
-        # Test
-        result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-            mock_entity_repository, EntityType.LABEL, "Test Label"
-        )
+            # Test
+            result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                mock_entity_repository, EntityType.LABEL, "Test Label"
+            )
 
-        # Assertions
-        assert result == 456
-        mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
-            EntityType.LABEL, "Test Label"
-        )
-        mock_cache.set.assert_called_once_with("entity:label:Test Label:id", "456")
+            # Assertions
+            assert result == 456
+            mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
+                EntityType.LABEL, "Test Label"
+            )
+            mock_cache.set.assert_called_once_with("entity:label:Test Label:id", "456")
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
     async def test_get_id_cache_miss_db_miss(
-        self, mock_get_cache: Mock, mock_cache: Mock, mock_entity_repository: Mock
+        self, mock_cache: Mock, mock_entity_repository: Mock
     ) -> None:
         """Test get_id_by_entity_type_and_entity_name with both cache and database miss."""
-        # Setup
-        mock_get_cache.return_value = mock_cache
-        mock_cache.get = AsyncMock(return_value=None)
-        mock_cache.set = AsyncMock()
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
-            message="Entity not found"
-        )
+        with patch(
+            "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
+        ) as mock_get_cache:
+            # Setup
+            mock_get_cache.return_value = mock_cache
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.set = AsyncMock()
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
+                NotFoundError(message="Entity not found")
+            )
 
-        # Test
-        result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-            mock_entity_repository, EntityType.LABEL, "Test Label"
-        )
+            # Test
+            result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                mock_entity_repository, EntityType.LABEL, "Test Label"
+            )
 
-        # Assertions
-        assert result is None
-        mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
-            EntityType.LABEL, "Test Label"
-        )
-        mock_cache.set.assert_called_once_with(
-            "entity:label:Test Label:id", CACHE_ENTRY_IS_NULL
-        )
+            # Assertions
+            assert result is None
+            mock_cache.get.assert_called_once_with("entity:label:Test Label:id")
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.assert_called_once_with(
+                EntityType.LABEL, "Test Label"
+            )
+            mock_cache.set.assert_called_once_with(
+                "entity:label:Test Label:id", CACHE_ENTRY_IS_NULL
+            )
 
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_entity_data_access.LOGGING_TRACE",
-        True,
-    )
-    @patch("musigree.runtime.data_access_layer.runtime_entity_data_access.log")
     async def test_get_id_cache_miss_db_miss_with_logging(
         self,
-        mock_log: Mock,
-        mock_get_cache: Mock,
         mock_cache: Mock,
         mock_entity_repository: Mock,
     ) -> None:
         """Test get_id_by_entity_type_and_entity_name with logging enabled for not found."""
-        # Setup
-        mock_get_cache.return_value = mock_cache
-        mock_cache.get = AsyncMock(return_value=None)
-        mock_cache.set = AsyncMock()
-        mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = NotFoundError(
-            message="Entity not found"
-        )
+        with (
+            patch(
+                "musigree.runtime.data_access_layer.runtime_entity_data_access.LOGGING_TRACE",
+                True,
+            ),
+            patch(
+                "musigree.runtime.data_access_layer.runtime_entity_data_access.CacheManager.get_cache"
+            ) as mock_get_cache,
+            patch("musigree.runtime.data_access_layer.runtime_entity_data_access.log") as mock_log,
+        ):
+            # Setup
+            mock_get_cache.return_value = mock_cache
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.set = AsyncMock()
+            mock_entity_repository.get_id_by_entity_type_and_entity_name.side_effect = (
+                NotFoundError(message="Entity not found")
+            )
 
-        # Test
-        result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
-            mock_entity_repository, EntityType.ARTIST, "Nonexistent Artist"
-        )
+            # Test
+            result = await RuntimeEntityDataAccess.get_id_by_entity_type_and_entity_name(
+                mock_entity_repository, EntityType.ARTIST, "Nonexistent Artist"
+            )
 
-        # Assertions
-        assert result is None
-        mock_log.debug.assert_called_once_with(
-            "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
-        )
+            # Assertions
+            assert result is None
+            mock_log.debug.assert_called_once_with(
+                "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
+            )
 
     def test_cache_key_format(self) -> None:
         """Test that cache key is formatted correctly."""

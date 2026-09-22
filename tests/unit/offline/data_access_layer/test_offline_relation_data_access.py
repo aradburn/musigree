@@ -8,7 +8,9 @@ import pytest
 
 from musigree.config import SqliteTestConfiguration, Configuration
 from musigree.library.fields.role_type import RoleType
-from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
 from musigree.offline.offline_domain.relation import Relation
 from musigree.offline.offline_domain.release import Release
 
@@ -55,54 +57,60 @@ class TestOfflineRelationDataAccess:
             ],
         )
 
-    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
-    @patch(
-        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
-    )
-    def test_from_release_basic(
-        self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
-    ) -> None:
+    def test_from_release_basic(self, sample_release: Release) -> None:
         """Test basic relation extraction from release."""
-        # Arrange
-        mock_normalise_roles.return_value = ["producer"]
-        mock_find_role.return_value = "producer"
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role"
+            ) as mock_find_role,
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
+            ) as mock_normalise_roles,
+        ):
+            # Arrange
+            mock_normalise_roles.return_value = ["producer"]
+            mock_find_role.return_value = "producer"
 
-        # Act
-        result = OfflineRelationDataAccess.from_release(sample_release)
+            # Act
+            result = OfflineRelationDataAccess.from_release(sample_release)
 
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) >= 0  # Should return some relations
-        mock_normalise_roles.assert_called()
-        mock_find_role.assert_called()
+            # Assert
+            assert isinstance(result, list)
+            assert len(result) >= 0  # Should return some relations
+            mock_normalise_roles.assert_called()
+            mock_find_role.assert_called()
 
-    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
-    @patch(
-        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
-    )
     def test_from_release_compilation(
         self,
-        mock_normalise_roles: Mock,
-        mock_find_role: Mock,
         compilation_release: Release,
     ) -> None:
         """Test relation extraction from compilation release."""
-        # Arrange
-        mock_normalise_roles.return_value = ["producer"]
-        mock_find_role.return_value = "producer"
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role"
+            ) as mock_find_role,
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
+            ) as mock_normalise_roles,
+        ):
+            # Arrange
+            mock_normalise_roles.return_value = ["producer"]
+            mock_find_role.return_value = "producer"
 
-        # Act
-        result = OfflineRelationDataAccess.from_release(compilation_release)
+            # Act
+            result = OfflineRelationDataAccess.from_release(compilation_release)
 
-        # Assert
-        assert isinstance(result, list)
-        mock_normalise_roles.assert_called()
-        mock_find_role.assert_called()
+            # Assert
+            assert isinstance(result, list)
+            mock_normalise_roles.assert_called()
+            mock_find_role.assert_called()
 
     def test_get_release_setup_normal_release(self, sample_release: Release) -> None:
         """Test get_release_setup for normal release."""
         # Act
-        artist_ids, label_ids, is_compilation = OfflineRelationDataAccess.get_release_setup(sample_release)
+        artist_ids, label_ids, is_compilation = OfflineRelationDataAccess.get_release_setup(
+            sample_release
+        )
 
         # Assert
         assert isinstance(artist_ids, set)
@@ -293,48 +301,52 @@ class TestOfflineRelationDataAccess:
     #     assert all("entity_one_id" in item for item in result)
     #     assert all("entity_two_id" in item for item in result)
 
-    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
-    @patch(
-        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
-    )
-    def test_from_release_with_aggregate_roles(
-        self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
-    ) -> None:
+    def test_from_release_with_aggregate_roles(self, sample_release: Release) -> None:
         """Test relation extraction with aggregate roles."""
-        # Arrange
-        mock_normalise_roles.return_value = ["producer"]
-        mock_find_role.return_value = "producer"
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role"
+            ) as mock_find_role,
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
+            ) as mock_normalise_roles,
+        ):
+            # Arrange
+            mock_normalise_roles.return_value = ["producer"]
+            mock_find_role.return_value = "producer"
 
-        # Mock RoleType.aggregate_roles to include "producer"
-        with patch.object(RoleType, "aggregate_roles", {"producer"}):
+            # Mock RoleType.aggregate_roles to include "producer"
+            with patch.object(RoleType, "aggregate_roles", {"producer"}):
+                # Act
+                result = OfflineRelationDataAccess.from_release(sample_release)
+
+                # Assert
+                assert isinstance(result, list)
+                mock_normalise_roles.assert_called()
+                mock_find_role.assert_called()
+
+    def test_from_release_with_track_data(self, sample_release: Release) -> None:
+        """Test relation extraction with track-level data."""
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role"
+            ) as mock_find_role,
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
+            ) as mock_normalise_roles,
+        ):
+            # Arrange
+            mock_normalise_roles.return_value = ["vocals"]
+            mock_find_role.return_value = "vocals"
+
             # Act
             result = OfflineRelationDataAccess.from_release(sample_release)
 
             # Assert
             assert isinstance(result, list)
+            # Verify that track-level roles are processed
             mock_normalise_roles.assert_called()
             mock_find_role.assert_called()
-
-    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
-    @patch(
-        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
-    )
-    def test_from_release_with_track_data(
-        self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
-    ) -> None:
-        """Test relation extraction with track-level data."""
-        # Arrange
-        mock_normalise_roles.return_value = ["vocals"]
-        mock_find_role.return_value = "vocals"
-
-        # Act
-        result = OfflineRelationDataAccess.from_release(sample_release)
-
-        # Assert
-        assert isinstance(result, list)
-        # Verify that track-level roles are processed
-        mock_normalise_roles.assert_called()
-        mock_find_role.assert_called()
 
     def test_from_release_empty_release(self) -> None:
         """Test relation extraction from empty release."""
@@ -376,26 +388,28 @@ class TestOfflineRelationDataAccess:
         assert isinstance(result, list)
         # Should handle None values gracefully without crashing
 
-    @patch("musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role")
-    @patch(
-        "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
-    )
-    def test_from_release_no_role_found(
-        self, mock_normalise_roles: Mock, mock_find_role: Mock, sample_release: Release
-    ) -> None:
+    def test_from_release_no_role_found(self, sample_release: Release) -> None:
         """Test relation extraction when no role is found."""
-        # Arrange
-        mock_normalise_roles.return_value = ["unknown_role"]
-        mock_find_role.return_value = None  # No role found
+        with (
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.OfflineRoleDataAccess.find_role"
+            ) as mock_find_role,
+            patch(
+                "musigree.offline.data_access_layer.offline_relation_data_access.RoleDataUtils.normalise_role_names"
+            ) as mock_normalise_roles,
+        ):
+            # Arrange
+            mock_normalise_roles.return_value = ["unknown_role"]
+            mock_find_role.return_value = None  # No role found
 
-        # Act
-        result = OfflineRelationDataAccess.from_release(sample_release)
+            # Act
+            result = OfflineRelationDataAccess.from_release(sample_release)
 
-        # Assert
-        assert isinstance(result, list)
-        # When no role is found, no relations should be created for that role
-        mock_normalise_roles.assert_called()
-        mock_find_role.assert_called()
+            # Assert
+            assert isinstance(result, list)
+            # When no role is found, no relations should be created for that role
+            mock_normalise_roles.assert_called()
+            mock_find_role.assert_called()
 
 
 class TestRelationDataAccessEdgeCases:

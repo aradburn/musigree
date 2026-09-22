@@ -10,12 +10,14 @@ from musigree.runtime.runtime_database import RuntimeRoleTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_role import RuntimeRole
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
+# noinspection PyTypeChecker
+class RuntimeRoleRepository(RuntimeBaseRepository["RuntimeRoleTable"]):
     """
     Repository for managing RuntimeRole objects in the runtime runtime_database.
 
@@ -32,7 +34,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         schema_class (Type[RuntimeRoleTable]): The SQLAlchemy table class for runtime roles.
     """
 
-    schema_class = RuntimeRoleTable
+    schema_class = mapped_entity(RuntimeRoleTable)
     """The SQLAlchemy table class for runtime roles."""
 
     async def all(self) -> AsyncGenerator[RuntimeRole, None]:
@@ -42,7 +44,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         Yields:
             AsyncGenerator[RuntimeRole]: An async iterator yielding each role.
         """
-        query = select(RuntimeRoleTable)
+        query = select(mapped_entity(RuntimeRoleTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for row in result:
             yield RuntimeRole.model_validate(row[0])
@@ -63,7 +65,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
         Raises:
             NotFoundError: If no role is found with the given ID.
         """
-        query = select(RuntimeRoleTable).where(RuntimeRoleTable.id == id_)
+        query = select(mapped_entity(RuntimeRoleTable)).where(RuntimeRoleTable.id == id_)
 
         result: Result = await self.execute(query)
 
@@ -93,7 +95,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository[RuntimeRoleTable]):
             return RuntimeRole.model_validate(role_dict)
 
         # If not in cache, query runtime_database
-        query = select(RuntimeRoleTable).where(RuntimeRoleTable.role_name == name)
+        query = select(mapped_entity(RuntimeRoleTable)).where(RuntimeRoleTable.role_name == name)
         result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

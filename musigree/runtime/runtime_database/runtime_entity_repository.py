@@ -35,12 +35,14 @@ from musigree.runtime.runtime_database import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, RuntimeEntityDB
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
+# noinspection PyTypeChecker
+class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
     """
     Repository for managing `RuntimeEntity` objects in the runtime runtime_database.
 
@@ -58,7 +60,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             for runtime entities.
     """
 
-    schema_class = RuntimeEntityTable
+    schema_class = mapped_entity(RuntimeEntityTable)
     """The SQLAlchemy table class for runtime entities."""
 
     async def _get_one_by_query(self, query: Select[tuple[RuntimeEntityTable]]) -> RuntimeEntity:
@@ -135,7 +137,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Yields:
             AsyncGenerator[RuntimeEntity]: An async iterator yielding each entity.
         """
-        query = select(RuntimeEntityTable)
+        query = select(mapped_entity(RuntimeEntityTable))
         result = await self._session.stream(query, execution_options={"yield_per": BULK_YIELD_SIZE})
         async for row in result:
             yield RuntimeEntityDB.model_validate(row[0]).to_domain()
@@ -166,7 +168,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         Raises:
             NotFoundError: If no entity is found with the given ID.
         """
-        query = select(RuntimeEntityTable).where(RuntimeEntityTable.id == _id)
+        query = select(mapped_entity(RuntimeEntityTable)).where(RuntimeEntityTable.id == _id)
         return await self._get_one_by_query(query)
 
     async def get_by_entity_id_and_entity_type(
@@ -340,7 +342,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
             NotFoundError: If no entity is found with the given type and name.
         """
         query = (
-            select(RuntimeEntityTable)
+            select(mapped_entity(RuntimeEntityTable))
             .where(
                 (RuntimeEntityTable.entity_type == entity_type)
                 & (RuntimeEntityTable.entity_name == entity_name)
@@ -428,7 +430,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository[RuntimeEntityTable]):
         """
         random_row = random.randint(0, max_row)
         query = (
-            select(RuntimeEntityTable)
+            select(mapped_entity(RuntimeEntityTable))
             .where(RuntimeEntityTable.id >= random_row)
             .order_by(RuntimeEntityTable.id)
             .limit(1)

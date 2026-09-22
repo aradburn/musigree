@@ -7,6 +7,7 @@ DiscogsDownloaderTaskForDate, LoaderTaskForDate, LoaderTaskForDateAndStage,
 DiscogsDownloaderTask).
 """
 
+import builtins
 import datetime
 import logging
 from pathlib import Path
@@ -123,9 +124,7 @@ class TestLoaderTask:
         start_date = datetime.date(2023, 1, 1)
         end_date = datetime.date(2023, 1, 31)
 
-        task = LoaderTask(
-            data_directory=data_directory, start_date=start_date, end_date=end_date
-        )
+        task = LoaderTask(data_directory=data_directory, start_date=start_date, end_date=end_date)
 
         assert task.data_directory == data_directory
         assert task.start_date == start_date
@@ -209,9 +208,7 @@ class TestLoaderTask:
         incomplete = MagicMock(spec=luigi.Task)
         incomplete.complete.return_value = False
         # Return a generator so flatten() yields the task itself (not iterating it).
-        with patch.object(
-            task, "requires", return_value=(x for x in [incomplete])
-        ):
+        with patch.object(task, "requires", return_value=(x for x in [incomplete])):
             result = task.complete()
         assert result is False
 
@@ -233,9 +230,7 @@ class TestDiscogsDownloaderTaskForDate:
         data_directory = "/test/data"
         dump_date = datetime.date(2023, 1, 15)
 
-        task = DiscogsDownloaderTaskForDate(
-            data_directory=data_directory, dump_date=dump_date
-        )
+        task = DiscogsDownloaderTaskForDate(data_directory=data_directory, dump_date=dump_date)
 
         assert task.data_directory == data_directory
         assert task.dump_date == dump_date
@@ -244,9 +239,7 @@ class TestDiscogsDownloaderTaskForDate:
     def test_priority_is_int(self) -> None:
         """Test that priority is an integer (older dates have higher priority)."""
         past_date = datetime.date(2020, 1, 1)
-        task = DiscogsDownloaderTaskForDate(
-            data_directory="/test/data", dump_date=past_date
-        )
+        task = DiscogsDownloaderTaskForDate(data_directory="/test/data", dump_date=past_date)
 
         priority = task.priority
 
@@ -262,9 +255,7 @@ class TestDiscogsDownloaderTaskForDate:
         dependencies = list(task.requires())
 
         assert len(dependencies) == 4
-        types = [
-            getattr(dep, "dump_type", None) for dep in dependencies
-        ]
+        types = [getattr(dep, "dump_type", None) for dep in dependencies]
         assert DISCOGS_ARTISTS_TYPE in types
         assert DISCOGS_RELEASES_TYPE in types
         assert DISCOGS_LABELS_TYPE in types
@@ -291,9 +282,7 @@ class TestLoaderTaskForDate:
         data_directory = "/test/data"
         dump_date = datetime.date(2023, 1, 15)
 
-        task = LoaderTaskForDate(
-            data_directory=data_directory, dump_date=dump_date
-        )
+        task = LoaderTaskForDate(data_directory=data_directory, dump_date=dump_date)
 
         assert task.data_directory == data_directory
         assert task.dump_date == dump_date
@@ -302,9 +291,7 @@ class TestLoaderTaskForDate:
     def test_priority_is_int(self) -> None:
         """Test that priority is an integer."""
         past_date = datetime.date(2020, 1, 1)
-        task = LoaderTaskForDate(
-            data_directory="/test/data", dump_date=past_date
-        )
+        task = LoaderTaskForDate(data_directory="/test/data", dump_date=past_date)
 
         priority = task.priority
 
@@ -312,15 +299,11 @@ class TestLoaderTaskForDate:
         assert priority > 0
 
     @patch("musigree.loader.run_offline_loader.get_load_offline_table_stages")
-    def test_requires_yields_download_then_stage_tasks(
-        self, mock_get_stages: MagicMock
-    ) -> None:
+    def test_requires_yields_download_then_stage_tasks(self, mock_get_stages: MagicMock) -> None:
         """Test that requires() yields DiscogsDownloaderTaskForDate then stage tasks."""
         mock_get_stages.return_value = [MagicMock(), MagicMock(), MagicMock()]
 
-        task = LoaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = LoaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
 
         dependencies = list(task.requires())
 
@@ -344,9 +327,7 @@ class TestLoaderTaskForDate:
 
     def test_task_family(self) -> None:
         """Test that LoaderTaskForDate has correct task family."""
-        task = LoaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = LoaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
         assert task.task_family == "musigree.LoaderTaskForDate"
 
 
@@ -371,9 +352,7 @@ class TestLoaderTaskForDateAndStage:
     def test_priority_includes_stage_adjustment(self) -> None:
         """Test that priority includes stage number (earlier stages higher)."""
         past_date = datetime.date(2020, 1, 1)
-        task = LoaderTaskForDateAndStage(
-            data_directory="/test/data", dump_date=past_date, stage=5
-        )
+        task = LoaderTaskForDateAndStage(data_directory="/test/data", dump_date=past_date, stage=5)
 
         priority = task.priority
 
@@ -441,9 +420,7 @@ class TestLoaderTaskForDateAndStage:
     ) -> None:
         """Test that run() executes the stage and marks output done."""
         mock_stage_func = AsyncMock()
-        mock_get_stages = MagicMock(
-            return_value=[mock_stage_func, MagicMock(), MagicMock()]
-        )
+        mock_get_stages = MagicMock(return_value=[mock_stage_func, MagicMock(), MagicMock()])
 
         mock_loop = MagicMock()
         mock_new_loop.return_value = mock_loop
@@ -503,9 +480,7 @@ class TestLoaderTaskForDateAndStage:
         mock_log.debug.assert_called()
 
     @patch("musigree.offline.loader.loader_tasks.log")
-    def test_run_handles_runtime_error_during_execution(
-        self, mock_log: MagicMock
-    ) -> None:
+    def test_run_handles_runtime_error_during_execution(self, mock_log: MagicMock) -> None:
         """Test that run() catches RuntimeError and logs exception."""
         mock_stage = AsyncMock()
         mock_get_stages = MagicMock(return_value=[mock_stage])
@@ -523,9 +498,7 @@ class TestLoaderTaskForDateAndStage:
                     mock_new_loop.return_value = mock_loop
                     mock_task = MagicMock()
                     mock_loop.create_task.return_value = mock_task
-                    mock_loop.run_until_complete.side_effect = RuntimeError(
-                        "Test error"
-                    )
+                    mock_loop.run_until_complete.side_effect = RuntimeError("Test error")
 
                     with patch(
                         "musigree.loader.run_offline_loader.get_load_offline_table_stages",
@@ -566,9 +539,7 @@ class TestDiscogsDownloaderTask:
         assert isinstance(task, luigi.Task)
 
     @patch("musigree.offline.loader.loader_tasks.get_discogs_url")
-    def test_url_property_calls_get_discogs_url(
-        self, mock_get_discogs_url: MagicMock
-    ) -> None:
+    def test_url_property_calls_get_discogs_url(self, mock_get_discogs_url: MagicMock) -> None:
         """Test that url property calls get_discogs_url with correct args."""
         mock_get_discogs_url.return_value = "https://example.com/dump.xml.gz"
 
@@ -634,16 +605,12 @@ class TestDiscogsDownloaderTask:
         mock_output.temporary_path.return_value.__enter__ = MagicMock(
             return_value="/tmp/out.xml.gz"
         )
-        mock_output.temporary_path.return_value.__exit__ = MagicMock(
-            return_value=None
-        )
+        mock_output.temporary_path.return_value.__exit__ = MagicMock(return_value=None)
 
         with patch.object(task, "output", return_value=mock_output):
-            with patch("builtins.open", MagicMock()) as mock_open:
+            with patch.object(builtins, "open", MagicMock()) as mock_open:
                 mock_file = MagicMock()
-                mock_open.return_value.__enter__ = MagicMock(
-                    return_value=mock_file
-                )
+                mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
                 mock_open.return_value.__exit__ = MagicMock(return_value=None)
 
                 task.run()

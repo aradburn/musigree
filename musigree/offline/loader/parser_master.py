@@ -41,9 +41,9 @@ import logging
 from typing import Any
 from xml.etree.ElementTree import Element
 
-from musigree.offline.offline_domain.master import Master
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
+from musigree.offline.offline_domain.master import Master
 
 log = logging.getLogger(__name__)
 """
@@ -178,7 +178,7 @@ class ParserMaster(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element: Element) -> Master:  # type: ignore
+    def from_element(cls, element: Element) -> Master:
         """
         Creates a `Master` offline_domain object from an XML element.
 

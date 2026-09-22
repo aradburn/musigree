@@ -181,11 +181,11 @@ class RoleDataUtils:
         def to_lower_upper(matches: re.Match[str]) -> str:
             return matches.group(1).lower() + matches.group(2).upper()
 
-        # noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal,unused-function
         def lower(matches: re.Match[str]) -> str:
             return matches.group(1).lower()
 
-        # noinspection PyUnusedLocal
+        # noinspection PyUnusedLocal,unused-function
         def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 

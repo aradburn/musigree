@@ -28,11 +28,13 @@ for generic XML parsing.
 import gzip
 import logging
 from pathlib import Path
-from typing import Self, Any, Generator
+from typing import Any, Generator
+from xml.etree.ElementTree import Element
 
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_utils import ParserUtils
 from musigree.offline.offline_domain.entity import Entity
+from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
@@ -71,13 +73,13 @@ class ParserBase:
     @classmethod
     def load_from_xml(
         cls,
-        domain_class: type[Entity | Release],
+        domain_class: type[Entity | Release | Master],
         discogs_data_directory: Path,
         date: str,
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-    ) -> Generator[Entity | Release, None, None]:
+    ) -> Generator[Entity | Release | Master, None, None]:
         """
         Loads data from an XML file.
 
@@ -129,7 +131,7 @@ class ParserBase:
                 yield new_instance
 
     @classmethod
-    def from_element(cls, element) -> Self:  # type: ignore
+    def from_element(cls, element: Element) -> Any:  # type: ignore[empty-body]
         """
         Creates an instance from an XML element.
 

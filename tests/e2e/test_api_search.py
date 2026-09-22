@@ -52,9 +52,9 @@ class TestAPISearch:
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
     ) -> None:
-        """Test searching with a string that's too long (more than 20 characters)."""
+        """Test searching with a string that's too long (more than 130 characters)."""
         api_helper = APIHelper(page, base_url)
-        long_string = "a" * 21
+        long_string = "a" * 131
         response, _ = await api_helper.search_entities(long_string)
 
         # Should return 422 validation error for string too long
@@ -86,7 +86,8 @@ class TestAPISearch:
     ) -> None:
         """Test searching for entities that don't exist."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.search_entities("NonexistentEntity12345")
+        response, json_data = await api_helper.search_entities(
+            "Nonexistent Entity 123 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890")
 
         # Should return 422 if search string too long
         assert response.status == 422

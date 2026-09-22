@@ -342,7 +342,7 @@ class ParserRelease(ParserBase):
         return result
 
     @classmethod
-    def from_element(cls, element: Element) -> Release:  # type: ignore
+    def from_element(cls, element: Element) -> Release:
         """
         Creates a `Release` domain object from an XML element.
 

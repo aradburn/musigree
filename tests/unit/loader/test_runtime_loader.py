@@ -62,152 +62,156 @@ class TestRuntimeLoaderFunctions:
         """Provide mock date."""
         return "2024-11-01"
 
-    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_tables_success(
-        self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
+        self, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of runtime tables."""
-        # Arrange
-        mock_stage1 = AsyncMock()
-        mock_stage2 = AsyncMock()
+        with patch(
+            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages"
+        ) as mock_get_stages:
+            # Arrange
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
 
-        mock_get_stages.return_value = [mock_stage1, mock_stage2]
+            mock_get_stages.return_value = [mock_stage1, mock_stage2]
 
-        # Act
-        await load_runtime_tables(mock_data_directory, mock_date)
+            # Act
+            await load_runtime_tables(mock_data_directory, mock_date)
 
-        # Assert
-        mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
+            # Assert
+            mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
 
-    @patch("musigree.loader.run_runtime_loader.get_load_runtime_table_stages")
     @pytest.mark.asyncio
     async def test_load_runtime_table_stage_success(
-        self, mock_get_stages: Mock, mock_data_directory: Mock, mock_date: Mock
+        self, mock_data_directory: Mock, mock_date: Mock
     ) -> None:
         """Test successful loading of a specific runtime table stage."""
-        # Arrange
-        mock_stage1 = AsyncMock()
-        mock_stage2 = AsyncMock()
-        mock_stage3 = AsyncMock()
+        with patch(
+            "musigree.loader.run_runtime_loader.get_load_runtime_table_stages"
+        ) as mock_get_stages:
+            # Arrange
+            mock_stage1 = AsyncMock()
+            mock_stage2 = AsyncMock()
+            mock_stage3 = AsyncMock()
 
-        mock_get_stages.return_value = [mock_stage1, mock_stage2, mock_stage3]
+            mock_get_stages.return_value = [mock_stage1, mock_stage2, mock_stage3]
 
-        # Act
-        await load_runtime_table_stage(mock_data_directory, mock_date, stage=1)
+            # Act
+            await load_runtime_table_stage(mock_data_directory, mock_date, stage=1)
 
-        # Assert
-        mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
+            # Assert
+            mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
         # Note: We can't easily assert which specific stage was called due to the way coroutines work
         # but we can verify the function was called with correct parameters
 
-    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.transfer.transfer_manager.TransferManager")
-    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_success(
         self,
-        mock_runtime_role_data_access: Mock,
-        mock_transfer_manager: Mock,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test successful creation of load runtime table stages."""
-        # Arrange
-        _configure_runtime_db_helper(mock_db_manager)
+        with (
+            patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager") as mock_db_manager,
+            patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager,
+            patch(
+                "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess"
+            ) as mock_runtime_role_data_access,
+        ):
+            # Arrange
+            _configure_runtime_db_helper(mock_db_manager)
 
-        _configure_transfer_manager_mocks(mock_transfer_manager)
+            _configure_transfer_manager_mocks(mock_transfer_manager)
 
-        # Mock the runtime role data access method
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
+            # Mock the runtime role data access method
+            mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
 
-        # Act
-        result = get_load_runtime_table_stages(mock_data_directory, mock_date)
+            # Act
+            result = get_load_runtime_table_stages(mock_data_directory, mock_date)
 
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 13
+            # Assert
+            assert isinstance(result, list)
+            assert len(result) == 13
 
-    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     def test_get_load_runtime_table_stages_assertion_error_no_helper(
         self,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test get_load_runtime_table_stages raises assertion error when helper is None."""
-        # Arrange
-        mock_db_manager.runtime_database_helper = None
+        with patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager") as mock_db_manager:
+            # Arrange
+            mock_db_manager.runtime_database_helper = None
 
-        # Act & Assert
-        with pytest.raises(AssertionError) as excinfo:
-            get_load_runtime_table_stages(mock_data_directory, mock_date)
+            # Act & Assert
+            with pytest.raises(AssertionError) as excinfo:
+                get_load_runtime_table_stages(mock_data_directory, mock_date)
 
-        assert "RuntimeDatabaseManager.runtime_database_helper must be initialized" in str(
-            excinfo.value
-        )
+            assert "RuntimeDatabaseManager.runtime_database_helper must be initialized" in str(
+                excinfo.value
+            )
 
-    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
-    @patch("musigree.transfer.transfer_manager.TransferManager")
-    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess")
     def test_get_load_runtime_table_stages_assertion_error_no_engine(
         self,
-        mock_runtime_role_data_access: Mock,
-        mock_transfer_manager: Mock,
-        mock_db_manager: Mock,
         mock_data_directory: Mock,
         mock_date: Mock,
     ) -> None:
         """Test get_load_runtime_table_stages raises assertion error when engine is None."""
-        # Arrange
-        mock_helper = Mock()
-        mock_helper.runtime_async_engine = None
-        mock_db_manager.runtime_database_helper = mock_helper
+        with (
+            patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager") as mock_db_manager,
+            patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager,
+            patch(
+                "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess"
+            ) as mock_runtime_role_data_access,
+        ):
+            # Arrange
+            mock_helper = Mock()
+            mock_helper.runtime_async_engine = None
+            mock_db_manager.runtime_database_helper = mock_helper
 
-        _configure_transfer_manager_mocks(mock_transfer_manager)
-        mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
-        mock_helper.analyze = Mock()
-        mock_helper.optimize = Mock()
+            _configure_transfer_manager_mocks(mock_transfer_manager)
+            mock_runtime_role_data_access.load_all_roles_into_cache = AsyncMock()
+            mock_helper.analyze = Mock()
+            mock_helper.optimize = Mock()
 
-        # Act & Assert
-        # The function should raise an assertion error when engine is None
-        with pytest.raises(AssertionError) as excinfo:
-            get_load_runtime_table_stages(mock_data_directory, mock_date)
+            # Act & Assert
+            # The function should raise an assertion error when engine is None
+            with pytest.raises(AssertionError) as excinfo:
+                get_load_runtime_table_stages(mock_data_directory, mock_date)
 
-        assert "runtime_async_engine must be initialized" in str(excinfo.value)
+            assert "runtime_async_engine must be initialized" in str(excinfo.value)
 
-    @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     def test_get_load_runtime_table_stages_stage_definitions(
         self,
-        mock_db_manager: Mock,
         mock_data_directory: Path,
         mock_date: str,
     ) -> None:
         """Test runtime stage list references current transfer and cleanup methods."""
-        mock_helper = _configure_runtime_db_helper(mock_db_manager)
+        with patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager") as mock_db_manager:
+            mock_helper = _configure_runtime_db_helper(mock_db_manager)
 
-        stages = get_load_runtime_table_stages(mock_data_directory, mock_date)
+            stages = get_load_runtime_table_stages(mock_data_directory, mock_date)
 
-        assert len(stages) == 13
-        assert stages[0].func == TransferManager.transfer_role
-        assert stages[1].func == RuntimeRoleDataAccess.load_all_roles_into_cache
-        assert stages[2].func == TransferManager.transfer_load_text_search_index
-        assert stages[2].args == (
-            mock_data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME,
-        )
-        assert stages[3].func == TransferManager.transfer_load_entity_details_index
-        assert stages[3].args == (
-            mock_data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME,
-        )
-        assert stages[4].func == mock_helper.analyze
-        assert stages[5].func == mock_helper.optimize
-        assert stages[6].func == TransferManager.transfer_entity_details
-        assert stages[7].func == TransferManager.transfer_entity
-        assert stages[8].func == mock_helper.analyze
-        assert stages[9].func == mock_helper.optimize
-        assert stages[10].func == TransferManager.transfer_relation
-        assert stages[11].func == mock_helper.analyze
-        assert stages[12].func == mock_helper.optimize
+            assert len(stages) == 13
+            assert stages[0].func == TransferManager.transfer_role
+            assert stages[1].func == RuntimeRoleDataAccess.load_all_roles_into_cache
+            assert stages[2].func == TransferManager.transfer_load_text_search_index
+            assert stages[2].args == (
+                mock_data_directory / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME,
+            )
+            assert stages[3].func == TransferManager.transfer_load_entity_details_index
+            assert stages[3].args == (
+                mock_data_directory / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME,
+            )
+            assert stages[4].func == mock_helper.analyze
+            assert stages[5].func == mock_helper.optimize
+            assert stages[6].func == TransferManager.transfer_entity_details
+            assert stages[7].func == TransferManager.transfer_entity
+            assert stages[8].func == mock_helper.analyze
+            assert stages[9].func == mock_helper.optimize
+            assert stages[10].func == TransferManager.transfer_relation
+            assert stages[11].func == mock_helper.analyze
+            assert stages[12].func == mock_helper.optimize
 
     @patch("musigree.loader.run_runtime_loader.luigi")
     @patch("musigree.loader.run_runtime_loader.asyncio_atexit")

@@ -69,10 +69,22 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
             const paddingBottom = parseFloat(styles.paddingBottom) || 0;
             const paddingLeft = parseFloat(styles.paddingLeft) || 0;
             const paddingRight = parseFloat(styles.paddingRight) || 0;
-            const borderTop = parseFloat(styles.borderTopWidth) || 0;
-            const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
-            const borderLeft = parseFloat(styles.borderLeftWidth) || 0;
-            const borderRight = parseFloat(styles.borderRightWidth) || 0;
+            const borderTop = usedBorderWidth(
+                styles.borderTopStyle,
+                styles.borderTopWidth,
+            );
+            const borderBottom = usedBorderWidth(
+                styles.borderBottomStyle,
+                styles.borderBottomWidth,
+            );
+            const borderLeft = usedBorderWidth(
+                styles.borderLeftStyle,
+                styles.borderLeftWidth,
+            );
+            const borderRight = usedBorderWidth(
+                styles.borderRightStyle,
+                styles.borderRightWidth,
+            );
 
             measuredWidth =
                 rect.width -
@@ -599,6 +611,15 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
     }, [box, ref, trigger, elementVersion]);
 
     return size;
+}
+
+function usedBorderWidth(style: string, width: string): number {
+    // CSS Backgrounds: computed border-width is 0 when style is none or hidden.
+    // jsdom 30 still reports the initial `medium` width (16px) in that case.
+    if (style === "none" || style === "hidden") {
+        return 0;
+    }
+    return parseFloat(width) || 0;
 }
 
 type BoxSizesKey = keyof Pick<

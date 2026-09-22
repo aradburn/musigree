@@ -24,18 +24,19 @@ class RuntimeEntityTable(RuntimeBase):
         entity_id (Mapped[int]): The external ID of the entity (e.g., from Discogs).
         entity_type (Mapped[EntityType]): The type of the entity (e.g., ARTIST, LABEL).
         entity_name (Mapped[str]): The name of the entity.
-        relation_counts (Mapped[dict | list]): A dictionary or list representing
+        relation_counts (Mapped[dict[str, Any] | None]): A dictionary representing
             the counts of various relationships the entity has. Stored as JSON.
-        entity_metadata (Mapped[dict | list]): Metadata associated with the entity.
+        entity_metadata (Mapped[dict[str, Any]]): Metadata associated with the entity.
              Stored as JSON.
-        aliases (Mapped[dict | list]): Alternative names or aliases for the entity.
-             Stored as JSON.
-        groups (Mapped[dict | list]): Groups the entity is part of. Stored as JSON.
-        members (Mapped[dict | list]): Members associated with the entity (e.g.,
-            members of a band). Stored as JSON.
-        countries (Mapped[str]): Countries associated with the entity.
-        genres (Mapped[str]): Genres associated with the entity.
-        styles (Mapped[str]): Styles associated with the entity.
+        aliases (Mapped[dict[str, Any] | None]): Alternative names or aliases for the
+            entity. Stored as JSON.
+        groups (Mapped[dict[str, Any] | None]): Groups the entity is part of. Stored
+            as JSON.
+        members (Mapped[dict[str, Any] | None]): Members associated with the entity
+            (e.g., members of a band). Stored as JSON.
+        countries (Mapped[str | None]): Countries associated with the entity.
+        genres (Mapped[str | None]): Genres associated with the entity.
+        styles (Mapped[str | None]): Styles associated with the entity.
         __table_args__ (tuple): Additional table arguments, including indexes.
     """
 
@@ -52,26 +53,26 @@ class RuntimeEntityTable(RuntimeBase):
     """The type of the entity (e.g., ARTIST, LABEL)."""
     entity_name: Mapped[str] = mapped_column(String, nullable=False)
     """The name of the entity."""
-    relation_counts: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    relation_counts: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """
     A dictionary representing the counts of various relationships the entity has.
     Stored as JSON.
     """
     entity_metadata: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
     """Metadata associated with the entity. Stored as JSON."""
-    aliases: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    aliases: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """Alternative names or aliases for the entity. Stored as JSON."""
-    groups: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    groups: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """Groups the entity is part of. Stored as JSON."""
-    members: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    members: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """Members associated with the entity (e.g., members of a band). Stored as JSON."""
-    parent_label: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=True)
+    parent_label: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """Parent label associated with the entity. Stored as JSON."""
-    countries: Mapped[str] = mapped_column(String, nullable=True)
+    countries: Mapped[str | None] = mapped_column(String, nullable=True)
     """Countries associated with the entity."""
-    genres: Mapped[str] = mapped_column(String, nullable=True)
+    genres: Mapped[str | None] = mapped_column(String, nullable=True)
     """Genres associated with the entity."""
-    styles: Mapped[str] = mapped_column(String, nullable=True)
+    styles: Mapped[str | None] = mapped_column(String, nullable=True)
     """Styles associated with the entity."""
 
     # __table_args__: tuple[Index, dict] = (

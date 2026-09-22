@@ -1,25 +1,32 @@
-from typing import AsyncGenerator
-from unittest.mock import Mock, patch, AsyncMock
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_relation_table import (
     RuntimeRelationTable,
 )
-from musigree.runtime.runtime_database.runtime_session import CTX_RUNTIME_SESSION
+from musigree.runtime.runtime_database.runtime_session import (
+    CTX_RUNTIME_SESSION,
+    RuntimeSession,
+)
 from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationUncommitted,
 )
+
 # Import the test utility
 from .test_utils import RoleCacheMockHelper
 
 
+# noinspection PyTypeChecker
 class TestRuntimeRelationRepository:
     """Unit tests for RuntimeRelationRepository class."""
 
@@ -55,7 +62,7 @@ class TestRuntimeRelationRepository:
             mock_result.scalars.return_value = mock_scalars
             mock_session.execute.return_value = mock_result
 
-            with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 expected_relation = RuntimeRelationDB(
                     id=relation_id,
                     subject=12345,
@@ -149,7 +156,7 @@ class TestRuntimeRelationRepository:
             CTX_RUNTIME_SESSION.reset(token)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_id_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relation by ID with lock."""
         # GIVEN
@@ -177,7 +184,7 @@ class TestRuntimeRelationRepository:
             assert result == mock_relation
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_key_with_role_name(self, mock_execute: Mock) -> None:
         """Test finding relation by key when role_name is provided."""
         # GIVEN
@@ -212,7 +219,7 @@ class TestRuntimeRelationRepository:
                 assert result == mock_relation
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_entity_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relations by entity ID."""
         # GIVEN
@@ -248,7 +255,7 @@ class TestRuntimeRelationRepository:
             assert len(result) == 2
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeRelationRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_find_by_entity_and_roles_success(self, mock_execute: Mock) -> None:
         """Test successfully finding relations by entity ID and roles."""
         # GIVEN
@@ -277,6 +284,83 @@ class TestRuntimeRelationRepository:
             # THEN
             assert result == mock_relations
             assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_success(self) -> None:
+        """Test successfully finding relations by multiple entity IDs and roles with a limit."""
+        # GIVEN
+        entity_ids = [12345, 67890]
+        role_ids = [3, 4]
+        limit = 10
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            mock_relations = [Mock(), Mock()]
+            mock_get_all.return_value = mock_relations
+
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(entity_ids, role_ids, limit)
+
+            # THEN
+            assert result == mock_relations
+            mock_get_all.assert_called_once()
+            query = mock_get_all.call_args[0][0]
+            compiled_sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+            compiled_sql_upper = compiled_sql.upper()
+            assert "UNION" in compiled_sql_upper
+            assert "UNION ALL" not in compiled_sql_upper
+            assert " OR " not in compiled_sql_upper
+            assert "LIMIT 10" in compiled_sql_upper
+            assert "12345" in compiled_sql
+            assert "67890" in compiled_sql
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_empty_roles(self) -> None:
+        """Test find_by_entities_and_roles with empty role list returns no results."""
+        # GIVEN
+        entity_ids = [12345]
+        role_ids: list[int] = []
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10
+            )
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_empty_ids(self) -> None:
+        """Test find_by_entities_and_roles with empty entity list returns no results."""
+        # GIVEN
+        entity_ids: list[int] = []
+        role_ids = [3, 4]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10
+            )
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_zero_limit(self) -> None:
+        """Test find_by_entities_and_roles with a non-positive limit returns no results."""
+        # GIVEN
+        entity_ids = [12345]
+        role_ids = [3]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            # WHEN
+            result = await self.repository.find_by_entities_and_roles(entity_ids, role_ids, limit=0)
+
+            # THEN
+            assert result == []
+            mock_get_all.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_create_success(self) -> None:
@@ -318,7 +402,7 @@ class TestRuntimeRelationRepository:
                 mock_result.scalar_one_or_none.return_value = mock_instance
                 mock_session.execute.return_value = mock_result
 
-                with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+                with patch.object(BaseModel, "model_validate") as mock_validate:
                     mock_relation_db = Mock()
                     mock_relation_internal = Mock()
                     mock_relation_db.to_domain.return_value = mock_relation_internal
@@ -373,14 +457,14 @@ class TestRuntimeRelationRepository:
         mock_instance2.object = 22222
 
         # Mock async generator
-        async def async_generator() -> AsyncGenerator[Mock, None]:
+        async def async_generator() -> AsyncGenerator[Mock]:
             yield mock_instance1
             yield mock_instance2
 
-        with patch.object(RuntimeRelationRepository, "_all") as mock_all:
+        with patch.object(RuntimeBaseRepository, "_all") as mock_all:
             mock_all.return_value = async_generator()
 
-            with patch.object(RuntimeRelationDB, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:
                 with patch.object(RuntimeRelationDB, "to_domain") as _mock_to_domain:
                     relation1 = Mock()
                     relation2 = Mock()

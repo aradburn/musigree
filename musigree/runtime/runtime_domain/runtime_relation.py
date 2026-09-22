@@ -144,7 +144,7 @@ class RuntimeRelationDB(_RuntimeRelationBase):
 
 class RuntimeRelation(_RuntimeRelationBase):
     """
-    Represents a relation in the offline_domain, exposed publicly.
+    Represents a relation in the runtime_domain, exposed publicly.
 
     This class is used for public-facing representations of relations. It
     provides entity IDs and types for both ends of the relation, along with

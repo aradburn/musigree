@@ -63,87 +63,95 @@ class TestWorkerEntityUpdater:
             entities={},
         )
 
-    @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
-    @patch("musigree.offline.loader.worker_entity_updater.EntityRepository")
-    @patch("musigree.offline.loader.worker_entity_updater.LOGGING_TRACE", False)
     @pytest.mark.asyncio
     async def test_update_entities_worker_successful_update(
         self,
-        mock_repo_class: Mock,
-        mock_offline_transaction: Mock,
         sample_entity_data: dict[str, Any],
         existing_entity: Entity,
     ) -> None:
         """Test successful entity update."""
-        # Arrange
-        # Set up the async context manager mock
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=mock_context)
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_offline_transaction.return_value = mock_context
+        with (
+            patch("musigree.offline.loader.worker_entity_updater.LOGGING_TRACE", False),
+            patch(
+                "musigree.offline.loader.worker_entity_updater.offline_transaction"
+            ) as mock_offline_transaction,
+            patch(
+                "musigree.offline.loader.worker_entity_updater.EntityRepository"
+            ) as mock_repo_class,
+        ):
+            # Arrange
+            # Set up the async context manager mock
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-        mock_repo = AsyncMock(spec=EntityRepository)
-        mock_repo_class.return_value = mock_repo
+            mock_repo = AsyncMock(spec=EntityRepository)
+            mock_repo_class.return_value = mock_repo
 
-        # Mock existing entity retrieval
-        mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
-        mock_repo.update.return_value = None
-        mock_repo.commit.return_value = None
+            # Mock existing entity retrieval
+            mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
+            mock_repo.update.return_value = None
+            mock_repo.commit.return_value = None
 
-        # Act
-        bulk_updates = [sample_entity_data]
-        processed_count = 0
-        total_count = 100
+            # Act
+            bulk_updates = [sample_entity_data]
+            processed_count = 0
+            total_count = 100
 
-        await update_entities_worker_async(bulk_updates, processed_count, total_count)
+            await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
-        # Assert
-        mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
-            sample_entity_data["entity_id"], sample_entity_data["entity_type"]
-        )
-        mock_repo.update.assert_called_once()
-        mock_repo.commit.assert_called_once()
+            # Assert
+            mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+                sample_entity_data["entity_id"], sample_entity_data["entity_type"]
+            )
+            mock_repo.update.assert_called_once()
+            mock_repo.commit.assert_called_once()
 
-    @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
-    @patch("musigree.offline.loader.worker_entity_updater.EntityRepository")
     @pytest.mark.asyncio
     async def test_update_entities_worker_successful_insert(
         self,
-        mock_repo_class: Mock,
-        mock_offline_transaction: Mock,
         sample_entity_data: dict[str, Any],
     ) -> None:
         """Test successful entity insertion when entity not found."""
-        # Arrange
-        # Set up the async context manager mock
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=mock_context)
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_offline_transaction.return_value = mock_context
+        with (
+            patch(
+                "musigree.offline.loader.worker_entity_updater.offline_transaction"
+            ) as mock_offline_transaction,
+            patch(
+                "musigree.offline.loader.worker_entity_updater.EntityRepository"
+            ) as mock_repo_class,
+        ):
+            # Arrange
+            # Set up the async context manager mock
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-        mock_repo = AsyncMock(spec=EntityRepository)
-        mock_repo_class.return_value = mock_repo
+            mock_repo = AsyncMock(spec=EntityRepository)
+            mock_repo_class.return_value = mock_repo
 
-        # Mock entity not found
-        mock_repo.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
-            message="Entity not found"
-        )
-        mock_repo.create.return_value = None
-        mock_repo.commit.return_value = None
+            # Mock entity not found
+            mock_repo.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
+                message="Entity not found"
+            )
+            mock_repo.create.return_value = None
+            mock_repo.commit.return_value = None
 
-        # Act
-        bulk_updates = [sample_entity_data]
-        processed_count = 0
-        total_count = 100
+            # Act
+            bulk_updates = [sample_entity_data]
+            processed_count = 0
+            total_count = 100
 
-        await update_entities_worker_async(bulk_updates, processed_count, total_count)
+            await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
-        # Assert
-        mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
-            sample_entity_data["entity_id"], sample_entity_data["entity_type"]
-        )
-        mock_repo.create.assert_called_once()
-        mock_repo.commit.assert_called_once()
+            # Assert
+            mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+                sample_entity_data["entity_id"], sample_entity_data["entity_type"]
+            )
+            mock_repo.create.assert_called_once()
+            mock_repo.commit.assert_called_once()
 
     @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
     @patch("musigree.offline.loader.worker_entity_updater.EntityRepository")
@@ -202,115 +210,120 @@ class TestWorkerEntityUpdater:
         mock_repo.create.assert_not_called()
         mock_repo.commit.assert_not_called()
 
-    @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
     @pytest.mark.asyncio
     async def test_update_entities_worker_database_error_on_update(
         self,
-        mock_offline_transaction: Mock,
         sample_entity_data: dict[str, Any],
         existing_entity: Entity,
     ) -> None:
         """Test handling of database error during update."""
-        # Arrange
-        # Set up the async context manager mock
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=mock_context)
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_offline_transaction.return_value = mock_context
-
         with patch(
-            "musigree.offline.loader.worker_entity_updater.EntityRepository"
-        ) as mock_repo_class:
-            mock_repo = AsyncMock(spec=EntityRepository)
-            mock_repo_class.return_value = mock_repo
+            "musigree.offline.loader.worker_entity_updater.offline_transaction"
+        ) as mock_offline_transaction:
+            # Arrange
+            # Set up the async context manager mock
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-            mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
-            mock_repo.update.side_effect = DatabaseError(message="Update failed")
+            with patch(
+                "musigree.offline.loader.worker_entity_updater.EntityRepository"
+            ) as mock_repo_class:
+                mock_repo = AsyncMock(spec=EntityRepository)
+                mock_repo_class.return_value = mock_repo
 
-            # Act & Assert
-            bulk_updates = [sample_entity_data]
-            processed_count = 0
-            total_count = 100
+                mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
+                mock_repo.update.side_effect = DatabaseError(message="Update failed")
 
-            with pytest.raises(DatabaseError):
-                await update_entities_worker_async(bulk_updates, processed_count, total_count)
+                # Act & Assert
+                bulk_updates = [sample_entity_data]
+                processed_count = 0
+                total_count = 100
 
-    @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
+                with pytest.raises(DatabaseError):
+                    await update_entities_worker_async(bulk_updates, processed_count, total_count)
+
     @pytest.mark.asyncio
     async def test_update_entities_worker_database_error_on_insert(
         self,
-        mock_offline_transaction: Mock,
         sample_entity_data: dict[str, Any],
     ) -> None:
         """Test handling of database error during insert."""
-        # Arrange
-        # Set up the async context manager mock
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=mock_context)
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_offline_transaction.return_value = mock_context
-
         with patch(
-            "musigree.offline.loader.worker_entity_updater.EntityRepository"
-        ) as mock_repo_class:
-            mock_repo = AsyncMock(spec=EntityRepository)
-            mock_repo_class.return_value = mock_repo
+            "musigree.offline.loader.worker_entity_updater.offline_transaction"
+        ) as mock_offline_transaction:
+            # Arrange
+            # Set up the async context manager mock
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-            mock_repo.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
-                message="Entity not found"
-            )
-            mock_repo.create.side_effect = DatabaseError(message="Insert failed")
+            with patch(
+                "musigree.offline.loader.worker_entity_updater.EntityRepository"
+            ) as mock_repo_class:
+                mock_repo = AsyncMock(spec=EntityRepository)
+                mock_repo_class.return_value = mock_repo
 
-            # Act & Assert
-            bulk_updates = [sample_entity_data]
-            processed_count = 0
-            total_count = 100
+                mock_repo.get_by_entity_id_and_entity_type.side_effect = NotFoundError(
+                    message="Entity not found"
+                )
+                mock_repo.create.side_effect = DatabaseError(message="Insert failed")
 
-            with pytest.raises(DatabaseError):
-                await update_entities_worker_async(bulk_updates, processed_count, total_count)
+                # Act & Assert
+                bulk_updates = [sample_entity_data]
+                processed_count = 0
+                total_count = 100
 
-    @patch("musigree.offline.loader.worker_entity_updater.offline_transaction")
-    @patch("musigree.offline.loader.worker_entity_updater.LOGGING_TRACE", True)
+                with pytest.raises(DatabaseError):
+                    await update_entities_worker_async(bulk_updates, processed_count, total_count)
+
     @pytest.mark.asyncio
     async def test_update_entities_worker_with_trace_logging(
         self,
-        mock_offline_transaction: Mock,
         sample_entity_data: dict[str, Any],
         existing_entity: Entity,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test worker with trace logging enabled."""
-        # Arrange
-        # Set up the async context manager mock
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=mock_context)
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_offline_transaction.return_value = mock_context
+        with (
+            patch("musigree.offline.loader.worker_entity_updater.LOGGING_TRACE", True),
+            patch(
+                "musigree.offline.loader.worker_entity_updater.offline_transaction"
+            ) as mock_offline_transaction,
+        ):
+            # Arrange
+            # Set up the async context manager mock
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = AsyncMock(return_value=mock_context)
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            mock_offline_transaction.return_value = mock_context
 
-        with patch(
-            "musigree.offline.loader.worker_entity_updater.EntityRepository"
-        ) as mock_repo_class:
-            mock_repo = AsyncMock(spec=EntityRepository)
-            mock_repo_class.return_value = mock_repo
+            with patch(
+                "musigree.offline.loader.worker_entity_updater.EntityRepository"
+            ) as mock_repo_class:
+                mock_repo = AsyncMock(spec=EntityRepository)
+                mock_repo_class.return_value = mock_repo
 
-            mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
-            mock_repo.update.return_value = None
-            mock_repo.commit.return_value = None
+                mock_repo.get_by_entity_id_and_entity_type.return_value = existing_entity
+                mock_repo.update.return_value = None
+                mock_repo.commit.return_value = None
 
-            # Act
-            bulk_updates = [sample_entity_data]
-            processed_count = 0
-            total_count = 100
+                # Act
+                bulk_updates = [sample_entity_data]
+                processed_count = 0
+                total_count = 100
 
-            with caplog.at_level(logging.DEBUG):
-                await update_entities_worker_async(bulk_updates, processed_count, total_count)
+                with caplog.at_level(logging.DEBUG):
+                    await update_entities_worker_async(bulk_updates, processed_count, total_count)
 
-            # Assert
-            mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
-                sample_entity_data["entity_id"], sample_entity_data["entity_type"]
-            )
-            mock_repo.update.assert_called_once()
-            mock_repo.commit.assert_called_once()
+                # Assert
+                mock_repo.get_by_entity_id_and_entity_type.assert_called_once_with(
+                    sample_entity_data["entity_id"], sample_entity_data["entity_type"]
+                )
+                mock_repo.update.assert_called_once()
+                mock_repo.commit.assert_called_once()
 
     def test_entity_name_change_detection(self) -> None:
         """Test that changes in entity name are properly detected."""

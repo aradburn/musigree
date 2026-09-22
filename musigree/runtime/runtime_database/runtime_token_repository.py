@@ -7,13 +7,15 @@ from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_token_table import RuntimeTokenTable
 from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeTokenRepository(RuntimeBaseRepository[RuntimeTokenTable]):
+# noinspection PyTypeChecker
+class RuntimeTokenRepository(RuntimeBaseRepository["RuntimeTokenTable"]):
     """
     Repository for managing RuntimeToken objects in the runtime runtime_database.
 
@@ -29,7 +31,7 @@ class RuntimeTokenRepository(RuntimeBaseRepository[RuntimeTokenTable]):
         schema_class (Type[RuntimeTokenTable]): The SQLAlchemy table class for runtime tokens.
     """
 
-    schema_class = RuntimeTokenTable
+    schema_class = mapped_entity(RuntimeTokenTable)
     """The SQLAlchemy table class for runtime tokens."""
 
     async def all(self) -> AsyncGenerator[RuntimeToken, None]:

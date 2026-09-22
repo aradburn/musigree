@@ -24,10 +24,15 @@ The module uses the following components:
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import asyncio_atexit  # type: ignore
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
 from Secweb.CrossOriginOpenerPolicy import CrossOriginOpenerPolicy
 from Secweb.CrossOriginResourcePolicy import CrossOriginResourcePolicy
@@ -36,10 +41,6 @@ from Secweb.StrictTransportSecurity import HSTS
 from Secweb.XContentTypeOptions import XContentTypeOptions
 from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
 from Secweb.XFrameOptions import XFrame
-from fastapi import FastAPI, Request
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.templating import Jinja2Templates
 
 # noinspection PyPackageRequirements
 from starlette.middleware.cors import CORSMiddleware
@@ -50,15 +51,15 @@ from starlette.responses import Response
 # noinspection PyPackageRequirements
 from starlette.staticfiles import StaticFiles
 
-from musigree.app.fastapi_cors import PreflightLoggerMiddleware, CustomCORSPreflightMiddleware
+from musigree.app.fastapi_cors import CustomCORSPreflightMiddleware, PreflightLoggerMiddleware
 from musigree.app.fastapi_csp import setup_csp_middleware
 from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration
 from musigree.constants import (
-    TEMPLATES_DIR,
-    PUBLIC_DIR,
     FRONTEND_DIR,
+    PUBLIC_DIR,
+    TEMPLATES_DIR,
 )
 from musigree.exceptions import (
     BaseError,
@@ -93,10 +94,11 @@ def create_app(config: Configuration) -> FastAPI:
     Returns:
         FastAPI: The configured FastAPI application instance.
     """
+    # Imported lazily: fastapi_ui and fastapi_assets import templates from this module.
     from musigree.app.fastapi_api import router as api_router
-    from musigree.app.fastapi_ui import router as ui_router
-    from musigree.app.fastapi_healthcheck import router as healthcheck_router
     from musigree.app.fastapi_assets import create_assets_router
+    from musigree.app.fastapi_healthcheck import router as healthcheck_router
+    from musigree.app.fastapi_ui import router as ui_router
 
     # Setup logging
     setup_logging(is_testing=config.TESTING)
@@ -104,7 +106,7 @@ def create_app(config: Configuration) -> FastAPI:
     log_banner()
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         """
         Lifespan context manager for the FastAPI application.
 
@@ -133,6 +135,24 @@ def create_app(config: Configuration) -> FastAPI:
         description="Musigree API for exploring music relationships",
         version="1.0.0",
         lifespan=lifespan,
+        openapi_tags=[
+            {
+                "name": "api",
+                "description": "JSON API for entities, networks, search, and roles",
+            },
+            {
+                "name": "ui",
+                "description": "HTML pages for exploring the music network",
+            },
+            {
+                "name": "healthcheck",
+                "description": "Service health checks",
+            },
+            {
+                "name": "assets",
+                "description": "Frontend asset helpers",
+            },
+        ],
     )
 
     # Add middleware
@@ -195,27 +215,28 @@ def create_app(config: Configuration) -> FastAPI:
     setup_csp_middleware(app, config)
 
     # Referrer policy
-    app.add_middleware(ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
+    add_app_middleware(app, ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
 
     # HSTS
-    app.add_middleware(
-        HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
+    add_app_middleware(
+        app, HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
     )
 
     # X-Content-Type-Options
-    app.add_middleware(XContentTypeOptions)
+    add_app_middleware(app, XContentTypeOptions)
 
-    app.add_middleware(XDNSPrefetchControl, Option="on")
+    add_app_middleware(app, XDNSPrefetchControl, Option="on")
 
     # Prevent clickjacking
-    app.add_middleware(XFrame, Option="DENY")
+    add_app_middleware(app, XFrame, Option="DENY")
 
-    app.add_middleware(CrossOriginEmbedderPolicy, Option="unsafe-none")
-    app.add_middleware(CrossOriginOpenerPolicy, Option="same-origin")
-    app.add_middleware(CrossOriginResourcePolicy, Option="same-site")
+    add_app_middleware(app, CrossOriginEmbedderPolicy, Option="unsafe-none")
+    add_app_middleware(app, CrossOriginOpenerPolicy, Option="same-origin")
+    add_app_middleware(app, CrossOriginResourcePolicy, Option="same-site")
 
     # Permissions Policy
-    app.add_middleware(
+    add_app_middleware(
+        app,
         PermissionsPolicy,
         Option={
             "accelerometer": [],
@@ -236,16 +257,15 @@ def create_app(config: Configuration) -> FastAPI:
     # b"sec-gpc": b"1",
     # b"dnt": b"1",
 
-    # noinspection PyTypeChecker
-    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    add_app_middleware(app, GZipMiddleware, minimum_size=1000)
 
     # Create assets router
-    assets_router, assets_templates = create_assets_router(config)
+    assets_router, _assets_templates = create_assets_router(config)
 
     # Include routers
     app.mount("/prodassets", StaticFiles(directory=FRONTEND_DIR / "dist"), name="prodassets")
     app.include_router(assets_router)
-    app.include_router(api_router, prefix="/api")
+    app.include_router(api_router)
     app.include_router(ui_router)
     app.include_router(healthcheck_router)
     app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")
@@ -280,24 +300,24 @@ def create_app(config: Configuration) -> FastAPI:
                 status_code=exc.status_code,
             )
 
-    # noinspection PyUnusedLocal
-    @app.exception_handler(404)
+    # noinspection PyUnusedLocal,unused-parameter
+    @app.exception_handler(status.HTTP_404_NOT_FOUND)
     async def not_found_handler(request: Request, exc: Any) -> Response:
         if request.url.path.startswith("/api/"):
             return JSONResponse(
-                status_code=404,
+                status_code=status.HTTP_404_NOT_FOUND,
                 content={
                     "success": False,
-                    "status": 404,
+                    "status": status.HTTP_404_NOT_FOUND,
                     "message": "Bad API endpoint",
                 },
             )
         elif request.url.path.startswith("/health/"):
             return JSONResponse(
-                status_code=404,
+                status_code=status.HTTP_404_NOT_FOUND,
                 content={
                     "success": False,
-                    "status": 404,
+                    "status": status.HTTP_404_NOT_FOUND,
                     "message": "Bad healthcheck endpoint",
                 },
             )
@@ -310,8 +330,8 @@ def create_app(config: Configuration) -> FastAPI:
                 status_code=error.status_code,
             )
 
-    # noinspection PyUnusedLocal
-    @app.exception_handler(500)
+    # noinspection PyUnusedLocal,unused-parameter
+    @app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
     async def server_error_handler(request: Request, exc: Any) -> Response:
         error = BaseError(message="Server Error")
         return templates.TemplateResponse(
@@ -326,7 +346,7 @@ def create_app(config: Configuration) -> FastAPI:
     async def custom_exception_handler(_request: Request, exc: Exception) -> Response:
         log.error(f"Unhandled exception: {exc}")
         return JSONResponse(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"message": "An internal server error occurred."},
         )
 

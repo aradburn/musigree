@@ -19,121 +19,128 @@ class TestCreateEntityDetailsIndex:
         config.DATA_DIR = Path("/test/data")
         return config
 
-    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
-    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
-    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
     def test_create_entity_details_index_success(
         self,
-        mock_runner: Mock,
-        mock_loader_entity: Mock,
-        mock_offline_db_manager: Mock,
-        mock_cache_manager: Mock,
-        _mock_asyncio_atexit: Mock,
-        _mock_log_banner: Mock,
-        mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test successful creation of entity details index."""
-        mock_cache_manager.setup_and_clear_cache = AsyncMock()
-        mock_offline_db_manager.setup_database = AsyncMock()
+        with (
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.setup_logging"
+            ) as mock_setup_logging,
+            patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
+            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.CacheManager"
+            ) as mock_cache_manager,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager"
+            ) as mock_offline_db_manager,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.LoaderEntity"
+            ) as mock_loader_entity,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.asyncio.Runner"
+            ) as mock_runner,
+        ):
+            mock_cache_manager.setup_and_clear_cache = AsyncMock()
+            mock_offline_db_manager.setup_database = AsyncMock()
 
-        mock_loader_instance = MagicMock()
-        mock_loader_instance.loader_create_entity_details_index = AsyncMock()
-        mock_loader_entity.return_value = mock_loader_instance
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.loader_create_entity_details_index = AsyncMock()
+            mock_loader_entity.return_value = mock_loader_instance
 
-        mock_runner_instance = Mock()
-        mock_runner.return_value.__enter__.return_value = mock_runner_instance
-        mock_runner.return_value.__exit__.return_value = None
+            mock_runner_instance = Mock()
+            mock_runner.return_value.__enter__.return_value = mock_runner_instance
+            mock_runner.return_value.__exit__.return_value = None
 
-        create_entity_details_index(mock_config)
+            create_entity_details_index(mock_config)
 
-        mock_setup_logging.assert_called_once()
-        mock_offline_db_manager.setup_database.assert_called()
+            mock_setup_logging.assert_called_once()
+            mock_offline_db_manager.setup_database.assert_called()
 
-        expected_path = mock_config.DATA_DIR / "entity_details" / "entity_details.data"
-        mock_loader_instance.loader_create_entity_details_index.assert_called_once_with(
-            expected_path
-        )
-        assert mock_runner_instance.run.call_count >= 2
+            expected_path = mock_config.DATA_DIR / "entity_details" / "entity_details.data"
+            mock_loader_instance.loader_create_entity_details_index.assert_called_once_with(
+                expected_path
+            )
+            assert mock_runner_instance.run.call_count >= 2
 
-    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
-    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
-    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
     def test_create_entity_details_index_cache_not_set(
         self,
-        mock_runner: Mock,
-        _mock_loader_entity: Mock,
-        mock_offline_db_manager: Mock,
-        _mock_cache_manager: Mock,
-        _mock_asyncio_atexit: Mock,
-        _mock_log_banner: Mock,
-        mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test behavior when cache setup fails."""
-        mock_offline_db_manager.setup_database = AsyncMock()
+        with (
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.setup_logging"
+            ) as mock_setup_logging,
+            patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
+            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
+            patch("musigree.loader.run_offline_create_entity_details_index.CacheManager"),
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager"
+            ) as mock_offline_db_manager,
+            patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity"),
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.asyncio.Runner"
+            ) as mock_runner,
+        ):
+            mock_offline_db_manager.setup_database = AsyncMock()
 
-        mock_runner_instance = Mock()
-        mock_runner_instance.run.side_effect = [
-            RuntimeError("Cache not initialized after setup"),
-            None,
-        ]
-        mock_runner.return_value.__enter__.return_value = mock_runner_instance
-        mock_runner.return_value.__exit__.return_value = None
+            mock_runner_instance = Mock()
+            mock_runner_instance.run.side_effect = [
+                RuntimeError("Cache not initialized after setup"),
+                None,
+            ]
+            mock_runner.return_value.__enter__.return_value = mock_runner_instance
+            mock_runner.return_value.__exit__.return_value = None
 
-        with pytest.raises(SystemExit):
-            create_entity_details_index(mock_config)
+            with pytest.raises(SystemExit):
+                create_entity_details_index(mock_config)
 
-        mock_setup_logging.assert_called_once()
-        mock_offline_db_manager.setup_database.assert_not_called()
+            mock_setup_logging.assert_called_once()
+            mock_offline_db_manager.setup_database.assert_not_called()
 
-    @patch("musigree.loader.run_offline_create_entity_details_index.setup_logging")
-    @patch("musigree.loader.run_offline_create_entity_details_index.log_banner")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit")
-    @patch("musigree.loader.run_offline_create_entity_details_index.CacheManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager")
-    @patch("musigree.loader.run_offline_create_entity_details_index.LoaderEntity")
-    @patch("musigree.loader.run_offline_create_entity_details_index.asyncio.Runner")
     def test_create_entity_details_index_loader_exception(
         self,
-        mock_runner: Mock,
-        mock_loader_entity: Mock,
-        mock_offline_db_manager: Mock,
-        mock_cache_manager: Mock,
-        _mock_asyncio_atexit: Mock,
-        _mock_log_banner: Mock,
-        _mock_setup_logging: Mock,
         mock_config: SqliteTestConfiguration,
     ) -> None:
         """Test handling of exception in loader."""
-        mock_cache_manager.setup_and_clear_cache = AsyncMock()
-        mock_offline_db_manager.setup_database = AsyncMock()
+        with (
+            patch("musigree.loader.run_offline_create_entity_details_index.setup_logging"),
+            patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
+            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.CacheManager"
+            ) as mock_cache_manager,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager"
+            ) as mock_offline_db_manager,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.LoaderEntity"
+            ) as mock_loader_entity,
+            patch(
+                "musigree.loader.run_offline_create_entity_details_index.asyncio.Runner"
+            ) as mock_runner,
+        ):
+            mock_cache_manager.setup_and_clear_cache = AsyncMock()
+            mock_offline_db_manager.setup_database = AsyncMock()
 
-        mock_loader_instance = MagicMock()
-        mock_loader_instance.loader_create_entity_details_index = AsyncMock(
-            side_effect=Exception("Test error")
-        )
-        mock_loader_entity.return_value = mock_loader_instance
+            mock_loader_instance = MagicMock()
+            mock_loader_instance.loader_create_entity_details_index = AsyncMock(
+                side_effect=Exception("Test error")
+            )
+            mock_loader_entity.return_value = mock_loader_instance
 
-        mock_runner_instance = Mock()
-        mock_runner_instance.run.side_effect = Exception("Test error")
-        mock_runner.return_value.__enter__.return_value = mock_runner_instance
-        mock_runner.return_value.__exit__.return_value = None
+            mock_runner_instance = Mock()
+            mock_runner_instance.run.side_effect = Exception("Test error")
+            mock_runner.return_value.__enter__.return_value = mock_runner_instance
+            mock_runner.return_value.__exit__.return_value = None
 
-        with pytest.raises(Exception, match="Test error"):
-            create_entity_details_index(mock_config)
+            with pytest.raises(Exception, match="Test error"):
+                create_entity_details_index(mock_config)
 
-    @patch(
-        "musigree.loader.run_offline_create_entity_details_index.create_entity_details_index"
-    )
+    @patch("musigree.loader.run_offline_create_entity_details_index.create_entity_details_index")
     @patch(
         "musigree.loader.run_offline_create_entity_details_index.PostgresReadOnlyDevelopmentConfiguration"
     )

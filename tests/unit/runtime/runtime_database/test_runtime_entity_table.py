@@ -189,6 +189,7 @@ class TestRuntimeEntityTable:
         entity_table = RuntimeEntityTable(**entries)
 
         # THEN
+        assert entity_table is not None
         assert entity_table.entity_name == "Valid Column"
         assert entity_table.entity_type == EntityType.ARTIST
         assert not hasattr(entity_table, "nonexistent_column")
@@ -212,6 +213,7 @@ class TestRuntimeEntityTable:
         entity_table = RuntimeEntityTable(**entries)
 
         # THEN
+        assert entity_table is not None
         assert entity_table.relation_counts is None
         assert entity_table.aliases is None
         assert entity_table.groups is None
@@ -234,6 +236,7 @@ class TestRuntimeEntityTable:
         entity_table = RuntimeEntityTable(**entries)
 
         # THEN
+        assert entity_table is not None
         assert entity_table.countries is None
         assert entity_table.genres is None
         assert entity_table.styles is None

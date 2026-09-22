@@ -1,17 +1,14 @@
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from pydantic import BaseModel
-
-# noinspection PyPackageRequirements
-from starlette import status
 
 log = logging.getLogger(__name__)
 """
 The logger for this module.
 """
 
-router = APIRouter()
+router = APIRouter(tags=["healthcheck"])
 
 
 class HealthCheck(BaseModel):
@@ -22,7 +19,6 @@ class HealthCheck(BaseModel):
 
 @router.get(
     "/health",
-    tags=["healthcheck"],
     summary="Perform a Health Check",
     response_description="Return HTTP Status Code 200 (OK)",
     status_code=status.HTTP_200_OK,

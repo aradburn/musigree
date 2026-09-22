@@ -112,7 +112,6 @@ class LoaderRelease(LoaderBase):
     # PUBLIC METHODS
 
     @classmethod
-    # @timeit
     async def loader_release_pass_one(
         cls, discogs_data_directory: Path, date: str, is_bulk_inserts: bool = False
     ) -> None:
@@ -178,7 +177,6 @@ class LoaderRelease(LoaderBase):
         return set_of_ids
 
     @classmethod
-    # @timeit
     async def loader_release_pass_two(cls) -> None:
         """
         Performs the second pass of loading release data.

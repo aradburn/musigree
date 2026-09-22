@@ -23,6 +23,7 @@ class RuntimeRelationDataAccess:
         relation_repository: RuntimeRelationRepository,
         ids: list[int],
         role_names: list[str],
+        limit: int,
     ) -> list[RuntimeRelation]:
         """
         Searches for relations involving multiple entities and specific roles.
@@ -35,6 +36,7 @@ class RuntimeRelationDataAccess:
             relation_repository: The repository to use for runtime_database operations.
             ids: List of ids to search for.
             role_names: List of role names to filter by.
+            limit: Maximum number of relation rows to retrieve.
 
         Returns:
             list[RuntimeRelation]: List of relations matching the criteria.
@@ -42,16 +44,13 @@ class RuntimeRelationDataAccess:
         assert ids
         assert role_names
 
-        relation_internals: list[RuntimeRelationInternal] = []
-
         role_ids: list[int] = [
             RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names
         ]
 
-        for _id in ids:
-            entity_relations = await relation_repository.find_by_entity_and_roles(_id, role_ids)
-            # log.debug(f"    found entity_relations: {entity_relations}")
-            relation_internals.extend(entity_relations)
+        relation_internals: list[
+            RuntimeRelationInternal
+        ] = await relation_repository.find_by_entities_and_roles(ids, role_ids, limit)
 
         # Group relation_internals by link_key
         relations_map: dict[str, list[RuntimeRelationInternal]] = {}
@@ -65,8 +64,8 @@ class RuntimeRelationDataAccess:
             relations_map.update({key: relation_internal_list})
 
         relations: list[RuntimeRelation] = []
-        for relation_internals in relations_map.values():
-            relation = RuntimeRelation.from_relation_internals(relation_internals)
+        for grouped_relation_internals in relations_map.values():
+            relation = RuntimeRelation.from_relation_internals(grouped_relation_internals)
             relations.append(relation)
 
         # log.debug(f"    -> relations: {relations}")

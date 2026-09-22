@@ -1,14 +1,16 @@
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import Request
 from fastapi.responses import HTMLResponse
+from fastapi.routing import iter_route_contexts
 
-from musigree.app.fastapi_dependencies import UI_DEFAULT_ROLES
 from musigree.app.fastapi_ui import (
-    router,
-    route__index,
+    UI_DEFAULT_ARTIST_ROLES,
+    UI_DEFAULT_LABEL_ROLES,
     route__entity_type__entity_id,
+    route__index,
+    router,
 )
 from musigree.exceptions import BadRequestError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -26,10 +28,13 @@ class TestFastAPIUI:
     """Test cases for the FastAPI UI module."""
 
     def test_ui_default_roles(self) -> None:
-        """Test that UI_DEFAULT_ROLES is properly defined."""
-        assert isinstance(UI_DEFAULT_ROLES, list)
-        assert "Alias" in UI_DEFAULT_ROLES
-        assert "Member Of" in UI_DEFAULT_ROLES
+        """Test that UI default role lists are properly defined."""
+        assert isinstance(UI_DEFAULT_ARTIST_ROLES, list)
+        assert "Alias" in UI_DEFAULT_ARTIST_ROLES
+        assert "Member Of" in UI_DEFAULT_ARTIST_ROLES
+        assert isinstance(UI_DEFAULT_LABEL_ROLES, list)
+        assert "Sublabel Of" in UI_DEFAULT_LABEL_ROLES
+        assert "Released On" in UI_DEFAULT_LABEL_ROLES
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -51,8 +56,8 @@ class TestFastAPIUI:
         mock_request = Mock(spec=Request)
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        # Call the route with UI_DEFAULT_ROLES since that's what gets set when no roles are provided
-        response = await route__index(mock_request, roles=UI_DEFAULT_ROLES, year=None)
+        # Index route receives parsed roles as a set (defaults applied elsewhere)
+        response = await route__index(mock_request, roles=set(UI_DEFAULT_ARTIST_ROLES), year=None)
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -64,9 +69,12 @@ class TestFastAPIUI:
         assert call_args.kwargs["request"] == mock_request
         assert call_args.kwargs["name"] == "index.html"
         context = call_args.kwargs["context"]
-        assert context["title"] == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
+        assert (
+            context["title"]
+            == "Musigree - Explore Music Connections, an Interactive Map of Artists, Bands & Labels"
+        )
         assert context["og_title"] == "Musigree - An Interactive Map of Artists, Bands & Labels"
-        assert context["original_roles"] == UI_DEFAULT_ROLES
+        assert context["original_roles"] == set(UI_DEFAULT_ARTIST_ROLES)
         assert context["original_year"] is None
 
     @patch("musigree.app.fastapi_app.templates")
@@ -90,7 +98,7 @@ class TestFastAPIUI:
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Call the route
-        response = await route__index(mock_request, roles=["Artist", "Album"], year=2000)
+        response = await route__index(mock_request, roles={"Artist", "Album"}, year=2000)
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -98,7 +106,7 @@ class TestFastAPIUI:
         # Verify template context
         call_args = mock_templates.TemplateResponse.call_args
         context = call_args.kwargs["context"]
-        assert context["original_roles"] == ["Artist", "Album"]
+        assert context["original_roles"] == {"Artist", "Album"}
         assert context["original_year"] == 2000
 
     @patch("musigree.app.fastapi_app.templates")
@@ -139,7 +147,7 @@ class TestFastAPIUI:
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
         with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             response = await route__entity_type__entity_id(
-                mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
+                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year=2000
             )
 
         # Verify the response
@@ -187,19 +195,29 @@ class TestFastAPIUI:
         mock_transaction = AsyncMock()
         mock_transaction.__aenter__ = AsyncMock(return_value=None)
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
-        with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
-            with pytest.raises(NotFoundError) as exc_info:
-                await route__entity_type__entity_id(
-                    mock_request, EntityType.ARTIST, 123, roles=[], year=None
-                )
+        with (
+            patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction),
+            pytest.raises(NotFoundError) as exc_info,
+        ):
+            await route__entity_type__entity_id(
+                mock_request, EntityType.ARTIST, 123, roles=set(), year=None
+            )
 
         assert "No Network Data" in str(exc_info.value)
 
     def test_router_exists(self) -> None:
         """Test that the router is properly defined."""
         assert router is not None
-        # Check that routes are registered
-        assert len(router.routes) > 0
+        # Check that routes are registered via the FastAPI 0.141 route tree helper
+        route_paths = [
+            path
+            for route_context in iter_route_contexts(router.routes)
+            if isinstance(path := route_context.path, str)
+        ]
+        assert "/" in route_paths
+        assert "/artist/{entity_id}" in route_paths
+        assert "/label/{entity_id}" in route_paths
+        assert "ui" in router.tags
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -220,7 +238,7 @@ class TestFastAPIUI:
         mock_request = Mock(spec=Request)
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        _response = await route__index(mock_request, roles=["Artist"], year=2000)
+        _response = await route__index(mock_request, roles={"Artist"}, year=2000)
 
         # Verify template context contains URL
         call_args = mock_templates.TemplateResponse.call_args
@@ -265,7 +283,7 @@ class TestFastAPIUI:
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
         with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             _response = await route__entity_type__entity_id(
-                mock_request, EntityType.ARTIST, 123, roles=["Artist"], year=2000
+                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year=2000
             )
 
         # Verify template context contains URL

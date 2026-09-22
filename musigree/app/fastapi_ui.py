@@ -25,12 +25,17 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 
 import json
 import logging
-from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from musigree.app.fastapi_dependencies import get_roles, get_year, get_entity_type, get_entity_id
+from musigree.app.fastapi_dependencies import (
+    EntityIdDep,
+    EntityTypeDep,
+    OnMobileQuery,
+    RolesDep,
+    YearDep,
+)
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
@@ -40,19 +45,33 @@ log = logging.getLogger(__name__)
 The logger for the UI module.
 """
 
-router = APIRouter()
+router = APIRouter(tags=["ui"])
 """
 The FastAPI router for the UI routes.
 
 This router is used to organize the UI routes and their related functionality.
 """
 
+UI_DEFAULT_ARTIST_ROLES = [
+    "Alias",
+    "Member Of",
+]
+UI_DEFAULT_LABEL_ROLES = [
+    "Alias",
+    "Member Of",
+    "Sublabel Of",
+    "Released On",
+]
+"""
+Default roles to display if none are specified in the request.
+"""
 
-@router.get("/", response_class=HTMLResponse)
+
+@router.get("/", response_class=HTMLResponse, summary="Home page")
 async def route__index(
     request: Request,
-    roles: Annotated[list[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    roles: RolesDep,
+    year: YearDep = None,
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -63,22 +82,23 @@ async def route__index(
 
     Args:
         request: The FastAPI request object.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
 
     Returns:
         HTMLResponse: The rendered index page.
     """
+    # Imported lazily to avoid a circular import with fastapi_app.create_app.
+    from musigree.app.fastapi_app import templates
     from musigree.library.cache.role_cache import RoleCache
     from musigree.runtime.data_access_layer.role_entry import RoleEntry
-    from musigree.app.fastapi_app import templates
 
     network_js = "var dgNetwork = null;\n"
     """Initial JavaScript for the network graph, set to null."""
     log.debug(f"network_js: {network_js}")
 
     roles_json = RoleCache.get_roles_json()
-    """Get the roles JSON data from the RoleCache."""
+    """Get all the roles JSON data from the RoleCache."""
     roles_js = f"var dgRoles = {roles_json};\n"
     # log.debug(f"roles_js: {roles_js}")
 
@@ -125,11 +145,11 @@ async def route__index(
 
 async def route__entity_type__entity_id(
     request: Request,
-    entity_type: Annotated[EntityType, Depends(get_entity_type)],
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_type: EntityTypeDep,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -142,7 +162,7 @@ async def route__entity_type__entity_id(
         request: The FastAPI request object.
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -153,9 +173,10 @@ async def route__entity_type__entity_id(
         BadRequestError: If the entity type or entity ID is invalid.
         UnprocessableError: If no network data is found for the given entity.
     """
+    # Imported lazily to avoid a circular import with fastapi_app.create_app.
+    from musigree.app.fastapi_app import templates
     from musigree.library.cache.role_cache import RoleCache
     from musigree.runtime.data_access_layer.role_entry import RoleEntry
-
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
     )
@@ -163,13 +184,14 @@ async def route__entity_type__entity_id(
         RuntimeRelationRepository,
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-    from musigree.app.fastapi_app import templates
 
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "runtime_database_helper must be initialized before calling initialize()"
     )
 
     log.debug("route__entity_type__entity_id")
+
+    roles_with_defaults = get_roles_with_defaults(roles, entity_type)
 
     try:
         # Retrieve the network data for the entity.
@@ -182,7 +204,7 @@ async def route__entity_type__entity_id(
                 entity_id,
                 entity_type,
                 on_mobile=on_mobile,
-                roles=roles,
+                roles=roles_with_defaults,
             )
     except NotFoundError as _ex:
         raise NotFoundError(message="Entity not found") from None
@@ -255,13 +277,13 @@ async def route__entity_type__entity_id(
     return templates.TemplateResponse(request, name="index.html", context=context)
 
 
-@router.get("/artist/{entity_id}", response_class=HTMLResponse)
+@router.get("/artist/{entity_id}", response_class=HTMLResponse, summary="Artist network page")
 async def route__artist__entity_id(
     request: Request,
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -273,7 +295,7 @@ async def route__artist__entity_id(
     Args:
         request: The FastAPI request object.
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -289,13 +311,13 @@ async def route__artist__entity_id(
     )
 
 
-@router.get("/label/{entity_id}", response_class=HTMLResponse)
+@router.get("/label/{entity_id}", response_class=HTMLResponse, summary="Label network page")
 async def route__label__entity_id(
     request: Request,
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[list[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -307,7 +329,7 @@ async def route__label__entity_id(
     Args:
         request: The FastAPI request object.
         entity_id: The ID of the entity.
-        roles: Optional list of roles to filter the network by.
+        roles: Optional set of roles to filter the network by.
         year: Optional year to filter the network by.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
@@ -321,3 +343,14 @@ async def route__label__entity_id(
     return await route__entity_type__entity_id(
         request, EntityType.LABEL, entity_id, roles, year, on_mobile
     )
+
+
+def get_roles_with_defaults(roles: set[str], entity_type: EntityType) -> list[str]:
+    roles_result = roles
+    if len(roles) == 0:
+        if entity_type == EntityType.ARTIST:
+            roles_result = set(UI_DEFAULT_ARTIST_ROLES)
+        elif entity_type == EntityType.LABEL:
+            roles_result = set(UI_DEFAULT_LABEL_ROLES)
+
+    return sorted(roles_result)

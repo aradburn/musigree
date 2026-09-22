@@ -1,4 +1,5 @@
 from typing import Any
+
 from sqlalchemy import String, Integer, Date, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -95,7 +96,7 @@ class ReleaseTable(OfflineBase):
     """
     The musical styles associated with the release. Stored as a JSON object.
     """
-    title: Mapped[str] = mapped_column(String, nullable=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
     """The title of the release."""
     tracklist: Mapped[list[dict[str, Any]] | None] = mapped_column(type_=JSON, nullable=True)
     """

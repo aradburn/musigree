@@ -20,8 +20,8 @@ Key functionalities include:
       `RuntimeRoleJSTreeEntry` and `RuntimeRoleJSTreeState`.
     - **Database Interaction**: Interacts with `RuntimeRoleRepository` for
       runtime_database operations related to roles.
-    - **UI default Roles**: Use `UI_DEFAULT_ROLES` to set the selected state
-    of the roles.
+    - **UI default Roles**: Use `UI_DEFAULT_ARTIST_ROLES` and
+      `UI_DEFAULT_LABEL_ROLES` to set the selected state of the roles.
     - **Logging**: Includes logging statements for debugging and tracking
       the loading process.
 
@@ -34,7 +34,8 @@ The `RuntimeRoleDataAccess` class interacts with the following components:
     - `RuntimeRoleJSTreeEntry`: For representing an entry in the jstree.
     - `runtime_transaction`: A decorator for managing runtime_database transactions.
     - `logging`: For logging operations.
-    - `UI_DEFAULT_ROLES`: For managing the default selected roles.
+    - `UI_DEFAULT_ARTIST_ROLES` / `UI_DEFAULT_LABEL_ROLES`: For managing
+      the default selected roles.
     - `LOGGING_TRACE`: to check if the trace logging is activated.
 
 The module utilizes `logging` for logging operations, `typing` for type
@@ -43,7 +44,7 @@ hinting and interacts with `musigree` library for specific cache and type.
 
 import logging
 
-from musigree.app.fastapi_dependencies import UI_DEFAULT_ROLES
+from musigree.app.fastapi_ui import UI_DEFAULT_ARTIST_ROLES, UI_DEFAULT_LABEL_ROLES
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
 from musigree.logging_config import LOGGING_TRACE
@@ -78,7 +79,8 @@ class RuntimeRoleDataAccess:
 
         This method organizes roles by category and subcategory, creating a tree
         structure suitable for a JavaScript tree (jstree). It also sets the
-        default selection state for specific roles based on `UI_DEFAULT_ROLES`.
+        default selection state for specific roles based on
+        `UI_DEFAULT_ARTIST_ROLES` and `UI_DEFAULT_LABEL_ROLES`.
 
         Args:
             roles (list[RuntimeRole]): A list of `RuntimeRole` objects.
@@ -138,7 +140,10 @@ class RuntimeRoleDataAccess:
             else:
                 """Or on the category."""
                 parent = role.role_category_name
-            if role.role_name in UI_DEFAULT_ROLES:
+            if (
+                role.role_name in UI_DEFAULT_ARTIST_ROLES
+                or role.role_name in UI_DEFAULT_LABEL_ROLES
+            ):
                 """Check if the role is selected by default."""
                 state = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=True)
             else:

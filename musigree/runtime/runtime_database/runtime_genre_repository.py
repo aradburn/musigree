@@ -8,12 +8,14 @@ from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTa
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
+from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeGenreRepository(RuntimeBaseRepository[RuntimeGenreTable]):
+# noinspection PyTypeChecker
+class RuntimeGenreRepository(RuntimeBaseRepository["RuntimeGenreTable"]):
     """
     Repository for managing RuntimeGenre objects in the runtime runtime_database.
 
@@ -29,7 +31,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository[RuntimeGenreTable]):
         schema_class (Type[RuntimeGenreTable]): The SQLAlchemy table class for runtime genres.
     """
 
-    schema_class = RuntimeGenreTable
+    schema_class = mapped_entity(RuntimeGenreTable)
     """The SQLAlchemy table class for runtime genres."""
 
     async def all(self) -> AsyncGenerator[RuntimeGenre, None]:
@@ -55,7 +57,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository[RuntimeGenreTable]):
         Raises:
             NotFoundError: If no genre is found with the given ID.
         """
-        query = select(RuntimeGenreTable).where(RuntimeGenreTable.id == id_)
+        query = select(mapped_entity(RuntimeGenreTable)).where(RuntimeGenreTable.id == id_)
 
         result: Result = await self.execute(query)
 
@@ -77,7 +79,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository[RuntimeGenreTable]):
         Raises:
             NotFoundError: If no genre is found with the given name.
         """
-        query = select(RuntimeGenreTable).where(RuntimeGenreTable.genre_name == name)
+        query = select(mapped_entity(RuntimeGenreTable)).where(RuntimeGenreTable.genre_name == name)
         result: Result = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

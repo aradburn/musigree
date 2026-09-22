@@ -1,15 +1,19 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import BaseModel
 from sqlalchemy import Result
 
 from musigree.exceptions import NotFoundError
+from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_genre_repository import RuntimeGenreRepository
 from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
+from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
 
 
+# noinspection PyTypeChecker
 class TestRuntimeGenreRepository:
     """Unit tests for RuntimeGenreRepository class."""
 
@@ -23,7 +27,7 @@ class TestRuntimeGenreRepository:
         assert self.repository.schema_class == RuntimeGenreTable
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "_all")
+    @patch.object(RuntimeBaseRepository, "_all")
     async def test_all(self, mock_all: Mock) -> None:
         """Test retrieving all genres."""
         # GIVEN
@@ -36,13 +40,13 @@ class TestRuntimeGenreRepository:
         mock_instance2.genre_name = "Rock"
 
         # Create an async generator for the mock
-        async def async_generator() -> AsyncGenerator[Mock, None]:
+        async def async_generator() -> AsyncGenerator[Mock]:
             for item in [mock_instance1, mock_instance2]:
                 yield item
 
         mock_all.return_value = async_generator()
 
-        with patch.object(RuntimeGenre, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             mock_validate.side_effect = [
                 RuntimeGenre(id=1, genre_name="Electronic"),
                 RuntimeGenre(id=2, genre_name="Rock"),
@@ -61,7 +65,7 @@ class TestRuntimeGenreRepository:
             assert result[1].genre_name == "Rock"
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving a genre by ID."""
         # GIVEN
@@ -76,7 +80,7 @@ class TestRuntimeGenreRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeGenre, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_genre = RuntimeGenre(id=genre_id, genre_name="Electronic")
             mock_validate.return_value = expected_genre
 
@@ -88,7 +92,7 @@ class TestRuntimeGenreRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving a genre by ID when not found."""
         # GIVEN
@@ -105,7 +109,7 @@ class TestRuntimeGenreRepository:
             await self.repository.get_by_id(genre_id)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_success(self, mock_execute: Mock) -> None:
         """Test successfully retrieving a genre by name."""
         # GIVEN
@@ -120,7 +124,7 @@ class TestRuntimeGenreRepository:
         mock_result.scalars.return_value = mock_scalars
         mock_execute.return_value = mock_result
 
-        with patch.object(RuntimeGenre, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_genre = RuntimeGenre(id=1, genre_name=genre_name)
             mock_validate.return_value = expected_genre
 
@@ -132,7 +136,7 @@ class TestRuntimeGenreRepository:
             mock_validate.assert_called_once_with(mock_instance)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "execute")
+    @patch.object(RuntimeSession, "execute")
     async def test_get_by_name_not_found(self, mock_execute: Mock) -> None:
         """Test retrieving a genre by name when not found."""
         # GIVEN
@@ -149,7 +153,7 @@ class TestRuntimeGenreRepository:
             await self.repository.get_by_name(genre_name)
 
     @pytest.mark.asyncio
-    @patch.object(RuntimeGenreRepository, "_save")
+    @patch.object(RuntimeBaseRepository, "_save")
     async def test_create(self, mock_save: Mock) -> None:
         """Test creating a new genre."""
         # GIVEN
@@ -159,7 +163,7 @@ class TestRuntimeGenreRepository:
         mock_instance.genre_name = "Electronic"
         mock_save.return_value = mock_instance
 
-        with patch.object(RuntimeGenre, "model_validate") as mock_validate:
+        with patch.object(BaseModel, "model_validate") as mock_validate:
             expected_genre = RuntimeGenre(id=1, genre_name="Electronic")
             mock_validate.return_value = expected_genre
 

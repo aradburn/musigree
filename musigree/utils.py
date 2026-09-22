@@ -280,8 +280,7 @@ def to_ascii(_string: str) -> str:
     Returns:
         str: The converted plain ASCII string.
     """
-    if _string is None:
-        return ""
+
     # Transliterate the unicode string into a plain ASCII string
     if is_latin(_string):
         _string = unidecode(_string, "preserve")
