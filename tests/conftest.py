@@ -91,7 +91,11 @@ async def offline_database_setup(
     # Teardown
     log.info("Tearing down offline database")
     await OfflineDatabaseManager.shutdown_database()
-    await CacheManager.shutdown_cache()
+    try:
+        await CacheManager.shutdown_cache()
+    except Exception as e:
+        log.exception(f"Error closing Redis client: {e}")
+
     shutdown_logging()
 
 
@@ -197,7 +201,11 @@ async def runtime_database_setup(
     # Teardown
     log.info("Tearing down runtime database")
     await RuntimeDatabaseManager.shutdown_database()
-    await CacheManager.shutdown_cache()
+    try:
+        await CacheManager.shutdown_cache()
+    except Exception as e:
+        log.exception(f"Error closing Redis client: {e}")
+
     shutdown_logging()
 
 

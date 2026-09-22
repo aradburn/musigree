@@ -1,11 +1,10 @@
 import json
 import logging
-from collections.abc import Awaitable
 from json import JSONDecodeError
 from typing import Any
 
 # noinspection PyPackageRequirements
-import fakeredis
+import fakeredis.aioredis
 
 # noinspection PyPackageRequirements
 from redis import asyncio as aioredis
@@ -20,6 +19,7 @@ __all__ = [
     "BaseCache",
     "SimpleCache",
     "RedisCache",
+    "FakeRedisCache",
     "CacheType",
 ]
 
@@ -142,7 +142,8 @@ class RedisCache(BaseCache):
             default_timeout: Default cache timeout in seconds
         """
         self.default_timeout = default_timeout
-        self._client: aioredis.Redis | fakeredis.FakeRedis | None = None
+        # redis-py 8.x async client (FakeRedis is a subclass of aioredis.Redis)
+        self._client: aioredis.Redis | None = None
 
         try:
             if username is not None and password is not None:
@@ -150,12 +151,14 @@ class RedisCache(BaseCache):
             else:
                 redis_url = f"redis://{host}:{port}/{db}"
             log.info(f"Redis server: {redis_url}")
+            # redis-py 8 defaults to RESP3 on the wire; legacy response shapes keep
+            # get/set/etc. compatible with existing callers.
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
         except Exception as e:
             log.warning(f"Failed to connect to Redis server: {e}")
 
-    def _get_redis_client(self) -> aioredis.Redis | fakeredis.FakeRedis:
+    def _get_redis_client(self) -> aioredis.Redis:
         """Get the Redis client, handles both real Redis and FakeRedis."""
         if self._client is None:
             raise RuntimeError("Redis client not initialized")
@@ -164,10 +167,7 @@ class RedisCache(BaseCache):
     async def ping(self) -> bool:
         """Ping the server."""
         redis_client = self._get_redis_client()
-        ping_result = redis_client.ping()
-        if isinstance(ping_result, Awaitable):
-            return await ping_result
-        return bool(ping_result)
+        return bool(await redis_client.ping())
 
     async def get(self, key: str) -> str | None:
         """Get value from cache for the given key."""
@@ -264,24 +264,32 @@ class RedisCache(BaseCache):
             log.exception(f"Error clearing Redis cache: {e}")
 
     async def close(self) -> None:
-        """Close the cache."""
+        """Flush and close the Redis client connection pool."""
         redis_client = self._get_redis_client()
 
         try:
-            # Simply flush the entire database
-            # This is the most reliable approach across different Redis client implementations
+            # Flush before closing so shutdown leaves no residual keys
             await redis_client.flushdb()
         except Exception as e:
             log.exception(f"Error clearing Redis cache: {e}")
 
+        try:
+            # redis-py 8 async clients release pooled connections via aclose()
+            await redis_client.aclose()
+        except Exception as e:
+            log.exception(f"Error closing Redis client: {e}")
+        finally:
+            self._client = None
+
 
 class FakeRedisCache(RedisCache):
-    """Fake Redis-based cache implementation."""
+    """Async FakeRedis-based cache implementation for tests and fallback."""
 
     # noinspection PyMissingConstructor
     def __init__(self) -> None:
-        # Initialize Fake Redis cache.
-        self._client = fakeredis.FakeRedis()
+        # Use fakeredis.aioredis so the client matches redis-py 8 async APIs.
+        self.default_timeout = 300
+        self._client = fakeredis.aioredis.FakeRedis()
 
 
 class CacheManager:
