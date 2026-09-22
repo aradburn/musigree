@@ -50,7 +50,7 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
     log.info(f"is_production: {is_production}")
 
     # Create assets router
-    assets_router = APIRouter()
+    assets_router = APIRouter(tags=["assets"])
 
     # Mount static files
     # if is_production:

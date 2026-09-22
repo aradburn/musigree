@@ -14,7 +14,7 @@ from unittest.mock import Mock, mock_open, patch
 
 import pytest
 from fastapi import APIRouter
-from fastapi.routing import APIRoute
+from fastapi.routing import APIRoute, iter_route_contexts
 
 from musigree.app.fastapi_assets import create_assets_router
 from musigree.config import SqliteTestConfiguration
@@ -103,9 +103,11 @@ class TestCreateAssetsRouter:
         mock_frontend_dir.__truediv__ = Mock(return_value=Path("/fake/frontend/dist"))
 
         # Test and Assert
-        with patch.object(builtins, "open", side_effect=OSError("File not found")):
-            with pytest.raises(OSError, match="Manifest file not found"):
-                create_assets_router(config)
+        with (
+            patch.object(builtins, "open", side_effect=OSError("File not found")),
+            pytest.raises(OSError, match="Manifest file not found"),
+        ):
+            create_assets_router(config)
 
     @patch("musigree.app.fastapi_assets.templates")
     @patch.dict(os.environ, {"VITE_ORIGIN": "http://custom:3000"})
@@ -118,8 +120,7 @@ class TestCreateAssetsRouter:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Verify the asset function uses custom origin
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -140,8 +141,7 @@ class TestCreateAssetsRouter:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Verify the asset function uses default origin
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -166,8 +166,7 @@ class TestDevAssetFunction:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Get the asset function
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -192,8 +191,7 @@ class TestDevAssetFunction:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Get the asset function
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -237,8 +235,7 @@ class TestProdAssetFunction:
         mock_file.return_value.read.return_value = json.dumps(manifest_content)
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Get the asset function
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -276,8 +273,7 @@ class TestProdAssetFunction:
         mock_file.return_value.read.return_value = json.dumps(manifest_content)
 
         # Test
-        # noinspection PyUnusedLocal
-        router, templates = create_assets_router(config)
+        create_assets_router(config)
 
         # Get the asset function
         call_args = mock_templates.env.globals.update.call_args[0][0]
@@ -308,19 +304,21 @@ class TestAssetRouterEndpoints:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        router, templates = create_assets_router(config)
+        router, _ = create_assets_router(config)
 
         # Verify router has routes
         assert len(router.routes) > 0
 
-        # Find the context route
+        # Find the context route using the FastAPI 0.141 route tree helper
         context_route: APIRoute | None = None
-        for route in router.routes:
+        for route_context in iter_route_contexts(router.routes):
+            route = route_context.route
             if isinstance(route, APIRoute) and route.path == "/context":
                 context_route = route
                 break
 
         assert context_route is not None
+        assert context_route.methods is not None
         assert "GET" in context_route.methods
 
     @patch("musigree.app.fastapi_assets.templates")
@@ -341,7 +339,7 @@ class TestAssetRouterEndpoints:
             builtins, "open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
         ):
             # Test
-            router, templates = create_assets_router(config)
+            router, _ = create_assets_router(config)
 
         # Verify StaticFiles was called (indicating static files were mounted)
 
@@ -358,13 +356,13 @@ class TestAssetRouterEndpoints:
         mock_templates.env.globals.update = Mock()
 
         # Test
-        router, templates = create_assets_router(config)
+        router, _ = create_assets_router(config)
 
         # In development, should only have the context endpoint, no static file mounts
         static_routes = [
             path
-            for route in router.routes
-            if isinstance(path := getattr(route, "path", None), str) and path.startswith("/assets")
+            for route_context in iter_route_contexts(router.routes)
+            if isinstance(path := route_context.path, str) and path.startswith("/assets")
         ]
         assert len(static_routes) == 0
 
@@ -389,12 +387,12 @@ class TestLogging:
         mock_templates.env.globals.update = Mock()
 
         # Mock manifest file to avoid OSError
-        with patch.object(
-            builtins, "open", mock_open(read_data='{"main.js": {"file": "main.js"}}')
+        with (
+            patch.object(builtins, "open", mock_open(read_data='{"main.js": {"file": "main.js"}}')),
+            patch("musigree.app.fastapi_assets.FRONTEND_DIR"),
         ):
-            with patch("musigree.app.fastapi_assets.FRONTEND_DIR"):
-                # Test
-                create_assets_router(config)
+            # Test
+            create_assets_router(config)
 
         # Verify logging
         mock_log.info.assert_called_with("is_production: True")

@@ -6,8 +6,10 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+
 # noinspection PyPackageRequirements
 from starlette import status
 
@@ -155,6 +157,13 @@ class TestRouter:
         """Test that router is an instance of APIRouter."""
         # Assert
         assert isinstance(router, APIRouter)
+        assert "healthcheck" in router.tags
+        health_paths = [
+            path
+            for route_context in iter_route_contexts(router.routes)
+            if isinstance(path := route_context.path, str)
+        ]
+        assert "/health" in health_paths
 
     def test_router_has_health_endpoint(self) -> None:
         """Test that router has the health endpoint configured."""

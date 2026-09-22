@@ -2,7 +2,8 @@
 Unit tests for musigree.app.fastapi_api module.
 """
 
-from unittest.mock import patch, AsyncMock, MagicMock
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -15,11 +16,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from musigree.app.fastapi_api import router
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.exceptions import (
     BadRequestError,
-    NotFoundError,
     DatabaseError,
+    NotFoundError,
     UnprocessableContentError,
 )
 from musigree.library.fields.entity_type import EntityType
@@ -62,7 +63,7 @@ async def database_error_handler(_request: Request, _exc: Exception) -> JSONResp
 def client() -> TestClient:
     """Create a test client."""
     app = FastAPI()
-    app.include_router(router, prefix="/api")
+    app.include_router(router)
 
     # Add exception handlers
     app.add_exception_handler(BadRequestError, bad_request_handler)
@@ -71,6 +72,13 @@ def client() -> TestClient:
     app.add_exception_handler(DatabaseError, database_error_handler)
 
     return TestClient(app)
+
+
+def _openapi_schema(client: TestClient) -> dict[str, Any]:
+    """Read OpenAPI from the FastAPI app under the test client."""
+    app = client.app
+    assert isinstance(app, FastAPI)
+    return app.openapi()
 
 
 class TestFastAPIRoutes:
@@ -1817,3 +1825,41 @@ class TestAdditionalEndpointScenarios:
             assert "label" in cache_key  # Entity type should be in key
             assert "network" in cache_key
             assert "999" in cache_key  # Entity ID should be in key
+
+
+class TestApiRouterConfiguration:
+    """Test FastAPI 0.141 router configuration and OpenAPI metadata."""
+
+    def test_router_has_api_prefix_and_tags(self) -> None:
+        """API routes are grouped on the router instead of at include time."""
+        assert router.prefix == "/api"
+        assert "api" in router.tags
+
+    def test_openapi_documents_api_prefix_and_tags(self, client: TestClient) -> None:
+        """OpenAPI paths keep the /api prefix and api tag."""
+        schema = _openapi_schema(client)
+        assert "/api/random" in schema["paths"]
+        assert "/api/roles" in schema["paths"]
+        assert "/api/search/{search_string}" in schema["paths"]
+        random_endpoint = schema["paths"]["/api/random"]["get"]
+        assert "api" in random_endpoint["tags"]
+
+    def test_search_path_parameter_has_length_constraints(self, client: TestClient) -> None:
+        """Search path parameter documents min and max length in OpenAPI."""
+        schema = _openapi_schema(client)
+        parameters = schema["paths"]["/api/search/{search_string}"]["get"]["parameters"]
+        search_param = next(param for param in parameters if param["name"] == "search_string")
+        schema_props = search_param["schema"]
+        assert schema_props["minLength"] == 2
+        assert schema_props["maxLength"] == 130
+
+    @pytest.mark.asyncio
+    async def test_route_search_string_too_short_returns_422(self, client: TestClient) -> None:
+        """Path validation rejects search strings shorter than two characters."""
+        with patch(
+            "musigree.library.cache.cache_manager.CacheManager.get_cache"
+        ) as mock_cache_manager:
+            mock_cache_manager.return_value = _async_cache_mock()
+            response = client.get("/api/search/a")
+
+        assert response.status_code == 422

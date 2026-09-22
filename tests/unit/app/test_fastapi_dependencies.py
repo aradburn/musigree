@@ -7,16 +7,22 @@ year range parsing, role filtering, Redis client management, and rate limiting f
 """
 
 import time
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from typing import Annotated, get_args, get_origin
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastapi import Request, Response
 
 from musigree.app.fastapi_dependencies import (
-    get_entity_type,
+    EntityIdDep,
+    EntityTypeDep,
+    OnMobileQuery,
+    RolesDep,
+    YearDep,
     get_entity_id,
-    get_year,
+    get_entity_type,
     get_roles,
+    get_year,
     rate_limiter,
 )
 from musigree.exceptions import BadRequestError, RateLimitError
@@ -604,3 +610,29 @@ class TestRateLimiter:
 
             # Should not increment when limit exceeded
             mock_cache.incr.assert_not_called()
+
+
+class TestAnnotatedDependencies:
+    """Shared Annotated aliases follow current FastAPI dependency style."""
+
+    def test_entity_type_dep_wraps_get_entity_type(self) -> None:
+        assert get_origin(EntityTypeDep) is Annotated
+        assert get_args(EntityTypeDep)[1].dependency is get_entity_type
+
+    def test_entity_id_dep_wraps_get_entity_id(self) -> None:
+        assert get_origin(EntityIdDep) is Annotated
+        assert get_args(EntityIdDep)[1].dependency is get_entity_id
+
+    def test_year_dep_wraps_get_year(self) -> None:
+        assert get_origin(YearDep) is Annotated
+        assert get_args(YearDep)[1].dependency is get_year
+
+    def test_roles_dep_wraps_get_roles(self) -> None:
+        assert get_origin(RolesDep) is Annotated
+        assert get_args(RolesDep)[1].dependency is get_roles
+
+    def test_on_mobile_query_is_optional_boolean(self) -> None:
+        assert get_origin(OnMobileQuery) is Annotated
+        origin, query = get_args(OnMobileQuery)
+        assert origin is bool
+        assert query.description == "Whether the request is from a mobile device"

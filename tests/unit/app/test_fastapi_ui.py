@@ -1,15 +1,16 @@
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import Request
 from fastapi.responses import HTMLResponse
+from fastapi.routing import iter_route_contexts
 
 from musigree.app.fastapi_ui import (
-    router,
-    route__index,
-    route__entity_type__entity_id,
     UI_DEFAULT_ARTIST_ROLES,
     UI_DEFAULT_LABEL_ROLES,
+    route__entity_type__entity_id,
+    route__index,
+    router,
 )
 from musigree.exceptions import BadRequestError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -194,19 +195,29 @@ class TestFastAPIUI:
         mock_transaction = AsyncMock()
         mock_transaction.__aenter__ = AsyncMock(return_value=None)
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
-        with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
-            with pytest.raises(NotFoundError) as exc_info:
-                await route__entity_type__entity_id(
-                    mock_request, EntityType.ARTIST, 123, roles=set(), year=None
-                )
+        with (
+            patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction),
+            pytest.raises(NotFoundError) as exc_info,
+        ):
+            await route__entity_type__entity_id(
+                mock_request, EntityType.ARTIST, 123, roles=set(), year=None
+            )
 
         assert "No Network Data" in str(exc_info.value)
 
     def test_router_exists(self) -> None:
         """Test that the router is properly defined."""
         assert router is not None
-        # Check that routes are registered
-        assert len(router.routes) > 0
+        # Check that routes are registered via the FastAPI 0.141 route tree helper
+        route_paths = [
+            path
+            for route_context in iter_route_contexts(router.routes)
+            if isinstance(path := route_context.path, str)
+        ]
+        assert "/" in route_paths
+        assert "/artist/{entity_id}" in route_paths
+        assert "/label/{entity_id}" in route_paths
+        assert "ui" in router.tags
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")

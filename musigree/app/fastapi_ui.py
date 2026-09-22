@@ -25,12 +25,17 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 
 import json
 import logging
-from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from musigree.app.fastapi_dependencies import get_roles, get_year, get_entity_type, get_entity_id
+from musigree.app.fastapi_dependencies import (
+    EntityIdDep,
+    EntityTypeDep,
+    OnMobileQuery,
+    RolesDep,
+    YearDep,
+)
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
@@ -40,7 +45,7 @@ log = logging.getLogger(__name__)
 The logger for the UI module.
 """
 
-router = APIRouter()
+router = APIRouter(tags=["ui"])
 """
 The FastAPI router for the UI routes.
 
@@ -62,11 +67,11 @@ Default roles to display if none are specified in the request.
 """
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, summary="Home page")
 async def route__index(
     request: Request,
-    roles: Annotated[set[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
+    roles: RolesDep,
+    year: YearDep = None,
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -83,9 +88,10 @@ async def route__index(
     Returns:
         HTMLResponse: The rendered index page.
     """
+    # Imported lazily to avoid a circular import with fastapi_app.create_app.
+    from musigree.app.fastapi_app import templates
     from musigree.library.cache.role_cache import RoleCache
     from musigree.runtime.data_access_layer.role_entry import RoleEntry
-    from musigree.app.fastapi_app import templates
 
     network_js = "var dgNetwork = null;\n"
     """Initial JavaScript for the network graph, set to null."""
@@ -139,11 +145,11 @@ async def route__index(
 
 async def route__entity_type__entity_id(
     request: Request,
-    entity_type: Annotated[EntityType, Depends(get_entity_type)],
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[set[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_type: EntityTypeDep,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -167,9 +173,10 @@ async def route__entity_type__entity_id(
         BadRequestError: If the entity type or entity ID is invalid.
         UnprocessableError: If no network data is found for the given entity.
     """
+    # Imported lazily to avoid a circular import with fastapi_app.create_app.
+    from musigree.app.fastapi_app import templates
     from musigree.library.cache.role_cache import RoleCache
     from musigree.runtime.data_access_layer.role_entry import RoleEntry
-
     from musigree.runtime.runtime_database.runtime_entity_repository import (
         RuntimeEntityRepository,
     )
@@ -177,7 +184,6 @@ async def route__entity_type__entity_id(
         RuntimeRelationRepository,
     )
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
-    from musigree.app.fastapi_app import templates
 
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "runtime_database_helper must be initialized before calling initialize()"
@@ -271,13 +277,13 @@ async def route__entity_type__entity_id(
     return templates.TemplateResponse(request, name="index.html", context=context)
 
 
-@router.get("/artist/{entity_id}", response_class=HTMLResponse)
+@router.get("/artist/{entity_id}", response_class=HTMLResponse, summary="Artist network page")
 async def route__artist__entity_id(
     request: Request,
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[set[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -305,13 +311,13 @@ async def route__artist__entity_id(
     )
 
 
-@router.get("/label/{entity_id}", response_class=HTMLResponse)
+@router.get("/label/{entity_id}", response_class=HTMLResponse, summary="Label network page")
 async def route__label__entity_id(
     request: Request,
-    entity_id: Annotated[int, Depends(get_entity_id)],
-    roles: Annotated[set[str], Depends(get_roles)],
-    year: Annotated[tuple[int, int] | int | None, Depends(get_year)] = None,
-    on_mobile: Annotated[bool, Query()] = False,
+    entity_id: EntityIdDep,
+    roles: RolesDep,
+    year: YearDep = None,
+    on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
     Serves the entity-specific page.
@@ -347,4 +353,4 @@ def get_roles_with_defaults(roles: set[str], entity_type: EntityType) -> list[st
         elif entity_type == EntityType.LABEL:
             roles_result = set(UI_DEFAULT_LABEL_ROLES)
 
-    return list(sorted(roles_result))
+    return sorted(roles_result)

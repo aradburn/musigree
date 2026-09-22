@@ -3,8 +3,9 @@ Unit tests for musigree.app.fastapi_app module.
 """
 
 import logging
-from typing import Any, Union, Awaitable, Callable
-from unittest.mock import patch, AsyncMock, MagicMock, Mock
+from collections.abc import Awaitable, Callable
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
@@ -15,16 +16,14 @@ from Secweb.StrictTransportSecurity import HSTS
 from Secweb.XContentTypeOptions import XContentTypeOptions
 from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
 from Secweb.XFrameOptions import XFrame
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
-
 # noinspection PyPackageRequirements
 from starlette.middleware.cors import CORSMiddleware
-
 # noinspection PyPackageRequirements
 from starlette.requests import Request
-
 # noinspection PyPackageRequirements
 from starlette.responses import JSONResponse, Response
 
@@ -35,8 +34,13 @@ from musigree.app.fastapi_app import (
     templates,
 )
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.exceptions import BaseError
+
+
+def _stub_assets_router() -> tuple[APIRouter, MagicMock]:
+    """Return a real APIRouter; FastAPI 0.141 rejects MagicMock routers."""
+    return APIRouter(), MagicMock()
 
 
 def _middleware_entry(app: FastAPI, middleware_class: type[Any]) -> Any:
@@ -65,8 +69,7 @@ class TestCreateApp:
             patch("musigree.app.fastapi_app.setup_csp_middleware") as mock_setup_csp,
         ):
             # Arrange
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             # Act
@@ -77,6 +80,8 @@ class TestCreateApp:
             assert app.title == "Musigree"  # type: ignore
             assert app.description == "Musigree API for exploring music relationships"  # type: ignore
             assert app.version == "1.0.0"  # type: ignore
+            tag_names = [tag["name"] for tag in (app.openapi_tags or [])]
+            assert tag_names == ["api", "ui", "healthcheck", "assets"]
 
             # Verify CSP middleware was set up
             mock_setup_csp.assert_called_once_with(app, test_config)
@@ -93,8 +98,7 @@ class TestCreateApp:
         config = SqliteTestConfiguration()
         config.PRODUCTION = True
 
-        mock_assets_router = MagicMock()
-        mock_assets_templates = MagicMock()
+        mock_assets_router, mock_assets_templates = _stub_assets_router()
         mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
         # Act
@@ -117,8 +121,7 @@ class TestCreateApp:
             # Arrange
             test_config.PRODUCTION = False
 
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             # Act
@@ -138,8 +141,7 @@ class TestCreateApp:
             patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
             patch("musigree.app.fastapi_app.setup_csp_middleware"),
         ):
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             app = create_app(test_config)
@@ -170,7 +172,9 @@ class TestCreateApp:
             }
             assert _middleware_entry(app, XDNSPrefetchControl).kwargs["Option"] == "on"
             assert _middleware_entry(app, XFrame).kwargs["Option"] == "DENY"
-            assert _middleware_entry(app, CrossOriginEmbedderPolicy).kwargs["Option"] == "unsafe-none"
+            assert (
+                _middleware_entry(app, CrossOriginEmbedderPolicy).kwargs["Option"] == "unsafe-none"
+            )
             assert _middleware_entry(app, CrossOriginOpenerPolicy).kwargs["Option"] == "same-origin"
             assert _middleware_entry(app, CrossOriginResourcePolicy).kwargs["Option"] == "same-site"
             assert _middleware_entry(app, GZipMiddleware).kwargs["minimum_size"] == 1000
@@ -185,8 +189,7 @@ class TestCreateApp:
             patch("musigree.app.fastapi_app.setup_csp_middleware"),
         ):
             # Arrange
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             # Act
@@ -197,6 +200,13 @@ class TestCreateApp:
             # Check that routes exist (the routers have been included)
             # We should have routes from the included routers plus static files
             assert len(app.routes) > 0
+            route_paths = {
+                context.path
+                for context in iter_route_contexts(app.routes)
+                if context.path is not None
+            }
+            assert any(path.startswith("/api/") or path == "/api" for path in route_paths if path is not None)
+            assert "/health" in route_paths
 
 
 class TestExceptionHandlers:
@@ -217,8 +227,7 @@ class TestExceptionHandlers:
             patch("musigree.app.fastapi_assets.create_assets_router") as mock_create_assets_router,
             patch("musigree.app.fastapi_app.setup_csp_middleware"),
         ):
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             return create_app(test_config)
@@ -248,7 +257,7 @@ class TestExceptionHandlers:
         # Act
         if handler is not None:
             # noinspection PyCallingNonCallable
-            result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+            result: Response | Awaitable[Response] = handler(mock_request, error)
             if hasattr(result, "__await__"):
                 response: Response = await result  # type: ignore
             else:
@@ -278,7 +287,7 @@ class TestExceptionHandlers:
         # Act
         if handler is not None:
             # noinspection PyCallingNonCallable
-            result: Union[Response, Awaitable[Response]] = handler(mock_request, error)
+            result: Response | Awaitable[Response] = handler(mock_request, error)
             response: Response
             if hasattr(result, "__await__"):
                 response = await result  # type: ignore
@@ -303,7 +312,7 @@ class TestExceptionHandlers:
         assert handler is not None, "404 handler not found"
 
         # Act
-        result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        result: Response | Awaitable[Response] = handler(mock_request, exc)
         response: Response
         if hasattr(result, "__await__"):
             response = await result  # type: ignore
@@ -327,7 +336,7 @@ class TestExceptionHandlers:
         assert handler is not None, "500 handler not found"
 
         # Act
-        result: Union[Response, Awaitable[Response]] = handler(mock_request, exc)
+        result: Response | Awaitable[Response] = handler(mock_request, exc)
         response: Response
         if hasattr(result, "__await__"):
             response = await result  # type: ignore
@@ -501,8 +510,7 @@ class TestIntegrationScenarios:
             patch("musigree.app.fastapi_app.setup_csp_middleware"),
         ):
             # Arrange
-            mock_assets_router = MagicMock()
-            mock_assets_templates = MagicMock()
+            mock_assets_router, mock_assets_templates = _stub_assets_router()
             mock_create_assets_router.return_value = (mock_assets_router, mock_assets_templates)
 
             # Act
