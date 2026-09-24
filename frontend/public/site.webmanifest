@@ -3,8 +3,8 @@
   "short_name": "Musigree",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#fff",
-  "theme_color": "#fff",
+  "background_color": "#2F4F4F",
+  "theme_color": "#DFE3DE",
   "description": "A visualisation of the relationships between artists, bands and labels.",
   "icons": [
     {
