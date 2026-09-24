@@ -16,8 +16,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_artist_record_updated(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 20702
@@ -71,8 +71,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_artist_record_not_updated(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 2239
@@ -135,8 +135,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_artist_record_inserted(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 9999999
@@ -170,8 +170,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_artist_record_deleted(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 12589
@@ -193,8 +193,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_label_record_updated(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 1
@@ -233,8 +233,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_label_record_not_updated(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 264170
@@ -269,8 +269,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_label_record_inserted(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 99999999
@@ -302,8 +302,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_label_record_deleted(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_database_update: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 2529

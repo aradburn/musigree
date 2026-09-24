@@ -28,7 +28,7 @@ class TestRepositoryRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_relation(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         """Test creating a relation in the repository.

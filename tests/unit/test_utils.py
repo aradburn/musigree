@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import enum
 import logging
+import multiprocessing
 import threading
 import time
 from collections.abc import AsyncGenerator
@@ -1079,7 +1080,6 @@ async def test_queue_worker_functions_uses_thread_pool_by_default() -> None:
     with (
         patch("musigree.utils.ThreadPoolExecutor", return_value=mock_executor) as mock_thread_pool,
         patch("musigree.utils.ProcessPoolExecutor") as mock_process_pool,
-        patch("musigree.utils.asyncio.sleep", new=AsyncMock()),
     ):
         mock_executor.__enter__.return_value = mock_executor
         loop = asyncio.get_running_loop()
@@ -1101,6 +1101,7 @@ async def test_queue_worker_functions_uses_process_pool_when_requested() -> None
     """Test queue_worker_functions uses ProcessPoolExecutor for process model."""
     worker_partials = [partial(_test_worker_function, [1], 0, 1)]
     mock_executor = MagicMock()
+    mock_mp_context = MagicMock()
     loop = asyncio.get_running_loop()
 
     def immediate_run_in_executor(_executor: Any, func: Any, *args: Any) -> asyncio.Future[Any]:
@@ -1113,7 +1114,7 @@ async def test_queue_worker_functions_uses_process_pool_when_requested() -> None
             "musigree.utils.ProcessPoolExecutor", return_value=mock_executor
         ) as mock_process_pool,
         patch("musigree.utils.ThreadPoolExecutor") as mock_thread_pool,
-        patch("musigree.utils.asyncio.sleep", new=AsyncMock()),
+        patch("musigree.utils._process_pool_mp_context", return_value=mock_mp_context),
         patch.object(loop, "run_in_executor", side_effect=immediate_run_in_executor),
     ):
         mock_executor.__enter__.return_value = mock_executor
@@ -1121,8 +1122,62 @@ async def test_queue_worker_functions_uses_process_pool_when_requested() -> None
             2, worker_partials, threading_model=ThreadingModel.PROCESS
         )
 
-        mock_process_pool.assert_called_once_with(max_workers=2)
+        mock_process_pool.assert_called_once_with(max_workers=2, mp_context=mock_mp_context)
         mock_thread_pool.assert_not_called()
+
+
+def test_process_pool_mp_context_prefers_fork_when_available() -> None:
+    """Process workers need fork so parent OfflineDatabaseManager state is inherited."""
+    with patch(
+        "musigree.utils.multiprocessing.get_all_start_methods",
+        return_value=["forkserver", "fork", "spawn"],
+    ):
+        context = utils._process_pool_mp_context()
+    assert context.get_start_method() == "fork"
+
+
+def test_process_pool_mp_context_falls_back_when_fork_unavailable() -> None:
+    """On platforms without fork, use the platform default context."""
+    mock_context = MagicMock()
+    with (
+        patch("musigree.utils.multiprocessing.get_all_start_methods", return_value=["spawn"]),
+        patch(
+            "musigree.utils.multiprocessing.get_context", return_value=mock_context
+        ) as mock_get_context,
+    ):
+        context = utils._process_pool_mp_context()
+    mock_get_context.assert_called_once_with()
+    assert context is mock_context
+
+
+_PROCESS_POOL_INHERITANCE_MARKER: dict[str, str] = {"value": "unset"}
+
+
+def _process_pool_inheritance_worker(records: list[int], _processed: int, _total: int) -> None:
+    """Module-level worker used to verify fork inherits parent process state."""
+    if _PROCESS_POOL_INHERITANCE_MARKER["value"] != "parent-state":
+        raise AssertionError(
+            f"expected inherited parent-state, got {_PROCESS_POOL_INHERITANCE_MARKER['value']!r}"
+        )
+    _ = records
+
+
+@pytest.mark.asyncio
+async def test_queue_worker_functions_process_pool_inherits_parent_state() -> None:
+    """Process pool workers must see parent process state (fork semantics)."""
+    if "fork" not in multiprocessing.get_all_start_methods():
+        pytest.skip("fork start method not available on this platform")
+
+    _PROCESS_POOL_INHERITANCE_MARKER["value"] = "parent-state"
+    try:
+        worker_partials = [
+            partial(_process_pool_inheritance_worker, [i], i, 3) for i in range(3)
+        ]
+        await utils.queue_worker_functions(
+            2, worker_partials, threading_model=ThreadingModel.PROCESS
+        )
+    finally:
+        _PROCESS_POOL_INHERITANCE_MARKER["value"] = "unset"
 
 
 # Worker Generator Tests

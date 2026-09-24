@@ -17,7 +17,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_init_text_search_index(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         async with offline_transaction():
             entity_repository = EntityRepository()
@@ -29,7 +29,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_get_id_by_entity_type_and_entity_name_1(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "Joker, The (3)"
@@ -46,7 +46,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_get_id_by_entity_type_and_entity_name_2(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "fall"
@@ -63,7 +63,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_get_id_by_entity_type_and_entity_name_3(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "the Fall"
@@ -80,7 +80,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_find_entity_id_by_entity_type_and_entity_name_1(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "Joker, The (3)"
@@ -98,7 +98,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_find_entity_id_by_entity_type_and_entity_name_2(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "fall"
@@ -116,7 +116,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_find_entity_id_by_entity_type_and_entity_name_3(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         entity_type = EntityType.ARTIST
         entity_name = "the Fall"
@@ -134,7 +134,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_resolve_entity_references_1(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
@@ -162,7 +162,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_resolve_entity_references_2(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
@@ -192,7 +192,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_resolve_entity_references_3(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
         entity_id = 288
@@ -217,7 +217,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_resolve_entity_references_4(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         discogs_data_directory = TEST_DIR / "data" / DISCOGS_DATA
@@ -243,7 +243,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_resolve_release_references_1(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
@@ -267,7 +267,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_resolve_release_references_2(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
@@ -319,7 +319,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_resolve_release_references_3(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
@@ -340,7 +340,7 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_resolve_release_references_4(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration, is_load_offline_data_required: bool
     ) -> None:
         # GIVEN

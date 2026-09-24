@@ -22,8 +22,8 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
     async def test_text_search_lookup_1(
         self,
         runtime_config: Configuration,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         """Test text search functionality for 'Wax' query."""
@@ -66,8 +66,8 @@ class TestRuntimeEntitySearch(AbstractDatabaseTest):
     async def test_text_search_lookup_2(
         self,
         runtime_config: Configuration,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         """Test text search functionality for 'Joker' query."""

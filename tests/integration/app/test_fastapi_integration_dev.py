@@ -2,12 +2,12 @@
 Integration tests for the FastAPI application.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import AsyncClient
 
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import CacheType
 from musigree.logging_config import setup_logging
 
@@ -32,8 +32,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_app_basic_functionality(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -45,8 +45,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_security_headers_in_response(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -55,15 +55,15 @@ class TestFastAPIIntegration:
         response = await client.get("/docs")
 
         # Should have security headers even in development (but potentially different values)
-        assert "x-content-type-options" in response.headers.keys()
-        assert "x-frame-options" in response.headers.keys()
-        assert "content-security-policy" in response.headers.keys()
+        assert "x-content-type-options" in response.headers
+        assert "x-frame-options" in response.headers
+        assert "content-security-policy" in response.headers
 
     @pytest.mark.asyncio
     async def test_cors_configuration(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -85,8 +85,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_api_endpoints_basic_functionality(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -98,8 +98,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_rate_limiting_headers_present(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -117,8 +117,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_api_error_handling(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -144,8 +144,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_redis_resilience(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -160,8 +160,8 @@ class TestFastAPIIntegration:
     @pytest.mark.asyncio
     async def test_request_response_cycle(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,

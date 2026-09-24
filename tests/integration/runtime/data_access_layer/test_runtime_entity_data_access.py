@@ -19,8 +19,8 @@ class TestRuntimeEntityDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_get_id_by_entity_type_and_entity_name(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
     ) -> None:
         """Test getting entity ID by type and name."""

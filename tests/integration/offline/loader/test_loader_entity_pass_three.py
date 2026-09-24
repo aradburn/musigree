@@ -15,7 +15,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestLoaderEntityPassThree(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_entity_pass_three(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
 
@@ -29,7 +29,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_artist_record_20702(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 20702
@@ -81,7 +81,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_artist_record_2239(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 2239
@@ -142,7 +142,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_artist_9999999(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_artist_9999999(self, offline_database_setup: AsyncGenerator[None],
                                   is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_id = 9999999
@@ -163,7 +163,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_artist_record_12589(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 12589
@@ -239,7 +239,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_label_record_1(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_label_record_1(self, offline_database_setup: AsyncGenerator[None],
                                   is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_id = 1
@@ -277,7 +277,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_label_record_264170(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 264170
@@ -311,7 +311,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_label_record_99999999(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 99999999
@@ -332,7 +332,7 @@ class TestLoaderEntityPassThree(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_label_record_2529(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         entity_id = 2529

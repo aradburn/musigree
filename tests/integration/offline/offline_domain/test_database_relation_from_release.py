@@ -24,7 +24,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_relation_from_release_01(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration,
         is_load_offline_data_required: bool) -> None:
         # GIVEN
@@ -78,7 +78,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_relation_from_release_02(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         source = utils.normalize(
             """
@@ -221,7 +221,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_03(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_03(self, offline_database_setup: AsyncGenerator[None],
                       is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             """
@@ -441,7 +441,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_04(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_04(self, offline_database_setup: AsyncGenerator[None],
                       is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""
@@ -801,7 +801,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_05(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_05(self, offline_database_setup: AsyncGenerator[None],
                       is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""

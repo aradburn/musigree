@@ -21,7 +21,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_01(
         self,
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None],
         runtime_config: Configuration, is_load_runtime_data_required: bool
     ) -> None:
         """Test creating a runtime entity."""
@@ -52,7 +52,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_get_01(
         self,
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None],
         runtime_config: Configuration, is_load_runtime_data_required: bool,
     ) -> None:
         """Test retrieving a runtime entity by ID and type."""
@@ -89,7 +89,7 @@ class TestRuntimeRepositoryEntity(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_02(
         self,
-        runtime_database_setup: AsyncGenerator[None, None],
+        runtime_database_setup: AsyncGenerator[None],
         runtime_config: Configuration, is_load_runtime_data_required: bool,
     ) -> None:
         """Test creating a more complex runtime entity with members."""

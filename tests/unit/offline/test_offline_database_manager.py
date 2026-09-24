@@ -18,12 +18,14 @@ class TestOfflineDatabaseManager:
         """Reset class variables before each test."""
         OfflineDatabaseManager.offline_database_helper = None
         OfflineDatabaseManager.threading_model = None
+        OfflineDatabaseManager.offline_config = None
 
     @staticmethod
     def teardown_method() -> None:
         """Clean up after each test."""
         OfflineDatabaseManager.offline_database_helper = None
         OfflineDatabaseManager.threading_model = None
+        OfflineDatabaseManager.offline_config = None
 
     # Test get_concurrency_count method
     @patch("multiprocessing.cpu_count")

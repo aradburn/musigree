@@ -13,7 +13,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestLoaderReleasePassTwo(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_release_pass_two(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
 
@@ -26,7 +26,7 @@ class TestLoaderReleasePassTwo(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_release_157(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_release_157(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         release_id = 157
@@ -100,7 +100,7 @@ class TestLoaderReleasePassTwo(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_release_635(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_release_635(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         release_id = 635
@@ -192,7 +192,7 @@ class TestLoaderReleasePassTwo(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_release_99999999(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
         release_id = 99999999
@@ -209,7 +209,7 @@ class TestLoaderReleasePassTwo(AbstractDatabaseTest):
         assert release is None, f"Release with ID {release_id} should not exist."
 
     @pytest.mark.asyncio
-    async def test_release_61930(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_release_61930(self, offline_database_setup: AsyncGenerator[None],
                                  is_load_offline_data_required: bool) -> None:
         # GIVEN
         release_id = 61930

@@ -15,7 +15,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestLoaderRelationPassOne(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_relation_pass_one(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
 
@@ -29,7 +29,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_01(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_01(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 42
@@ -143,7 +143,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_02(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_02(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 49
@@ -187,7 +187,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_03(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_03(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 300407
@@ -300,7 +300,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_04(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_04(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         entity_one_id = 586589
@@ -350,7 +350,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_05(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_05(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         key = dict(
@@ -390,7 +390,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_06(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_06(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         key = dict(
@@ -428,7 +428,7 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_07(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_relation_07(self, offline_database_setup: AsyncGenerator[None],
                                is_load_offline_data_required: bool) -> None:
         # GIVEN
         key = dict(

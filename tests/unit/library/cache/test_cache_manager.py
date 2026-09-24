@@ -236,7 +236,7 @@ class TestCacheManager:
     """Test cases for the CacheManager class."""
 
     @pytest.fixture(autouse=True)
-    async def cleanup_cache(self) -> AsyncGenerator[None, None]:
+    async def cleanup_cache(self) -> AsyncGenerator[None]:
         """Clean up after each test."""
         yield
         # Reset the cache manager
@@ -738,7 +738,7 @@ class TestCacheManagerUncoveredMethods:
     """Test cases for CacheManager methods that need more coverage."""
 
     @pytest.fixture(autouse=True)
-    async def cleanup_cache(self) -> AsyncGenerator[None, None]:
+    async def cleanup_cache(self) -> AsyncGenerator[None]:
         """Clean up after each test."""
         yield
         # Reset the cache manager
