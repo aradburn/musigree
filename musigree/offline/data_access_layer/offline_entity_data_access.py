@@ -31,9 +31,9 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 
 from musigree.constants import BULK_REPORTING_SIZE, CACHE_ENTRY_IS_NULL
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
-from musigree.library.fields.entity_id import to_entity_label_internal_id, to_entity_internal_id
+from musigree.library.fields.entity_id import to_entity_internal_id, to_entity_label_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.library.full_text_search.text_search_utils import (
@@ -462,13 +462,10 @@ class OfflineEntityDataAccess:
         # master_id -> master_title OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
         # release_id -> release_title OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
 
-        if OfflineDatabaseManager.offline_config is None:
-            logging_required = True
-        else:
-            if OfflineDatabaseManager.offline_config.TESTING:
-                logging_required = False
-            else:
-                logging_required = True
+        config = OfflineDatabaseManager.offline_config
+        # Use identity check so a leftover Mock config (truthy TESTING attr) cannot
+        # accidentally suppress error logging in unit tests or other shared contexts.
+        logging_required = config is None or config.TESTING is not True
 
         # Map prefix to EntityType
         prefix_to_type = {

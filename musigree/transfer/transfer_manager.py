@@ -1,9 +1,8 @@
 import logging
-import multiprocessing
 from pathlib import Path
 
 from musigree import utils
-from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE
+from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE, ThreadingModel
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
@@ -65,7 +64,11 @@ class TransferManager:
         async def flush(chunk: list[Entity], processed: int) -> None:
             batch_relations = utils.batched(chunk, BULK_INSERT_BATCH_SIZE)
             worker_coroutines = utils.worker_generator(worker, batch_relations, total_count)
-            await utils.queue_worker_functions(multiprocessing.cpu_count(), worker_coroutines)
+            await utils.queue_worker_functions(
+                RuntimeDatabaseManager.get_concurrency_count(),
+                worker_coroutines,
+                RuntimeDatabaseManager.threading_model or ThreadingModel.THREAD,
+            )
             log.info(f"transferred {processed} of {total_count} entities")
 
         async with offline_transaction():
@@ -119,7 +122,11 @@ class TransferManager:
         async def flush(chunk: list[RelationDB], processed: int) -> None:
             batch_relations = utils.batched(chunk, BULK_INSERT_BATCH_SIZE)
             worker_coroutines = utils.worker_generator(worker, batch_relations, total_count)
-            await utils.queue_worker_functions(multiprocessing.cpu_count(), worker_coroutines)
+            await utils.queue_worker_functions(
+                RuntimeDatabaseManager.get_concurrency_count(),
+                worker_coroutines,
+                RuntimeDatabaseManager.threading_model or ThreadingModel.THREAD,
+            )
             log.info(f"transferred {processed} of {total_count} relations")
 
         async with offline_transaction():
@@ -303,7 +310,11 @@ class TransferManager:
         async def flush(chunk: list[RuntimeToken], processed: int) -> None:
             batch_tokens = utils.batched(chunk, BULK_INSERT_BATCH_SIZE)
             worker_coroutines = utils.worker_generator(worker, batch_tokens, total_count)
-            await utils.queue_worker_functions(multiprocessing.cpu_count(), worker_coroutines)
+            await utils.queue_worker_functions(
+                RuntimeDatabaseManager.get_concurrency_count(),
+                worker_coroutines,
+                RuntimeDatabaseManager.threading_model or ThreadingModel.THREAD,
+            )
             log.info(f"transferred {processed} of {total_count} tokens")
 
         tokens: list[RuntimeToken] = []
@@ -311,7 +322,7 @@ class TransferManager:
 
         total_count = 0
 
-        for _token, entity_ids in text_search_index.token_index.items():
+        for entity_ids in text_search_index.token_index.values():
             total_count += len(entity_ids)
         log.debug(f"transfering {total_count} tokens...")
 

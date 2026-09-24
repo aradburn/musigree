@@ -7,14 +7,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from musigree import utils
 from musigree.constants import (
-    ROOT_DIR,
     OFFLINE_DATABASE,
+    ROOT_DIR,
     RUNTIME_DATABASE,
     TEST_DIR,
+    AnalyticsType,
+    CacheType,
     DatabaseType,
     ThreadingModel,
-    CacheType,
-    AnalyticsType,
 )
 
 log = logging.getLogger(__name__)
@@ -26,6 +26,8 @@ class Configuration(BaseSettings):
     model_config = SettingsConfigDict(
         extra="ignore",
         strict=True,
+        # An empty env var (omitted Docker ARG) is unset, so field defaults apply.
+        env_ignore_empty=True,
         # frozen=True,
     )
 
@@ -104,7 +106,7 @@ class PostgresProductionConfiguration(Configuration):
         description="Redis password from environment variable",
     )
     REDIS_HOST: str | None = Field(default=None, description="Redis host from environment variable")
-    REDIS_PORT: int | None = Field(default=None, description="Redis port from environment variable")
+    REDIS_PORT: int | None = Field(default=6379, description="Redis port from environment variable")
 
 
 class PostgresDevelopmentConfiguration(Configuration):
@@ -190,7 +192,7 @@ class SqliteProductionConfiguration(Configuration):
         description="Redis password from environment variable",
     )
     REDIS_HOST: str | None = Field(default=None, description="Redis host from environment variable")
-    REDIS_PORT: int | None = Field(default=None, description="Redis port from environment variable")
+    REDIS_PORT: int | None = Field(default=6379, description="Redis port from environment variable")
 
 
 class SqliteDevelopmentConfiguration(Configuration):
