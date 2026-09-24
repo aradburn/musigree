@@ -142,8 +142,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cd ..
 
     # Update Dockerfile labels
-    sed -i "s/org.opencontainers.image.version=.*$/org.opencontainers.image.version=\"${new_version}\" \\\\/" Dockerfile
-    sed -i "s/org.opencontainers.image.created=.*$/org.opencontainers.image.created=\"${created_date}\" \\\\/" Dockerfile
+    sed -i "s/ARG IMAGE_VERSION.*$/ARG IMAGE_VERSION=\"${new_version}\"/" Dockerfile
+    sed -i "s/ARG IMAGE_CREATED.*$/ARG IMAGE_CREATED=\"${created_date}\"/" Dockerfile
 
     # commit changes
     git add Dockerfile pyproject.toml uv.lock frontend/package.json frontend/package-lock.json frontend/source/version.ts
