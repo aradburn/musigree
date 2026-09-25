@@ -184,7 +184,7 @@ class TestLoaderPassOneManager:
     """Test class for loader_pass_one_manager method."""
 
     @pytest.fixture(autouse=True)
-    def offline_config(self) -> Generator[Mock, None, None]:
+    def offline_config(self) -> Generator[Mock]:
         """Provide offline config required by queue_worker_functions."""
         mock_config = Mock()
         mock_config.THREADING_MODEL = ThreadingModel.THREAD
@@ -238,7 +238,7 @@ class TestLoaderPassOneManager:
             mock_batched.side_effect = lambda x, size: [list(x)]
             mock_worker_gen.return_value = []
 
-            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):
+            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):  # noqa: SIM117
                 with patch.object(
                     ConcreteLoaderBase, "get_insert_worker_function"
                 ) as mock_insert_worker:
@@ -305,7 +305,7 @@ class TestLoaderPassOneManager:
             mock_batched.side_effect = lambda x, size: [list(x)]
             mock_worker_gen.return_value = []
 
-            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):
+            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value=set()):  # noqa: SIM117
                 with patch.object(
                     ConcreteLoaderBase, "get_update_worker_function"
                 ) as mock_update_worker:
@@ -368,7 +368,7 @@ class TestLoaderPassOneManager:
 
             # Set up scenario where database has IDs {1, 2, 3} but XML only has {1}
             # So IDs {2, 3} should be deleted
-            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):
+            with patch.object(ConcreteLoaderBase, "get_set_of_ids", return_value={1, 2, 3}):  # noqa: SIM117
                 with patch.object(
                     ConcreteLoaderBase, "get_update_worker_function"
                 ) as mock_update_worker:

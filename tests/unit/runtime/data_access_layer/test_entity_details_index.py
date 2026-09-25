@@ -1,4 +1,4 @@
-from unittest.mock import patch, call, Mock
+from unittest.mock import Mock, call, patch
 
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 

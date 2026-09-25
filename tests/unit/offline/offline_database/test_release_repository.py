@@ -89,7 +89,7 @@ class TestReleaseRepository:
         mock_release: Release,
     ) -> None:
         """Test successful get_by_id execution."""
-        with patch.object(BaseRepository, "_get", AsyncMock(return_value=mock_release_table)):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=mock_release_table)):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_release):
                 result = await release_repository.get_by_id(200)
                 assert result == mock_release
@@ -97,7 +97,7 @@ class TestReleaseRepository:
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, release_repository: ReleaseRepository) -> None:
         """Test get_by_id when release is not found."""
-        with patch.object(BaseRepository, "_get", AsyncMock(return_value=None)):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=None)):  # noqa: SIM117
             with pytest.raises(NotFoundError):
                 await release_repository.get_by_id(999)
 
@@ -131,7 +131,7 @@ class TestReleaseRepository:
         mock_release_table: Mock,
     ) -> None:
         """Test successful create execution."""
-        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_release_table)):
+        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_release_table)):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_release):
                 result = await release_repository.create(mock_release)
                 assert result == mock_release

@@ -1,11 +1,13 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from tests.conftest import AbstractDatabaseTest
@@ -29,8 +31,9 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_01(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_01(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -40,11 +43,11 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -143,8 +146,9 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_02(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_02(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 49
         entity_one_type = EntityType.ARTIST
@@ -154,11 +158,11 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -187,8 +191,9 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_03(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_03(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 300407
         entity_one_type = EntityType.ARTIST
@@ -198,11 +203,11 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -300,8 +305,9 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_04(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_04(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 586589
         entity_one_type = EntityType.ARTIST
@@ -311,11 +317,11 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -350,14 +356,15 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_05(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_05(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
-        key = dict(
-            subject=661,
-            object=658,
-            role="Remix",
-        )
+        key = {
+            "subject": 661,
+            "object": 658,
+            "role": "Remix",
+        }
 
         # WHEN
         async with offline_transaction():
@@ -390,14 +397,15 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_06(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_06(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
-        key = dict(
-            subject=21209,
-            object=3771,
-            role="Compiled By",
-        )
+        key = {
+            "subject": 21209,
+            "object": 3771,
+            "role": "Compiled By",
+        }
 
         # WHEN
         async with offline_transaction():
@@ -428,14 +436,15 @@ class TestLoaderRelationPassOne(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_relation_07(self, offline_database_setup: AsyncGenerator[None],
-                               is_load_offline_data_required: bool) -> None:
+    async def test_relation_07(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
-        key = dict(
-            subject=335173,
-            object=41,
-            role="Mastered By",
-        )
+        key = {
+            "subject": 335173,
+            "object": 41,
+            "role": "Mastered By",
+        }
 
         # WHEN
         async with offline_transaction():

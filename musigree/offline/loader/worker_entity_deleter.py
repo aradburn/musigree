@@ -85,7 +85,7 @@ async def delete_entities_worker_async(
             """Iterate through the entity IDs to delete."""
             await delete_single_entity(entity_repository, relation_repository, entity_id)
             count += 1
-            if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
+            if count % BULK_REPORTING_SIZE == 0 and count != end_count:
                 log.debug(f"[{proc_name}] deleted {count}")
 
     log.info(f"[{proc_name}] processed {current_total} deleted {count} of {total_count}")

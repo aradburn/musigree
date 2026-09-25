@@ -61,8 +61,8 @@ from musigree.logging_config import LOGGING_TRACE
 from musigree.offline.offline_database.master_repository import MasterRepository
 from musigree.offline.offline_database.master_table import MasterTable
 from musigree.offline.offline_database.offline_transaction import offline_transaction
-from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.master import Master
 
 log = logging.getLogger(__name__)
 """
@@ -204,7 +204,7 @@ async def update_master_worker_async(
                 """If there's a runtime_database error."""
                 log.error(f"Database error: {e}")
                 """Log the runtime_database error."""
-                raise e
+                raise
 
     log.info(
         f"worker updated {updated_count} inserted {inserted_count} master total processed {processed_count}"

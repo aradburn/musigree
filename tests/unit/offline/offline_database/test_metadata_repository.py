@@ -37,7 +37,7 @@ class TestMetadataRepository:
             metadata_id=1,
             metadata_key="test_key",
             metadata_value="test_value",
-            metadata_timestamp=datetime(2023, 1, 1, 12, 0, 0),
+            metadata_timestamp=datetime(2023, 1, 1, 12, 0, 0),  # noqa: DTZ001
         )
 
     @pytest.fixture
@@ -46,7 +46,7 @@ class TestMetadataRepository:
         return MetadataUncommitted(
             metadata_key="new_key",
             metadata_value="new_value",
-            metadata_timestamp=datetime(2023, 1, 2, 12, 0, 0),
+            metadata_timestamp=datetime(2023, 1, 2, 12, 0, 0),  # noqa: DTZ001
         )
 
     @pytest.fixture
@@ -56,7 +56,7 @@ class TestMetadataRepository:
         table_mock.metadata_id = 1
         table_mock.metadata_key = "test_key"
         table_mock.metadata_value = "test_value"
-        table_mock.metadata_timestamp = datetime(2023, 1, 1, 12, 0, 0)
+        table_mock.metadata_timestamp = datetime(2023, 1, 1, 12, 0, 0)  # noqa: DTZ001
         return table_mock
 
     @pytest.fixture

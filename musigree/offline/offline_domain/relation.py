@@ -23,11 +23,11 @@ Key functionalities include:
 """
 
 __all__ = [
-    "RelationUncommitted",
-    "RelationDB",
     "Relation",
+    "RelationDB",
     "RelationInternal",
     "RelationResult",
+    "RelationUncommitted",
 ]
 
 import logging
@@ -46,8 +46,6 @@ log = logging.getLogger(__name__)
 
 class _RelationBase(InternalDomainObject):
     """Base class for relation entities."""
-
-    pass
 
 
 class RelationUncommitted(_RelationBase):
@@ -77,7 +75,7 @@ class RelationUncommitted(_RelationBase):
     """The release year, if available."""
 
     @staticmethod
-    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list["RelationUncommitted"]:
+    def from_dicts(relation_dicts: list[dict[str, Any]]) -> list[RelationUncommitted]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RelationUncommitted(
@@ -120,7 +118,7 @@ class RelationDB(_RelationBase):
     year: int | None = None
     """The release year, if available."""
 
-    def to_domain(self) -> "RelationInternal":
+    def to_domain(self) -> RelationInternal:
         """
         Converts the RelationDB instance to a RelationInternal instance.
 
@@ -244,7 +242,7 @@ class Relation(_RelationBase):
         return "-".join(str(_) for _ in pieces)
 
     @staticmethod
-    def from_relation_internals(relation_internals: list["RelationInternal"]) -> "Relation":
+    def from_relation_internals(relation_internals: list[RelationInternal]) -> Relation:
         releases: dict[str, int | None] = {}
         subjects: set[int] = set()
         roles: set[str] = set()

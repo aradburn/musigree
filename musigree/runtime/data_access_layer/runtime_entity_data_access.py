@@ -1,10 +1,10 @@
 import logging
-from typing import cast, Any
+from typing import Any, cast
 
 from sqlalchemy.exc import IntegrityError
 
 from musigree.constants import CACHE_ENTRY_IS_NULL
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType

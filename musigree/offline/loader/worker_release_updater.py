@@ -222,7 +222,7 @@ async def update_releases_worker_async(
                 """If there's a database error."""
                 log.error(f"Database error: {e}")
                 """Log the database error."""
-                raise e
+                raise
 
     log.info(
         f"worker updated {updated_count} inserted {inserted_count} releases total processed {processed_count}"

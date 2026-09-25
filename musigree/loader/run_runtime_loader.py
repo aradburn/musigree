@@ -28,15 +28,15 @@ import luigi
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
     PostgresReadOnlyDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
 )
 from musigree.constants import (
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging

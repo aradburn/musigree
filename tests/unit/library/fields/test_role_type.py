@@ -2,9 +2,11 @@
 Unit tests for musigree.library.fields.role_type module.
 """
 
-import pytest
-from enum import Enum
 import re
+from enum import Enum
+from types import MappingProxyType
+
+import pytest
 
 from musigree.library.fields.role_type import RoleType
 
@@ -30,14 +32,14 @@ class TestRoleType:
         """Test that RoleType has category_names mapping."""
         # Assert
         assert hasattr(RoleType, "category_names")
-        assert isinstance(RoleType.category_names, dict)
+        assert isinstance(RoleType.category_names, MappingProxyType)
         assert len(RoleType.category_names) > 0
 
     def test_role_type_has_subcategory_names(self) -> None:
         """Test that RoleType has subcategory_names mapping."""
         # Assert
         assert hasattr(RoleType, "subcategory_names")
-        assert isinstance(RoleType.subcategory_names, dict)
+        assert isinstance(RoleType.subcategory_names, MappingProxyType)
         assert len(RoleType.subcategory_names) > 0
 
     def test_role_type_has_aggregate_roles(self) -> None:

@@ -1,8 +1,8 @@
 import logging
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
     PostgresReadOnlyDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
 )
 from musigree.constants import TEXT_SEARCH_DATA, TEXT_SEARCH_FILENAME
 from musigree.loader.runtime_process_runner import run_runtime_loading_process

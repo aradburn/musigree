@@ -36,16 +36,16 @@ from typing import Any
 from starlette import status
 
 __all__ = (
-    "BaseError",
-    "BadRequestError",
-    "NotAcceptableError",
-    "NotFoundError",
-    "UnprocessableContentError",
     "AuthenticationError",
     "AuthorizationError",
+    "BadRequestError",
+    "BaseError",
     "DatabaseError",
+    "NotAcceptableError",
+    "NotFoundError",
     "ProcessError",
     "RateLimitError",
+    "UnprocessableContentError",
 )
 """
 List of all exceptions defined in the module.

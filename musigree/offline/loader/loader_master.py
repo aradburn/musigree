@@ -10,8 +10,9 @@ master data.
 """
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_base import LoaderBase

@@ -1,9 +1,9 @@
-from sqlalchemy import String, Enum, Integer
+from sqlalchemy import Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
-from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.library.fields.role_type import RoleType
+from musigree.offline.offline_database.base_table import OfflineBase
 
 
 class RoleTable(OfflineBase):

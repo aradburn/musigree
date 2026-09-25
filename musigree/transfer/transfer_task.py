@@ -34,8 +34,8 @@ interacts with `musigree.transfer` for the transfer logic.
 import asyncio
 import datetime
 import logging
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
@@ -160,7 +160,7 @@ class RuntimeLoaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
             ).total_seconds()
         )
         log.debug(f"RuntimeLoaderTaskForDate priority: {diff}")
@@ -180,7 +180,7 @@ class RuntimeLoaderTaskForDate(luigi.WrapperTask):
             Path(str(self.data_directory)),
             datetime.date.fromisoformat(str(self.dump_date)).strftime("%Y%m%d"),
         )
-        for stage in range(0, len(stages)):
+        for stage in range(len(stages)):
             yield RuntimeLoaderTaskForDateAndStage(
                 data_directory=self.data_directory,
                 dump_date=self.dump_date,
@@ -216,7 +216,7 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
         """
         diff = int(
             (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
             ).total_seconds()
         ) + (100 - int(str(self.stage)))
         log.debug(
@@ -311,5 +311,5 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
             task.add_done_callback(background_tasks.discard)
             loop.run_until_complete(task)
 
-        except RuntimeError as e:
-            log.exception(e, exc_info=True)
+        except RuntimeError:
+            log.exception("Runtime Eror")

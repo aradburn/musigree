@@ -127,16 +127,15 @@ class OfflineRelationDataAccess:
                 for role_str in company_role_strs_list:
                     role_name = OfflineRoleDataAccess.find_role(role_str)
                     """Find the normalized role name."""
-                    if role_name is not None:
-                        if "id" in company:
-                            triples.add((subject_id, role_name, company["id"]))
+                    if role_name is not None and "id" in company:
+                        triples.add((subject_id, role_name, company["id"]))
 
         all_track_artist_ids: set[int] = set()
         """Set to store all unique artist IDs from tracks."""
         for track in release.tracklist or []:
-            track_artist_ids: set[int] = set(
+            track_artist_ids: set[int] = {
                 artist["id"] for artist in track.get("artists", ()) if "id" in artist
-            )
+            }
             all_track_artist_ids.update(track_artist_ids)
             if not track.get("extra_artists"):
                 continue
@@ -150,10 +149,9 @@ class OfflineRelationDataAccess:
                     for role_str in track_role_strs_list:
                         role_name = OfflineRoleDataAccess.find_role(role_str)
                         """Find the normalized role name."""
-                        if role_name is not None:
-                            if "id" in credit:
-                                subject_id = credit["id"]
-                                triples.add((subject_id, role_name, object_id))
+                        if role_name is not None and "id" in credit:
+                            subject_id = credit["id"]
+                            triples.add((subject_id, role_name, object_id))
 
         for role_name, aggregate_artists in aggregate_roles.items():
             iterator = itertools.product(all_track_artist_ids, aggregate_artists)
@@ -225,12 +223,12 @@ class OfflineRelationDataAccess:
         is_compilation = False
         """Boolean to indicate if a release is a compilation."""
         # log.debug(f"get_release_setup release: {release}")
-        artist_ids: set[int] = set(
+        artist_ids: set[int] = {
             artist["id"] for artist in (release.artists or []) if "id" in artist
-        )
+        }
         """Set to store unique artist IDs."""
         # log.debug(f"get_release_setup artists: {artist_ids}")
-        label_ids: set[int] = set(label["id"] for label in (release.labels or []) if "id" in label)
+        label_ids: set[int] = {label["id"] for label in (release.labels or []) if "id" in label}
         """Set to store unique label IDs."""
         # log.debug(f"get_release_setup labels: {label_ids}")
 
@@ -267,14 +265,14 @@ class OfflineRelationDataAccess:
             list[dict[str, Any]]: A list of relation dictionaries.
         """
         triples_set = set(triples)
-        sorted_triples = sorted(list(triples_set))
+        sorted_triples = sorted(triples_set)
         relations = []
         for subject_id, role, object_id in sorted_triples:
-            relation: dict[str, Any] = dict(
-                subject=subject_id,
-                role=role,
-                object=object_id,
-            )
+            relation: dict[str, Any] = {
+                "subject": subject_id,
+                "role": role,
+                "object": object_id,
+            }
             if release is not None:
                 relation["release_id"] = release.release_id
                 if release.release_date is not None:

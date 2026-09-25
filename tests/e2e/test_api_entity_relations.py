@@ -4,10 +4,13 @@ import pytest
 from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import (
-    APIHelper,
     TEST_ARTIST_ID,
     TEST_ENTITY_TYPE_ARTIST,
-    TEST_INVALID_ENTITY_ID, TEST_INVALID_ENTITY_TYPE, TEST_NOT_FOUND_ENTITY_ID, TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_ID,
+    TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_TYPE,
+    TEST_NOT_FOUND_ENTITY_ID,
+    APIHelper,
 )
 
 
@@ -45,7 +48,7 @@ class TestAPIEntityRelations:
     ) -> None:
         """Test getting relations for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_relations(
+        response, _json_data = await api_helper.get_entity_relations(
             TEST_ENTITY_TYPE_ARTIST, TEST_NOT_FOUND_ENTITY_ID
         )
         assert response.status == 404
@@ -60,7 +63,7 @@ class TestAPIEntityRelations:
     ) -> None:
         """Test getting relations for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_relations(
+        response, _json_data = await api_helper.get_entity_relations(
             TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID
         )
         assert response.status == 400
@@ -75,7 +78,7 @@ class TestAPIEntityRelations:
     ) -> None:
         """Test getting relations for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_relations(
+        response, _json_data = await api_helper.get_entity_relations(
             TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID_STR
         )
         assert response.status == 400
@@ -90,5 +93,7 @@ class TestAPIEntityRelations:
     ) -> None:
         """Test getting relations with an invalid entity type."""
         api_helper = APIHelper(page, base_url)
-        response, _ = await api_helper.get_entity_relations(TEST_INVALID_ENTITY_TYPE, TEST_ARTIST_ID)
+        response, _ = await api_helper.get_entity_relations(
+            TEST_INVALID_ENTITY_TYPE, TEST_ARTIST_ID
+        )
         assert response.status == 400  # FastAPI validation error

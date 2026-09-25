@@ -1,14 +1,14 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import Result, select
 
 from musigree.exceptions import NotFoundError
-from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
+from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository["RuntimeGenreTable"]):
     schema_class = mapped_entity(RuntimeGenreTable)
     """The SQLAlchemy table class for runtime genres."""
 
-    async def all(self) -> AsyncGenerator[RuntimeGenre, None]:
+    async def all(self) -> AsyncGenerator[RuntimeGenre]:
         """
         Retrieves all genres from the runtime runtime_database.
 

@@ -8,6 +8,10 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from fastapi import APIRouter, FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.routing import iter_route_contexts
+from fastapi.testclient import TestClient
 from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
 from Secweb.CrossOriginOpenerPolicy import CrossOriginOpenerPolicy
 from Secweb.CrossOriginResourcePolicy import CrossOriginResourcePolicy
@@ -16,15 +20,8 @@ from Secweb.StrictTransportSecurity import HSTS
 from Secweb.XContentTypeOptions import XContentTypeOptions
 from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
 from Secweb.XFrameOptions import XFrame
-from fastapi import APIRouter, FastAPI
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.routing import iter_route_contexts
-from fastapi.testclient import TestClient
-# noinspection PyPackageRequirements
 from starlette.middleware.cors import CORSMiddleware
-# noinspection PyPackageRequirements
 from starlette.requests import Request
-# noinspection PyPackageRequirements
 from starlette.responses import JSONResponse, Response
 
 from musigree.app.fastapi_app import (
@@ -205,7 +202,11 @@ class TestCreateApp:
                 for context in iter_route_contexts(app.routes)
                 if context.path is not None
             }
-            assert any(path.startswith("/api/") or path == "/api" for path in route_paths if path is not None)
+            assert any(
+                path.startswith("/api/") or path == "/api"
+                for path in route_paths
+                if path is not None
+            )
             assert "/health" in route_paths
 
 

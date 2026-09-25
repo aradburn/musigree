@@ -1,7 +1,7 @@
 """Tests for MetadataRepository with async/await and pytest fixtures."""
 
 import datetime
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -24,7 +24,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
         metadata = MetadataUncommitted(
             metadata_key="key1",
             metadata_value="value1",
@@ -62,7 +62,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
         metadata = MetadataUncommitted(
             metadata_key="key2",
             metadata_value="value2",

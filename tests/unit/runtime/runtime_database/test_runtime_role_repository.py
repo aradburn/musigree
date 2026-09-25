@@ -267,7 +267,7 @@ class TestRuntimeRoleRepository:
                 self.data = [(mock_result1,), (mock_result2,)]
                 self.index = 0
 
-            def __aiter__(self) -> "MockStreamResult":
+            def __aiter__(self) -> MockStreamResult:
                 return self
 
             async def __anext__(self) -> tuple[Mock]:

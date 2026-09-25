@@ -23,11 +23,11 @@ Key functionalities include:
 """
 
 __all__ = [
-    "RuntimeRelationUncommitted",
-    "RuntimeRelationDB",
     "RuntimeRelation",
+    "RuntimeRelationDB",
     "RuntimeRelationInternal",
     "RuntimeRelationResult",
+    "RuntimeRelationUncommitted",
     "to_runtime_relation_db_dict",
 ]
 
@@ -50,8 +50,6 @@ class _RuntimeRelationBase(InternalDomainObject):
     """
     Base class for runtime relation entities.
     """
-
-    pass
 
 
 class RuntimeRelationUncommitted(_RuntimeRelationBase):
@@ -83,7 +81,7 @@ class RuntimeRelationUncommitted(_RuntimeRelationBase):
     @staticmethod
     def from_dicts(
         relation_dicts: list[dict[str, Any]],
-    ) -> list["RuntimeRelationUncommitted"]:
+    ) -> list[RuntimeRelationUncommitted]:
         relation_uncommitteds = []
         for relation_dict in relation_dicts:
             relation_uncommitted = RuntimeRelationUncommitted(
@@ -126,7 +124,7 @@ class RuntimeRelationDB(_RuntimeRelationBase):
     year: int | None = None
     """The release year, if available."""
 
-    def to_domain(self) -> "RuntimeRelationInternal":
+    def to_domain(self) -> RuntimeRelationInternal:
         """
         Converts the RuntimeRelationDB instance to a RuntimeRelationInternal instance.
 
@@ -254,7 +252,7 @@ class RuntimeRelation(_RuntimeRelationBase):
         ]
         return "-".join(str(_) for _ in pieces)
 
-    def to_db(self) -> "RuntimeRelationDB":
+    def to_db(self) -> RuntimeRelationDB:
         """
         Converts the runtime relation to its runtime_database representation.
 
@@ -270,8 +268,8 @@ class RuntimeRelation(_RuntimeRelationBase):
 
     @staticmethod
     def from_relation_internals(
-        relation_internals: list["RuntimeRelationInternal"],
-    ) -> "RuntimeRelation":
+        relation_internals: list[RuntimeRelationInternal],
+    ) -> RuntimeRelation:
         releases: dict[str, int | None] = {}
         subjects: set[int] = set()
         roles: set[str] = set()

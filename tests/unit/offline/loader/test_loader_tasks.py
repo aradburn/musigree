@@ -88,7 +88,7 @@ class TestLoaderSetupTask:
         )
 
         mock_target = MagicMock()
-        with patch.object(task, "output", return_value=mock_target):
+        with patch.object(task, "output", return_value=mock_target):  # noqa: SIM117
             with patch("logging.getLogger") as mock_get_logger:
                 mock_luigi_logger = MagicMock()
                 mock_interface_logger = MagicMock()
@@ -436,7 +436,7 @@ class TestLoaderTaskForDateAndStage:
             stage=0,
         )
 
-        with patch.object(task, "output", return_value=mock_output):
+        with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117
             with patch("asyncio.get_running_loop", side_effect=RuntimeError):
                 with patch(
                     "musigree.loader.run_offline_loader.get_load_offline_table_stages",
@@ -461,7 +461,7 @@ class TestLoaderTaskForDateAndStage:
             stage=5,
         )
 
-        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_new_loop:
                 with patch("asyncio.set_event_loop"):
                     mock_loop = MagicMock()
@@ -491,7 +491,7 @@ class TestLoaderTaskForDateAndStage:
             stage=0,
         )
 
-        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_new_loop:
                 with patch("asyncio.set_event_loop"):
                     mock_loop = MagicMock()
@@ -607,7 +607,7 @@ class TestDiscogsDownloaderTask:
         )
         mock_output.temporary_path.return_value.__exit__ = MagicMock(return_value=None)
 
-        with patch.object(task, "output", return_value=mock_output):
+        with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117
             with patch.object(builtins, "open", MagicMock()) as mock_open:
                 mock_file = MagicMock()
                 mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)

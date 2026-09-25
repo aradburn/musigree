@@ -3,11 +3,11 @@ Unit tests for musigree.loader.run_runtime_loader module.
 """
 
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import (
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
@@ -15,8 +15,8 @@ from musigree.constants import (
     TEXT_SEARCH_FILENAME,
 )
 from musigree.loader.run_runtime_loader import (
-    load_runtime_table_stage,
     get_load_runtime_table_stages,
+    load_runtime_table_stage,
     load_runtime_tables,
     runtime_loader_main,
 )
@@ -509,7 +509,7 @@ class TestRuntimeLoaderEdgeCases:
 
         _configure_runtime_db_helper(mock_db_manager)
 
-        with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:
+        with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:  # noqa: SIM117
             with patch(
                 "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess"
             ) as mock_runtime_role_data_access:

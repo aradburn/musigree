@@ -10,17 +10,17 @@ import fakeredis.aioredis
 from redis import asyncio as aioredis
 
 from musigree.config import Configuration
-from musigree.constants import CacheType, CACHE_KEY_SEPARATOR
+from musigree.constants import CACHE_KEY_SEPARATOR, CacheType
 
 log = logging.getLogger(__name__)
 
 __all__ = [
-    "CacheManager",
     "BaseCache",
-    "SimpleCache",
-    "RedisCache",
-    "FakeRedisCache",
+    "CacheManager",
     "CacheType",
+    "FakeRedisCache",
+    "RedisCache",
+    "SimpleCache",
 ]
 
 
@@ -155,7 +155,7 @@ class RedisCache(BaseCache):
             # get/set/etc. compatible with existing callers.
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             log.warning(f"Failed to connect to Redis server: {e}")
 
     def _get_redis_client(self) -> aioredis.Redis:
@@ -230,7 +230,7 @@ class RedisCache(BaseCache):
 
         # Type guard: ensure we have a dict (not an Awaitable)
         # Since this is a synchronous method, hgetall should return a dict
-        if not (isinstance(raw_value, bytes) or isinstance(raw_value, str)):
+        if not (isinstance(raw_value, (bytes, str))):
             return None
 
         json_value = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else str(raw_value)
@@ -256,28 +256,31 @@ class RedisCache(BaseCache):
         """Clear all cache entries."""
         redis_client = self._get_redis_client()
 
+        # noinspection broad-exception
         try:
             # Simply flush the entire database
             # This is the most reliable approach across different Redis client implementations
             await redis_client.flushdb()
-        except Exception as e:
-            log.exception(f"Error clearing Redis cache: {e}")
+        except Exception:
+            log.exception("Error clearing Redis cache")
 
     async def close(self) -> None:
         """Flush and close the Redis client connection pool."""
         redis_client = self._get_redis_client()
 
+        # noinspection broad-exception
         try:
             # Flush before closing so shutdown leaves no residual keys
             await redis_client.flushdb()
-        except Exception as e:
-            log.exception(f"Error clearing Redis cache: {e}")
+        except Exception:
+            log.exception("Error clearing Redis cache")
 
+        # noinspection broad-exception
         try:
             # redis-py 8 async clients release pooled connections via aclose()
             await redis_client.aclose()
-        except Exception as e:
-            log.exception(f"Error closing Redis client: {e}")
+        except Exception:
+            log.exception("Error closing Redis client")
         finally:
             self._client = None
 
@@ -361,7 +364,7 @@ class CacheManager:
                             log.info("Cannot ping Fake Redis cache")
                     else:
                         log.info("Cannot connect to Fake Redis cache")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
                 log.info("Fallback to memory cache")

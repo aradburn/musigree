@@ -14,8 +14,8 @@ Key functionalities include:
 """
 
 __all__ = [
-    "Instrument",
     "HornbostelSachs",
+    "Instrument",
 ]
 
 import logging

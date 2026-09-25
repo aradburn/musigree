@@ -47,4 +47,4 @@ class TestAPIRoles:
         roles = json_data["roles"]
         # Each role should be a string or have a specific structure
         for role in roles:
-            assert isinstance(role, str) or isinstance(role, dict)
+            assert isinstance(role, (str, dict))

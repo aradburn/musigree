@@ -6,8 +6,8 @@ import asyncio_atexit  # type: ignore[import-untyped]
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
-    PostgresReadOnlyDevelopmentConfiguration,
     Configuration,
+    PostgresReadOnlyDevelopmentConfiguration,
 )
 from musigree.constants import (
     TEXT_SEARCH_DATA,

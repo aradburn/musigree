@@ -7,7 +7,8 @@ It tests role loading, tree building, and cache management functionality.
 """
 
 import logging
-from typing import AsyncGenerator, Any
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from musigree.library.fields.role_type import RoleType
@@ -308,7 +309,7 @@ class TestLoadAllRolesIntoCache:
         # Setup
         test_role = self.create_test_runtime_role()
 
-        async def async_role_iterator() -> AsyncGenerator[RuntimeRole, None]:
+        async def async_role_iterator() -> AsyncGenerator[RuntimeRole]:
             for role in [test_role]:
                 yield role
 
@@ -356,7 +357,7 @@ class TestLoadAllRolesIntoCache:
         """Test load_all_roles_into_cache with empty database."""
 
         # Setup
-        async def async_empty_iterator() -> AsyncGenerator[RuntimeRole, None]:
+        async def async_empty_iterator() -> AsyncGenerator[RuntimeRole]:
             for role in []:  # type: ignore
                 yield role
 
@@ -409,7 +410,7 @@ class TestLoadAllRolesIntoCache:
         # Setup
         test_role = self.create_test_runtime_role()
 
-        async def async_role_iterator() -> AsyncGenerator[RuntimeRole, None]:
+        async def async_role_iterator() -> AsyncGenerator[RuntimeRole]:
             for role in [test_role]:
                 yield role
 
@@ -450,7 +451,7 @@ class TestLoadAllRolesIntoCache:
             role_id=2, role_name="Guitar", role_category=RoleType.Category.VOCAL
         )
 
-        async def async_roles_iterator() -> AsyncGenerator[RuntimeRole, None]:
+        async def async_roles_iterator() -> AsyncGenerator[RuntimeRole]:
             for role in [role1, role2]:
                 yield role
 
@@ -496,7 +497,7 @@ class TestLoadAllRolesIntoCache:
         """Test load_all_roles_into_cache clears existing cache data."""
 
         # Setup
-        async def async_empty_iterator() -> AsyncGenerator[RuntimeRole, None]:
+        async def async_empty_iterator() -> AsyncGenerator[RuntimeRole]:
             for role in []:  # type: ignore
                 yield role
 

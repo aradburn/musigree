@@ -5,7 +5,6 @@ This module contains comprehensive unit tests for the offline session management
 including session creation, context variable management, and the OfflineSession class.
 """
 
-# noinspection PyPackageRequirements
 from contextvars import ContextVar
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -16,9 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.offline_database.offline_session import (
-    get_offline_session,
-    OfflineSession,
     CTX_OFFLINE_SESSION,
+    OfflineSession,
+    get_offline_session,
 )
 
 

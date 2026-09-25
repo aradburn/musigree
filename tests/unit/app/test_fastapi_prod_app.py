@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from fastapi import FastAPI
 
-from musigree.app.fastapi_prod_app import create_production_app, app
+from musigree.app.fastapi_prod_app import app, create_production_app
 from musigree.config import SqliteReadOnlyProductionConfiguration
 
 

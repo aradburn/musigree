@@ -1,5 +1,5 @@
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Callable, Awaitable, List
 
 from fastapi import Request
 
@@ -7,7 +7,7 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # noinspection PyPackageRequirements
-from starlette.responses import Response, PlainTextResponse
+from starlette.responses import PlainTextResponse, Response
 
 # noinspection PyPackageRequirements
 from starlette.types import ASGIApp
@@ -17,9 +17,9 @@ class CustomCORSPreflightMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        allow_origins: List[str] | None = None,
-        allow_methods: List[str] | None = None,
-        allow_headers: List[str] | None = None,
+        allow_origins: list[str] | None = None,
+        allow_methods: list[str] | None = None,
+        allow_headers: list[str] | None = None,
         allow_credentials: bool = True,
         max_age: int = 600,
     ):
@@ -75,7 +75,7 @@ class PreflightLoggerMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         if request.method == "OPTIONS":
-            print(f"[PREFLIGHT] {datetime.now().isoformat()} - {request.method} {request.url.path}")
+            print(f"[PREFLIGHT] {datetime.now().isoformat()} - {request.method} {request.url.path}")  # noqa: DTZ005
             print(f"  Origin: {request.headers.get('origin')}")
             print(f"  Requested Method: {request.headers.get('access-control-request-method')}")
             print(f"  Requested Headers: {request.headers.get('access-control-request-headers')}")

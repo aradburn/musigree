@@ -1,18 +1,19 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree import utils
-from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.release_repository import ReleaseRepository
 from tests.conftest import AbstractDatabaseTest
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None],
-                              is_load_offline_data_required: bool) -> None:
+    async def test_from_db_01(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         release_id = 157
         async with offline_transaction():
             release_repository = ReleaseRepository()
@@ -81,8 +82,9 @@ class TestDatabaseRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None],
-                              is_load_offline_data_required: bool) -> None:
+    async def test_from_db_02(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         release_id = 635
         async with offline_transaction():
             release_repository = ReleaseRepository()

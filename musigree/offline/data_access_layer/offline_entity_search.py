@@ -41,10 +41,10 @@ class OfflineEntitySearch:
         for document in sorted_documents:
             entity_id, entity_type = to_entity_external_id(document[0])
             json_entity_key = Entity.to_json_entity_key(entity_id, entity_type)
-            datum = dict(
-                key=json_entity_key,
-                name=document[1],
-            )
+            datum = {
+                "key": json_entity_key,
+                "name": document[1],
+            }
             data.append(datum)
             # log.debug(f"    {datum}")
         result_data = {"results": tuple(data)}
@@ -55,7 +55,7 @@ class OfflineEntitySearch:
         search_string: str,
         documents: list[tuple[int, str]],
     ) -> list[tuple[int, str]]:
-        scored_documents: list[tuple[float, tuple[int, str]]] = list()
+        scored_documents: list[tuple[float, tuple[int, str]]] = []
         for document in documents:
             candidate_id = document[0]
             candidate_name = document[1]

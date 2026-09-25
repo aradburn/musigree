@@ -556,7 +556,7 @@ def test_strip_trailing_newline() -> None:
 
 def test_get_discogs_url() -> None:
     """Test get_discogs_url generates correct URL format."""
-    input_date = datetime.datetime(2023, 8, 1)
+    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
     result = utils.get_discogs_url(input_date, "xyz")
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_xyz.xml.gz"
     assert result == expected
@@ -564,7 +564,7 @@ def test_get_discogs_url() -> None:
 
 def test_get_discogs_artists_url() -> None:
     """Test get_discogs_url with artists type constant."""
-    input_date = datetime.datetime(2023, 8, 1)
+    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
     result = utils.get_discogs_url(input_date, DISCOGS_ARTISTS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_artists.xml.gz"
     assert result == expected
@@ -572,7 +572,7 @@ def test_get_discogs_artists_url() -> None:
 
 def test_get_discogs_releases_url() -> None:
     """Test get_discogs_url with releases type constant."""
-    input_date = datetime.datetime(2023, 8, 1)
+    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
     result = utils.get_discogs_url(input_date, DISCOGS_RELEASES_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_releases.xml.gz"
     assert result == expected
@@ -580,7 +580,7 @@ def test_get_discogs_releases_url() -> None:
 
 def test_get_discogs_labels_url() -> None:
     """Test get_discogs_url with labels type constant."""
-    input_date = datetime.datetime(2023, 8, 1)
+    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
     result = utils.get_discogs_url(input_date, DISCOGS_LABELS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_labels.xml.gz"
     assert result == expected
@@ -588,7 +588,7 @@ def test_get_discogs_labels_url() -> None:
 
 def test_get_discogs_masters_url() -> None:
     """Test get_discogs_url with masters type constant."""
-    input_date = datetime.datetime(2023, 8, 1)
+    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
     result = utils.get_discogs_url(input_date, DISCOGS_MASTERS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_masters.xml.gz"
     assert result == expected
@@ -596,8 +596,8 @@ def test_get_discogs_masters_url() -> None:
 
 def test_get_discogs_dump_dates() -> None:
     """Test get_discogs_dump_dates returns correct monthly date sequence."""
-    start_date = datetime.datetime(2023, 8, 1)
-    end_date = datetime.datetime(2024, 6, 13)
+    start_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    end_date = datetime.datetime(2024, 6, 13)  # noqa: DTZ001
     result = utils.get_discogs_dump_dates(start_date, end_date)
     expected = [
         datetime.date(2023, 8, 1),
@@ -1170,9 +1170,7 @@ async def test_queue_worker_functions_process_pool_inherits_parent_state() -> No
 
     _PROCESS_POOL_INHERITANCE_MARKER["value"] = "parent-state"
     try:
-        worker_partials = [
-            partial(_process_pool_inheritance_worker, [i], i, 3) for i in range(3)
-        ]
+        worker_partials = [partial(_process_pool_inheritance_worker, [i], i, 3) for i in range(3)]
         await utils.queue_worker_functions(
             2, worker_partials, threading_model=ThreadingModel.PROCESS
         )
@@ -2210,7 +2208,7 @@ class TestNormalizeDict:
 
     def test_normalize_dict_with_datetime(self) -> None:
         """Test normalize_dict with datetime object."""
-        test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 45)
+        test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 45)  # noqa: DTZ001
         data = {"datetime_field": test_datetime}
 
         result = normalize_dict(data)

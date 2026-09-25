@@ -41,8 +41,9 @@ Examples:
         pass
 """
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any
 from unittest.mock import Mock, patch
 
 
@@ -116,7 +117,7 @@ class SessionMockHelper:
         execute_return_value: Any | None = None,
         flush_return_value: Any | None = None,
         **session_kwargs: Any,
-    ) -> Generator[Mock, Any, None]:
+    ) -> Generator[Mock, Any]:
         """
         Context manager for mocking CTX_RUNTIME_SESSION.
 
@@ -149,7 +150,7 @@ class SessionMockHelper:
         execute_return_value: Any | None = None,
         flush_return_value: Any | None = None,
         **session_kwargs: Any,
-    ) -> Generator[Mock, Any, None]:
+    ) -> Generator[Mock, Any]:
         """
         Context manager for mocking CTX_RUNTIME_SESSION in a specific module.
 
@@ -185,7 +186,7 @@ class SessionMockHelper:
         execute_return_value: Any | None = None,
         flush_return_value: Any | None = None,
         **session_kwargs: Any,
-    ) -> Generator[Mock, Any, None]:
+    ) -> Generator[Mock, Any]:
         """
         Context manager for mocking both CTX_RUNTIME_SESSION and RoleCache.
 
@@ -200,7 +201,7 @@ class SessionMockHelper:
                 # Test code that uses both session and role cache
                 pass
         """
-        with SessionMockHelper.mock_runtime_session(
+        with SessionMockHelper.mock_runtime_session(  # noqa: SIM117
             execute_return_value=execute_return_value,
             flush_return_value=flush_return_value,
             **session_kwargs,
@@ -250,7 +251,7 @@ class RoleCacheMockHelper:
 
     @staticmethod
     @contextmanager
-    def mock_role_cache(role_mappings: dict[str, int]) -> Generator[Mock, Any, None]:
+    def mock_role_cache(role_mappings: dict[str, int]) -> Generator[Mock, Any]:
         """
         Context manager for mocking RoleCache with specified role mappings.
 
@@ -279,7 +280,7 @@ class RoleCacheMockHelper:
     @contextmanager
     def mock_role_cache_in_module(
         module_path: str, role_mappings: dict[str, int]
-    ) -> Generator[Mock, Any, None]:
+    ) -> Generator[Mock, Any]:
         """
         Context manager for mocking RoleCache in a specific module.
 
@@ -312,7 +313,7 @@ class RoleCacheMockHelper:
     @contextmanager
     def mock_role_cache_multiple_modules(
         module_paths: list[str], role_mappings: dict[str, int]
-    ) -> Generator[list[Mock], Any, None]:
+    ) -> Generator[list[Mock], Any]:
         """
         Context manager for mocking RoleCache in multiple modules simultaneously.
 
@@ -404,7 +405,7 @@ class RoleCacheMockHelper:
     @contextmanager
     def mock_role_cache_with_categories(
         role_mappings: dict[str, int], role_categories: dict[int, Any]
-    ) -> Generator[Mock, Any, None]:
+    ) -> Generator[Mock, Any]:
         """
         Context manager for mocking RoleCache with role mappings and categories.
 

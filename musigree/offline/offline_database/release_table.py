@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import String, Integer, Date, JSON
+from sqlalchemy import JSON, Date, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils

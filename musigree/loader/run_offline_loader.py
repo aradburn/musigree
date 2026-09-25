@@ -32,14 +32,14 @@ from musigree.config import (
     PostgresDevelopmentConfiguration,
 )
 from musigree.constants import (
-    DISCOGS_DATA,
-    ROLES_DATA,
-    INSTRUMENTS_DATA,
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     ALL_OFFLINE_DATABASE_TABLE_NAMES,
+    DISCOGS_DATA,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
+    INSTRUMENTS_DATA,
+    ROLES_DATA,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
@@ -47,7 +47,7 @@ from musigree.offline.data_access_layer.offline_role_data_access import OfflineR
 from musigree.offline.loader.loader_master import LoaderMaster
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
-from musigree.offline.offline_database import ReleaseTable, EntityTable, RelationTable
+from musigree.offline.offline_database import EntityTable, RelationTable, ReleaseTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
 
@@ -311,7 +311,7 @@ def offline_loader_main() -> None:
             runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
             # Get the current date
-            now_date = datetime.datetime.now()
+            now_date = datetime.datetime.now()  # noqa: DTZ005
 
             # Run the loader process between these dates
             start_date = datetime.date(2026, 3, 1)

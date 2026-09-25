@@ -1,7 +1,7 @@
 from typing import Any
 
-from sqlalchemy import String, Enum
-from sqlalchemy.orm import Mapped, mapped_column, class_mapper
+from sqlalchemy import Enum, String
+from sqlalchemy.orm import Mapped, class_mapper, mapped_column
 
 from musigree import utils
 from musigree.library.fields.role_type import RoleType
@@ -80,7 +80,7 @@ class RuntimeRoleTable(RuntimeBase):
             entries (dict): Keyword arguments corresponding to the table's
                 columns and their values.
         """
-        column_names = set([column.name for column in class_mapper(RuntimeRoleTable).columns])
+        column_names = {column.name for column in class_mapper(RuntimeRoleTable).columns}
         superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
         super().__init__(**superentries)
 

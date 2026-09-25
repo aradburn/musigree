@@ -95,7 +95,7 @@ class TestMasterRepository:
         mock_master: Master,
     ) -> None:
         """Test successful get_by_id execution."""
-        with patch.object(BaseRepository, "_get", AsyncMock(return_value=mock_master_table)):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=mock_master_table)):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_master):
                 result = await master_repository.get_by_id(100)
                 assert result == mock_master
@@ -103,7 +103,7 @@ class TestMasterRepository:
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, master_repository: MasterRepository) -> None:
         """Test get_by_id when master is not found."""
-        with patch.object(BaseRepository, "_get", AsyncMock(return_value=None)):
+        with patch.object(BaseRepository, "_get", AsyncMock(return_value=None)):  # noqa: SIM117
             with pytest.raises(NotFoundError):
                 await master_repository.get_by_id(999)
 
@@ -115,7 +115,7 @@ class TestMasterRepository:
         mock_master_table: Mock,
     ) -> None:
         """Test successful create execution."""
-        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_master_table)):
+        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_master_table)):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_master):
                 result = await master_repository.create(mock_master)
                 assert result == mock_master

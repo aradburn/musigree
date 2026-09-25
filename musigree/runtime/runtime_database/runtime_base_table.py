@@ -38,8 +38,6 @@ class RuntimeBase(DeclarativeBase):
         ```
     """
 
-    pass
-
 
 def mapped_entity(cls: Any) -> Any:
     """Return a mapped class as ``Any`` for use as a SQLAlchemy entity value.

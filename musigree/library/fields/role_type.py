@@ -1,5 +1,6 @@
 import enum
 import re
+from types import MappingProxyType
 
 
 class RoleType:
@@ -13,8 +14,8 @@ class RoleType:
     Attributes:
         RoleType.Category (enum.Enum): An enumeration of the high-level categories that roles can fall into.
         RoleType.Subcategory (enum.Enum): An enumeration of subcategories for more granular role classification.
-        category_names (dict): A mapping from Category enum members to their human-readable names.
-        subcategory_names (dict): A mapping from Subcategory enum members to their human-readable names.
+        category_names (MappingProxyType): A read-only mapping from Category enum members to their human-readable names.
+        subcategory_names (MappingProxyType): A read-only mapping from Subcategory enum members to their human-readable names.
         aggregate_roles (tuple): A collection of role names that are considered "aggregate" roles.
     """
 
@@ -84,36 +85,40 @@ class RoleType:
      Useful for extracting additional details from role descriptions.
     """
 
-    category_names: dict[Category, str] = {
-        Category.ACTING_LITERARY_AND_SPOKEN: "Acting, Literary & Spoken",
-        Category.COMPANIES: "Companies",
-        Category.CONDUCTING_AND_LEADING: "Conducting & Leading",
-        Category.DJ_MIX: "DJ Mix",
-        Category.FEATURING_AND_PRESENTING: "Featuring & Presenting",
-        Category.INSTRUMENTS: "Instruments",
-        Category.MANAGEMENT: "Management",
-        Category.PRODUCTION: "Production",
-        Category.RELATION: "Structural Relationships",
-        Category.REMIX: "Remix",
-        Category.TECHNICAL: "Technical",
-        Category.VISUAL: "Visual",
-        Category.VOCAL: "Vocal",
-        Category.WRITING_AND_ARRANGEMENT: "Writing & Arrangement",
-    }
+    category_names: MappingProxyType[Category, str] = MappingProxyType(
+        {
+            Category.ACTING_LITERARY_AND_SPOKEN: "Acting, Literary & Spoken",
+            Category.COMPANIES: "Companies",
+            Category.CONDUCTING_AND_LEADING: "Conducting & Leading",
+            Category.DJ_MIX: "DJ Mix",
+            Category.FEATURING_AND_PRESENTING: "Featuring & Presenting",
+            Category.INSTRUMENTS: "Instruments",
+            Category.MANAGEMENT: "Management",
+            Category.PRODUCTION: "Production",
+            Category.RELATION: "Structural Relationships",
+            Category.REMIX: "Remix",
+            Category.TECHNICAL: "Technical",
+            Category.VISUAL: "Visual",
+            Category.VOCAL: "Vocal",
+            Category.WRITING_AND_ARRANGEMENT: "Writing & Arrangement",
+        }
+    )
     """
     A mapping from each `Category` enum member to its human-readable name.
     """
 
-    subcategory_names: dict[Subcategory, str] = {
-        Subcategory.NONE: "None",
-        Subcategory.DRUMS_AND_PERCUSSION: "Drums & Percussion",
-        Subcategory.KEYBOARDS: "Keyboards",
-        Subcategory.OTHER_MUSICAL: "Other Musical",
-        Subcategory.STRINGED_INSTRUMENTS: "String Instruments",
-        Subcategory.TECHNICAL_MUSICAL: "Technical Musical",
-        Subcategory.TUNED_PERCUSSION: "Tuned Percussion",
-        Subcategory.WIND_INSTRUMENTS: "Wind Instruments",
-    }
+    subcategory_names: MappingProxyType[Subcategory, str] = MappingProxyType(
+        {
+            Subcategory.NONE: "None",
+            Subcategory.DRUMS_AND_PERCUSSION: "Drums & Percussion",
+            Subcategory.KEYBOARDS: "Keyboards",
+            Subcategory.OTHER_MUSICAL: "Other Musical",
+            Subcategory.STRINGED_INSTRUMENTS: "String Instruments",
+            Subcategory.TECHNICAL_MUSICAL: "Technical Musical",
+            Subcategory.TUNED_PERCUSSION: "Tuned Percussion",
+            Subcategory.WIND_INSTRUMENTS: "Wind Instruments",
+        }
+    )
     """
     A mapping from each `Subcategory` enum member to its human-readable name.
     """

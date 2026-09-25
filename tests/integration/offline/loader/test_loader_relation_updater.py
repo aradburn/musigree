@@ -1,11 +1,13 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from tests.conftest import AbstractDatabaseTest
@@ -17,7 +19,8 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_01(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 42
@@ -28,11 +31,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -61,7 +64,8 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_02(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 49
@@ -72,11 +76,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -105,7 +109,8 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_03(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 300407
@@ -116,11 +121,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -149,7 +154,8 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_updated_04(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 445854
@@ -160,11 +166,11 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
 
         id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
         id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-        key = dict(
-            subject=id_1,
-            role=role,
-            object=id_2,
-        )
+        key = {
+            "subject": id_1,
+            "role": role,
+            "object": id_2,
+        }
 
         # WHEN
         async with offline_transaction():
@@ -193,14 +199,15 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_01(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
-        key = dict(
-            subject=42,
-            object=41,
-            role="Producer",
-        )
+        key = {
+            "subject": 42,
+            "object": 41,
+            "role": "Producer",
+        }
 
         # WHEN
         async with offline_transaction():
@@ -302,14 +309,15 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_02(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
-        key = dict(
-            subject=21209,
-            object=3771,
-            role="Compiled By",
-        )
+        key = {
+            "subject": 21209,
+            "object": 3771,
+            "role": "Compiled By",
+        }
 
         # WHEN
         async with offline_transaction():
@@ -343,14 +351,15 @@ class TestLoaderRelationUpdater(AbstractDatabaseTest):
     async def test_relation_not_updated_03(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
-        key = dict(
-            subject=335173,
-            object=41,
-            role="Mastered By",
-        )
+        key = {
+            "subject": 335173,
+            "object": 41,
+            "role": "Mastered By",
+        }
 
         # WHEN
         async with offline_transaction():

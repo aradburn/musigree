@@ -290,7 +290,7 @@ class TestLoaderRole:
         instruments_directory = Path("/nonexistent/path")
 
         # Execute & Verify
-        with patch.object(builtins, "open", side_effect=FileNotFoundError):
+        with patch.object(builtins, "open", side_effect=FileNotFoundError):  # noqa: SIM117
             with pytest.raises(FileNotFoundError):
                 LoaderRole.load_hornbostel_sachs_instruments(instruments_directory)
 

@@ -48,7 +48,7 @@ class TestRuntimeCountryTable:
         expected_columns = {"id", "country_name"}
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeCountryTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeCountryTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

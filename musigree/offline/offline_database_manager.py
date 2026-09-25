@@ -76,8 +76,9 @@ class OfflineDatabaseManager:
 
                 connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
                 raise exc.DisconnectionError(
-                    "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                    "Connection record belongs to pid {}, attempting to check out in pid {}".format(
+                        connection_record.info["pid"], pid
+                    )
                 )
 
         # noinspection PyUnusedLocal,unused-function

@@ -190,14 +190,14 @@ async def update_entities_worker_async(
                     """Commit the transaction."""
                     inserted_count += 1
                     """Increment the inserted count."""
-                except DatabaseError as e:
+                except DatabaseError:
                     """Handle database errors."""
                     log.exception("Error in update_entities_worker")
-                    raise e
-            except DatabaseError as e:
+                    raise
+            except DatabaseError:
                 """Handle database errors."""
                 log.exception("Error in update_entities_worker")
-                raise e
+                raise
 
     log.info(
         f"[{proc_name}] processed_count: {processed_count}, "

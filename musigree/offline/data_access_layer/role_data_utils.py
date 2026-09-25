@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+from types import MappingProxyType
 
 log = logging.getLogger(__name__)
 
@@ -14,55 +15,57 @@ class RoleDataUtils:
     PARENTHESIS = re.compile(r"\([^)]*$")
     DIGITS_AND_SPECIAL_CHARACTERS = re.compile(r"^\d+[-.)]*$|^[-*+.?/!`—•]+$")
 
-    ALTERNATIVES = {
-        "accordeon": "Accordion",
-        "accordian": "Accordion",
-        "acordeon": "Accordion",
-        "acordeón": "Accordion",
-        "agogo": "Agogô",
-        "arranger": "Arranged By",
-        "arrangements": "Arranged By",
-        "art": "Artwork",
-        "bassguitar": "Bass Guitar",
-        "bateria": "Drums",
-        "batterie": "Drums",
-        "beat": "Beats",
-        "bodhran": "Bodhrán",
-        "bongo": "Bongos",
-        "cajon": "Cajón",
-        "celeste": "Celesta",
-        "cgi": "CGI",
-        "cgi artist": "CGI Artist",
-        "composer": "Composed By",
-        "conducted by": "Conductor",
-        "darbouka": "Darbuka",
-        "dj": "DJ",
-        "dj mix": "DJ Mix",
-        "ft": "Featuring",
-        "lyrics": "Lyrics By",
-        "mixed": "Mixed By",
-        "keys": "Keyboards",
-        "Kurai": "Quray",
-        "mix": "Mixed By",
-        "mixer": "Mixed By",
-        "mixing": "Mixed By",
-        "music": "Music By",
-        "programmer": "Programmed By",
-        "remiz": "Remix",
-        "remixer": "Remixed By",
-        "rythm": "Rhythm",
-        "singer": "Vocals",
-        "sax": "Saxophone",
-        "synths": "Synthesizers",
-        "vocalist": "Vocals",
-        "vocal": "Vocals",
-        "vibes": "Vibraphone",
-        "voices": "Vocals",
-        "vox": "Vocals",
-        "writer": "Written By",
-        "writing": "Written By",
-        "words": "Words By",
-    }
+    ALTERNATIVES: MappingProxyType[str, str] = MappingProxyType(
+        {
+            "accordeon": "Accordion",
+            "accordian": "Accordion",
+            "acordeon": "Accordion",
+            "acordeón": "Accordion",
+            "agogo": "Agogô",
+            "arranger": "Arranged By",
+            "arrangements": "Arranged By",
+            "art": "Artwork",
+            "bassguitar": "Bass Guitar",
+            "bateria": "Drums",
+            "batterie": "Drums",
+            "beat": "Beats",
+            "bodhran": "Bodhrán",
+            "bongo": "Bongos",
+            "cajon": "Cajón",
+            "celeste": "Celesta",
+            "cgi": "CGI",
+            "cgi artist": "CGI Artist",
+            "composer": "Composed By",
+            "conducted by": "Conductor",
+            "darbouka": "Darbuka",
+            "dj": "DJ",
+            "dj mix": "DJ Mix",
+            "ft": "Featuring",
+            "lyrics": "Lyrics By",
+            "mixed": "Mixed By",
+            "keys": "Keyboards",
+            "Kurai": "Quray",
+            "mix": "Mixed By",
+            "mixer": "Mixed By",
+            "mixing": "Mixed By",
+            "music": "Music By",
+            "programmer": "Programmed By",
+            "remiz": "Remix",
+            "remixer": "Remixed By",
+            "rythm": "Rhythm",
+            "singer": "Vocals",
+            "sax": "Saxophone",
+            "synths": "Synthesizers",
+            "vocalist": "Vocals",
+            "vocal": "Vocals",
+            "vibes": "Vibraphone",
+            "voices": "Vocals",
+            "vox": "Vocals",
+            "writer": "Written By",
+            "writing": "Written By",
+            "words": "Words By",
+        }
+    )
 
     @staticmethod
     def normalise_role_names(input_name: str) -> list[str]:
@@ -189,7 +192,7 @@ class RoleDataUtils:
         def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 
-        if re.match(r"^[A-Z]+$", input_name) and not input_name == "ANR" and not input_name == "FX":
+        if re.match(r"^[A-Z]+$", input_name) and input_name != "ANR" and input_name != "FX":
             return input_name
 
         name = input_name

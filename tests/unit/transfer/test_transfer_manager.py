@@ -1,5 +1,5 @@
-from typing import AsyncGenerator, Iterable
-from unittest.mock import Mock, patch, AsyncMock
+from collections.abc import AsyncGenerator, Iterable
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -8,10 +8,10 @@ from musigree.runtime.data_access_layer.entity_details_index import EntityDetail
 from musigree.transfer.transfer_manager import TransferManager
 
 
-def make_async_gen(items: Iterable[object]) -> AsyncGenerator[object, None]:
+def make_async_gen(items: Iterable[object]) -> AsyncGenerator[object]:
     """Build an async generator yielding the given items (empty by default)."""
 
-    async def _gen() -> AsyncGenerator[object, None]:
+    async def _gen() -> AsyncGenerator[object]:
         for item in items:
             yield item
 
@@ -282,7 +282,7 @@ class TestTransferManager:
                     mock_text_search_index
                 )
 
-                with patch(
+                with patch(  # noqa: SIM117
                     "musigree.transfer.transfer_manager.runtime_transaction"
                 ) as mock_runtime_transaction:
                     with patch(

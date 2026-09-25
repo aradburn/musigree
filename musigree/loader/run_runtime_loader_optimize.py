@@ -1,8 +1,8 @@
 import logging
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
     PostgresReadOnlyDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
 )
 from musigree.loader.runtime_process_runner import run_runtime_loading_process
 from musigree.transfer.transfer_manager import TransferManager

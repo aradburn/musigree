@@ -6,7 +6,7 @@ which provides data access functionality for releases in the Musigree offline sy
 It tests the creation and population of EntityDetailsIndex from release data.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -22,7 +22,7 @@ async def async_iterator(items: list) -> AsyncGenerator:
         yield item
 
 
-async def async_batch_iterator(items: list) -> AsyncGenerator[list, None]:
+async def async_batch_iterator(items: list) -> AsyncGenerator[list]:
     """Helper function to create async iterator that yields lists (like repository.all())."""
     if items:
         yield items
@@ -309,7 +309,9 @@ class TestCreateEntityDetailsIndex:
         mock_entity_details_index_class.return_value = mock_index
 
         # Test
-        with patch("musigree.offline.data_access_layer.offline_release_data_access.log") as mock_log:
+        with patch(
+            "musigree.offline.data_access_layer.offline_release_data_access.log"
+        ) as mock_log:
             result = await OfflineReleaseDataAccess.create_entity_details_index(mock_repository)
 
         # Assertions

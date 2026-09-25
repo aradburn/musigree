@@ -3,8 +3,12 @@
 import pytest
 from playwright.async_api import Page
 
-from tests.e2e.end_to_end_utils import BasePage, TEST_INVALID_ENTITY_ID, TEST_NOT_FOUND_ENTITY_ID, \
-    TEST_INVALID_ENTITY_ID_STR
+from tests.e2e.end_to_end_utils import (
+    TEST_INVALID_ENTITY_ID,
+    TEST_INVALID_ENTITY_ID_STR,
+    TEST_NOT_FOUND_ENTITY_ID,
+    BasePage,
+)
 
 
 @pytest.mark.asyncio

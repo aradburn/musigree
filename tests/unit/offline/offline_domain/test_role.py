@@ -12,9 +12,9 @@ from musigree.library.fields.role_type import RoleType
 
 # noinspection PyProtectedMember
 from musigree.offline.offline_domain.role import (
-    _RoleBase,
-    RoleUncommitted,
     Role,
+    RoleUncommitted,
+    _RoleBase,
 )
 
 

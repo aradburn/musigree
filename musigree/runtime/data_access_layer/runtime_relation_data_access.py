@@ -56,10 +56,7 @@ class RuntimeRelationDataAccess:
         relations_map: dict[str, list[RuntimeRelationInternal]] = {}
         for relation_internal in relation_internals:
             key = relation_internal.link_key
-            if key in relations_map:
-                relation_internal_list = relations_map[key]
-            else:
-                relation_internal_list = []
+            relation_internal_list = relations_map.get(key, [])
             relation_internal_list.append(relation_internal)
             relations_map.update({key: relation_internal_list})
 

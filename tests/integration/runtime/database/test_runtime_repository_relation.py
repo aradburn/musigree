@@ -1,6 +1,6 @@
 """Tests for RelationRepository with async/await and pytest fixtures."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -20,11 +20,11 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
-from musigree.runtime.runtime_domain.runtime_entity import to_runtime_entity_dict, RuntimeEntity
+from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.runtime_relation import (
+    RuntimeRelation,
     RuntimeRelationInternal,
     RuntimeRelationUncommitted,
-    RuntimeRelation,
 )
 from musigree.transfer.transfer_manager import TransferManager
 from tests.conftest import AbstractDatabaseTest
@@ -38,7 +38,9 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None],
         runtime_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool, is_load_runtime_data_required: bool,
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """Test creating a relation in the repository.
 

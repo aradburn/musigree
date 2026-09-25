@@ -1,5 +1,5 @@
 import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -245,7 +245,7 @@ class TestCacheManager:
             if hasattr(CacheManager.cache, "clear") and callable(CacheManager.cache.clear):
                 try:
                     await CacheManager.shutdown_cache()
-                except (TypeError, AttributeError):
+                except TypeError, AttributeError:
                     # If it's a mock that can't be awaited, just set to None
                     CacheManager.cache = None
             else:
@@ -543,7 +543,9 @@ class TestRedisCacheMethods:
         """Test hgetall method when Redis returns bytes keys/values."""
         assert redis_cache._client is not None
         mock_client: MagicMock = redis_cache._client  # type: ignore[assignment]
-        mock_client.get = AsyncMock(return_value=json.dumps({"key1": "value1", "key2": "value2"}).encode("utf-8"))
+        mock_client.get = AsyncMock(
+            return_value=json.dumps({"key1": "value1", "key2": "value2"}).encode("utf-8")
+        )
 
         result = await redis_cache.hgetall("test_key")
 
@@ -595,7 +597,9 @@ class TestRedisCacheMethods:
         test_dict = {"field1": "value1", "field2": "value2"}
         await redis_cache.hset("test_key", test_dict, timeout=3600)
 
-        mock_client.setex.assert_called_once_with(name="test_key", time=3600, value=json.dumps(test_dict))
+        mock_client.setex.assert_called_once_with(
+            name="test_key", time=3600, value=json.dumps(test_dict)
+        )
 
     @pytest.mark.asyncio
     async def test_hset_without_timeout(self, redis_cache: RedisCache) -> None:
@@ -747,7 +751,7 @@ class TestCacheManagerUncoveredMethods:
             if hasattr(CacheManager.cache, "clear") and callable(CacheManager.cache.clear):
                 try:
                     await CacheManager.shutdown_cache()
-                except (TypeError, AttributeError):
+                except TypeError, AttributeError:
                     # If it's a mock that can't be awaited, just set to None
                     CacheManager.cache = None
             else:
@@ -767,7 +771,7 @@ class TestCacheManagerUncoveredMethods:
         """Test setup_and_clear_cache raises when cache is still unset after setup."""
         config = MagicMock()
 
-        with (
+        with (  # noqa: SIM117
             patch.object(CacheManager, "setup_cache", new_callable=AsyncMock),
             patch.object(CacheManager, "get_cache", return_value=None),
         ):
@@ -813,5 +817,6 @@ class TestCacheManagerUncoveredMethods:
         result = CacheManager.create_cache_hkey("domain", "123")
         expected = f"domain{CACHE_KEY_SEPARATOR}123"
         assert result == expected
+
 
 # Note: pytest automatically discovers and runs tests, so no main block is needed

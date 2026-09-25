@@ -267,7 +267,7 @@ class TestRelationRepository:
         mock_session.execute.return_value = mock_result
         with patch.object(OfflineSession, "_session", new_callable=PropertyMock) as m:
             m.return_value = mock_session
-            with patch.dict(RoleCache.role_id_to_role_name_lookup, {1: "performer"}, clear=True):
+            with patch.dict(RoleCache.role_id_to_role_name_lookup, {1: "performer"}, clear=True):  # noqa: SIM117
                 with patch("musigree.offline.offline_database.relation_repository.log") as mock_log:
                     result = await relation_repository.find_role_counts_by_entity(5)
         assert result == {"performer": 1}

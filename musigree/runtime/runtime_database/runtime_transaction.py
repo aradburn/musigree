@@ -17,23 +17,23 @@ Key functionalities include:
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_session import (
-    get_runtime_session,
     CTX_RUNTIME_SESSION,
+    get_runtime_session,
 )
 
 log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
+async def runtime_transaction() -> AsyncGenerator[AsyncSession]:
     """
     Async context manager for handling runtime runtime_database transactions.
 
@@ -76,7 +76,7 @@ async def runtime_transaction() -> AsyncGenerator[AsyncSession, None]:
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
-        raise error
+        raise
     except (IntegrityError, InvalidRequestError) as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also

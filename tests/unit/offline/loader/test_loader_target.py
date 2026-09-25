@@ -3,7 +3,7 @@
 import asyncio
 import datetime
 from typing import Any
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import luigi
 import pytest
@@ -181,7 +181,7 @@ class TestLoaderTarget:
             patch("musigree.offline.loader.loader_target.datetime") as mock_datetime,
         ):
             # Arrange
-            test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 0)
+            test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 0)  # noqa: DTZ001
             mock_datetime.datetime.now.return_value = test_datetime
 
             mock_metadata_instance = MagicMock()

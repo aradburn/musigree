@@ -1,7 +1,7 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, select, func
+from sqlalchemy import Result, func, select
 
 from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_base_repository import (
@@ -34,7 +34,7 @@ class RuntimeTokenRepository(RuntimeBaseRepository["RuntimeTokenTable"]):
     schema_class = mapped_entity(RuntimeTokenTable)
     """The SQLAlchemy table class for runtime tokens."""
 
-    async def all(self) -> AsyncGenerator[RuntimeToken, None]:
+    async def all(self) -> AsyncGenerator[RuntimeToken]:
         """
         Retrieves all tokens from the runtime runtime_database.
 

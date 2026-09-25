@@ -31,7 +31,8 @@ import datetime
 import gzip
 import logging
 import re
-from typing import Iterator, IO
+from collections.abc import Iterator
+from typing import IO
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -162,14 +163,12 @@ class ParserUtils:
             year = int(year_str)
             month = int(month_str)
             day = int(day_str)
-            if month < 1:
-                month = 1
-            if day < 1:
-                day = 1
+            month = max(month, 1)
+            day = max(day, 1)
             if month > 12 >= day:
                 day, month = month, day
 
-            date = datetime.datetime(year, month, 1, 0, 0)
+            date = datetime.datetime(year, month, 1, 0, 0)  # noqa: DTZ001
             day_offset = day - 1
             date = date + datetime.timedelta(days=day_offset)
         except ValueError:

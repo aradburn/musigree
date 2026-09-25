@@ -1,7 +1,8 @@
 import logging
 import multiprocessing
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE
@@ -216,7 +217,7 @@ class LoaderEntity(LoaderBase):
 
         total_count = 0
 
-        for _token, entity_ids in text_search_index.token_index.items():
+        for entity_ids in text_search_index.token_index.values():
             total_count += len(entity_ids)
         log.debug(f"loading {total_count} tokens...")
 

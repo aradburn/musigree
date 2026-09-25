@@ -1,9 +1,10 @@
 import logging
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy import Result, select, update
 
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.metadata_table import MetadataTable
@@ -33,7 +34,7 @@ class MetadataRepository(BaseRepository["MetadataTable"]):
     The SQLAlchemy table class for metadata.
     """
 
-    async def all(self) -> AsyncGenerator[Metadata, None]:
+    async def all(self) -> AsyncGenerator[Metadata]:
         """
         Retrieves all metadata from the runtime_database.
 

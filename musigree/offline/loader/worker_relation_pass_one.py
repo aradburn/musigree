@@ -48,10 +48,10 @@ import asyncio
 import logging
 import multiprocessing
 
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from musigree.constants import BULK_REPORTING_SIZE
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.data_access_layer.offline_relation_data_access import (
     OfflineRelationDataAccess,
 )
@@ -103,7 +103,7 @@ async def process_relation_pass_one_worker_async(
             count += 1
             """Increment the processed counter."""
 
-            if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
+            if count % BULK_REPORTING_SIZE == 0 and count != end_count:
                 """Log every BULK_REPORTING_SIZE."""
                 log.debug(f"[{proc_name}] processed {count} of {total_count}")
 
@@ -151,22 +151,22 @@ async def create_relation_bulk(
                 await relation_repository.commit()
                 """Commit the transaction."""
                 # log.debug(f"create single ok")
-            except DatabaseError as ex:
+            except DatabaseError:
                 """Handle database errors."""
                 await relation_repository.rollback()
                 """Rollback the transaction."""
-                log.exception(ex)
+                log.exception("DatabaseError")
             except IntegrityError:
                 log.debug("IntegrityError in relation worker process individual")
                 """Handle integrity errors."""
                 await relation_repository.rollback()
                 """Rollback the transaction."""
-    except OperationalError as e:
+    except OperationalError:
         """Handle operational errors."""
         await relation_repository.rollback()
         """Rollback the transaction."""
         log.debug("OperationalError in worker process")
-        raise e
+        raise
 
 
 async def process_release(release_id: int) -> None:

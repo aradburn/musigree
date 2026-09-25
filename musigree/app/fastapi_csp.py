@@ -1,11 +1,11 @@
 import logging
 import sys
 
+from fastapi import FastAPI
 from Secweb.ContentSecurityPolicy import ContentSecurityPolicy
 from Secweb.ContentSecurityPolicy.ContentSecurityPolicyMiddleware import (
     ContentSecurityPolicyOptions,
 )
-from fastapi import FastAPI
 
 from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.config import Configuration

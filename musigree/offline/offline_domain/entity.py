@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 import logging
-from typing import Self, Any
+from typing import Any, Self
 
 from pydantic import StrictInt, field_serializer
 

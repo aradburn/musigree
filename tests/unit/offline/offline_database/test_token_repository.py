@@ -61,7 +61,7 @@ class TestTokenRepository:
         async def mock_iterator() -> AsyncGenerator[Mock, Any]:
             yield mock_token_table
 
-        with patch.object(BaseRepository, "_all", return_value=mock_iterator()):
+        with patch.object(BaseRepository, "_all", return_value=mock_iterator()):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_token):
                 results = []
                 async for t in token_repository.all():
@@ -102,7 +102,7 @@ class TestTokenRepository:
     @pytest.mark.asyncio
     async def test_get_random_id_returns_id(self, token_repository: TokenRepository) -> None:
         """Test get_random_id returns entity id when count > 0."""
-        with patch.object(token_repository, "count", AsyncMock(return_value=10)):
+        with patch.object(token_repository, "count", AsyncMock(return_value=10)):  # noqa: SIM117
             with patch.object(OfflineSession, "execute", AsyncMock()) as mock_execute:
                 mock_result = Mock(spec=Result)
                 mock_result.scalar_one_or_none.return_value = 999
@@ -122,7 +122,7 @@ class TestTokenRepository:
         mock_token_table: Mock,
     ) -> None:
         """Test successful create execution."""
-        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_token_table)):
+        with patch.object(BaseRepository, "_save", AsyncMock(return_value=mock_token_table)):  # noqa: SIM117
             with patch.object(BaseModel, "model_validate", return_value=mock_token):
                 result = await token_repository.create(mock_token)
                 assert result == mock_token

@@ -2,10 +2,11 @@ import csv
 import json
 import logging
 from abc import abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from musigree.constants import INSTRUMENTS_DATA_FILENAMES, HS_INSTRUMENTS_FILENAME
+from musigree.constants import HS_INSTRUMENTS_FILENAME, INSTRUMENTS_DATA_FILENAMES
 from musigree.exceptions import DatabaseError
 from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.role_type import RoleType

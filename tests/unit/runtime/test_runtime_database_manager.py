@@ -1,7 +1,7 @@
 """Unit tests for RuntimeDatabaseManager class."""
 
 import os
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from sqlalchemy import Engine
@@ -97,7 +97,7 @@ class TestRuntimeDatabaseManager:
         mock_session_factory = Mock()
         mock_async_sessionmaker.return_value = mock_session_factory
 
-        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):
+        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):  # noqa: SIM117
             with patch(
                 "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
             ) as _mock_runtime_helper_class:
@@ -146,7 +146,7 @@ class TestRuntimeDatabaseManager:
         mock_helper_instance.check_connection.return_value = None
         mock_sqlite_helper.return_value = mock_helper_instance
 
-        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):
+        with patch.object(RuntimeDatabaseManager, "get_concurrency_count", return_value=4):  # noqa: SIM117
             with patch(
                 "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
             ) as _mock_runtime_helper_class:

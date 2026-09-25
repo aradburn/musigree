@@ -7,7 +7,7 @@ It tests role name lookup, fuzzy matching, role finding algorithms, and cache ma
 """
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -406,7 +406,7 @@ class TestLoadAllRolesIntoCache:
             mock_role.role_name = "Vocals"
             mock_role.role_category = "Performance"
 
-            async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+            async def async_roles_iterator() -> AsyncGenerator[Mock]:
                 yield mock_role
 
             mock_repository = Mock()
@@ -449,7 +449,7 @@ class TestLoadAllRolesIntoCache:
 
         # Setup
         # noinspection PyUnreachableCode
-        async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+        async def async_roles_iterator() -> AsyncGenerator[Mock]:
             return
             # noinspection PyTypeChecker
             yield  # This line will never be reached, but makes it a proper async generator
@@ -500,7 +500,7 @@ class TestLoadAllRolesIntoCache:
         role2.role_name = "Guitar"
         role2.role_category = "Instruments"
 
-        async def async_roles_iterator() -> AsyncGenerator[Mock, None]:
+        async def async_roles_iterator() -> AsyncGenerator[Mock]:
             for role in [role1, role2]:
                 yield role
 

@@ -1,9 +1,9 @@
 import pytest
 
 from musigree.config import (
-    SqliteTestConfiguration,
-    SqliteDevelopmentConfiguration,
     PostgresDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
+    SqliteTestConfiguration,
 )
 from musigree.constants import CACHE_ENTRY_IS_NULL, CACHE_KEY_SEPARATOR
 from musigree.library.cache.cache_manager import CacheManager

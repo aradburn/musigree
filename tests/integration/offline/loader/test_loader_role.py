@@ -1,9 +1,9 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree.config import Configuration
-from musigree.constants import ROLES_DATA, INSTRUMENTS_DATA
+from musigree.constants import INSTRUMENTS_DATA, ROLES_DATA
 from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.loader.loader_role import LoaderRole
@@ -15,7 +15,8 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_wikipedia_instruments(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -30,7 +31,8 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_hornbostel_sachs_instruments(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -48,7 +50,8 @@ class TestLoaderRole(AbstractDatabaseTest):
     def test_load_roles_from_files(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         roles_directory = offline_config.DATA_DIR / ROLES_DATA
@@ -66,7 +69,8 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None], is_load_offline_data_required: bool
+        reset_offline_database: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         roles_directory = offline_config.DATA_DIR / ROLES_DATA
@@ -90,7 +94,8 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None], is_load_offline_data_required: bool
+        reset_offline_database: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA
@@ -114,7 +119,8 @@ class TestLoaderRole(AbstractDatabaseTest):
         self,
         offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration,
-        reset_offline_database: AsyncGenerator[None], is_load_offline_data_required: bool
+        reset_offline_database: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         instruments_directory = offline_config.DATA_DIR / INSTRUMENTS_DATA

@@ -1,8 +1,9 @@
 """Unit tests for RelationGrapher class."""
 
 from collections import OrderedDict
-from typing import Any, Generator
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from collections.abc import Generator
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -34,7 +35,7 @@ class TestRelationGrapher:
         )
 
     @pytest.fixture
-    def mock_role_cache(self) -> Generator[MagicMock | AsyncMock, Any, None]:
+    def mock_role_cache(self) -> Generator[MagicMock | AsyncMock, Any]:
         """Mock the RoleCache for testing."""
         with patch("musigree.runtime.data_access_layer.relation_grapher.RoleCache") as mock:
             mock.role_name_to_role_id_lookup = {
@@ -572,23 +573,25 @@ class TestRelationGrapher:
         mock_entities = [mock_center_entity]
 
         # Mock the static method properly
-        with patch(
-            "musigree.runtime.data_access_layer.relation_grapher.RelationGrapher.search_entities",
-            new_callable=AsyncMock,
-            return_value=mock_entities,
-        ) as _mock_search:
-            with patch(
+        with (
+            patch(
+                "musigree.runtime.data_access_layer.relation_grapher.RelationGrapher.search_entities",
+                new_callable=AsyncMock,
+                return_value=mock_entities,
+            ) as _mock_search,
+            patch(
                 "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
-            ) as mock_entity_access:
-                with patch(
-                    "musigree.runtime.data_access_layer.relation_grapher.RuntimeRelationDataAccess"
-                ) as mock_relation_access:
-                    mock_entity_access.roles_to_relation_count.return_value = 5
-                    mock_entity_access.structural_roles_to_relations.return_value = {}
-                    mock_relation_access.search_multi = AsyncMock(return_value=[])
+            ) as mock_entity_access,
+            patch(
+                "musigree.runtime.data_access_layer.relation_grapher.RuntimeRelationDataAccess"
+            ) as mock_relation_access,
+        ):
+            mock_entity_access.roles_to_relation_count.return_value = 5
+            mock_entity_access.structural_roles_to_relations.return_value = {}
+            mock_relation_access.search_multi = AsyncMock(return_value=[])
 
-                    # When
-                    result = await grapher.get_relation_graph(mock_entity_repo, mock_relation_repo)
+            # When
+            result = await grapher.get_relation_graph(mock_entity_repo, mock_relation_repo)
 
         # Then
         assert "center" in result
@@ -631,29 +634,31 @@ class TestRelationGrapher:
             )
         ]
 
-        with patch(
-            "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
-        ) as mock_entity_access:
-            with patch(
+        with (
+            patch(
+                "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
+            ) as mock_entity_access,
+            patch(
                 "musigree.runtime.data_access_layer.relation_grapher.RuntimeRelationDataAccess"
-            ) as mock_relation_access:
-                mock_entity_access.roles_to_relation_count.return_value = 5
-                # Make search_multi return an awaitable
-                mock_relation_access.search_multi = AsyncMock(return_value=mock_relations)
+            ) as mock_relation_access,
+        ):
+            mock_entity_access.roles_to_relation_count.return_value = 5
+            # Make search_multi return an awaitable
+            mock_relation_access.search_multi = AsyncMock(return_value=mock_relations)
 
-                relations: dict[str, RuntimeRelationResult] = {}
+            relations: dict[str, RuntimeRelationResult] = {}
 
-                # When
-                await grapher.search_via_relational_roles(
-                    relation_repository=mock_relation_repo,
-                    distance=0,
-                    provisional_roles=["Artist"],
-                    relations=relations,
-                )
+            # When
+            await grapher.search_via_relational_roles(
+                relation_repository=mock_relation_repo,
+                distance=0,
+                provisional_roles=["Artist"],
+                relations=relations,
+            )
 
         # Then
         assert len(relations) == 1
-        link_key = list(relations.keys())[0]
+        link_key = next(iter(relations.keys()))
         assert relations[link_key].entity_one_id == 123
         assert relations[link_key].entity_two_id == 456
         mock_relation_access.search_multi.assert_called_once()

@@ -21,7 +21,8 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Sequence, Type
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import Connection, Table
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
@@ -136,31 +137,26 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             AsyncEngine: The SQLAlchemy async engine.
         """
-        pass
 
     @staticmethod
     @abstractmethod
     async def shutdown_database() -> None:
         """Shuts down the runtime_database connection."""
-        pass
 
     @staticmethod
     @abstractmethod
     def engine_on_connect(dbapi_con, connection_record):  # type: ignore
         """Setup_on runtime database, run per connection."""
-        pass
 
     @staticmethod
     @abstractmethod
     def engine_on_connect_read_only(dbapi_con, connection_record):  # type: ignore
         """Setup_on runtime database, run per connection."""
-        pass
 
     @staticmethod
     @abstractmethod
     def engine_on_checkout(dbapi_con, connection_record, connection_proxy):  # type: ignore
         """Setup_on runtime database, run per pool checkout."""
-        pass
 
     @staticmethod
     @abstractmethod
@@ -172,7 +168,6 @@ class RuntimeDatabaseHelper(ABC):
             config: The application configuration.
             engine: The SQLAlchemy async engine.
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -184,8 +179,8 @@ class RuntimeDatabaseHelper(ABC):
             tables: An optional list of table names to create. If None, all tables
                 defined in `RuntimeBase.metadata` will be created.
         """
-        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
         from musigree.runtime.runtime_database import ALL_RUNTIME_DATABASE_TABLES
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         for table_class in ALL_RUNTIME_DATABASE_TABLES:
             log.debug(f"table definition for: {table_class.__tablename__}")
@@ -253,7 +248,6 @@ class RuntimeDatabaseHelper(ABC):
             is_analyze: If True, performs an analyze operation.
             engine: The SQLAlchemy async engine connected to the runtime_database.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -261,7 +255,6 @@ class RuntimeDatabaseHelper(ABC):
         """
         Indicates whether a full vacuum operation is supported.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -269,7 +262,6 @@ class RuntimeDatabaseHelper(ABC):
         """
         Indicates whether the analyze operation is supported after a vacuum.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -280,7 +272,6 @@ class RuntimeDatabaseHelper(ABC):
             table_name: Optional, the name of the table to analyze.
             engine: The SQLAlchemy async engine connected to the runtime_database.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -291,12 +282,11 @@ class RuntimeDatabaseHelper(ABC):
             table_name: Optional, the name of the table to optimize.
             engine: The SQLAlchemy async engine connected to the runtime_database.
         """
-        pass
 
     @staticmethod
     @abstractmethod
     def generate_insert_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
@@ -311,12 +301,11 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             ReturningInsert[tuple[RuntimeConcreteTable]]: The insert query.
         """
-        pass
 
     @staticmethod
     @abstractmethod
     def generate_insert_bulk_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
@@ -331,7 +320,6 @@ class RuntimeDatabaseHelper(ABC):
         Returns:
             Insert[tuple[RuntimeConcreteTable]]: The bulk insert query.
         """
-        pass
 
     @staticmethod
     async def get_network(
@@ -505,10 +493,10 @@ class RuntimeDatabaseHelper(ABC):
             role_dict.update({relation_internal.role: releases_dict})
 
         data = []
-        for role in role_dict.keys():
+        for role, value in role_dict.items():
             datum = {
                 "role": role,
-                "releases": role_dict[role],
+                "releases": value,
             }
             data.append(datum)
         result = {"results": tuple(data)}

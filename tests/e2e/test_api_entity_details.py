@@ -4,10 +4,13 @@ import pytest
 from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import (
-    APIHelper,
     TEST_ARTIST_ID,
     TEST_ENTITY_TYPE_ARTIST,
-    TEST_INVALID_ENTITY_ID, TEST_NOT_FOUND_ENTITY_ID, TEST_INVALID_ENTITY_TYPE, TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_ID,
+    TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_TYPE,
+    TEST_NOT_FOUND_ENTITY_ID,
+    APIHelper,
 )
 
 
@@ -51,7 +54,7 @@ class TestAPIEntityDetails:
     ) -> None:
         """Test getting entity details for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_details(
+        response, _json_data = await api_helper.get_entity_details(
             TEST_ENTITY_TYPE_ARTIST, TEST_NOT_FOUND_ENTITY_ID
         )
         assert response.status == 404
@@ -79,7 +82,9 @@ class TestAPIEntityDetails:
     ) -> None:
         """Test getting entity details with an invalid entity ID (non-numeric)."""
         api_helper = APIHelper(page, base_url)
-        response, _ = await api_helper.get_entity_details(TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID)
+        response, _ = await api_helper.get_entity_details(
+            TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID
+        )
         assert response.status == 400
 
     async def test_get_entity_details_invalid_entity_id_str(
@@ -92,5 +97,7 @@ class TestAPIEntityDetails:
     ) -> None:
         """Test getting entity details with an invalid entity ID (non-numeric)."""
         api_helper = APIHelper(page, base_url)
-        response, _ = await api_helper.get_entity_details(TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID_STR)
+        response, _ = await api_helper.get_entity_details(
+            TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID_STR
+        )
         assert response.status == 400

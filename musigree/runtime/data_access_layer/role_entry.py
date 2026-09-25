@@ -28,7 +28,7 @@ musigree specific operations.
 """
 
 import collections
-from typing import Self, Any
+from typing import Self
 from xml.etree.ElementTree import Element
 
 from musigree.library.cache.role_cache import RoleCache
@@ -60,7 +60,7 @@ class RoleEntry:
         self._detail = detail
         """Additional details associated with the role."""
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Checks if two RoleEntry instances are equal.
 
@@ -78,7 +78,7 @@ class RoleEntry:
     # PUBLIC METHODS
 
     @classmethod
-    def from_element(cls, element: Element) -> list["RoleEntry"]:
+    def from_element(cls, element: Element) -> list[RoleEntry]:
         """
         Extracts role entries from an XML element's text.
 
@@ -91,7 +91,7 @@ class RoleEntry:
         Returns:
             list[RoleEntry]: A list of RoleEntry instances parsed from the XML text.
         """
-        credit_roles: list["RoleEntry"] = []
+        credit_roles: list[RoleEntry] = []
         """List to store the created RoleEntry objects."""
         if element is None or not element.text:
             return credit_roles

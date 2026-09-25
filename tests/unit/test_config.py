@@ -3,13 +3,13 @@ import os
 from pytest import MonkeyPatch
 
 from musigree.config import (
-    SqliteReadOnlyProductionConfiguration,
-    SqliteTestConfiguration,
-    PostgresTestConfiguration,
     PostgresDevelopmentConfiguration,
     PostgresProductionConfiguration,
+    PostgresTestConfiguration,
+    SqliteReadOnlyProductionConfiguration,
+    SqliteTestConfiguration,
 )
-from musigree.constants import DatabaseType, ThreadingModel, CacheType
+from musigree.constants import CacheType, DatabaseType, ThreadingModel
 
 
 def test_pydantic_sqlite_test_config() -> None:

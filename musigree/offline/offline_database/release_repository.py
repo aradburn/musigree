@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Sequence, AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from typing import Any
 
-from sqlalchemy import select, Result, update, delete
+from sqlalchemy import Result, delete, select, update
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
@@ -32,7 +33,7 @@ class ReleaseRepository(BaseRepository["ReleaseTable"]):
     schema_class = mapped_entity(ReleaseTable)
     """The SQLAlchemy table class for releases."""
 
-    async def all(self) -> AsyncGenerator[list[Release], None]:
+    async def all(self) -> AsyncGenerator[list[Release]]:
         """
         Retrieves all releases from the runtime_database.
 

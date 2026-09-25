@@ -43,7 +43,6 @@ class TestRuntimeTransaction:
             async with runtime_transaction() as session:
                 assert session is mock_session
                 # Simulate some database operations
-                pass
 
             # Verify
             mock_get_session.assert_called_once()
@@ -172,7 +171,6 @@ class TestRuntimeTransaction:
             async with runtime_transaction() as session:
                 assert session is mock_session
                 # No exceptions raised in the block
-                pass
 
             # Verify
             mock_get_session.assert_called_once()

@@ -106,15 +106,12 @@ async def process_entity_pass_three_worker_async(
                 )
                 """Process the entity."""
                 count += 1
-                if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if count % BULK_REPORTING_SIZE == 0 and count != end_count:
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
-            except DatabaseError as e:
+            except DatabaseError:
                 """Handle potential database errors."""
-                log.exception(
-                    f"Database Error for entity id: {id_} in process {proc_name}",
-                    exc_info=True,
-                )
-                raise e
+                log.exception(f"Database Error for entity id: {id_} in process {proc_name}")
+                raise
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of entities processed."""
@@ -155,13 +152,10 @@ async def worker_pass_three_single(
 
             await entity_repository.commit()
             """Commit the transaction."""
-        except DatabaseError as e:
+        except DatabaseError:
             """Handle potential database errors."""
-            log.exception(
-                f"Database Error for id: {id_}",
-                exc_info=True,
-            )
-            raise e
+            log.exception(f"Database Error for id: {id_}")
+            raise
 
 
 def process_entity_pass_three_worker(ids: list[int], current_total: int, total_count: int) -> None:

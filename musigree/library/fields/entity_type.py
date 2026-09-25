@@ -27,7 +27,7 @@ class EntityType(enum.Enum):
     LABEL = 2
 
     @staticmethod
-    def from_str(entity_type_str: str) -> "EntityType":
+    def from_str(entity_type_str: str) -> EntityType:
         """
         Converts a string representation of an entity type to an EntityType enum value.
 
@@ -48,7 +48,7 @@ class EntityType(enum.Enum):
         else:
             raise NotImplementedError
 
-    def __lt__(self, other: "EntityType") -> bool:
+    def __lt__(self, other: EntityType) -> bool:
         """
         Implements the less-than comparison operator for EntityType enum values.
 

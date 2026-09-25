@@ -6,7 +6,9 @@ cache methods (get, ttl, incr, expire) do not trigger "coroutine must be awaited
 or "MagicMock can't be used in 'await' expression" warnings when tests use
 TestClient without patching the cache.
 """
-from typing import Any, Generator
+
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -33,7 +35,7 @@ def cache_mock_with_async_methods(
 
 
 @pytest.fixture(autouse=True)
-def async_cache_for_rate_limiter() -> Generator[None, Any, None]:
+def async_cache_for_rate_limiter() -> Generator[None, Any]:
     """
     Ensure CacheManager.get_cache returns a mock whose async methods are awaitable.
 

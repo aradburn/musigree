@@ -1,5 +1,6 @@
 import pytest
-from musigree.config import SqliteTestConfiguration, Configuration
+
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.logging_config import setup_logging
 
 

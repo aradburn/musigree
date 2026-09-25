@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import FastAPI
 
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import AnalyticsType
 
 

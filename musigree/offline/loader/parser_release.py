@@ -52,6 +52,7 @@ It uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from types import MappingProxyType
 from typing import Any
 from xml.etree.ElementTree import Element
 
@@ -76,17 +77,17 @@ class ParserRelease(ParserBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping: dict[str, Any] = {}
+    _artists_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     Mapping for artist credit XML elements to their corresponding fields.
     """
 
-    _companies_mapping: dict[str, Any] = {}
+    _companies_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     Mapping for company credit XML elements to their corresponding fields.
     """
 
-    _tracks_mapping: dict[str, Any] = {}
+    _tracks_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     Mapping for track XML elements to their corresponding fields.
     """
@@ -387,57 +388,65 @@ class ParserRelease(ParserBase):
         return data
 
 
-ParserRelease._tags_to_fields_mapping = {
-    "id": ("id", ParserUtils.element_to_integer),
-    "artists": ("artists", ParserRelease.element_to_artist_credits),
-    "companies": ("companies", ParserRelease.element_to_company_credits),
-    "country": ("country", ParserUtils.element_to_string),
-    "extraartists": ("extra_artists", ParserRelease.element_to_artist_credits),
-    "formats": ("formats", ParserRelease.element_to_formats),
-    "genres": ("genres", ParserUtils.element_to_strings),
-    "identifiers": ("identifiers", ParserRelease.element_to_identifiers),
-    "labels": ("labels", ParserRelease.element_to_label_credits),
-    "master_id": ("master_id", ParserUtils.element_to_integer),
-    "notes": ("notes", ParserUtils.element_to_none),
-    "released": ("release_date", ParserUtils.element_to_datetime),
-    "styles": ("styles", ParserUtils.element_to_strings),
-    "title": ("title", ParserUtils.element_to_string),
-    "tracklist": ("tracklist", ParserRelease.element_to_tracks),
-}
+ParserRelease._tags_to_fields_mapping = MappingProxyType(
+    {
+        "id": ("id", ParserUtils.element_to_integer),
+        "artists": ("artists", ParserRelease.element_to_artist_credits),
+        "companies": ("companies", ParserRelease.element_to_company_credits),
+        "country": ("country", ParserUtils.element_to_string),
+        "extraartists": ("extra_artists", ParserRelease.element_to_artist_credits),
+        "formats": ("formats", ParserRelease.element_to_formats),
+        "genres": ("genres", ParserUtils.element_to_strings),
+        "identifiers": ("identifiers", ParserRelease.element_to_identifiers),
+        "labels": ("labels", ParserRelease.element_to_label_credits),
+        "master_id": ("master_id", ParserUtils.element_to_integer),
+        "notes": ("notes", ParserUtils.element_to_none),
+        "released": ("release_date", ParserUtils.element_to_datetime),
+        "styles": ("styles", ParserUtils.element_to_strings),
+        "title": ("title", ParserUtils.element_to_string),
+        "tracklist": ("tracklist", ParserRelease.element_to_tracks),
+    }
+)
 """
 Mapping of XML tags to fields for release elements.
 """
 
-ParserRelease._artists_mapping = {
-    "id": ("id", ParserUtils.element_to_integer),
-    "name": ("name", ParserUtils.element_to_string),
-    "anv": ("anv", ParserUtils.element_to_string),
-    "join": ("join", ParserUtils.element_to_string),
-    "role": ("roles", ParserRelease.element_to_roles),
-    "tracks": ("tracks", ParserUtils.element_to_string),
-}
+ParserRelease._artists_mapping = MappingProxyType(
+    {
+        "id": ("id", ParserUtils.element_to_integer),
+        "name": ("name", ParserUtils.element_to_string),
+        "anv": ("anv", ParserUtils.element_to_string),
+        "join": ("join", ParserUtils.element_to_string),
+        "role": ("roles", ParserRelease.element_to_roles),
+        "tracks": ("tracks", ParserUtils.element_to_string),
+    }
+)
 """
 Mapping of XML tags to fields for artist credit elements.
 """
 
-ParserRelease._companies_mapping = {
-    "id": ("id", ParserUtils.element_to_integer),
-    "name": ("name", ParserUtils.element_to_string),
-    "catno": ("catalog_number", ParserUtils.element_to_string),
-    "entity_type": ("entity_type", ParserUtils.element_to_integer),
-    "entity_type_name": ("entity_type_name", ParserUtils.element_to_string),
-}
+ParserRelease._companies_mapping = MappingProxyType(
+    {
+        "id": ("id", ParserUtils.element_to_integer),
+        "name": ("name", ParserUtils.element_to_string),
+        "catno": ("catalog_number", ParserUtils.element_to_string),
+        "entity_type": ("entity_type", ParserUtils.element_to_integer),
+        "entity_type_name": ("entity_type_name", ParserUtils.element_to_string),
+    }
+)
 """
 Mapping of XML tags to fields for company credit elements.
 """
 
-ParserRelease._tracks_mapping = {
-    "position": ("position", ParserUtils.element_to_string),
-    "title": ("title", ParserUtils.element_to_string),
-    "duration": ("duration", ParserUtils.element_to_string),
-    "artists": ("artists", ParserRelease.element_to_artist_credits),
-    "extraartists": ("extra_artists", ParserRelease.element_to_artist_credits),
-}
+ParserRelease._tracks_mapping = MappingProxyType(
+    {
+        "position": ("position", ParserUtils.element_to_string),
+        "title": ("title", ParserUtils.element_to_string),
+        "duration": ("duration", ParserUtils.element_to_string),
+        "artists": ("artists", ParserRelease.element_to_artist_credits),
+        "extraartists": ("extra_artists", ParserRelease.element_to_artist_credits),
+    }
+)
 """
 Mapping of XML tags to fields for track elements.
 """

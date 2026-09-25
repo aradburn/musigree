@@ -65,14 +65,13 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Type
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import URL, text, SingletonThreadPool, AsyncAdaptedQueuePool, exc
-from sqlalchemy.dialects.postgresql import insert, Insert
+from sqlalchemy import URL, AsyncAdaptedQueuePool, SingletonThreadPool, exc, text
+from sqlalchemy.dialects.postgresql import Insert, insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
@@ -316,8 +315,9 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
                 connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
                 raise exc.DisconnectionError(
-                    "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                    "Connection record belongs to pid {}, attempting to check out in pid {}".format(
+                        connection_record.info["pid"], pid
+                    )
                 )
 
     @staticmethod
@@ -349,7 +349,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             log.info("Runtime Database connected OK.")
         except DatabaseError:
             """Handle the potential exception."""
-            log.exception("Runtime Database Connection Error", exc_info=True)
+            log.exception("Runtime Database Connection Error")
 
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:
@@ -455,7 +455,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
@@ -486,7 +486,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
 
     @staticmethod
     def generate_insert_bulk_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:

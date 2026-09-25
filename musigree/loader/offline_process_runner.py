@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import sys
-from typing import Coroutine, Any
+from collections.abc import Coroutine
+from typing import Any
 
 import asyncio_atexit  # type: ignore
 from sqlalchemy.exc import OperationalError

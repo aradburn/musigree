@@ -9,8 +9,8 @@ from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "InternalDomainObject",
-    "_InternalDomainObject",
     "PublicDomainObject",
+    "_InternalDomainObject",
     "_PublicDomainObject",
     "to_camelcase",
 ]
