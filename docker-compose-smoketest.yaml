@@ -1,0 +1,16 @@
+# Smoke-test the production image against the local SQLite runtime database.
+# SqliteProductionConfiguration resolves the runtime database to
+# ROOT_DIR/../data/musigree_runtime_prod.db, which is /data/musigree_runtime_prod.db
+# when the app lives in /app.
+services:
+  musigree:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - type: bind
+        source: ./runtime_database/musigree_runtime_dev.db
+        target: /data/musigree_runtime_prod.db
+        read_only: true
