@@ -1,13 +1,13 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import {fileURLToPath} from "node:url";
+import {defineConfig} from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
     root: path.join(__dirname, "./source/"),
-    base: "/assets/",
+    base: command === "build" ? "/prodassets/" : "/assets/",
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./source"),
@@ -129,4 +129,4 @@ export default defineConfig({
             ],
         },
     },
-});
+}))
