@@ -112,3 +112,10 @@ class AnalyticsType(enum.Enum):
     UMAMI = 1
     SWETRIX = 2
     OPENPANEL = 3
+
+
+# Web
+ALLOWED_ORIGINS = [
+    "https://www.musigree.com",
+    "https://musigree.com",
+]
