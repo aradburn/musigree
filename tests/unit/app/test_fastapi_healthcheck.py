@@ -5,13 +5,10 @@ Unit tests for musigree.app.fastapi_healthcheck module.
 from unittest.mock import patch
 
 import pytest
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, status
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-
-# noinspection PyPackageRequirements
-from starlette import status
 
 from musigree.app.fastapi_healthcheck import HealthCheck, get_health, router
 

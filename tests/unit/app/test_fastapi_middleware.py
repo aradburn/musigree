@@ -4,9 +4,17 @@ Unit tests for musigree.app.fastapi_middleware module.
 
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
-from Secweb.XContentTypeOptions import XContentTypeOptions
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from musigree.app.fastapi_middleware import add_app_middleware
+
+
+class _HeaderMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
 
 
 class TestAddAppMiddleware:
@@ -26,7 +34,7 @@ class TestAddAppMiddleware:
         """Test that middleware can be registered with no extra options."""
         app = FastAPI()
 
-        add_app_middleware(app, XContentTypeOptions)
+        add_app_middleware(app, _HeaderMiddleware)
 
         assert len(app.user_middleware) == 1
-        assert app.user_middleware[0].cls is XContentTypeOptions
+        assert app.user_middleware[0].cls is _HeaderMiddleware
