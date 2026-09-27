@@ -297,7 +297,6 @@ class RuntimeEntityDataAccess:
         from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
         assert RuntimeDatabaseManager.runtime_database_helper is not None
-        assert RuntimeDatabaseManager.runtime_database_helper.entity_details_index is not None
 
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
