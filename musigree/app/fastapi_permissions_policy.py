@@ -7,10 +7,7 @@ Copyright 2021-2026, Motagamwala Taha Arif Ali"""
 from typing import Literal, TypedDict, cast
 from warnings import warn
 
-# noinspection PyPackageRequirements
 from starlette.datastructures import MutableHeaders
-
-# noinspection PyPackageRequirements
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 OptionValues = list[Literal["self", "*"] | str]

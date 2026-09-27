@@ -1,22 +1,24 @@
+from __future__ import annotations
+
 import logging
 import sys
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from Secweb.ContentSecurityPolicy import ContentSecurityPolicy
-from Secweb.ContentSecurityPolicy.ContentSecurityPolicyMiddleware import (
-    ContentSecurityPolicyOptions,
-)
+from Secweb.headers.csp import Content_Security_Policy
 
-from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.config import Configuration
 from musigree.constants import AnalyticsType, CSPSetting
+
+if TYPE_CHECKING:
+    from Secweb._types import Content_Security_Policy_Options
 
 log = logging.getLogger(__name__)
 
 
-def get_content_security_policy_report_only() -> ContentSecurityPolicyOptions:
+def get_content_security_policy_report_only() -> Content_Security_Policy_Options:
     # Setup CSP headers
-    csp: ContentSecurityPolicyOptions = {
+    csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
         "block-all-mixed-content": [],
         "default-src": ["'self'"],
@@ -39,9 +41,9 @@ def get_content_security_policy_report_only() -> ContentSecurityPolicyOptions:
 
 def get_content_security_policy_production(
     analytics_script_url: str, analytics_api_url: str
-) -> ContentSecurityPolicyOptions:
+) -> Content_Security_Policy_Options:
     # Setup CSP headers
-    csp: ContentSecurityPolicyOptions = {
+    csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
         "default-src": ["'self'"],
         "script-src": [
@@ -87,9 +89,9 @@ def get_content_security_policy_production(
 
 def get_content_security_policy_development(
     analytics_script_url: str, analytics_api_url: str
-) -> ContentSecurityPolicyOptions:
+) -> Content_Security_Policy_Options:
     # Setup CSP headers
-    csp: ContentSecurityPolicyOptions = {
+    csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
         "default-src": ["'self'"],
         "script-src": [
@@ -223,13 +225,22 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
                 log.error("CSP Development Security Headers Not Set")
                 sys.exit("CSP Development Security Headers Not Set")
 
-    # Add CSP security headers middleware
-    add_app_middleware(
+    # Secweb 2.0 requires a reporting endpoint when CSP is report-only.
+    if (
+        is_report_only
+        and "report-to" not in content_security_policy_options
+        and "report-uri" not in content_security_policy_options
+    ):
+        content_security_policy_options = {
+            **content_security_policy_options,
+            "report-uri": ["/csp-report"],
+        }
+
+    Content_Security_Policy(
         app,
-        ContentSecurityPolicy,
-        Option=content_security_policy_options,
-        script_nonce=False,
-        style_nonce=False,
+        options=content_security_policy_options,
+        script_nonce_flag=False,
+        style_nonce_flag=False,
         report_only=is_report_only,
     )
 

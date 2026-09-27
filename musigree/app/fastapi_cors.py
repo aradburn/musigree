@@ -2,14 +2,8 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 from fastapi import Request
-
-# noinspection PyPackageRequirements
 from starlette.middleware.base import BaseHTTPMiddleware
-
-# noinspection PyPackageRequirements
 from starlette.responses import PlainTextResponse, Response
-
-# noinspection PyPackageRequirements
 from starlette.types import ASGIApp
 
 
