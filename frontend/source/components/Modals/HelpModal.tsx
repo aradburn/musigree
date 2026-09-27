@@ -6,6 +6,8 @@ import Button from "react-bootstrap/Button";
 interface HelpModalProps {
     show?: boolean;
     onHide?: () => void;
+    /** Closes the modal first, then the parent starts the intro tour. */
+    onStartTour?: () => void;
 }
 
 /**
@@ -17,9 +19,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                                                         onHide = (): void => {
                                                             return;
                                                         },
+                                                        onStartTour,
                                                     }): React.ReactElement => {
     const handleClose = (): void => {
         onHide();
+    };
+
+    const handleStartTour = (): void => {
+        onHide();
+        onStartTour?.();
     };
 
     return (
@@ -138,6 +146,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}>
                     Close
+                </Button>
+                <Button variant="primary" onClick={handleStartTour}>
+                    Start tour
                 </Button>
             </Modal.Footer>
         </Modal>

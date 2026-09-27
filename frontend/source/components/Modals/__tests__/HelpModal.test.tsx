@@ -23,8 +23,11 @@ describe("HelpModal Component", () => {
             screen.getByText(/What do all of these symbols mean\?/i),
         ).toBeInTheDocument();
 
-        // Check for close button
+        // Check for close and tour buttons
         expect(screen.getByText("Close")).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: /start tour/i }),
+        ).toBeInTheDocument();
     });
 
     it("does not render modal content when show is false", () => {
@@ -50,6 +53,28 @@ describe("HelpModal Component", () => {
 
         // Check if onHide was called
         expect(handleHide).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes the modal and then starts the tour", async () => {
+        const handleHide = vi.fn();
+        const handleStartTour = vi.fn();
+        const user = userEvent.setup();
+
+        render(
+            <HelpModal
+                show={true}
+                onHide={handleHide}
+                onStartTour={handleStartTour}
+            />,
+        );
+
+        await user.click(screen.getByRole("button", { name: /start tour/i }));
+
+        expect(handleHide).toHaveBeenCalledTimes(1);
+        expect(handleStartTour).toHaveBeenCalledTimes(1);
+        expect(handleHide.mock.invocationCallOrder[0]).toBeLessThan(
+            handleStartTour.mock.invocationCallOrder[0],
+        );
     });
 
     it("has correct content about symbols", () => {
