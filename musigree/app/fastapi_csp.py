@@ -11,6 +11,7 @@ from musigree.config import Configuration
 from musigree.constants import AnalyticsType, CSPSetting
 
 if TYPE_CHECKING:
+    # noinspection protected-member
     from Secweb._types import Content_Security_Policy_Options
 
 log = logging.getLogger(__name__)
@@ -168,8 +169,10 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
             analytics_api_url = "https://opapi.musigree.com/ "
 
     is_report_only = False
-    content_security_policy_options = get_content_security_policy_production(
-        analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
+    content_security_policy_options: Content_Security_Policy_Options = (
+        get_content_security_policy_production(
+            analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
+        )
     )
 
     if config.PRODUCTION:
@@ -231,10 +234,7 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
         and "report-to" not in content_security_policy_options
         and "report-uri" not in content_security_policy_options
     ):
-        content_security_policy_options = {
-            **content_security_policy_options,
-            "report-uri": ["/csp-report"],
-        }
+        content_security_policy_options["report-uri"] = ["/csp-report"]
 
     Content_Security_Policy(
         app,

@@ -33,12 +33,17 @@ def _stub_assets_router() -> tuple[APIRouter, MagicMock]:
     return APIRouter(), MagicMock()
 
 
-def _middleware_entry(app: FastAPI, middleware_class: type[Any]) -> Any:
-    """Return the registered Starlette middleware entry for a class."""
+def _middleware_entry(
+    app: FastAPI,
+    middleware_class: type[Any] | Callable[..., Any],
+) -> Any:
+    """Return the registered Starlette middleware entry for a class or factory."""
     for entry in app.user_middleware:
         if entry.cls is middleware_class:
             return entry
-    raise AssertionError(f"{middleware_class.__name__} is not registered")
+    # noinspection string-conversion-without-dunder-method
+    middleware_name = getattr(middleware_class, "__name__", repr(middleware_class))
+    raise AssertionError(f"{middleware_name} is not registered")
 
 
 class TestCreateApp:
