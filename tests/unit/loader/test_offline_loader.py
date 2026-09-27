@@ -210,7 +210,6 @@ class TestOfflineLoaderFunctions:
             assert "offline_async_engine must be initialized" in str(excinfo.value)
 
     @patch("musigree.loader.run_offline_loader.luigi")
-    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
     @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_offline_loader.CacheManager")
@@ -223,7 +222,6 @@ class TestOfflineLoaderFunctions:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test successful execution of offline_loader_main."""
@@ -262,7 +260,6 @@ class TestOfflineLoaderFunctions:
         assert mock_runner_instance.run.call_count >= 1
 
     @patch("musigree.loader.run_offline_loader.luigi")
-    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
     @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_offline_loader.CacheManager")
     @patch("musigree.loader.run_offline_loader.setup_logging")
@@ -273,7 +270,6 @@ class TestOfflineLoaderFunctions:
         mock_setup_logging: Mock,
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
-        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main function when cache setup fails."""
@@ -533,7 +529,6 @@ class TestOfflineLoaderEdgeCases:
         assert len(result) > 0
 
     @patch("musigree.loader.run_offline_loader.luigi")
-    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
     @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_offline_loader.CacheManager")
@@ -546,7 +541,6 @@ class TestOfflineLoaderEdgeCases:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         _mock_role_data_access: Mock,
-        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main when database helper is not initialized."""
@@ -567,7 +561,6 @@ class TestOfflineLoaderEdgeCases:
         assert "offline_database_helper must be initialized" in str(excinfo.value)
 
     @patch("musigree.loader.run_offline_loader.luigi")
-    @patch("musigree.loader.run_offline_loader.asyncio_atexit")
     @patch("musigree.loader.run_offline_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_offline_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_offline_loader.CacheManager")
@@ -580,7 +573,6 @@ class TestOfflineLoaderEdgeCases:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test offline_loader_main when Luigi build fails."""

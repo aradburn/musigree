@@ -53,7 +53,6 @@ class TestRunRuntimeLoadingProcess:
     @patch("musigree.loader.runtime_process_runner.asyncio.Runner")
     @patch("musigree.loader.runtime_process_runner.TransferManager")
     @patch("musigree.loader.runtime_process_runner.OfflineRoleDataAccess")
-    @patch("musigree.loader.runtime_process_runner.asyncio_atexit")
     @patch("musigree.loader.runtime_process_runner.RuntimeDatabaseManager")
     @patch("musigree.loader.runtime_process_runner.OfflineDatabaseManager")
     @patch("musigree.loader.runtime_process_runner.CacheManager")
@@ -66,7 +65,6 @@ class TestRunRuntimeLoadingProcess:
         mock_cache: MagicMock,
         mock_offline_manager: MagicMock,
         mock_runtime_manager: MagicMock,
-        mock_atexit: MagicMock,
         mock_role_data_access: MagicMock,
         mock_transfer_manager: MagicMock,
         mock_runner: MagicMock,
@@ -103,13 +101,11 @@ class TestRunRuntimeLoadingProcess:
         mock_cache.setup_and_clear_cache.assert_called_once()
         mock_offline_manager.setup_database.assert_called_once_with(offline_config)
         mock_runtime_manager.setup_database.assert_called_once_with(runtime_config)
-        assert mock_atexit.register.call_count >= 1
         assert mock_runner_instance.run.call_count >= 1
 
     @patch("musigree.loader.runtime_process_runner.asyncio.Runner")
     @patch("musigree.loader.runtime_process_runner.TransferManager")
     @patch("musigree.loader.runtime_process_runner.OfflineRoleDataAccess")
-    @patch("musigree.loader.runtime_process_runner.asyncio_atexit")
     @patch("musigree.loader.runtime_process_runner.RuntimeDatabaseManager")
     @patch("musigree.loader.runtime_process_runner.OfflineDatabaseManager")
     @patch("musigree.loader.runtime_process_runner.CacheManager")
@@ -122,7 +118,6 @@ class TestRunRuntimeLoadingProcess:
         mock_cache: MagicMock,
         mock_offline_manager: MagicMock,
         mock_runtime_manager: MagicMock,
-        _mock_atexit: MagicMock,
         mock_role_data_access: MagicMock,
         mock_transfer_manager: MagicMock,
         mock_runner: MagicMock,

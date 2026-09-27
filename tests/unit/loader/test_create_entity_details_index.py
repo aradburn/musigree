@@ -29,7 +29,6 @@ class TestCreateEntityDetailsIndex:
                 "musigree.loader.run_offline_create_entity_details_index.setup_logging"
             ) as mock_setup_logging,
             patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
-            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
             patch(
                 "musigree.loader.run_offline_create_entity_details_index.CacheManager"
             ) as mock_cache_manager,
@@ -75,7 +74,6 @@ class TestCreateEntityDetailsIndex:
                 "musigree.loader.run_offline_create_entity_details_index.setup_logging"
             ) as mock_setup_logging,
             patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
-            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
             patch("musigree.loader.run_offline_create_entity_details_index.CacheManager"),
             patch(
                 "musigree.loader.run_offline_create_entity_details_index.OfflineDatabaseManager"
@@ -109,7 +107,6 @@ class TestCreateEntityDetailsIndex:
         with (
             patch("musigree.loader.run_offline_create_entity_details_index.setup_logging"),
             patch("musigree.loader.run_offline_create_entity_details_index.log_banner"),
-            patch("musigree.loader.run_offline_create_entity_details_index.asyncio_atexit"),
             patch(
                 "musigree.loader.run_offline_create_entity_details_index.CacheManager"
             ) as mock_cache_manager,

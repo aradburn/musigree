@@ -70,7 +70,6 @@ class TestCreateSearchIndex:
     @patch("musigree.loader.run_offline_create_text_search_index.LoaderEntity")
     @patch("musigree.loader.run_offline_create_text_search_index.OfflineDatabaseManager")
     @patch("musigree.loader.run_offline_create_text_search_index.CacheManager")
-    @patch("musigree.loader.run_offline_create_text_search_index.asyncio_atexit")
     @patch("musigree.loader.run_offline_create_text_search_index.log_banner")
     @patch("musigree.loader.run_offline_create_text_search_index.setup_logging")
     @patch("musigree.loader.run_offline_create_text_search_index.asyncio.Runner")
@@ -79,7 +78,6 @@ class TestCreateSearchIndex:
         mock_runner: Mock,
         mock_setup_logging: Mock,
         mock_log_banner: Mock,
-        _mock_asyncio_atexit: Mock,
         mock_cache_manager: Mock,
         mock_offline_manager: Mock,
         mock_loader_entity_cls: Mock,
@@ -108,7 +106,6 @@ class TestCreateSearchIndex:
         assert mock_runner_instance.run.call_count >= 2
 
     @patch("musigree.loader.run_offline_create_text_search_index.CacheManager")
-    @patch("musigree.loader.run_offline_create_text_search_index.asyncio_atexit")
     @patch("musigree.loader.run_offline_create_text_search_index.log_banner")
     @patch("musigree.loader.run_offline_create_text_search_index.setup_logging")
     @patch("musigree.loader.run_offline_create_text_search_index.asyncio.Runner")
@@ -117,7 +114,6 @@ class TestCreateSearchIndex:
         mock_runner: Mock,
         _mock_setup_logging: Mock,
         _mock_log_banner: Mock,
-        _mock_asyncio_atexit: Mock,
         _mock_cache_manager: Mock,
     ) -> None:
         """create_text_search_index exits when cache setup fails."""
