@@ -32,8 +32,7 @@ the status code.
 
 from typing import Any
 
-# noinspection PyPackageRequirements
-from starlette import status
+from fastapi import status
 
 __all__ = (
     "AuthenticationError",

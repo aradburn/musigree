@@ -3,10 +3,7 @@ import logging
 from json import JSONDecodeError
 from typing import Any
 
-# noinspection PyPackageRequirements
 import fakeredis.aioredis
-
-# noinspection PyPackageRequirements
 from redis import asyncio as aioredis
 
 from musigree.config import Configuration
