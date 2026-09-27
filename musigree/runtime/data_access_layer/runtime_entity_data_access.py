@@ -13,6 +13,7 @@ from musigree.offline.offline_domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
+from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
@@ -290,3 +291,20 @@ class RuntimeEntityDataAccess:
             token_entry_dict_list.append(token_entry_dict)
 
         return token_entry_dict_list
+
+    @staticmethod
+    async def init_random_entity() -> None:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+        assert RuntimeDatabaseManager.runtime_database_helper.entity_details_index is not None
+
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            try:
+                await RuntimeDatabaseManager.runtime_database_helper.get_entity_count(
+                    entity_repository
+                )
+            except Exception:
+                log.exception("Error in initialising API for /random")
+                raise DatabaseError(message="API error") from None

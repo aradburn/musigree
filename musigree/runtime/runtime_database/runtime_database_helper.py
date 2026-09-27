@@ -412,10 +412,7 @@ class RuntimeDatabaseHelper(ABC):
         while True:
             entity = None
 
-            if RuntimeDatabaseManager.runtime_database_helper.entity_count_cached == 0:
-                RuntimeDatabaseManager.runtime_database_helper.entity_count_cached = (
-                    await entity_repository.count()
-                )
+            await RuntimeDatabaseManager.runtime_database_helper.get_entity_count(entity_repository)
 
             try:
                 entity = await entity_repository.get_random_entity(
@@ -501,3 +498,16 @@ class RuntimeDatabaseHelper(ABC):
             data.append(datum)
         result = {"results": tuple(data)}
         return result
+
+    @staticmethod
+    async def get_entity_count(entity_repository: RuntimeEntityRepository) -> None:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None, (
+            "runtime_database_helper must be initialized before calling initialize()"
+        )
+
+        if RuntimeDatabaseManager.runtime_database_helper.entity_count_cached == 0:
+            RuntimeDatabaseManager.runtime_database_helper.entity_count_cached = (
+                await entity_repository.count()
+            )

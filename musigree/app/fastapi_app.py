@@ -54,6 +54,7 @@ from musigree.exceptions import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
+from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
@@ -407,5 +408,9 @@ async def init_app(config: Configuration) -> None:
     await RuntimeRoleDataAccess.load_all_roles_into_cache()
 
     log.info("Loaded all roles OK")
+
+    # Init random for Production environment
+    if config.PRODUCTION:
+        await RuntimeEntityDataAccess.init_random_entity()
 
     log.info("######## APPLICATION STARTUP END ########")
