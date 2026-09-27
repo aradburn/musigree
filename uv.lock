@@ -118,15 +118,6 @@ wheels = [
 ]
 
 [[package]]
-name = "asyncio-atexit"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/22/d3/dd2974be3f67c7ec96e0d6ab454429d0372cb7c7bffa3d0ac67a483cb801/asyncio-atexit-1.0.1.tar.gz", hash = "sha256:1d0c71544b8ee2c484d322844ee72c0875dde6f250c0ed5b6993592ab9f7d436", size = 4373, upload-time = "2022-04-26T08:54:16.998Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/65/10/d6abaefa57a52646651fd0383c056280b0853c0106229ece6bb38cd14463/asyncio_atexit-1.0.1-py3-none-any.whl", hash = "sha256:d93d5f7d5633a534abd521ce2896ed0fbe8de170bb1e65ec871d1c20eac9d376", size = 3752, upload-time = "2022-04-26T08:54:15.726Z" },
-]
-
-[[package]]
 name = "asyncstdlib"
 version = "3.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -797,7 +788,6 @@ version = "1.0.85"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
-    { name = "asyncio-atexit" },
     { name = "asyncstdlib" },
     { name = "deepdiff" },
     { name = "fakeredis" },
@@ -854,7 +844,6 @@ reinstall-package = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = "==0.22.1" },
-    { name = "asyncio-atexit", specifier = "==1.0.1" },
     { name = "asyncstdlib", specifier = "==3.14.0" },
     { name = "deepdiff", specifier = "==9.1.0" },
     { name = "fakeredis", specifier = "==2.38.0" },
@@ -872,7 +861,7 @@ requires-dist = [
     { name = "redis", extras = ["hiredis"], specifier = "==8.1.0" },
     { name = "requests", specifier = "==2.34.2" },
     { name = "retrying", specifier = "==1.4.2" },
-    { name = "secweb", specifier = "==1.30.10" },
+    { name = "secweb", specifier = "==2.0.0" },
     { name = "sortedcontainers", specifier = "==2.4.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.54" },
     { name = "toolz", specifier = "==1.1.0" },
@@ -1550,11 +1539,11 @@ wheels = [
 
 [[package]]
 name = "secweb"
-version = "1.30.10"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a2/75/e3e038a00d21d576547631b31f603edb44d2575305a7d7fb46f36cb74eba/secweb-1.30.10.tar.gz", hash = "sha256:49c5f9a2fb1361b98cd7434c1e377e4714b5309d29bb9005acd249e0cf170949", size = 26924, upload-time = "2026-01-15T06:02:34.706Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/df/1d/9e91342a0fa036fd62416efcafc903e1d6366d3b83e7a41436576e7fd730/secweb-2.0.0.tar.gz", hash = "sha256:e0321f9d78e97bc82f84f5306b0c597e090e7d7e7bd604d71282d5b88682e201", size = 25489, upload-time = "2026-07-30T16:22:55.37Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/ba/9b0d38221a24f5fd7de7b032e4ce976029cbdca2d2c15b76804d3830b2a8/secweb-1.30.10-py3-none-any.whl", hash = "sha256:4fa2f7caeeb16552b4aa8c2e5dc94e094ef32491b22b2e527b7dc355523a57ee", size = 41966, upload-time = "2026-01-15T06:02:33.189Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/cd/cdecd4ce3ffd48daaff3f6d01e0046e33856d7eaa3f48d047e9917054fb3/secweb-2.0.0-py3-none-any.whl", hash = "sha256:d16aacfe8a71eb23bc5fa97d3a1b946a69e106a31d986e21874d086cc149774a", size = 31728, upload-time = "2026-07-30T16:22:54.145Z" },
 ]
 
 [[package]]
