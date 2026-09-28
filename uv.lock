@@ -784,7 +784,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/cb/d0/7555686ae7ff57312
 
 [[package]]
 name = "musigree"
-version = "1.0.87"
+version = "1.0.88"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
