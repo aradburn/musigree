@@ -39,6 +39,7 @@ from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import CustomCORSPreflightMiddleware, PreflightLoggerMiddleware
 from musigree.app.fastapi_csp import setup_csp_middleware
+from musigree.app.fastapi_image_embedding import OpenGraphImageEmbeddingMiddleware
 from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration
@@ -248,6 +249,8 @@ def create_app(config: Configuration) -> FastAPI:
     # b"dnt": b"1",
 
     add_app_middleware(app, GZipMiddleware, minimum_size=1000)
+    # Outermost, so it can replace the same-site CORP header SecWeb already set.
+    add_app_middleware(app, OpenGraphImageEmbeddingMiddleware)
 
     # Create assets router
     assets_router, _assets_templates = create_assets_router(config)
