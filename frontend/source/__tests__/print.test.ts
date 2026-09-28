@@ -774,6 +774,57 @@ describe("SVG String Processing", () => {
         });
     });
 
+    it("should include a minified shadow rule that lists circle and rect selectors", () => {
+        const originalStyleSheets = document.styleSheets;
+        const createMockCSSStyleRule = (
+            selectorText: string,
+            cssText: string,
+        ) => {
+            const mockRule = {
+                selectorText,
+                cssText,
+            };
+            Object.setPrototypeOf(mockRule, CSSStyleRule.prototype);
+            return mockRule as CSSStyleRule;
+        };
+
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        node.classList.add("node");
+        const shadow = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle",
+        );
+        shadow.classList.add("shadow");
+        node.appendChild(shadow);
+        svgElement.appendChild(node);
+
+        const selectorText =
+            "#network-layer .node circle.shadow,#network-layer .node rect.shadow";
+        const cssText = `${selectorText}{fill:url(#radial-gradient);stroke:none}`;
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => [
+                {
+                    ownerNode: { textContent: "Musigree" },
+                    href: "http://example.com/musigree-styles.css",
+                    get cssRules() {
+                        return [createMockCSSStyleRule(selectorText, cssText)];
+                    },
+                },
+            ],
+            configurable: true,
+        });
+
+        const styles = printModule.getCSSStyles(svgElement);
+        expect(styles).toContain("url(#radial-gradient)");
+        expect(styles).toContain("circle.shadow");
+
+        Object.defineProperty(document, "styleSheets", {
+            get: () => originalStyleSheets,
+            configurable: true,
+        });
+    });
+
     it("should handle stylesheets without cssRules", () => {
         const originalStyleSheets = document.styleSheets;
 
@@ -1085,12 +1136,18 @@ describe("SVG to Image Conversion", () => {
     });
 
     it("should correctly encode SVG string to base64", () => {
-        const svgString = '<svg><circle r="10"/></svg>';
+        const svgString = '<svg><text>Café — naïve</text></svg>';
         printModule.svgString2Image(svgString, 100, 100, "png", vi.fn());
 
-        // Check that the image src contains the base64 encoded SVG
-        expect(mockImage.src).toContain("data:image/svg+xml;base64,");
-        expect(mockImage.src).toMatch(/^data:image\/svg\+xml;base64,.+/);
+        const prefix = "data:image/svg+xml;base64,";
+        const src = mockImage.src ?? "";
+        expect(src.startsWith(prefix)).toBe(true);
+        const decoded = new TextDecoder().decode(
+            Uint8Array.from(atob(src.slice(prefix.length)), (char) =>
+                char.charCodeAt(0),
+            ),
+        );
+        expect(decoded).toBe(svgString);
     });
 
     it("should draw logo at correct position", () => {

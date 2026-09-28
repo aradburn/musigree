@@ -1,8 +1,8 @@
 import * as d3 from "d3";
 import saveAs from "file-saver";
-import { DOM_IDS, EXPORT, TIMING, MESSAGE } from "./constants";
-import { musigreeManager, networkManager } from "./core/singletons";
-import { showMessage, clearMessages } from "./messages";
+import {DOM_IDS, EXPORT, MESSAGE, TIMING} from "./constants";
+import {musigreeManager, networkManager} from "./core/singletons";
+import {clearMessages, showMessage} from "./messages";
 
 /**
  * Exports the SVG as a PNG image file
@@ -83,6 +83,30 @@ export const getSvgString = (svgNode: SVGElement): string => {
     svgString = svgString.replace(/NS\d+:href/g, "xlink:href"); // Safari NS namespace fix
 
     return svgString;
+};
+
+const NETWORK_LAYER_SELECTOR_PREFIX = "#network-layer ";
+
+/**
+ * Returns true when a stylesheet rule applies to an element in the SVG.
+ * Production minification merges rules that share a declaration block, so one
+ * rule can list several selectors. The node shadow fill is one of those rules:
+ * `#network-layer .node circle.shadow, #network-layer .node rect.shadow`.
+ */
+const styleRuleMatchesSvg = (
+    selectorText: string,
+    selectorsOnSvg: ReadonlySet<string>,
+): boolean => {
+    for (const selector of selectorText.split(",")) {
+        const trimmed = selector.trim();
+        const normalized = trimmed.startsWith(NETWORK_LAYER_SELECTOR_PREFIX)
+            ? trimmed.slice(NETWORK_LAYER_SELECTOR_PREFIX.length)
+            : trimmed;
+        if (selectorsOnSvg.has(normalized)) {
+            return true;
+        }
+    }
+    return false;
 };
 
 /**
@@ -181,12 +205,7 @@ export const getCSSStyles = (parentElement: SVGElement): string => {
                     if (!(rule instanceof CSSStyleRule) || !rule.selectorText)
                         continue;
 
-                    const networkSelectorText = rule.selectorText.includes(
-                        "#network-layer ",
-                    )
-                        ? rule.selectorText.replace("#network-layer ", "")
-                        : rule.selectorText;
-                    if (selectorTextArr.has(networkSelectorText)) {
+                    if (styleRuleMatchesSvg(rule.selectorText, selectorTextArr)) {
                         const varFound = rule.cssText.match(varRegex);
                         if (varFound) {
                             const dashFound = rule.cssText.match(dashRegex);
@@ -226,6 +245,20 @@ export const appendCSS = (cssText: string, element: SVGElement): void => {
 };
 
 /**
+ * Base64-encodes an SVG document as UTF-8 bytes for a data URL.
+ * `btoa` accepts only Latin-1, so characters outside that range (artist names,
+ * punctuation) are converted to UTF-8 first.
+ */
+const encodeSvgStringAsBase64 = (svgString: string): string => {
+    const bytes = new TextEncoder().encode(svgString);
+    let binary = "";
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+};
+
+/**
  * Converts an SVG string to an image
  * @param svgString - The SVG string to convert
  * @param width - The desired width of the output image
@@ -241,8 +274,7 @@ export const svgString2Image = (
     callback: (blob: Blob, filesize: number) => void,
 ): void => {
     const imgsrc =
-        "data:image/svg+xml;base64," +
-        btoa(unescape(encodeURIComponent(svgString)));
+        "data:image/svg+xml;base64," + encodeSvgStringAsBase64(svgString);
 
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
