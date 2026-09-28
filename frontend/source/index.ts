@@ -4,6 +4,10 @@
  * @module musigree
  */
 
+// Vite serves this virtual module. It must run before any React component so
+// refresh can install window.$RefreshReg$ without an inline script.
+import "@vitejs/plugin-react/preamble";
+
 import "~bootstrap/dist/css/bootstrap.min.css";
 
 // Import our custom CSS
