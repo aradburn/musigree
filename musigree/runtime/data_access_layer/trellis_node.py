@@ -60,10 +60,10 @@ class TrellisNode:
         "_children",
         "_cluster",
         "_distance",
+        "_entity",
         "_links",
         "_missing",
         "_missing_by_page",
-        "_entity",
         "_parentage",
         "_parents",
         "_siblings",
@@ -83,7 +83,7 @@ class TrellisNode:
             distance (int, optional): The distance of this node from the
                 central entity in the graph. Defaults to 0.
         """
-        self._children: set["TrellisNode"] = set()
+        self._children: set[TrellisNode] = set()
         """Set of child nodes."""
         self._cluster: int = 0
         """Cluster ID for the node."""
@@ -97,11 +97,11 @@ class TrellisNode:
         """Missing links by page."""
         self._entity: RuntimeEntity = entity
         """The entity associated with this node."""
-        self._parentage: frozenset["TrellisNode"] | None = None
+        self._parentage: frozenset[TrellisNode] | None = None
         """Frozen set of ancestor nodes."""
-        self._parents: set["TrellisNode"] = set()
+        self._parents: set[TrellisNode] = set()
         """Set of parent nodes."""
-        self._siblings: set["TrellisNode"] = set()
+        self._siblings: set[TrellisNode] = set()
         """Set of sibling nodes."""
         self._subgraph_size: int | None = None
         """The size of the subgraph that the node is part of."""
@@ -156,7 +156,7 @@ class TrellisNode:
             data["missingByPage"] = self.missing_by_page
         return data
 
-    def get_neighbors(self) -> set["TrellisNode"]:
+    def get_neighbors(self) -> set[TrellisNode]:
         """
         Gets the set of all neighboring nodes.
 
@@ -173,7 +173,7 @@ class TrellisNode:
         """Add the children."""
         return neighbors
 
-    def get_parentage(self) -> frozenset["TrellisNode"]:
+    def get_parentage(self) -> frozenset[TrellisNode]:
         """
         Gets the set of all parent and ancestor nodes.
 
@@ -184,16 +184,15 @@ class TrellisNode:
         if self._parentage is not None:
             """If the parentage is already computed, return it."""
             return self._parentage
-        # noinspection PySetFunctionToLiteral
-        parentage: set["TrellisNode"] = set([self])
+        parentage: set[TrellisNode] = {self}
         """Set to store the parentage."""
-        parents: set["TrellisNode"] = self.parents
+        parents: set[TrellisNode] = self.parents
         """Set with the parent of the current node."""
         while parents:
             """While there are parents to process."""
             parentage.update(parents)
             """Add all the parents to the parentage."""
-            new_parents: set["TrellisNode"] = set()
+            new_parents: set[TrellisNode] = set()
             """Set to store the parents of the current parents."""
             for parent in parents:
                 """Iterate over the current parents."""
@@ -210,7 +209,7 @@ class TrellisNode:
     # PUBLIC PROPERTIES
 
     @property
-    def children(self) -> set["TrellisNode"]:
+    def children(self) -> set[TrellisNode]:
         """
         Gets the set of child nodes.
 
@@ -310,7 +309,7 @@ class TrellisNode:
         return self._missing_by_page
 
     @property
-    def parents(self) -> set["TrellisNode"]:
+    def parents(self) -> set[TrellisNode]:
         """
         Gets the set of parent nodes.
 
@@ -320,7 +319,7 @@ class TrellisNode:
         return self._parents
 
     @property
-    def siblings(self) -> set["TrellisNode"]:
+    def siblings(self) -> set[TrellisNode]:
         """
         Gets the set of sibling nodes.
 

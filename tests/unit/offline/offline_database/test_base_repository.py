@@ -7,7 +7,7 @@ It tests initialization, error handling, and core functionality that can be test
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch, PropertyMock
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
 from sqlalchemy import Column, Integer, String
@@ -148,7 +148,7 @@ class TestBaseRepository:
             payload = {"name": "test"}
 
             # Mock the schema class to raise IntegrityError during instantiation
-            with patch.object(
+            with patch.object(  # noqa: SIM117
                 repo,
                 "schema_class",
                 side_effect=IntegrityError("Integrity error", None, Exception("Original error")),
@@ -171,7 +171,7 @@ class TestBaseRepository:
             payload = {"name": "test"}
 
             # Mock the schema class to raise InvalidRequestError during instantiation
-            with patch.object(
+            with patch.object(  # noqa: SIM117
                 repo, "schema_class", side_effect=InvalidRequestError("Invalid request")
             ):
                 # Execute & Verify

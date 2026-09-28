@@ -2,10 +2,35 @@
 import React from "react";
 import { components, TourProvider } from "@reactour/tour";
 import { onboardingTourSteps } from "./steps";
-import { OnboardingTourController } from "./OnboardingTourController";
-import { markOnboardingTourCompleted } from "./onboardingTourStorage";
+
+const TOUR_ACCENT_COLOR = "#2F4F4F";
+const TOUR_SURFACE_COLOR = "#F9FBFA";
 
 type NavigationProps = React.ComponentProps<typeof components.Navigation>;
+
+const TourNextButton: NonNullable<NavigationProps["nextButton"]> = ({
+    Button,
+    currentStep,
+    stepsLength,
+    setIsOpen,
+}) => {
+    const isLastStep = currentStep === stepsLength - 1;
+    if (!isLastStep) {
+        return <Button />;
+    }
+
+    return (
+        <button
+            type="button"
+            className="btn btn-primary btn-sm tour-end-button"
+            onClick={() => {
+                setIsOpen(false);
+            }}
+        >
+            End Tour
+        </button>
+    );
+};
 
 const TourNavigation: React.FC<NavigationProps> = (props) => {
     const { setIsOpen, currentStep, steps } = props;
@@ -35,7 +60,7 @@ interface MusigreeTourProviderProps {
     children: React.ReactNode;
 }
 
-/** Wraps the app with reactour and first-visit onboarding behavior. */
+/** Wraps the app with reactour. The intro tour is started from the help modal. */
 export const MusigreeTourProvider: React.FC<MusigreeTourProviderProps> = ({
     children,
 }) => {
@@ -43,22 +68,20 @@ export const MusigreeTourProvider: React.FC<MusigreeTourProviderProps> = ({
         <TourProvider
             steps={onboardingTourSteps}
             components={{ Navigation: TourNavigation }}
+            nextButton={TourNextButton}
             showBadge={false}
             showDots={false}
             showCloseButton
             scrollSmooth
-            beforeClose={() => {
-                markOnboardingTourCompleted();
-            }}
             styles={{
                 popover: (base) => ({
                     ...base,
-                    border: "0.2rem solid #2F4F4F",
+                    border: `0.2rem solid ${TOUR_ACCENT_COLOR}`,
                     borderRadius: 8,
                     padding: "2rem",
                     maxWidth: "32rem",
-                    "--reactour-accent": "#2F4F4F",
-                    backgroundColor: "#F9FBFA",
+                    "--reactour-accent": TOUR_ACCENT_COLOR,
+                    backgroundColor: TOUR_SURFACE_COLOR,
                     className: "tour-popover",
                 }),
                 maskWrapper: (base) => ({
@@ -72,7 +95,6 @@ export const MusigreeTourProvider: React.FC<MusigreeTourProviderProps> = ({
             }}
             padding={{ popover: [-30, -20] }}
         >
-            <OnboardingTourController />
             {children}
         </TourProvider>
     );

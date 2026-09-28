@@ -3,11 +3,11 @@ Unit tests for musigree.loader.run_runtime_loader module.
 """
 
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import (
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
@@ -15,8 +15,8 @@ from musigree.constants import (
     TEXT_SEARCH_FILENAME,
 )
 from musigree.loader.run_runtime_loader import (
-    load_runtime_table_stage,
     get_load_runtime_table_stages,
+    load_runtime_table_stage,
     load_runtime_tables,
     runtime_loader_main,
 )
@@ -214,7 +214,6 @@ class TestRuntimeLoaderFunctions:
             assert stages[12].func == mock_helper.optimize
 
     @patch("musigree.loader.run_runtime_loader.luigi")
-    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
     @patch("musigree.loader.run_runtime_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
@@ -229,7 +228,6 @@ class TestRuntimeLoaderFunctions:
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test successful execution of loader_main."""
@@ -276,7 +274,6 @@ class TestRuntimeLoaderFunctions:
         mock_luigi.build.assert_called_once()
 
     @patch("musigree.loader.run_runtime_loader.luigi")
-    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
@@ -289,7 +286,6 @@ class TestRuntimeLoaderFunctions:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test loader main function when cache setup fails."""
@@ -509,7 +505,7 @@ class TestRuntimeLoaderEdgeCases:
 
         _configure_runtime_db_helper(mock_db_manager)
 
-        with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:
+        with patch("musigree.transfer.transfer_manager.TransferManager") as mock_transfer_manager:  # noqa: SIM117
             with patch(
                 "musigree.runtime.data_access_layer.runtime_role_data_access.RuntimeRoleDataAccess"
             ) as mock_runtime_role_data_access:
@@ -612,7 +608,6 @@ class TestRuntimeLoaderMainAdditional:
     """Additional test cases for runtime_loader_main function."""
 
     @patch("musigree.loader.run_runtime_loader.luigi")
-    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
     @patch("musigree.loader.run_runtime_loader.OfflineRoleDataAccess")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
@@ -627,7 +622,6 @@ class TestRuntimeLoaderMainAdditional:
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
         mock_role_data_access: Mock,
-        _mock_asyncio_atexit: Mock,
         mock_luigi: Mock,
     ) -> None:
         """Test runtime_loader_main when Luigi build fails."""
@@ -667,7 +661,6 @@ class TestRuntimeLoaderMainAdditional:
         mock_luigi.build.assert_called_once()
 
     @patch("musigree.loader.run_runtime_loader.luigi")
-    @patch("musigree.loader.run_runtime_loader.asyncio_atexit")
     @patch("musigree.loader.run_runtime_loader.RuntimeDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.OfflineDatabaseManager")
     @patch("musigree.loader.run_runtime_loader.CacheManager")
@@ -680,7 +673,6 @@ class TestRuntimeLoaderMainAdditional:
         mock_cache_manager: Mock,
         mock_offline_db_manager: Mock,
         mock_runtime_db_manager: Mock,
-        _mock_asyncio_atexit: Mock,
         _mock_luigi: Mock,
     ) -> None:
         """Test runtime_loader_main when database setup fails."""

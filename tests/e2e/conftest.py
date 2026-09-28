@@ -1,20 +1,25 @@
 """Pytest configuration and fixtures for end-to-end tests."""
+
 import logging
 import multiprocessing
 import socket
 import time
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
-from typing import Generator, AsyncGenerator
 
 import pytest
 import uvicorn
 
 from musigree.app.fastapi_app import create_app
-from musigree.config import Configuration, SqliteReadOnlyTestConfiguration, SqliteTestConfiguration, \
-    PostgresTestConfiguration
+from musigree.config import (
+    Configuration,
+    PostgresTestConfiguration,
+    SqliteReadOnlyTestConfiguration,
+    SqliteTestConfiguration,
+)
 from musigree.constants import CacheType
 from musigree.logging_config import TEST_LOGGING_CONFIG, setup_logging
-from tests.e2e.end_to_end_utils import TEST_SERVER_BASE_URL, TEST_SERVER_BASE_PORT
+from tests.e2e.end_to_end_utils import TEST_SERVER_BASE_PORT, TEST_SERVER_BASE_URL
 
 log = logging.getLogger(__name__)
 
@@ -36,11 +41,19 @@ def run_server(runtime_db_path: str) -> None:
     app = create_app(readonly_config)
 
     # uvicorn.run(app, host="0.0.0.0", port=TEST_SERVER_BASE_PORT, log_level="trace", access_log=True)
-    uvicorn.run(app, host="0.0.0.0", port=TEST_SERVER_BASE_PORT, log_level="debug", log_config=TEST_LOGGING_CONFIG,
-                access_log=True)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=TEST_SERVER_BASE_PORT,
+        log_level="debug",
+        log_config=TEST_LOGGING_CONFIG,
+        access_log=True,
+    )
 
 
-def is_server_ready(host: str = "localhost", port: int = TEST_SERVER_BASE_PORT, timeout: float = 1.0) -> bool:
+def is_server_ready(
+    host: str = "localhost", port: int = TEST_SERVER_BASE_PORT, timeout: float = 1.0
+) -> bool:
     """Check if the server is ready to accept connections."""
     # noinspection PyBroadException
     try:
@@ -49,18 +62,18 @@ def is_server_ready(host: str = "localhost", port: int = TEST_SERVER_BASE_PORT, 
         result = sock.connect_ex((host, port))
         sock.close()
         return result == 0
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
 @pytest.fixture(scope="class")
 def server_process(
     runtime_config: Configuration,
-    offline_database_setup: AsyncGenerator[None, None],
-    runtime_database_setup: AsyncGenerator[None, None],
+    offline_database_setup: AsyncGenerator[None],
+    runtime_database_setup: AsyncGenerator[None],
     offline_database_shutdown: None,
     runtime_database_shutdown: None,
-) -> Generator[multiprocessing.Process, None, None]:
+) -> Generator[multiprocessing.Process]:
     """Start the FastAPI server in a background process.
 
     Uses the same configuration as the test fixtures to ensure the server

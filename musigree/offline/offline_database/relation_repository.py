@@ -1,7 +1,7 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, String, cast, delete, func, literal, or_, select, Select
+from sqlalchemy import Result, Select, String, cast, delete, func, literal, or_, select
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import NotFoundError
@@ -10,9 +10,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.relation_table import RelationTable
 from musigree.offline.offline_domain.relation import (
-    RelationUncommitted,
     RelationDB,
     RelationInternal,
+    RelationUncommitted,
 )
 
 log = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    async def all(self) -> AsyncGenerator[list[RelationDB], None]:
+    async def all(self) -> AsyncGenerator[list[RelationDB]]:
         """
         Retrieves all relations from the runtime_database.
 

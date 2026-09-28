@@ -1,7 +1,7 @@
 """Tests for MetadataRepository with async/await and pytest fixtures."""
 
 import datetime
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -16,7 +16,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestRepositoryMetadata(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_metadata(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         """Test creating metadata in the repository.
 
@@ -24,7 +24,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
         metadata = MetadataUncommitted(
             metadata_key="key1",
             metadata_value="value1",
@@ -54,7 +54,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_get_metadata_by_key(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         """Test retrieving metadata by key from the repository.
 
@@ -62,7 +62,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)
+        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
         metadata = MetadataUncommitted(
             metadata_key="key2",
             metadata_value="value2",

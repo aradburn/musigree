@@ -8,11 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-# noinspection PyPackageRequirements
 from starlette.requests import Request
-
-# noinspection PyPackageRequirements
 from starlette.responses import JSONResponse
 
 from musigree.app.fastapi_api import router

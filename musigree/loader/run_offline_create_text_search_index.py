@@ -2,12 +2,11 @@ import asyncio
 import logging
 import sys
 
-import asyncio_atexit  # type: ignore[import-untyped]
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
-    PostgresReadOnlyDevelopmentConfiguration,
     Configuration,
+    PostgresReadOnlyDevelopmentConfiguration,
 )
 from musigree.constants import (
     TEXT_SEARCH_DATA,
@@ -48,9 +47,9 @@ async def _finalize_offline_loader_before_loop_close() -> None:
     """
     Cancel loader tasks and release resources while the event loop is still usable.
 
-    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
-    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
-    avoids that path and drains pending tasks first.
+    Cleanup runs before ``asyncio.Runner`` closes the loop so a second SIGINT
+    during engine disposal cannot interrupt loop teardown. Pending tasks are
+    cancelled and awaited first.
     """
     loop = asyncio.get_running_loop()
     current = asyncio.current_task()
@@ -76,9 +75,6 @@ def create_text_search_index(offline_config: Configuration) -> None:
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
     with asyncio.Runner() as runner:
-        loop = runner.get_loop()
-        asyncio_atexit.register(shutdown_loader, loop=loop)
-
         try:
             # Setup Cache
             try:
@@ -97,7 +93,6 @@ def create_text_search_index(offline_config: Configuration) -> None:
             text_search_path = offline_config.DATA_DIR / TEXT_SEARCH_DATA / TEXT_SEARCH_FILENAME
             runner.run(LoaderEntity().loader_create_text_search_index(text_search_path))
         finally:
-            asyncio_atexit.unregister(shutdown_loader, loop=loop)
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:

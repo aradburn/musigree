@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -32,8 +32,8 @@ class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_transfer_roles(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
@@ -55,8 +55,8 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_entities(
         self,
         runtime_config: Configuration,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
@@ -79,8 +79,8 @@ class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_transfer_relations(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN
@@ -101,8 +101,8 @@ class TestTransfer(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_transfer_entity_details(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
         # GIVEN

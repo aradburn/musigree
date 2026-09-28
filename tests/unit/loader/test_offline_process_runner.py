@@ -47,7 +47,6 @@ class TestRunOfflineLoadingProcess:
 
     @patch("musigree.loader.offline_process_runner.asyncio.Runner")
     @patch("musigree.loader.offline_process_runner.OfflineRoleDataAccess")
-    @patch("musigree.loader.offline_process_runner.asyncio_atexit")
     @patch("musigree.loader.offline_process_runner.OfflineDatabaseManager")
     @patch("musigree.loader.offline_process_runner.CacheManager")
     @patch("musigree.loader.offline_process_runner.log_banner")
@@ -58,7 +57,6 @@ class TestRunOfflineLoadingProcess:
         mock_log_banner: MagicMock,
         mock_cache: MagicMock,
         mock_offline_manager: MagicMock,
-        mock_atexit: MagicMock,
         mock_role_data_access: MagicMock,
         mock_runner: MagicMock,
     ) -> None:
@@ -87,5 +85,4 @@ class TestRunOfflineLoadingProcess:
         mock_log_banner.assert_called_once()
         mock_cache.setup_and_clear_cache.assert_called_once()
         mock_offline_manager.setup_database.assert_called_once_with(config)
-        assert mock_atexit.register.call_count >= 1
         assert mock_runner_instance.run.call_count >= 1

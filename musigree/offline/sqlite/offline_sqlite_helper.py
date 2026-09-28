@@ -1,15 +1,14 @@
 import logging
-from typing import Type
 
-from sqlalchemy import text, StaticPool
-from sqlalchemy.dialects.sqlite import insert, Insert
+from sqlalchemy import StaticPool, text
+from sqlalchemy.dialects.sqlite import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from musigree.config import Configuration
 from musigree.offline.offline_database.offline_database_helper import (
-    OfflineDatabaseHelper,
     ConcreteTable,
+    OfflineDatabaseHelper,
 )
 
 log = logging.getLogger(__name__)
@@ -83,7 +82,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
                 await connection.commit()
                 log.info("Offline Database connected OK.")
         except DatabaseError:
-            log.exception("Offline Database Connection Error", exc_info=True)
+            log.exception("Offline Database Connection Error")
 
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:
@@ -143,7 +142,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
@@ -154,7 +153,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_bulk_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:

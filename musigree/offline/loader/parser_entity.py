@@ -44,6 +44,7 @@ also uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from types import MappingProxyType
 from typing import Any
 from xml.etree.ElementTree import Element
 
@@ -246,17 +247,19 @@ class ParserEntity(ParserBase):
         return data
 
 
-ParserEntity._tags_to_fields_mapping = {
-    "aliases": ("aliases", ParserEntity.element_to_names),
-    "contact_info": ("contact_info", ParserUtils.element_to_string),
-    "groups": ("groups", ParserEntity.element_to_names),
-    "id": ("id", ParserUtils.element_to_integer),
-    "members": ("members", ParserEntity.element_to_names_and_ids),
-    "name": ("entity_name", ParserUtils.element_to_string),
-    "namevariations": ("name_variations", ParserUtils.element_to_strings),
-    "parentLabel": ("parent_label", ParserEntity.element_to_parent_label),
-    "profile": ("profile", ParserUtils.element_to_string),
-    "realname": ("real_name", ParserUtils.element_to_string),
-    "sublabels": ("sublabels", ParserEntity.element_to_sublabels),
-    "urls": ("urls", ParserUtils.element_to_strings),
-}
+ParserEntity._tags_to_fields_mapping = MappingProxyType(
+    {
+        "aliases": ("aliases", ParserEntity.element_to_names),
+        "contact_info": ("contact_info", ParserUtils.element_to_string),
+        "groups": ("groups", ParserEntity.element_to_names),
+        "id": ("id", ParserUtils.element_to_integer),
+        "members": ("members", ParserEntity.element_to_names_and_ids),
+        "name": ("entity_name", ParserUtils.element_to_string),
+        "namevariations": ("name_variations", ParserUtils.element_to_strings),
+        "parentLabel": ("parent_label", ParserEntity.element_to_parent_label),
+        "profile": ("profile", ParserUtils.element_to_string),
+        "realname": ("real_name", ParserUtils.element_to_string),
+        "sublabels": ("sublabels", ParserEntity.element_to_sublabels),
+        "urls": ("urls", ParserUtils.element_to_strings),
+    }
+)

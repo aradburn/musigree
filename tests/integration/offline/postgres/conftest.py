@@ -1,5 +1,6 @@
 import pytest
-from musigree.config import PostgresTestConfiguration, Configuration
+
+from musigree.config import Configuration, PostgresTestConfiguration
 from musigree.logging_config import setup_logging
 
 

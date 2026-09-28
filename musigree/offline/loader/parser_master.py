@@ -38,6 +38,7 @@ It uses `musigree` library for musigree specific operations.
 """
 
 import logging
+from types import MappingProxyType
 from typing import Any
 from xml.etree.ElementTree import Element
 
@@ -61,7 +62,7 @@ class ParserMaster(ParserBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping: dict[str, Any] = {}
+    _artists_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     Mapping for artist credit XML elements to their corresponding fields.
     """
@@ -122,7 +123,7 @@ class ParserMaster(ParserBase):
             if duration_attr is not None:
                 try:
                     video_data["duration"] = int(duration_attr)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     video_data["duration"] = None
             else:
                 video_data["duration"] = None
@@ -162,7 +163,7 @@ class ParserMaster(ParserBase):
             if width_attr is not None:
                 try:
                     image_data["width"] = int(width_attr)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     image_data["width"] = None
             else:
                 image_data["width"] = None
@@ -170,7 +171,7 @@ class ParserMaster(ParserBase):
             if height_attr is not None:
                 try:
                     image_data["height"] = int(height_attr)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     image_data["height"] = None
             else:
                 image_data["height"] = None
@@ -216,27 +217,31 @@ class ParserMaster(ParserBase):
         return data
 
 
-ParserMaster._tags_to_fields_mapping = {
-    "artists": ("artists", ParserMaster.element_to_artist_credits),
-    "genres": ("genres", ParserUtils.element_to_strings),
-    "styles": ("styles", ParserUtils.element_to_strings),
-    "title": ("title", ParserUtils.element_to_string),
-    "year": ("year", ParserUtils.element_to_integer),
-    "main_release": ("main_release", ParserUtils.element_to_string),
-    "data_quality": ("data_quality", ParserUtils.element_to_string),
-    "videos": ("videos", ParserMaster.element_to_videos),
-    "images": ("images", ParserMaster.element_to_images),
-}
+ParserMaster._tags_to_fields_mapping = MappingProxyType(
+    {
+        "artists": ("artists", ParserMaster.element_to_artist_credits),
+        "genres": ("genres", ParserUtils.element_to_strings),
+        "styles": ("styles", ParserUtils.element_to_strings),
+        "title": ("title", ParserUtils.element_to_string),
+        "year": ("year", ParserUtils.element_to_integer),
+        "main_release": ("main_release", ParserUtils.element_to_string),
+        "data_quality": ("data_quality", ParserUtils.element_to_string),
+        "videos": ("videos", ParserMaster.element_to_videos),
+        "images": ("images", ParserMaster.element_to_images),
+    }
+)
 """
 Mapping of XML tags to fields for master elements.
 """
 
-ParserMaster._artists_mapping = {
-    "id": ("id", ParserUtils.element_to_integer),
-    "name": ("name", ParserUtils.element_to_string),
-    "anv": ("anv", ParserUtils.element_to_string),
-    "join": ("join", ParserUtils.element_to_string),
-}
+ParserMaster._artists_mapping = MappingProxyType(
+    {
+        "id": ("id", ParserUtils.element_to_integer),
+        "name": ("name", ParserUtils.element_to_string),
+        "anv": ("anv", ParserUtils.element_to_string),
+        "join": ("join", ParserUtils.element_to_string),
+    }
+)
 """
 Mapping of XML tags to fields for artist credit elements.
 """

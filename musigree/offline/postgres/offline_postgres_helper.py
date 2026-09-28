@@ -2,20 +2,19 @@ import logging
 import multiprocessing
 import shutil
 from pathlib import Path
-from typing import Type
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
-from sqlalchemy import URL, text, AsyncAdaptedQueuePool
-from sqlalchemy.dialects.postgresql import insert, Insert
+from sqlalchemy import URL, AsyncAdaptedQueuePool, text
+from sqlalchemy.dialects.postgresql import Insert, insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
 from musigree.offline.offline_database.offline_database_helper import (
-    OfflineDatabaseHelper,
     ConcreteTable,
+    OfflineDatabaseHelper,
 )
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
@@ -222,7 +221,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
             log.info("Offline Database connected OK.")
         except DatabaseError:
-            log.exception("Offline Database Connection Error", exc_info=True)
+            log.exception("Offline Database Connection Error")
 
     @classmethod
     async def create_tables(cls, tables: list[str]) -> None:
@@ -271,7 +270,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
@@ -282,7 +281,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
 
     @staticmethod
     def generate_insert_bulk_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:

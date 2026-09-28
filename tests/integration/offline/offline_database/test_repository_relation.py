@@ -1,12 +1,12 @@
 """Tests for RelationRepository with async/await and pytest fixtures."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree import utils
 from musigree.config import Configuration
-from musigree.constants import DISCOGS_DATA, ROLES_DATA, INSTRUMENTS_DATA
+from musigree.constants import DISCOGS_DATA, INSTRUMENTS_DATA, ROLES_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.loader.loader_role import LoaderRole
@@ -28,8 +28,9 @@ class TestRepositoryRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_create_relation(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         """Test creating a relation in the repository.
 

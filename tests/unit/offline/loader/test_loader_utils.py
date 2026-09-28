@@ -2,8 +2,7 @@
 
 import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-
+from unittest.mock import MagicMock, patch
 
 from musigree.offline.loader.loader_utils import LoaderUtils
 

@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import AsyncClient
@@ -10,8 +10,8 @@ class TestFastAPIHealthcheck:
     @pytest.mark.asyncio
     async def test_artist_200(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,
@@ -23,8 +23,8 @@ class TestFastAPIHealthcheck:
     @pytest.mark.asyncio
     async def test_error(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
         client: AsyncClient,

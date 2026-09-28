@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import sys
-from typing import Coroutine, Any
+from collections.abc import Coroutine
+from typing import Any
 
-import asyncio_atexit  # type: ignore
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
@@ -46,9 +46,9 @@ async def _finalize_offline_loader_before_loop_close() -> None:
     """
     Cancel loader tasks and release resources while the event loop is still usable.
 
-    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
-    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
-    avoids that path and drains pending tasks first.
+    Cleanup runs before ``asyncio.Runner`` closes the loop so a second SIGINT
+    during engine disposal cannot interrupt loop teardown. Pending tasks are
+    cancelled and awaited first.
     """
     loop = asyncio.get_running_loop()
     current = asyncio.current_task()
@@ -79,8 +79,6 @@ def run_offline_loading_process(
     log.info(f"Using {offline_config.__class__.__name__}")
 
     with asyncio.Runner() as runner:
-        loop = runner.get_loop()
-        asyncio_atexit.register(shutdown_process_runner, loop=loop)
         try:
             # Setup Cache
             try:
@@ -108,7 +106,6 @@ def run_offline_loading_process(
             runner.run(process)
 
         finally:
-            asyncio_atexit.unregister(shutdown_process_runner, loop=loop)
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:

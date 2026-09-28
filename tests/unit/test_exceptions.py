@@ -1,18 +1,17 @@
 import pytest
-# noinspection PyPackageRequirements
-from starlette import status
+from fastapi import status
 
 from musigree.exceptions import (
-    BaseError,
-    BadRequestError,
-    NotAcceptableError,
-    NotFoundError,
-    UnprocessableContentError,
     AuthenticationError,
     AuthorizationError,
+    BadRequestError,
+    BaseError,
     DatabaseError,
+    NotAcceptableError,
+    NotFoundError,
     ProcessError,
     RateLimitError,
+    UnprocessableContentError,
 )
 
 

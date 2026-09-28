@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from xml.etree import ElementTree
 
 import pytest
@@ -9,7 +9,9 @@ from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
-from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.offline_database.entity_repository import EntityRepository
@@ -24,9 +26,10 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_relation_from_release_01(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
         offline_config: Configuration,
-        is_load_offline_data_required: bool) -> None:
+        is_load_offline_data_required: bool,
+    ) -> None:
         # GIVEN
         disocogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         iterator = LoaderUtils.get_iterator(
@@ -40,7 +43,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         # WHEN
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            await OfflineEntityDataAccess().resolve_release_references(
+                entity_repository, release_document
+            )
             actual = OfflineRelationDataAccess.from_release(release_document)
 
         # THEN
@@ -78,7 +83,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
 
     @pytest.mark.asyncio
     async def test_relation_from_release_02(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         source = utils.normalize(
             """
@@ -192,7 +197,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            await OfflineEntityDataAccess().resolve_release_references(
+                entity_repository, release_document
+            )
             actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
@@ -221,8 +228,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_03(self, offline_database_setup: AsyncGenerator[None, None],
-                      is_load_offline_data_required: bool) -> None:
+    async def test_03(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -363,7 +371,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            await OfflineEntityDataAccess().resolve_release_references(
+                entity_repository, release_document
+            )
             actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
@@ -441,8 +451,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_04(self, offline_database_setup: AsyncGenerator[None, None],
-                      is_load_offline_data_required: bool) -> None:
+    async def test_04(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -695,7 +706,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            await OfflineEntityDataAccess().resolve_release_references(
+                entity_repository, release_document
+            )
             actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [
@@ -801,8 +814,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_05(self, offline_database_setup: AsyncGenerator[None, None],
-                      is_load_offline_data_required: bool) -> None:
+    async def test_05(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -1370,7 +1384,9 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
+            await OfflineEntityDataAccess().resolve_release_references(
+                entity_repository, release_document
+            )
             actual = OfflineRelationDataAccess.from_release(release_document)
 
         expected = [

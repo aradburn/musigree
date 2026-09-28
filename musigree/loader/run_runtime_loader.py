@@ -10,7 +10,7 @@ The loader is responsible for:
     - Initializing and managing the cache system.
     - Setting up connections to both the offline and runtime databases.
     - Defining and executing Luigi tasks for data loading and transfer.
-    - Registering cleanup functions to be run when the application exits.
+    - Shutting down databases and cache before the event loop closes.
     - Running the loader process between specified dates.
 """
 
@@ -23,20 +23,19 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-import asyncio_atexit  # type: ignore
 import luigi
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
-    SqliteDevelopmentConfiguration,
     PostgresReadOnlyDevelopmentConfiguration,
+    SqliteDevelopmentConfiguration,
 )
 from musigree.constants import (
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
@@ -195,9 +194,9 @@ async def _finalize_runtime_loader_before_loop_close() -> None:
     """
     Cancel loader tasks and release resources while the event loop is still usable.
 
-    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
-    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
-    avoids that path and drains pending tasks first.
+    Cleanup runs before ``asyncio.Runner`` closes the loop so a second SIGINT
+    during engine disposal cannot interrupt loop teardown. Pending tasks are
+    cancelled and awaited first.
     """
     loop = asyncio.get_running_loop()
     current = asyncio.current_task()
@@ -223,7 +222,7 @@ def runtime_loader_main() -> None:
         2. Displaying application information in the log.
         3. Setting up the cache system.
         4. Establishing connections to the offline and runtime databases.
-        5. Registering functions for graceful shutdown.
+        5. Shutting down databases and cache before the event loop closes.
         6. Defining and executing the Luigi tasks for data loading and transfer.
     """
     from musigree.transfer.transfer_task import RuntimeLoaderSetupTask
@@ -238,10 +237,6 @@ def runtime_loader_main() -> None:
     log.info(f"Using {runtime_config.__class__.__name__} for runtime database")
 
     with asyncio.Runner() as runner:
-        # Register shutdown
-        loop = runner.get_loop()
-        asyncio_atexit.register(shutdown_runtime_loader, loop=loop)
-
         try:
             # Setup Cache
             try:
@@ -290,7 +285,6 @@ def runtime_loader_main() -> None:
             log.info(luigi_run_result.summary_text)
 
         finally:
-            asyncio_atexit.unregister(shutdown_runtime_loader, loop=loop)
             try:
                 runner.run(_finalize_runtime_loader_before_loop_close())
             except KeyboardInterrupt:

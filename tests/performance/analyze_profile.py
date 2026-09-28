@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Analyze profiling results to identify performance bottlenecks.
 """

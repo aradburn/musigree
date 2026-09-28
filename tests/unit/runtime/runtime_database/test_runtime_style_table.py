@@ -50,7 +50,7 @@ class TestRuntimeStyleTable:
         expected_columns = {"id", "style_name"}
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeStyleTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeStyleTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

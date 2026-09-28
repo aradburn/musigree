@@ -77,6 +77,22 @@ body {
     background: #DFE3DE !important;
 }
 
+/* The rule above paints every nav button. End Tour uses the Help modal primary blue. */
+.reactour__popover > div > div > button.tour-end-button {
+    height: auto;
+    line-height: 1.5 !important;
+    background: var(--bs-btn-bg) !important;
+    border-color: var(--bs-btn-border-color) !important;
+    color: var(--bs-btn-color) !important;
+}
+
+.reactour__popover > div > div > button.tour-end-button:hover,
+.reactour__popover > div > div > button.tour-end-button:focus {
+    background: var(--bs-btn-hover-bg) !important;
+    border-color: var(--bs-btn-hover-border-color) !important;
+    color: var(--bs-btn-hover-color) !important;
+}
+
 .reactour__close-button {
     top: 1rem !important;
     right: 1rem !important;

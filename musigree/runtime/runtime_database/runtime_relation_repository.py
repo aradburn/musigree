@@ -1,10 +1,10 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import Result, Select, delete, select, union
 from sqlalchemy.sql.base import Executable
 
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.role_cache import RoleCache
 from musigree.runtime.runtime_database import RuntimeRelationTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
@@ -86,7 +86,7 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
         relations = [relation_db.to_domain() for relation_db in relation_dbs]
         return relations
 
-    async def all(self) -> AsyncGenerator[RuntimeRelationInternal, None]:
+    async def all(self) -> AsyncGenerator[RuntimeRelationInternal]:
         """
         Retrieves all relations from the runtime runtime_database.
 

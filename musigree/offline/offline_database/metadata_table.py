@@ -1,6 +1,7 @@
 from datetime import datetime
+from types import MappingProxyType
 
-from sqlalchemy import String, TIMESTAMP, Integer, Index
+from sqlalchemy import TIMESTAMP, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from musigree import utils
@@ -22,7 +23,7 @@ class MetadataTable(OfflineBase):
         metadata_key (Mapped[str]): The unique key for the metadata entry.
         metadata_value (Mapped[str]): The value associated with the metadata key.
         metadata_timestamp (Mapped[datetime]): The timestamp indicating when the metadata was created or updated.
-        __mapper_args__ (dict):  Version configuration for SQLAlchemy.
+        __mapper_args__ (MappingProxyType):  Version configuration for SQLAlchemy.
         __table_args__ (tuple): Additional table arguments including indexes.
     """
 
@@ -40,7 +41,9 @@ class MetadataTable(OfflineBase):
     metadata_timestamp: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     """The timestamp indicating when the metadata was created or updated."""
 
-    __mapper_args__ = {"version_id_col": version_id}
+    __mapper_args__: MappingProxyType[str, Mapped[int]] = MappingProxyType(
+        {"version_id_col": version_id}
+    )
     """
         Version configuration for SQLAlchemy.
         Specifies that `version_id` column should be used for versioning.

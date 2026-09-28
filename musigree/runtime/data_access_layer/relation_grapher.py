@@ -28,7 +28,6 @@ class RelationGrapher:
     # CLASS VARIABLES
 
     __slots__ = (
-        "_should_break_loop",
         "_center_entity",
         "_degree",
         "_ids_to_visit",
@@ -37,24 +36,25 @@ class RelationGrapher:
         "_max_nodes",
         "_nodes",
         "_relational_role_names",
+        "_should_break_loop",
         "_structural_role_names",
     )
 
-    roles_to_prune = [
+    roles_to_prune: tuple[str, ...] = (
         "Released On",
         "Compiled On",
         "Producer",
         "Remix",
         "DJ Mix",
         "Written-By",
-    ]
+    )
 
-    entities_to_prune = [
+    entities_to_prune: tuple[str, ...] = (
         "Various",
         "Not On Label",
         "Self Released",
         "Self-Released",
-    ]
+    )
 
     # INITIALIZER
 
@@ -88,7 +88,7 @@ class RelationGrapher:
         self._structural_role_names: list[str] = []
         self._relational_role_names: list[str] = []
         if role_names:
-            assert all(_ in RoleCache.role_name_to_role_id_lookup.keys() for _ in role_names)
+            assert all(_ in RoleCache.role_name_to_role_id_lookup for _ in role_names)
             for role_name in role_names:
                 if role_name in ("Alias", "Sublabel Of", "Member Of"):
                     self._structural_role_names.append(role_name)
@@ -282,7 +282,7 @@ class RelationGrapher:
                 # print(f"find_clusters aliases2: {aliases}")
                 # print(f"find_clusters aliases.items(): {aliases.items()}")
 
-                for _, alias_id in aliases.items():
+                for alias_id in aliases.values():
                     cluster_map[alias_id] = cluster_count
             cluster = cluster_map[entity.entity_id]
             # print(f"find_clusters cluster: {cluster}")
@@ -389,7 +389,7 @@ class RelationGrapher:
                 if role_name in provisional_role_names:
                     log.debug(f"            Pruned {role_name} role")
                     provisional_role_names.remove(role_name)
-            if self.center_entity.entity_type == EntityType.ARTIST:
+            if self.center_entity.entity_type == EntityType.ARTIST:  # noqa: SIM102
                 if "Sublabel Of" in provisional_role_names:
                     log.debug('            Pruned "Sublabel Of" role')
                     provisional_role_names.remove("Sublabel Of")
@@ -436,8 +436,7 @@ class RelationGrapher:
         # log.debug(f"        ids_to_visit: {self.ids_to_visit}")
 
     def recurse_trellis(self, node: TrellisNode) -> set[tuple[int, EntityType]]:
-        # noinspection PySetFunctionToLiteral
-        traversed_keys = set([node.entity_key])
+        traversed_keys = {node.entity_key}
         for child in node.children:
             traversed_keys.update(self.recurse_trellis(child))
         node.subgraph_size = len(traversed_keys)
@@ -489,10 +488,9 @@ class RelationGrapher:
             )
 
     def check_nodes_size(self, distance: int) -> None:
-        if distance > 0:
-            if len(self.nodes) >= self.max_nodes:
-                log.debug("        Max nodes: exiting next search loop.")
-                self.should_break_loop = True
+        if distance > 0 and len(self.nodes) >= self.max_nodes:
+            log.debug("        Max nodes: exiting next search loop.")
+            self.should_break_loop = True
 
     def check_relations_size(
         self, distance: int, relations: dict[str, RuntimeRelationResult]
@@ -503,10 +501,9 @@ class RelationGrapher:
         if len(relations) >= self.max_links * 3:
             log.debug("        Max links * 3: exiting next search loop.")
             self.should_break_loop = True
-        if distance > 1:
-            if len(relations) >= self.max_links:
-                log.debug("        Max links: exiting next search loop.")
-                self.should_break_loop = True
+        if distance > 1 and len(relations) >= self.max_links:
+            log.debug("        Max links: exiting next search loop.")
+            self.should_break_loop = True
 
     # PUBLIC METHODS
 

@@ -10,7 +10,7 @@ The loader is responsible for:
     - Initializing and managing the cache system.
     - Setting up connections to both the offline and runtime databases.
     - Defining and executing Luigi tasks for data loading and transfer.
-    - Registering cleanup functions to be run when the application exits.
+    - Shutting down the database and cache before the event loop closes.
     - Running the loader process between specified dates.
 """
 
@@ -23,7 +23,6 @@ from functools import partial
 from pathlib import Path
 from typing import Any, cast
 
-import asyncio_atexit  # type: ignore
 import luigi
 from luigi.execution_summary import LuigiRunResult
 from sqlalchemy.exc import OperationalError
@@ -32,14 +31,14 @@ from musigree.config import (
     PostgresDevelopmentConfiguration,
 )
 from musigree.constants import (
-    DISCOGS_DATA,
-    ROLES_DATA,
-    INSTRUMENTS_DATA,
-    TEXT_SEARCH_DATA,
-    TEXT_SEARCH_FILENAME,
     ALL_OFFLINE_DATABASE_TABLE_NAMES,
+    DISCOGS_DATA,
     ENTITY_DETAILS_DATA,
     ENTITY_DETAILS_FILENAME,
+    INSTRUMENTS_DATA,
+    ROLES_DATA,
+    TEXT_SEARCH_DATA,
+    TEXT_SEARCH_FILENAME,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
@@ -47,7 +46,7 @@ from musigree.offline.data_access_layer.offline_role_data_access import OfflineR
 from musigree.offline.loader.loader_master import LoaderMaster
 from musigree.offline.loader.loader_role import LoaderRole
 from musigree.offline.loader.loader_tasks import LoaderSetupTask
-from musigree.offline.offline_database import ReleaseTable, EntityTable, RelationTable
+from musigree.offline.offline_database import EntityTable, RelationTable, ReleaseTable
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
 
@@ -242,9 +241,9 @@ async def _finalize_offline_loader_before_loop_close() -> None:
     """
     Cancel loader tasks and release resources while the event loop is still usable.
 
-    Runner.close() runs asyncio_atexit during loop.close(); a second SIGINT during
-    engine.dispose() then corrupts shutdown. Running cleanup here (with unregister)
-    avoids that path and drains pending tasks first.
+    Cleanup runs before ``asyncio.Runner`` closes the loop so a second SIGINT
+    during engine disposal cannot interrupt loop teardown. Pending tasks are
+    cancelled and awaited first.
     """
     loop = asyncio.get_running_loop()
     current = asyncio.current_task()
@@ -270,7 +269,7 @@ def offline_loader_main() -> None:
         2. Displaying application information in the log.
         3. Setting up the cache system.
         4. Establishing connections to the offline and runtime databases.
-        5. Registering functions for graceful shutdown.
+        5. Shutting down databases and cache before the event loop closes.
         6. Defining and executing the Luigi tasks for data loading and transfer.
     """
     setup_logging()
@@ -285,10 +284,6 @@ def offline_loader_main() -> None:
     log.info(f"Using {offline_config.__class__.__name__} for offline database")
 
     with asyncio.Runner() as runner:
-        # Register shutdown
-        loop = runner.get_loop()
-        asyncio_atexit.register(shutdown_offline_loader, loop=loop)
-
         try:
             # Setup Cache
             try:
@@ -311,7 +306,7 @@ def offline_loader_main() -> None:
             runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
             # Get the current date
-            now_date = datetime.datetime.now()
+            now_date = datetime.datetime.now()  # noqa: DTZ005
 
             # Run the loader process between these dates
             start_date = datetime.date(2026, 3, 1)
@@ -334,7 +329,6 @@ def offline_loader_main() -> None:
             )
             log.info(luigi_run_result.summary_text)
         finally:
-            asyncio_atexit.unregister(shutdown_offline_loader, loop=loop)
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:

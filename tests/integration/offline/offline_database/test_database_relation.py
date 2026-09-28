@@ -1,12 +1,12 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree import utils
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
+from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_domain.relation import Relation
 from tests.conftest import AbstractDatabaseTest
 
@@ -14,8 +14,9 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None],
-                              is_load_offline_data_required: bool) -> None:
+    async def test_from_db_01(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 42
         entity_one_type = EntityType.ARTIST
@@ -28,11 +29,11 @@ class TestDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Producer",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Producer",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = Relation.from_relation_internals(relation_internals)
@@ -125,8 +126,9 @@ class TestDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None],
-                              is_load_offline_data_required: bool) -> None:
+    async def test_from_db_02(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 21209
         entity_one_type = EntityType.ARTIST
@@ -139,11 +141,11 @@ class TestDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Compiled By",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Compiled By",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = Relation.from_relation_internals(relation_internals)
@@ -168,8 +170,9 @@ class TestDatabaseRelation(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_03(self, offline_database_setup: AsyncGenerator[None, None],
-                              is_load_offline_data_required: bool) -> None:
+    async def test_from_db_03(
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
+    ) -> None:
         # GIVEN
         entity_one_id = 335173
         entity_one_type = EntityType.ARTIST
@@ -182,11 +185,11 @@ class TestDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Mastered By",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Mastered By",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = Relation.from_relation_internals(relation_internals)

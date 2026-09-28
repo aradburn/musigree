@@ -1,12 +1,12 @@
 import logging
 import re
-from collections.abc import Sequence, AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 
-from sqlalchemy import Result, select, tuple_, update, Select, delete, func
+from sqlalchemy import Result, Select, delete, func, select, tuple_, update
 
 from musigree.constants import BULK_YIELD_SIZE
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
@@ -104,7 +104,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
 
         return value
 
-    async def all(self) -> AsyncGenerator[list[Entity], None]:
+    async def all(self) -> AsyncGenerator[list[Entity]]:
         """
         Retrieves all entities from the runtime_database.
 
@@ -120,7 +120,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
                 entities.append(Entity.model_validate(row[0]))
             yield entities
 
-    async def all_ids_and_names(self) -> AsyncGenerator[list[tuple[int, str]], None]:
+    async def all_ids_and_names(self) -> AsyncGenerator[list[tuple[int, str]]]:
         """
         Retrieves all entity IDs and names from the runtime_database.
 

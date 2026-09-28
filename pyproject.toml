@@ -1,18 +1,18 @@
 [project]
 name = "musigree"
-version = "1.0.85"
+version = "1.0.86"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
     { name = "Josiah Wolf Oberholtzer", email = "josiah.oberholtzer@gmail.com" },
 ]
 license = { text = "MIT" }
-requires-python = "==3.13.11"
+requires-python = "==3.14.7"
 readme = "README.md"
 
 dependencies = [
     "fastapi==0.141.1",
-    "secweb==1.30.10",
+    "secweb==2.0.0",
     "sqlalchemy[asyncio]==2.0.54",
     "psycopg[binary]==3.3.6",
     "aiosqlite==0.22.1",
@@ -36,7 +36,6 @@ dependencies = [
     "uvicorn==0.53.0",
     "httpx==0.28.1",
     "jinja2==3.1.6",
-    "asyncio-atexit==1.0.1",
     "asyncstdlib==3.14.0",
     "types-python-dateutil==2.9.0.20260807",
 ]
@@ -84,7 +83,7 @@ dev = [
     "ruff==0.16.8",
     "hatchling==1.32.4",
     "yappi==1.7.6",
-    "pre-commit==4.4.0",
+    "pre-commit==4.6.2",
     "playwright==1.63.0",
     "pytest-playwright-asyncio==0.9.0",
     "asgi-lifespan==2.1.0",
@@ -92,7 +91,7 @@ dev = [
 reinstall-package = ["musigree"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 #strict = true                    # Enable more checks
 warn_return_any = true
 disallow_untyped_defs = true
@@ -101,7 +100,7 @@ plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.ruff]
 line-length = 100                # Line length for formatting
-target-version = "py313"         # Target Python version
+target-version = "py314"         # Target Python version
 
 [tool.ruff.format]
 indent-style = "space"

@@ -104,7 +104,7 @@ class TestRuntimeRoleTable:
         }
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeRoleTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeRoleTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

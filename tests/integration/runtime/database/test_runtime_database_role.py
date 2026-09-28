@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -16,8 +16,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_01(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
@@ -40,8 +40,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_cached_from_db_01(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
@@ -64,8 +64,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_02(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:
@@ -88,8 +88,8 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_cached_from_db_02(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None],
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool
     ) -> None:

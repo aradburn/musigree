@@ -4,10 +4,13 @@ import pytest
 from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import (
-    APIHelper,
     TEST_ARTIST_ID,
     TEST_ENTITY_TYPE_ARTIST,
-    TEST_INVALID_ENTITY_ID, TEST_INVALID_ENTITY_TYPE, TEST_NOT_FOUND_ENTITY_ID, TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_ID,
+    TEST_INVALID_ENTITY_ID_STR,
+    TEST_INVALID_ENTITY_TYPE,
+    TEST_NOT_FOUND_ENTITY_ID,
+    APIHelper,
 )
 
 
@@ -93,7 +96,7 @@ class TestAPIEntityNetwork:
     ) -> None:
         """Test getting network graph for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_network(
+        response, _json_data = await api_helper.get_entity_network(
             TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID
         )
         assert response.status == 400
@@ -108,7 +111,7 @@ class TestAPIEntityNetwork:
     ) -> None:
         """Test getting network graph for a non-existent entity."""
         api_helper = APIHelper(page, base_url)
-        response, json_data = await api_helper.get_entity_network(
+        response, _json_data = await api_helper.get_entity_network(
             TEST_ENTITY_TYPE_ARTIST, TEST_INVALID_ENTITY_ID_STR
         )
         assert response.status == 400

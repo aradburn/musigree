@@ -27,8 +27,10 @@ for generic XML parsing.
 
 import gzip
 import logging
+from collections.abc import Callable, Generator, Mapping
 from pathlib import Path
-from typing import Any, Generator
+from types import MappingProxyType
+from typing import Any
 from xml.etree.ElementTree import Element
 
 from musigree.offline.loader.loader_utils import LoaderUtils
@@ -58,7 +60,9 @@ class ParserBase:
             extracted from XML elements and processed.
     """
 
-    _tags_to_fields_mapping: dict[str, tuple] | None = None
+    _tags_to_fields_mapping: MappingProxyType[str, tuple[str, Callable[[Any], Any]]] = (
+        MappingProxyType({})
+    )
     """
     A mapping from XML tags to database fields and procedures.
 
@@ -79,7 +83,7 @@ class ParserBase:
         xml_tag: str,
         id_attr: str,
         skip_without: list[str],
-    ) -> Generator[Entity | Release | Master, None, None]:
+    ) -> Generator[Entity | Release | Master]:
         """
         Loads data from an XML file.
 
@@ -117,9 +121,8 @@ class ParserBase:
                 """Iterate over each XML element."""
                 data = cls.tags_to_fields(element)
                 """Extract the data from the element using the tag-to-field mapping."""
-                if skip_without:
-                    if any(not data.get(_) for _ in skip_without):
-                        continue
+                if skip_without and any(not data.get(_) for _ in skip_without):
+                    continue
                 if element.get("id"):
                     data[id_attr] = element.get("id")
                 """Extract the ID from the element if present."""
@@ -142,7 +145,6 @@ class ParserBase:
         Args:
             element: The XML element.
         """
-        pass
 
     @classmethod
     def preprocess_data(cls, data: dict, element: Any) -> dict[str, Any]:
@@ -167,7 +169,7 @@ class ParserBase:
         cls,
         element: Any,
         ignore_none: bool | None = None,
-        mapping: dict[str, tuple] | None = None,
+        mapping: Mapping[str, tuple[str, Callable[[Any], Any]]] | None = None,
     ) -> dict[str, Any]:
         """
         Converts XML tags to database fields.
@@ -181,7 +183,7 @@ class ParserBase:
             ignore_none (bool, optional): Whether to ignore None values.
                 If True, fields with None values will be omitted from the
                 returned dictionary. Defaults to None.
-            mapping (dict, optional): An optional custom mapping.
+            mapping (Mapping, optional): An optional custom mapping.
                 If provided, this mapping will be used instead of the
                 `_tags_to_fields_mapping` attribute. Defaults to None.
 
@@ -190,11 +192,11 @@ class ParserBase:
         """
         data = {}
         """Initialize an empty dictionary to store the extracted data."""
-        mapping = mapping or cls._tags_to_fields_mapping or {}
+        active_mapping = mapping if mapping is not None else cls._tags_to_fields_mapping
         """Use the custom mapping or the class's default mapping."""
         for child_element in element:
             """Iterate over the child elements of the current element."""
-            entry = mapping.get(child_element.tag, None)
+            entry = active_mapping.get(child_element.tag)
             """Get the mapping entry for the child element's tag."""
             if entry is None:
                 continue

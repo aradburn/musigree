@@ -1,5 +1,6 @@
 import logging
-from typing import AsyncGenerator, Any
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy import Result, select
 
@@ -37,7 +38,7 @@ class RuntimeRoleRepository(RuntimeBaseRepository["RuntimeRoleTable"]):
     schema_class = mapped_entity(RuntimeRoleTable)
     """The SQLAlchemy table class for runtime roles."""
 
-    async def all(self) -> AsyncGenerator[RuntimeRole, None]:
+    async def all(self) -> AsyncGenerator[RuntimeRole]:
         """
         Retrieves all roles from the runtime runtime_database.
 

@@ -31,10 +31,10 @@ for loader-specific utilities, and `musigree.logging_config` for logging.
 
 import gzip
 import logging
-from abc import abstractmethod, ABC
-from collections.abc import Iterator
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator, Iterator
 from pathlib import Path
-from typing import Any, Generator, Callable
+from typing import Any
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -75,25 +75,24 @@ class LoaderBase(ABC):
         xml_path: str,
         xml_tag: str,
         skip_without: list[str],
-    ) -> Generator[dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any]]:
         with gzip.GzipFile(xml_path, "r") as file_pointer:
             iterator = ParserUtils.iterparse(file_pointer, xml_tag)
 
             for element in iterator:
                 try:
                     data = parser.tags_to_fields(element)
-                    if skip_without:
-                        if any(not data.get(_) for _ in skip_without):
-                            continue
+                    if skip_without and any(not data.get(_) for _ in skip_without):
+                        continue
                     # if element.get("id"):
                     #     data[id_attr] = element.get("id")
                     # log.debug(f"data: {data}")
 
                     yield data
 
-                except DataError as e:
-                    log.exception("Error in loader_pass_one", exc_info=True)
-                    raise e
+                except DataError:
+                    log.exception("Error in loader_pass_one")
+                    raise
 
     @classmethod
     async def loader_pass_one_manager(
@@ -248,4 +247,3 @@ class LoaderBase(ABC):
         Returns:
             set[int]: The set of IDs.
         """
-        pass

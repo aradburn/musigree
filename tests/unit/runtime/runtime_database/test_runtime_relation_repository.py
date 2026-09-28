@@ -464,7 +464,7 @@ class TestRuntimeRelationRepository:
         with patch.object(RuntimeBaseRepository, "_all") as mock_all:
             mock_all.return_value = async_generator()
 
-            with patch.object(BaseModel, "model_validate") as mock_validate:
+            with patch.object(BaseModel, "model_validate") as mock_validate:  # noqa: SIM117
                 with patch.object(RuntimeRelationDB, "to_domain") as _mock_to_domain:
                     relation1 = Mock()
                     relation2 = Mock()

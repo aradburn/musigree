@@ -143,7 +143,7 @@ class LoaderTarget(luigi.Target):
         metadata = MetadataUncommitted(
             metadata_key=key,
             metadata_value="done",
-            metadata_timestamp=datetime.datetime.now(),
+            metadata_timestamp=datetime.datetime.now(),  # noqa: DTZ005
         )
         """Create a MetadataUncommitted object to represent the task's completion."""
 

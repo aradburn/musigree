@@ -114,7 +114,7 @@ class TestRuntimeEntityTable:
         mock_class_mapper.return_value = class_mapper_mock
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeEntityTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeEntityTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

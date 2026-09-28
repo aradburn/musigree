@@ -8,23 +8,13 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
-from Secweb.CrossOriginOpenerPolicy import CrossOriginOpenerPolicy
-from Secweb.CrossOriginResourcePolicy import CrossOriginResourcePolicy
-from Secweb.ReferrerPolicy import ReferrerPolicy
-from Secweb.StrictTransportSecurity import HSTS
-from Secweb.XContentTypeOptions import XContentTypeOptions
-from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
-from Secweb.XFrameOptions import XFrame
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
-# noinspection PyPackageRequirements
+from Secweb.middleware import SetMiddleware
 from starlette.middleware.cors import CORSMiddleware
-# noinspection PyPackageRequirements
 from starlette.requests import Request
-# noinspection PyPackageRequirements
 from starlette.responses import JSONResponse, Response
 
 from musigree.app.fastapi_app import (
@@ -43,12 +33,17 @@ def _stub_assets_router() -> tuple[APIRouter, MagicMock]:
     return APIRouter(), MagicMock()
 
 
-def _middleware_entry(app: FastAPI, middleware_class: type[Any]) -> Any:
-    """Return the registered Starlette middleware entry for a class."""
+def _middleware_entry(
+    app: FastAPI,
+    middleware_class: type[Any] | Callable[..., Any],
+) -> Any:
+    """Return the registered Starlette middleware entry for a class or factory."""
     for entry in app.user_middleware:
         if entry.cls is middleware_class:
             return entry
-    raise AssertionError(f"{middleware_class.__name__} is not registered")
+    # noinspection string-conversion-without-dunder-method
+    middleware_name = getattr(middleware_class, "__name__", repr(middleware_class))
+    raise AssertionError(f"{middleware_name} is not registered")
 
 
 class TestCreateApp:
@@ -148,35 +143,30 @@ class TestCreateApp:
 
             expected_classes = (
                 CORSMiddleware,
-                ReferrerPolicy,
-                HSTS,
-                XContentTypeOptions,
-                XDNSPrefetchControl,
-                XFrame,
-                CrossOriginEmbedderPolicy,
-                CrossOriginOpenerPolicy,
-                CrossOriginResourcePolicy,
+                SetMiddleware,
                 PermissionsPolicy,
                 GZipMiddleware,
             )
             for middleware_class in expected_classes:
                 _middleware_entry(app, middleware_class)
 
-            assert _middleware_entry(app, ReferrerPolicy).kwargs["Option"] == [
-                "strict-origin-when-cross-origin"
-            ]
-            assert _middleware_entry(app, HSTS).kwargs["Option"] == {
-                "max-age": 2592000,
-                "includeSubDomains": True,
-                "preload": True,
+            headers = {
+                name.decode(): value.decode()
+                for name, value in _middleware_entry(app, SetMiddleware).kwargs["headers"]
             }
-            assert _middleware_entry(app, XDNSPrefetchControl).kwargs["Option"] == "on"
-            assert _middleware_entry(app, XFrame).kwargs["Option"] == "DENY"
+            assert headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
             assert (
-                _middleware_entry(app, CrossOriginEmbedderPolicy).kwargs["Option"] == "unsafe-none"
+                headers["Strict-Transport-Security"]
+                == "max-age=2592000; includeSubDomains; preload"
             )
-            assert _middleware_entry(app, CrossOriginOpenerPolicy).kwargs["Option"] == "same-origin"
-            assert _middleware_entry(app, CrossOriginResourcePolicy).kwargs["Option"] == "same-site"
+            assert headers["X-Content-Type-Options"] == "nosniff"
+            assert headers["X-DNS-Prefetch-Control"] == "on"
+            assert headers["X-Frame-Options"] == "DENY"
+            assert headers["Cross-Origin-Embedder-Policy"] == "unsafe-none"
+            assert headers["Cross-Origin-Opener-Policy"] == "same-origin"
+            assert headers["Cross-Origin-Resource-Policy"] == "same-site"
+            assert "Cache-Control" not in headers
+            assert "Content-Security-Policy" not in headers
             assert _middleware_entry(app, GZipMiddleware).kwargs["minimum_size"] == 1000
 
     def test_create_app_routers_included(
@@ -205,7 +195,11 @@ class TestCreateApp:
                 for context in iter_route_contexts(app.routes)
                 if context.path is not None
             }
-            assert any(path.startswith("/api/") or path == "/api" for path in route_paths if path is not None)
+            assert any(
+                path.startswith("/api/") or path == "/api"
+                for path in route_paths
+                if path is not None
+            )
             assert "/health" in route_paths
 
 
@@ -367,7 +361,6 @@ class TestInitApp:
             patch("musigree.app.fastapi_app.CacheManager") as mock_cache_manager,
             patch("musigree.app.fastapi_app.RuntimeDatabaseManager") as mock_runtime_db_manager,
             patch("musigree.app.fastapi_app.RuntimeRoleDataAccess") as mock_role_data_access,
-            patch("musigree.app.fastapi_app.asyncio_atexit") as mock_asyncio_atexit,
         ):
             # Arrange
             mock_cache_manager.setup_and_clear_cache = AsyncMock()
@@ -382,7 +375,6 @@ class TestInitApp:
             mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(test_config)
             mock_runtime_db_manager.setup_database.assert_awaited_once_with(test_config)
             mock_role_data_access.load_all_roles_into_cache.assert_awaited_once()
-            mock_asyncio_atexit.register.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_init_app_raises_when_cache_not_initialized(
@@ -409,7 +401,6 @@ class TestInitApp:
             patch("musigree.app.fastapi_app.CacheManager") as mock_cache_manager,
             patch("musigree.app.fastapi_app.RuntimeDatabaseManager") as mock_runtime_db_manager,
             patch("musigree.app.fastapi_app.RuntimeRoleDataAccess") as mock_role_data_access,
-            patch("musigree.app.fastapi_app.asyncio_atexit"),
         ):
             # Arrange
             mock_cache_manager.setup_and_clear_cache = AsyncMock()

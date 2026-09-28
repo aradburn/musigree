@@ -109,13 +109,13 @@ async def process_release_pass_two_worker_async(
                 """Process the release."""
                 count += 1
                 """Increment the processed counter."""
-                if count % BULK_REPORTING_SIZE == 0 and not count == end_count:
+                if count % BULK_REPORTING_SIZE == 0 and count != end_count:
                     """Log every BULK_REPORTING_SIZE."""
                     log.debug(f"[{proc_name}] processed {count} of {total_count}")
-            except DatabaseError as e:
+            except DatabaseError:
                 """Handle potential database errors."""
-                log.exception("Database Error in process_release_pass_two_worker", exc_info=True)
-                raise e
+                log.exception("Database Error in process_release_pass_two_worker")
+                raise
 
     log.info(f"[{proc_name}] processed {count} of {total_count}")
     """Log the total number of releases processed."""

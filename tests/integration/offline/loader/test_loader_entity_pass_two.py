@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -11,7 +11,7 @@ from tests.conftest import AbstractDatabaseTest
 class TestLoaderEntityPassTwo(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_loader_entity_pass_two(
-        self, offline_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool
+        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
     ) -> None:
         # GIVEN
 

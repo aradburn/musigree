@@ -22,13 +22,13 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 
 import logging
 import random
-from collections.abc import Sequence
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from typing import Any
 
-from sqlalchemy import Result, select, update, Select, delete, func, null
+from sqlalchemy import Result, Select, delete, func, null, select, update
 
 from musigree.constants import BULK_YIELD_SIZE
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
@@ -130,7 +130,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
 
         return value
 
-    async def all(self) -> AsyncGenerator[RuntimeEntity, None]:
+    async def all(self) -> AsyncGenerator[RuntimeEntity]:
         """
         Retrieves all entities from the runtime runtime_database.
 
@@ -142,7 +142,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         async for row in result:
             yield RuntimeEntityDB.model_validate(row[0]).to_domain()
 
-    async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str], None]:
+    async def all_ids_and_names(self) -> AsyncGenerator[tuple[int, str]]:
         """
         Retrieves all entity IDs and names from the runtime runtime_database.
 

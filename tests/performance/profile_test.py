@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Profiling script for SQLite loader relation pass one test.
 Runs the test with detailed performance analysis to identify bottlenecks.
@@ -45,7 +44,7 @@ def main() -> None:
 
     try:
         run_profiled_test()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error during test execution: {e}")
         import traceback
 

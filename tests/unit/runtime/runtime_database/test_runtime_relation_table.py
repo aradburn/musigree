@@ -69,7 +69,7 @@ class TestRuntimeRelationTable:
         expected_columns = {"id", "subject", "predicate", "object"}
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeRelationTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeRelationTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

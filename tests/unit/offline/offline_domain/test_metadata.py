@@ -12,9 +12,9 @@ from pydantic import ValidationError
 
 # noinspection PyProtectedMember
 from musigree.offline.offline_domain.metadata import (
-    _MetadataBase,
-    MetadataUncommitted,
     Metadata,
+    MetadataUncommitted,
+    _MetadataBase,
 )
 
 
@@ -24,7 +24,7 @@ class TestMetadataBase:
     def test_metadata_base_cannot_be_instantiated_directly(self) -> None:
         """Test that _MetadataBase is intended as a base class."""
         # While we can instantiate it, it's meant to be a base class
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         base = _MetadataBase(
             metadata_key="test_key", metadata_value="test_value", metadata_timestamp=timestamp
         )
@@ -44,12 +44,12 @@ class TestMetadataBase:
             _MetadataBase(
                 metadata_key=123,  # type: ignore
                 metadata_value="test_value",
-                metadata_timestamp=datetime.now(),
+                metadata_timestamp=datetime.now(),  # noqa: DTZ005
             )
 
     def test_metadata_base_string_fields(self) -> None:
         """Test that key and value are properly validated as strings."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = _MetadataBase(
             metadata_key="",  # Empty string should be valid
             metadata_value="",
@@ -74,7 +74,7 @@ class TestMetadataUncommitted:
 
     def test_metadata_uncommitted_creation(self) -> None:
         """Test successful creation of MetadataUncommitted."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = MetadataUncommitted(
             metadata_key="user_preference", metadata_value="dark_mode", metadata_timestamp=timestamp
         )
@@ -89,7 +89,7 @@ class TestMetadataUncommitted:
 
     def test_metadata_uncommitted_validation(self) -> None:
         """Test validation behavior of MetadataUncommitted."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = MetadataUncommitted(
             metadata_key="config_key", metadata_value="config_value", metadata_timestamp=timestamp
         )
@@ -105,7 +105,7 @@ class TestMetadataUncommitted:
 
     def test_metadata_uncommitted_json_serialization(self) -> None:
         """Test JSON serialization of MetadataUncommitted."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0)  # noqa: DTZ001
         metadata = MetadataUncommitted(
             metadata_key="test_key", metadata_value="test_value", metadata_timestamp=timestamp
         )
@@ -118,7 +118,7 @@ class TestMetadataUncommitted:
 
     def test_metadata_uncommitted_from_dict(self) -> None:
         """Test creating MetadataUncommitted from dictionary."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         data = {
             "metadata_key": "from_dict_key",
             "metadata_value": "from_dict_value",
@@ -137,7 +137,7 @@ class TestMetadata:
 
     def test_metadata_creation(self) -> None:
         """Test successful creation of Metadata."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = Metadata(
             metadata_key="config_key",
             metadata_value="config_value",
@@ -153,7 +153,7 @@ class TestMetadata:
 
     def test_metadata_creation_with_version(self) -> None:
         """Test Metadata creation with custom version."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = Metadata(
             metadata_key="config_key",
             metadata_value="config_value",
@@ -170,7 +170,7 @@ class TestMetadata:
 
     def test_metadata_default_version_id(self) -> None:
         """Test that version_id defaults to 1."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = Metadata(
             metadata_key="test_key",
             metadata_value="test_value",
@@ -182,7 +182,7 @@ class TestMetadata:
 
     def test_metadata_to_domain(self) -> None:
         """Test to_domain method returns self."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = Metadata(
             metadata_key="test_key",
             metadata_value="test_value",
@@ -197,7 +197,7 @@ class TestMetadata:
 
     def test_metadata_to_db(self) -> None:
         """Test to_db method returns self."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         metadata = Metadata(
             metadata_key="test_key",
             metadata_value="test_value",
@@ -212,7 +212,7 @@ class TestMetadata:
 
     def test_metadata_validation_missing_id(self) -> None:
         """Test validation error when metadata_id is missing."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
 
         with pytest.raises(ValidationError):
             Metadata(
@@ -224,7 +224,7 @@ class TestMetadata:
 
     def test_metadata_validation_wrong_id_type(self) -> None:
         """Test validation error for wrong metadata_id type."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
 
         with pytest.raises(ValidationError):
             Metadata(
@@ -236,7 +236,7 @@ class TestMetadata:
 
     def test_metadata_json_serialization(self) -> None:
         """Test JSON serialization of Metadata."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0)  # noqa: DTZ001
         metadata = Metadata(
             metadata_key="test_key",
             metadata_value="test_value",
@@ -255,7 +255,7 @@ class TestMetadata:
 
     def test_metadata_from_dict(self) -> None:
         """Test creating Metadata from dictionary."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
         data = {
             "metadata_key": "from_dict_key",
             "metadata_value": "from_dict_value",
@@ -278,7 +278,7 @@ class TestMetadataComparison:
 
     def test_metadata_vs_uncommitted_structure(self) -> None:
         """Test structural differences between Metadata and MetadataUncommitted."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
 
         uncommitted = MetadataUncommitted(
             metadata_key="test_key", metadata_value="test_value", metadata_timestamp=timestamp
@@ -304,7 +304,7 @@ class TestMetadataComparison:
 
     def test_conversion_workflow(self) -> None:
         """Test typical workflow from uncommitted to committed metadata."""
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
 
         # Start with uncommitted metadata
         uncommitted = MetadataUncommitted(
@@ -329,8 +329,8 @@ class TestMetadataComparison:
 
     def test_metadata_update_scenario(self) -> None:
         """Test updating metadata (version increment scenario)."""
-        timestamp = datetime.now()
-        new_timestamp = datetime.now()
+        timestamp = datetime.now()  # noqa: DTZ005
+        new_timestamp = datetime.now()  # noqa: DTZ005
 
         original = Metadata(
             metadata_key="update_test",

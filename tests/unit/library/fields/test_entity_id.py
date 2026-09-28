@@ -1,11 +1,11 @@
 import pytest
 
 from musigree.library.fields.entity_id import (
-    to_entity_internal_id,
-    to_entity_external_id,
-    to_entity_label_internal_id,
     LABEL_ENTITY_ID_OFFSET,
     MISSING_LABEL_ENTITY,
+    to_entity_external_id,
+    to_entity_internal_id,
+    to_entity_label_internal_id,
 )
 from musigree.library.fields.entity_type import EntityType
 

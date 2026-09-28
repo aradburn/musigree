@@ -1,10 +1,10 @@
 import logging
-from typing import cast, Any
+from typing import Any, cast
 
 from sqlalchemy.exc import IntegrityError
 
 from musigree.constants import CACHE_ENTRY_IS_NULL
-from musigree.exceptions import NotFoundError, DatabaseError
+from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
@@ -13,6 +13,7 @@ from musigree.offline.offline_domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
+from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
@@ -290,3 +291,19 @@ class RuntimeEntityDataAccess:
             token_entry_dict_list.append(token_entry_dict)
 
         return token_entry_dict_list
+
+    @staticmethod
+    async def init_random_entity() -> None:
+        from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+        assert RuntimeDatabaseManager.runtime_database_helper is not None
+
+        async with runtime_transaction():
+            entity_repository = RuntimeEntityRepository()
+            try:
+                await RuntimeDatabaseManager.runtime_database_helper.get_entity_count(
+                    entity_repository
+                )
+            except Exception:
+                log.exception("Error in initialising API for /random")
+                raise DatabaseError(message="API error") from None

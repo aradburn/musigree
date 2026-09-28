@@ -1,7 +1,7 @@
-from typing import Any
 import enum
+from typing import Any
 
-from sqlalchemy import TypeDecorator, Integer
+from sqlalchemy import Integer, TypeDecorator
 
 
 class IntEnum(TypeDecorator):
@@ -55,7 +55,7 @@ class IntEnum(TypeDecorator):
             *args: Additional positional arguments to pass to the parent class's constructor.
             **kwargs: Additional keyword arguments to pass to the parent class's constructor.
         """
-        super(IntEnum, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._enumtype = enumtype
 
     # noinspection PyUnreachableCode

@@ -1,5 +1,5 @@
-from typing import Generator
-from unittest.mock import patch, MagicMock
+from collections.abc import Generator
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -37,7 +37,7 @@ def test_app_exists(mock_create_app: MagicMock) -> None:
 
 
 @pytest.fixture
-def mock_app_setup() -> Generator[MagicMock, None, None]:
+def mock_app_setup() -> Generator[MagicMock]:
     """Fixture to mock the entire app setup process."""
     with patch("musigree.app.fastapi_dev_app.create_development_app") as mock_create_app:
         mock_app = MagicMock()

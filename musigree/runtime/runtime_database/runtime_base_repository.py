@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Generic, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy import asc, delete, desc, func, select, update
 from sqlalchemy.engine import Result
@@ -9,13 +10,13 @@ __all__ = ("RuntimeBaseRepository",)
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
+from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 
 log = logging.getLogger(__name__)
 
 
-class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
+class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
     """
     Base class for creating repositories that interact with the runtime runtime_database.
 
@@ -221,7 +222,7 @@ class RuntimeBaseRepository(RuntimeSession, Generic[RuntimeConcreteTable]):
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
-    async def _all(self) -> AsyncGenerator[RuntimeConcreteTable, None]:
+    async def _all(self) -> AsyncGenerator[RuntimeConcreteTable]:
         """
         Retrieves all records from the runtime_database table.
 

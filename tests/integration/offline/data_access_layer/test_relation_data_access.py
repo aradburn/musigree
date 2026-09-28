@@ -1,11 +1,13 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
-from musigree.offline.data_access_layer.offline_relation_data_access import OfflineRelationDataAccess
+from musigree.offline.data_access_layer.offline_relation_data_access import (
+    OfflineRelationDataAccess,
+)
 from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_domain.relation import RelationUncommitted
@@ -18,8 +20,9 @@ class TestRelationDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_release(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 1700
@@ -279,8 +282,9 @@ class TestRelationDataAccess(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_get_release_setup(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 1700

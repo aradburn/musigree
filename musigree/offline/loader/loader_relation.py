@@ -37,7 +37,8 @@ sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent 
 """
 
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
@@ -123,4 +124,3 @@ class LoaderRelation(LoaderBase):
         Args:
             entity_type: The type of entity to get the IDs for.
         """
-        pass

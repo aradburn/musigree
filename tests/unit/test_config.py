@@ -1,12 +1,15 @@
 import os
 
+from pytest import MonkeyPatch
+
 from musigree.config import (
-    SqliteTestConfiguration,
-    PostgresTestConfiguration,
     PostgresDevelopmentConfiguration,
     PostgresProductionConfiguration,
+    PostgresTestConfiguration,
+    SqliteReadOnlyProductionConfiguration,
+    SqliteTestConfiguration,
 )
-from musigree.constants import DatabaseType, ThreadingModel, CacheType
+from musigree.constants import CacheType, DatabaseType, ThreadingModel
 
 
 def test_pydantic_sqlite_test_config() -> None:
@@ -112,6 +115,33 @@ def test_sqlite_test_configuration_get_database() -> None:
     """Test that SqliteTestConfiguration has DATABASE set to SQLITE."""
     config = SqliteTestConfiguration()
     assert config.DATABASE == DatabaseType.SQLITE
+
+
+def test_missing_redis_port_uses_field_default(monkeypatch: MonkeyPatch) -> None:
+    """An omitted REDIS_PORT stays unset so the production default is used."""
+    monkeypatch.delenv("REDIS_PORT", raising=False)
+
+    config = SqliteReadOnlyProductionConfiguration()
+
+    assert config.REDIS_PORT == 6379
+
+
+def test_empty_redis_port_uses_field_default(monkeypatch: MonkeyPatch) -> None:
+    """An empty REDIS_PORT from an omitted Docker ARG is not a value."""
+    monkeypatch.setenv("REDIS_PORT", "")
+
+    config = SqliteReadOnlyProductionConfiguration()
+
+    assert config.REDIS_PORT == 6379
+
+
+def test_redis_port_environment_overrides_default(monkeypatch: MonkeyPatch) -> None:
+    """A build-arg or runtime REDIS_PORT replaces the default."""
+    monkeypatch.setenv("REDIS_PORT", "6380")
+
+    config = SqliteReadOnlyProductionConfiguration()
+
+    assert config.REDIS_PORT == 6380
 
 
 def test_postgres_production_configuration() -> None:

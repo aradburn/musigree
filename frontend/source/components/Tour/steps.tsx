@@ -1,7 +1,7 @@
 import type { StepType } from "@reactour/tour";
 import { DOM_IDS } from "@/constants.ts";
 
-/** Lightweight first-visit tour highlighting core Musigree UI. */
+/** Intro tour highlighting core Musigree UI, started from the help modal. */
 export const onboardingTourSteps: StepType[] = [
     {
         selector: "#musigree",

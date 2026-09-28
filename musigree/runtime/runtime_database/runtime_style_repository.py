@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import Result, select
 
@@ -34,7 +34,7 @@ class RuntimeStyleRepository(RuntimeBaseRepository["RuntimeStyleTable"]):
     schema_class = mapped_entity(RuntimeStyleTable)
     """The SQLAlchemy table class for runtime styles."""
 
-    async def all(self) -> AsyncGenerator[RuntimeStyle, None]:
+    async def all(self) -> AsyncGenerator[RuntimeStyle]:
         """
         Retrieves all styles from the runtime runtime_database.
 

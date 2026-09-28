@@ -2,11 +2,11 @@
 Unit tests for musigree.offline.data_access_layer.relation_data_access module.
 """
 
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from musigree.config import SqliteTestConfiguration, Configuration
+from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.offline_relation_data_access import (
     OfflineRelationDataAccess,

@@ -1,4 +1,4 @@
-from locust import task, FastHttpUser
+from locust import FastHttpUser, task
 
 
 class MusigreePerformaceTest(FastHttpUser):

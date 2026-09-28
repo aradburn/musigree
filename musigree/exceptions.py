@@ -32,20 +32,19 @@ the status code.
 
 from typing import Any
 
-# noinspection PyPackageRequirements
-from starlette import status
+from fastapi import status
 
 __all__ = (
-    "BaseError",
-    "BadRequestError",
-    "NotAcceptableError",
-    "NotFoundError",
-    "UnprocessableContentError",
     "AuthenticationError",
     "AuthorizationError",
+    "BadRequestError",
+    "BaseError",
     "DatabaseError",
+    "NotAcceptableError",
+    "NotFoundError",
     "ProcessError",
     "RateLimitError",
+    "UnprocessableContentError",
 )
 """
 List of all exceptions defined in the module.

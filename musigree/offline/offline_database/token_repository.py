@@ -1,8 +1,8 @@
 import logging
 import random
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, select, func
+from sqlalchemy import Result, func, select
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.offline_database.base_repository import BaseRepository
@@ -32,7 +32,7 @@ class TokenRepository(BaseRepository["TokenTable"]):
     schema_class = mapped_entity(TokenTable)
     """The SQLAlchemy table class for offline tokens."""
 
-    async def all(self) -> AsyncGenerator[Token, None]:
+    async def all(self) -> AsyncGenerator[Token]:
         """
         Retrieves all tokens from the offline_database.
 

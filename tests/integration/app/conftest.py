@@ -1,17 +1,18 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport, Request, Response
+from httpx import ASGITransport, AsyncClient, Request, Response
 
 from musigree.app.fastapi_app import create_app
 from musigree.config import (
+    Configuration,
     PostgresTestConfiguration,
+    SqliteReadOnlyTestConfiguration,
     SqliteTestConfiguration,
-    Configuration, SqliteReadOnlyTestConfiguration,
 )
 from musigree.logging_config import setup_logging
 
@@ -62,7 +63,7 @@ async def client(
     offline_database_shutdown: None,
     runtime_database_shutdown: None,
     test_app: FastAPI,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     """Create an async test client."""
     print("Creating test client")
 
@@ -77,11 +78,12 @@ async def client(
 
     async with LifespanManager(test_app) as manager:
         transport = ASGITransport(app=manager.app)
-        async with AsyncClient(transport=transport,
-                               base_url="https://musigree.com",
-                               event_hooks={
-                                   "request": [log_request],
-                                   "response": [log_response],
-                               },
-                               ) as async_client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://musigree.com",
+            event_hooks={
+                "request": [log_request],
+                "response": [log_response],
+            },
+        ) as async_client:
             yield async_client

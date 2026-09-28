@@ -30,12 +30,12 @@ class RoleCache:
     """
 
     # CLASS VARIABLES
-    role_name_to_role_id_lookup: dict[str, int] = {}
-    role_name_set: set[str] = set()
-    role_id_to_role_category_lookup: dict[int, RoleType.Category] = {}
-    role_id_to_role_name_lookup: dict[int, str] = {}
+    role_name_to_role_id_lookup: dict[str, int] = {}  # noqa: RUF012
+    role_name_set: set[str] = set()  # noqa: RUF012
+    role_id_to_role_category_lookup: dict[int, RoleType.Category] = {}  # noqa: RUF012
+    role_id_to_role_name_lookup: dict[int, str] = {}  # noqa: RUF012
     role_jstree: RuntimeRoleJSTree = RuntimeRoleJSTree()
-    role_category_to_role_name_lookup: dict[str, list[str]] = {}
+    role_category_to_role_name_lookup: dict[str, list[str]] = {}  # noqa: RUF012
 
     # role_categories: Set[str] = set()
 

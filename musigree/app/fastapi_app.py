@@ -28,27 +28,13 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-import asyncio_atexit  # type: ignore
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from Secweb.CrossOriginEmbedderPolicy import CrossOriginEmbedderPolicy
-from Secweb.CrossOriginOpenerPolicy import CrossOriginOpenerPolicy
-from Secweb.CrossOriginResourcePolicy import CrossOriginResourcePolicy
-from Secweb.ReferrerPolicy import ReferrerPolicy
-from Secweb.StrictTransportSecurity import HSTS
-from Secweb.XContentTypeOptions import XContentTypeOptions
-from Secweb.XDNSPrefetchControl import XDNSPrefetchControl
-from Secweb.XFrameOptions import XFrame
-
-# noinspection PyPackageRequirements
+from Secweb import SecWeb
 from starlette.middleware.cors import CORSMiddleware
-
-# noinspection PyPackageRequirements
 from starlette.responses import Response
-
-# noinspection PyPackageRequirements
 from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import CustomCORSPreflightMiddleware, PreflightLoggerMiddleware
@@ -57,6 +43,7 @@ from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration
 from musigree.constants import (
+    ALLOWED_ORIGINS,
     FRONTEND_DIR,
     PUBLIC_DIR,
     TEMPLATES_DIR,
@@ -67,6 +54,7 @@ from musigree.exceptions import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
+from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.data_access_layer.runtime_role_data_access import (
     RuntimeRoleDataAccess,
 )
@@ -160,29 +148,29 @@ def create_app(config: Configuration) -> FastAPI:
     # Configure CORS based on environment
     if config.PRODUCTION:
         # Production: specific origins only
-        allowed_origins = [
-            "https://www.musigree.com",
-            "https://musigree.com",
-            "https://umami.musigree.com",
-            "https://swetrix.org/swetrix.js",
-            "https://cdn.jsdelivr.net/gh/Swetrix/",
-        ]
+        # allowed_origins = [
+        #     "https://www.musigree.com",
+        #     "https://musigree.com",
+        #     "https://umami.musigree.com",
+        #     "https://swetrix.org/swetrix.js",
+        #     "https://cdn.jsdelivr.net/gh/Swetrix/",
+        # ]
         log.info("Configuring CORS for production")
-        log.debug(f"Allowed origins: {allowed_origins}")
+        log.debug(f"Allowed origins: {ALLOWED_ORIGINS}")
 
         add_app_middleware(
             app,
             CORSMiddleware,
-            allow_origins=allowed_origins,
-            allow_methods=["GET,HEAD,POST,OPTIONS"],
+            allow_origins=ALLOWED_ORIGINS,
+            allow_methods=["GET,HEAD,OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
         add_app_middleware(
             app,
             CustomCORSPreflightMiddleware,
-            allow_origins=allowed_origins,
-            allow_methods=["GET,HEAD,POST,OPTIONS"],
+            allow_origins=ALLOWED_ORIGINS,
+            allow_methods=["GET,HEAD,OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
@@ -190,7 +178,6 @@ def create_app(config: Configuration) -> FastAPI:
 
     else:
         # Development: more permissive for local development
-        # noinspection PyTypeChecker
         allowed_origins = [
             "http://localhost:5000",
             "http://localhost:5173",
@@ -198,8 +185,8 @@ def create_app(config: Configuration) -> FastAPI:
             "http://127.0.0.1:5000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8080",
-            "https://swetrix.org/swetrix.js",
-            "https://cdn.jsdelivr.net/gh/Swetrix/",
+            # "https://swetrix.org/swetrix.js",
+            # "https://cdn.jsdelivr.net/gh/Swetrix/",
         ]
         log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -207,32 +194,35 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_headers=["Content-Type"],
         )
 
     # Setup Content Security Policy middleware (should be added after CORS)
     setup_csp_middleware(app, config)
 
-    # Referrer policy
-    add_app_middleware(app, ReferrerPolicy, Option=["strict-origin-when-cross-origin"])
-
-    # HSTS
-    add_app_middleware(
-        app, HSTS, Option={"max-age": 2592000, "includeSubDomains": True, "preload": True}
+    # Secweb applies every header unless it is set to False.
+    # CSP is registered separately. Cache-Control and the other disabled
+    # headers were not part of the previous policy.
+    SecWeb(
+        app,
+        options={
+            "csp": False,
+            "coep": {"unsafe-none": True},
+            "coop": "same-origin",
+            "corp": "same-site",
+            "referrer": ["strict-origin-when-cross-origin"],
+            "hsts": {"max-age": 2592000, "includeSubDomains": True, "preload": True},
+            "xdns": "on",
+            "xframe": "DENY",
+            "xss": False,
+            "xcdp": False,
+            "xdo": False,
+            "oac": False,
+            "cache_control": False,
+            "wshsts": False,
+        },
     )
-
-    # X-Content-Type-Options
-    add_app_middleware(app, XContentTypeOptions)
-
-    add_app_middleware(app, XDNSPrefetchControl, Option="on")
-
-    # Prevent clickjacking
-    add_app_middleware(app, XFrame, Option="DENY")
-
-    add_app_middleware(app, CrossOriginEmbedderPolicy, Option="unsafe-none")
-    add_app_middleware(app, CrossOriginOpenerPolicy, Option="same-origin")
-    add_app_middleware(app, CrossOriginResourcePolicy, Option="same-site")
 
     # Permissions Policy
     add_app_middleware(
@@ -353,6 +343,26 @@ def create_app(config: Configuration) -> FastAPI:
     return app
 
 
+# def get_allowed_origins(config: Configuration) -> list[str]:
+#     allowed_origins = [
+#         "https://www.musigree.com",
+#         "https://musigree.com",
+#         # "https://swetrix.org/swetrix.js",
+#         # "https://cdn.jsdelivr.net/gh/Swetrix/",
+#     ]
+#     match config.ANALTICS_TYPE:
+#         case AnalyticsType.UMAMI:
+#             allowed_origins.append("https://umami.musigree.com")
+#         case AnalyticsType.SWETRIX:
+#             analytics_script_url = (
+#                 "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
+#             )
+#             analytics_api_url = "https://swetrix-api.musigree.com/ "
+#         case AnalyticsType.OPENPANEL:
+#             analytics_script_url = "https://openpanel.dev/op1.js "
+#             analytics_api_url = "https://opapi.musigree.com/ "
+
+
 async def shutdown_application() -> None:
     """
     Shuts down the application.
@@ -399,7 +409,8 @@ async def init_app(config: Configuration) -> None:
 
     log.info("Loaded all roles OK")
 
-    # Shutdown on app exit
-    asyncio_atexit.register(shutdown_application)
+    # Init random for Production environment
+    if config.PRODUCTION:
+        await RuntimeEntityDataAccess.init_random_entity()
 
     log.info("######## APPLICATION STARTUP END ########")

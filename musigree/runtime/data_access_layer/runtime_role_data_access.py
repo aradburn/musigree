@@ -54,8 +54,8 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRole,
-    RuntimeRoleJSTreeState,
     RuntimeRoleJSTreeEntry,
+    RuntimeRoleJSTreeState,
 )
 
 log = logging.getLogger(__name__)

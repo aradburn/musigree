@@ -4,16 +4,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 Copyright 2021-2026, Motagamwala Taha Arif Ali"""
 
-from typing import List, Literal, TypedDict, Union, cast
+from typing import Literal, TypedDict, cast
 from warnings import warn
 
-# noinspection PyPackageRequirements
 from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-# noinspection PyPackageRequirements
-from starlette.types import Send, Receive, Scope, Message, ASGIApp
-
-OptionValues = List[Union[Literal["self"], Literal["*"], str]]
+OptionValues = list[Literal["self", "*"] | str]
 
 PermissionsPolicyOptions = TypedDict(
     "PermissionsPolicyOptions",
@@ -193,11 +190,10 @@ class PermissionsPolicy:
                 self.PolicyString += "=("
 
             for j, value in enumerate(values):
-                if value != "self":
-                    if value[0] != '"':
-                        raise SyntaxError(
-                            f'Invalid allowlist item({value}) for feature {key}. Allowlist item must be *, self or a quoted URL "https://example.com"'
-                        )
+                if value != "self" and value[0] != '"':
+                    raise SyntaxError(
+                        f'Invalid allowlist item({value}) for feature {key}. Allowlist item must be *, self or a quoted URL "https://example.com"'
+                    )
 
                 self.PolicyString += value
 
@@ -208,7 +204,6 @@ class PermissionsPolicy:
                         self.PolicyString += "), "
                 else:
                     self.PolicyString += " "
-        return
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -240,6 +235,5 @@ class PermissionsPolicy:
                 headers.append("Permissions-Policy", self.PolicyString)
 
             await send(message)
-            return
 
         return await self.app(scope, receive, set_Permissions_Policy)

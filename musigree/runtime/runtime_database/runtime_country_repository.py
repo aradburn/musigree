@@ -1,14 +1,14 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import Result, select
 
 from musigree.exceptions import NotFoundError
-from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
+from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
 from musigree.runtime.runtime_domain.runtime_country import RuntimeCountry
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class RuntimeCountryRepository(RuntimeBaseRepository["RuntimeCountryTable"]):
     schema_class = mapped_entity(RuntimeCountryTable)
     """The SQLAlchemy table class for runtime countries."""
 
-    async def all(self) -> AsyncGenerator[RuntimeCountry, None]:
+    async def all(self) -> AsyncGenerator[RuntimeCountry]:
         """
         Retrieves all countries from the runtime runtime_database.
 

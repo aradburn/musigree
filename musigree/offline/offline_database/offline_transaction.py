@@ -7,23 +7,23 @@ success or failure of the operations.
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError, MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.offline_database.offline_session import (
-    get_offline_session,
     CTX_OFFLINE_SESSION,
+    get_offline_session,
 )
 
 log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
+async def offline_transaction() -> AsyncGenerator[AsyncSession]:
     """
     Async context manager for handling offline runtime_database transactions.
 
@@ -68,7 +68,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
-        raise error
+        raise
     except IntegrityError as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
@@ -78,7 +78,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
-        raise error
+        raise
     except MultipleResultsFound as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
@@ -87,7 +87,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
-        raise error
+        raise
     except InvalidRequestError as error:
         # NOTE: Since there is a session commit on this level it should
         #       be handled because it can raise some errors also
@@ -97,7 +97,7 @@ async def offline_transaction() -> AsyncGenerator[AsyncSession, None]:
         """Log the error that happened during the session."""
         await session.rollback()
         """Rollback all the change made in this session."""
-        raise error
+        raise
     finally:
         # log.debug("Transaction: close session")
         await session.close()

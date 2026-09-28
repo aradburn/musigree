@@ -8,7 +8,7 @@ import enum
 from unittest.mock import Mock
 
 import pytest
-from sqlalchemy import TypeDecorator, Integer
+from sqlalchemy import Integer, TypeDecorator
 
 from musigree.library.fields.int_enum import IntEnum
 

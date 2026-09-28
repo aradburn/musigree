@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
-import React, { lazy, Suspense, useEffect, useState } from "react";
+import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useTour } from "@reactour/tour";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -46,6 +47,8 @@ const AppContent: React.FC = (): React.ReactElement => {
     const [isSidebarRightCollapsed, setIsSidebarRightCollapsed] =
         useState<boolean>(false);
     const { state: windowState } = useWindow();
+    const { setIsOpen, setCurrentStep } = useTour();
+    const startTourFrameRef = useRef<number | null>(null);
 
     // Check if this is a return visitor and load roles data
     useEffect(() => {
@@ -86,6 +89,9 @@ const AppContent: React.FC = (): React.ReactElement => {
                 "musigree:hide-roles-overlay",
                 handleHideRoles,
             );
+            if (startTourFrameRef.current !== null) {
+                cancelAnimationFrame(startTourFrameRef.current);
+            }
         };
     }, []);
 
@@ -97,6 +103,19 @@ const AppContent: React.FC = (): React.ReactElement => {
 
     const handleHideHelp = (): void => {
         setShowHelpModal(false);
+    };
+
+    const handleStartTourFromHelp = (): void => {
+        setShowHelpModal(false);
+        if (startTourFrameRef.current !== null) {
+            cancelAnimationFrame(startTourFrameRef.current);
+        }
+        // Wait until the help modal has unmounted so the tour can highlight the page.
+        startTourFrameRef.current = requestAnimationFrame(() => {
+            startTourFrameRef.current = null;
+            setCurrentStep(0);
+            setIsOpen(true);
+        });
     };
 
     const handleToggleSidebarRight = (): void => {
@@ -174,6 +193,7 @@ const AppContent: React.FC = (): React.ReactElement => {
                                 <HelpModal
                                     show={showHelpModal}
                                     onHide={handleHideHelp}
+                                    onStartTour={handleStartTourFromHelp}
                                 />
                             </Suspense>
                         ) : null}

@@ -43,7 +43,6 @@ class TestOfflineTransaction:
             async with offline_transaction() as session:
                 assert session is mock_session
                 # Simulate some offline_database operations
-                pass
 
             # Verify
             mock_get_session.assert_called_once()
@@ -173,7 +172,6 @@ class TestOfflineTransaction:
                 async with offline_transaction() as session:
                     assert session is mock_session
                     # No exceptions raised in the block
-                    pass
 
             # Verify
             mock_get_session.assert_called_once()

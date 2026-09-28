@@ -3,7 +3,7 @@
 import pytest
 from playwright.async_api import Page
 
-from tests.e2e.end_to_end_utils import APIHelper, TEST_SEARCH_STRING
+from tests.e2e.end_to_end_utils import TEST_SEARCH_STRING, APIHelper
 
 
 @pytest.mark.asyncio
@@ -87,7 +87,8 @@ class TestAPISearch:
         """Test searching for entities that don't exist."""
         api_helper = APIHelper(page, base_url)
         response, json_data = await api_helper.search_entities(
-            "Nonexistent Entity 123 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890")
+            "Nonexistent Entity 123 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+        )
 
         # Should return 422 if search string too long
         assert response.status == 422

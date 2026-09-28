@@ -153,7 +153,7 @@ class RuntimeEntity(InternalDomainObject):
         # noinspection PyUnreachableCode
         raise ValueError(entity_id, entity_type)
 
-    def to_db(self) -> "RuntimeEntityDB":
+    def to_db(self) -> RuntimeEntityDB:
         """
         Converts the runtime entity to its runtime_database representation.
 

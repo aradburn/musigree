@@ -79,7 +79,7 @@ class TestRuntimeLoaderSetupTask:
 
         # Mock the output target
         mock_target = Mock()
-        with patch.object(task, "output", return_value=mock_target):
+        with patch.object(task, "output", return_value=mock_target):  # noqa: SIM117
             # Mock logging configuration
             with patch("logging.getLogger") as mock_get_logger:
                 mock_luigi_logger = Mock()
@@ -337,12 +337,13 @@ class TestRuntimeLoaderTaskForDateAndStage:
             data_directory="/test/data", dump_date=datetime.date(2023, 1, 15), stage=0
         )
 
-        with patch.object(task, "output", return_value=mock_output):
+        with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117
             # Mock RuntimeError to trigger new event loop creation
             with patch("asyncio.get_running_loop", side_effect=RuntimeError):
                 # Need to patch the second call to get_load_runtime_table_stages in the run method
                 with patch(
-                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages", mock_get_stages
+                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
+                    mock_get_stages,
                 ):
                     task.run()
 
@@ -371,7 +372,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         )
 
         # Mock the event loop setup
-        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_new_loop:
                 with patch("asyncio.set_event_loop") as _mock_set_loop:
                     mock_loop = Mock()
@@ -418,7 +419,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
             data_directory="/test/data", dump_date=datetime.date(2023, 1, 15), stage=0
         )
 
-        with patch.object(task, "output", return_value=mock_output):
+        with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117
             # Mock existing event loop (no RuntimeError)
             with patch("asyncio.get_running_loop") as mock_get_loop:
                 mock_loop = Mock()
@@ -438,7 +439,8 @@ class TestRuntimeLoaderTaskForDateAndStage:
 
                 # Need to patch the second call to get_load_runtime_table_stages in the run method
                 with patch(
-                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages", mock_get_stages
+                    "musigree.loader.run_runtime_loader.get_load_runtime_table_stages",
+                    mock_get_stages,
                 ):
                     task.run()
 
@@ -464,7 +466,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         mock_output.done = AsyncMock()
 
         # Mock the event loop setup
-        with patch.object(task, "output", return_value=mock_output):
+        with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117
             with patch("asyncio.get_running_loop", side_effect=RuntimeError):
                 with patch("asyncio.new_event_loop") as mock_new_loop:
                     with patch("asyncio.set_event_loop") as _mock_set_loop:

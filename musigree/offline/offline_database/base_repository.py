@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Generic, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from sqlalchemy import delete, func, select, update, insert
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
@@ -9,13 +10,13 @@ __all__ = ("BaseRepository",)
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.offline.offline_database.base_table import ConcreteTable
+from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.offline.offline_database.offline_session import OfflineSession
 
 log = logging.getLogger(__name__)
 
 
-class BaseRepository(OfflineSession, Generic[ConcreteTable]):
+class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
     """
     This class implements the base interface for working with a runtime_database and provides
     a set of common async runtime_database operations. It's designed to be subclassed by more specific
@@ -166,7 +167,7 @@ class BaseRepository(OfflineSession, Generic[ConcreteTable]):
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
-    async def _all(self) -> AsyncGenerator[ConcreteTable, None]:
+    async def _all(self) -> AsyncGenerator[ConcreteTable]:
         """
         Retrieves all records from the table.
 

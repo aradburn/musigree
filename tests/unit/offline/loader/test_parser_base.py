@@ -1,6 +1,7 @@
 import datetime
 import io
 import logging
+from types import MappingProxyType
 from typing import Any
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -31,16 +32,18 @@ class TestParserBase:
     class DummyParser(ParserBase):
         """A test parser class for testing ParserBase functionality."""
 
-        _tags_to_fields_mapping = {
-            "name": ("name", ParserUtils.element_to_string),
-            "value": ("value", ParserUtils.element_to_integer),
-            "date": ("date", ParserUtils.element_to_datetime),
-            "child": ("children", ParserUtils.element_to_strings),
-            "ignore": ("ignore", ParserUtils.element_to_none),
-        }
+        _tags_to_fields_mapping = MappingProxyType(
+            {
+                "name": ("name", ParserUtils.element_to_string),
+                "value": ("value", ParserUtils.element_to_integer),
+                "date": ("date", ParserUtils.element_to_datetime),
+                "child": ("children", ParserUtils.element_to_strings),
+                "ignore": ("ignore", ParserUtils.element_to_none),
+            }
+        )
 
         @classmethod
-        def from_element(cls, element: Element | None) -> "TestParserBase.DummyDomainClass":
+        def from_element(cls, element: Element | None) -> TestParserBase.DummyDomainClass:
             """Create a DummyParser instance from an XML element (required by base class)."""
             if element is None:
                 raise ValueError("Element cannot be None")
@@ -124,12 +127,12 @@ class TestParserBase:
         assert len(records) == 5
         assert records[0].name == "RECORD ONE"
         assert records[0].value == 10
-        assert records[0].date == datetime.datetime(2023, 10, 27)
+        assert records[0].date == datetime.datetime(2023, 10, 27)  # noqa: DTZ001
         assert records[0].id == "1"
         assert records[0].ignore is None
         assert records[1].name == "RECORD TWO"
         assert records[1].value == 20
-        assert records[1].date == datetime.datetime(2023, 11, 27)
+        assert records[1].date == datetime.datetime(2023, 11, 27)  # noqa: DTZ001
         assert records[1].id == "2"
         assert records[2].name == "RECORD THREE"
         assert records[2].value == 30
@@ -137,11 +140,11 @@ class TestParserBase:
         assert records[2].id == "3"
         assert records[3].name == "RECORD FOUR"
         assert records[3].value == 40
-        assert records[3].date == datetime.datetime(2024, 11, 10)
+        assert records[3].date == datetime.datetime(2024, 11, 10)  # noqa: DTZ001
         assert records[3].id == "4"
         assert not hasattr(records[4], "name") or records[4].name is None
         assert records[4].value == 50
-        assert records[4].date == datetime.datetime(2024, 11, 10)
+        assert records[4].date == datetime.datetime(2024, 11, 10)  # noqa: DTZ001
         assert records[4].id == "5"
 
         assert len(records_skip) == 4
@@ -194,7 +197,7 @@ class TestParserBase:
         # THEN
         assert result["name"] == "RECORD ONE"
         assert result["value"] == 10
-        assert result["date"] == datetime.datetime(2023, 10, 27)
+        assert result["date"] == datetime.datetime(2023, 10, 27)  # noqa: DTZ001
 
     def test_tags_to_fields_ignore_none(self) -> None:
         """Test tags to fields with ignore_none option."""

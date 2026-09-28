@@ -4,6 +4,7 @@ import itertools
 import json
 import logging
 import math
+import multiprocessing
 import random
 import re
 import shutil
@@ -12,12 +13,20 @@ import sys
 import textwrap
 import time
 import unicodedata
-from collections.abc import Mapping, Iterator, Sequence, Iterable, AsyncIterable
+from collections.abc import (
+    AsyncIterable,
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from datetime import datetime, date
+from datetime import date, datetime
 from functools import partial
 from io import BufferedWriter
-from typing import Any, TypeVar, Generator, Callable, Protocol
+from typing import Any, Protocol, TypeVar
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -27,20 +36,20 @@ from unidecode import unidecode
 
 from musigree.constants import VERSION, ThreadingModel
 
-T_read = TypeVar("T_read", covariant=True)
-T_write = TypeVar("T_write", contravariant=True)
+T_read_co = TypeVar("T_read_co", covariant=True)
+T_write_contra = TypeVar("T_write_contra", contravariant=True)
 
 
-class SupportsRead(Protocol[T_read]):
+class SupportsRead(Protocol[T_read_co]):
     """Protocol for file-like objects that support binary reads."""
 
-    def read(self, size: int = -1, /) -> T_read: ...
+    def read(self, size: int = -1, /) -> T_read_co: ...
 
 
-class SupportsWrite(Protocol[T_write]):
+class SupportsWrite(Protocol[T_write_contra]):
     """Protocol for file-like objects that support binary writes."""
 
-    def write(self, data: T_write, /) -> int: ...
+    def write(self, data: T_write_contra, /) -> int: ...
 
 
 log = logging.getLogger(__name__)
@@ -97,7 +106,7 @@ class SkipFilter:
         raise ValueError
 
 
-def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], None, None]:
+def batched[T](iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T]]:
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -110,7 +119,7 @@ def batched(iterable: Iterable[T] | Sequence[T], n: int) -> Generator[list[T], N
             yield batch
 
 
-def split_list(num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
+def split_list[T](num_chunks: int, seq: Sequence[T]) -> Iterator[list[T]]:
     num_items = count(seq)
     num_chunks = min(num_items, num_chunks)
     num_chunks = max(1, num_chunks)
@@ -165,23 +174,15 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
         def as_dict(self: DeclarativeBase) -> dict[str, Any]:
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
 
+        from musigree.library.domain.base import InternalDomainObject
         from musigree.offline.offline_database.base_table import OfflineBase
         from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
-        from musigree.library.domain.base import InternalDomainObject
 
-        if isinstance(o, OfflineBase):
-            return list_public_attributes(preprocessor.filter(as_dict(o)))
-        elif isinstance(o, RuntimeBase):
+        if isinstance(o, (OfflineBase, RuntimeBase)):
             return list_public_attributes(preprocessor.filter(as_dict(o)))
         elif isinstance(o, InternalDomainObject):
             return list_public_attributes(preprocessor.filter(o.model_dump()))
-        elif isinstance(o, enum.Enum):
-            # noinspection PyStringConversionWithoutDunderMethod
-            return str(o)
-        elif isinstance(o, date):
-            # noinspection PyStringConversionWithoutDunderMethod
-            return str(o)
-        elif isinstance(o, datetime):
+        elif isinstance(o, (enum.Enum, date, datetime)):
             # noinspection PyStringConversionWithoutDunderMethod
             return str(o)
         else:
@@ -206,7 +207,7 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
         try:
             # Create a normalized version for sorting by converting to JSON with sorted keys
             return json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             # Fallback: convert the entire dict to string if JSON serialization fails
             return str(sorted(obj.items()))
 
@@ -268,7 +269,7 @@ def is_latin(_string: str) -> bool:
     if _string is None or _string == "":
         return False
     try:
-        return all(["LATIN" in unicodedata.name(c) for c in _string])
+        return all("LATIN" in unicodedata.name(c) for c in _string)
     except ValueError:
         return False
 
@@ -294,13 +295,10 @@ def sleep_with_backoff(multiplier: int) -> None:
     Args:
         multiplier (int): The maximum multiplier for the sleep time.
     """
-    if multiplier < 1:
-        multiplier = 1
+    multiplier = max(multiplier, 1)
     time_in_secs = int(multiplier * (1.0 + random.random()))
-    if time_in_secs > 60:
-        time_in_secs = 60
-    if time_in_secs < 1:
-        time_in_secs = 1
+    time_in_secs = min(time_in_secs, 60)
+    time_in_secs = max(time_in_secs, 1)
     # log.debug(f"sleeping for {time_in_secs} secs")
     time.sleep(time_in_secs)
 
@@ -330,8 +328,7 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
     Returns:
         str: The constructed URL for the Discogs data dump.
     """
-    from musigree.constants import DISCOGS_FILE_TEMPLATE
-    from musigree.constants import DISCOGS_BASE_URL
+    from musigree.constants import DISCOGS_BASE_URL, DISCOGS_FILE_TEMPLATE
 
     year = dump_date.year
     base = DISCOGS_BASE_URL.format(year=year)
@@ -366,14 +363,14 @@ def calculate_size(obj: Any) -> int:
     size = sys.getsizeof(obj)
     if isinstance(obj, dict):
         size += sum(calculate_size(v) for v in obj.values())
-        size += sum(calculate_size(k) for k in obj.keys())
+        size += sum(calculate_size(k) for k in obj)
     elif isinstance(obj, (list, tuple, set)):
         size += sum(calculate_size(v) for v in obj)
     elif isinstance(obj, bytes):
         size += len(obj)
     elif isinstance(obj, str):
         size += len(obj.encode("utf-8"))
-    elif isinstance(obj, type(None)):
+    elif obj is None:
         size += 0
     elif isinstance(obj, (int, float)):
         size += sys.getsizeof(obj)
@@ -396,11 +393,11 @@ def get_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
-def worker_generator(
+def worker_generator[T](
     worker_function: Callable[[list[T], int, int], None],
     records: Iterable[list[T]],
     total_count: int,
-) -> Generator[partial, None, None]:
+) -> Generator[partial]:
     """A generator that yields worker functions for processing records.
     Args:
         worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
@@ -415,7 +412,7 @@ def worker_generator(
         processed_count += len(record)
 
 
-async def async_worker_generator(
+async def async_worker_generator[T](
     worker_function: Callable[[list[T], int, int], None],
     records: AsyncIterable[list[T]],
     total_count: int,
@@ -436,78 +433,58 @@ async def async_worker_generator(
     return partials
 
 
+def _process_pool_mp_context() -> multiprocessing.context.BaseContext:
+    """Multiprocessing context for process-pool workers that inherit parent state.
+
+    Offline/runtime workers expect parent process state (database helpers, config)
+    to be available after the pool starts. Python 3.14+ defaults to ``forkserver``
+    on Linux, which does not inherit that state. Prefer ``fork`` when available so
+    existing workers keep working; fall back to the platform default otherwise.
+    """
+    if "fork" in multiprocessing.get_all_start_methods():
+        return multiprocessing.get_context("fork")
+    return multiprocessing.get_context()
+
+
 async def queue_worker_functions(
     max_concurrent: int,
-    worker_partials: Generator[partial, None, None] | list[partial],
+    worker_partials: Generator[partial] | list[partial],
     threading_model: ThreadingModel = ThreadingModel.THREAD,
-) -> Any:
-    """Run worker coroutines with a maximum number of concurrent workers.
+) -> None:
+    """Run sync worker callables with a bounded concurrency pool.
+
     Args:
-        max_concurrent (int): The maximum number of concurrent workers.
-        worker_partials (Generator[Callable[..., None], None, None]): A generator of worker coroutines.
-        threading_model: (ThreadingModel)
+        max_concurrent: Maximum concurrent workers (clamped to 1..8).
+        worker_partials: Sync worker callables (typically ``functools.partial``).
+        threading_model: ``THREAD`` uses ``ThreadPoolExecutor``;
+            ``PROCESS`` uses ``ProcessPoolExecutor`` with a fork-compatible context.
     """
-    if max_concurrent < 1:
-        max_concurrent = 1
-    if max_concurrent > 8:
-        max_concurrent = 8
+    max_concurrent = max(1, min(max_concurrent, 8))
     started_at = time.monotonic()
-
-    tasks = []
     loop = asyncio.get_running_loop()
+
     if threading_model == ThreadingModel.PROCESS:
-        # loop.set_debug(True)
-        with ProcessPoolExecutor(max_workers=max_concurrent) as process_executor:
-            for worker_partial in worker_partials:
-                # log.debug("Get next worker_partial")
-                # Create max_concurrent worker tasks to process the queue concurrently.
-                future = loop.run_in_executor(
-                    process_executor, worker_partial.func, *worker_partial.args
-                )
-                # log.debug("Got next worker_partial future")
-                tasks.append(future)
-
-                if len(tasks) >= max_concurrent:
-                    task = tasks.pop(0)
-                    # log.debug("awaiting future")
-                    for completed_future in asyncio.as_completed([task]):
-                        await completed_future
-                    # await asyncio.wait([task])
-                    # log.debug("completed future")
-                    await asyncio.sleep(0.1)
-            # log.debug("Done all worker_partials")
-
-            for completed_future in asyncio.as_completed(tasks):
-                # log.debug(f"Get as_completed on future: {completed_future}")
-                await completed_future
+        executor: ProcessPoolExecutor | ThreadPoolExecutor = ProcessPoolExecutor(
+            max_workers=max_concurrent,
+            mp_context=_process_pool_mp_context(),
+        )
     else:
-        with ThreadPoolExecutor(max_workers=max_concurrent) as thread_executor:
-            for worker_partial in worker_partials:
-                # log.debug("Get next worker_partial")
-                # Create max_concurrent worker tasks to process the queue concurrently.
-                future = loop.run_in_executor(
-                    thread_executor, worker_partial.func, *worker_partial.args
-                )
-                # log.debug("Got next worker_partial future")
-                tasks.append(future)
+        executor = ThreadPoolExecutor(max_workers=max_concurrent)
 
-                if len(tasks) >= max_concurrent:
-                    task = tasks.pop(0)
-                    # log.debug("awaiting future")
-                    for completed_future in asyncio.as_completed([task]):
-                        await completed_future
-                    # await asyncio.wait([task])
-                    # log.debug("completed future")
-                    await asyncio.sleep(0.1)
-            # log.debug("Done all worker_partials")
+    with executor:
+        pending: set[asyncio.Future[Any]] = set()
+        for worker_partial in worker_partials:
+            future = loop.run_in_executor(executor, worker_partial.func, *worker_partial.args)
+            pending.add(future)
+            if len(pending) >= max_concurrent:
+                done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                for completed in done:
+                    await completed
 
-            for completed_future in asyncio.as_completed(tasks):
-                # log.debug(f"Get as_completed on future: {completed_future}")
-                await completed_future
-        # for worker_partial in worker_partials:
-        #     # Create a worker tasks to process the queue one by one.
-        #     future = loop.run_in_executor(None, worker_partial.func, *worker_partial.args)
-        #     await future
+        if pending:
+            done, _ = await asyncio.wait(pending)
+            for completed in done:
+                await completed
 
     total_processing_time = time.monotonic() - started_at
     log.debug(f"total processing time: {total_processing_time:.2f} seconds")
@@ -515,7 +492,7 @@ async def queue_worker_functions(
 
 def generator_with_id_accumulator(
     records: Iterable[dict[str, Any]], id_accumulator: list[int], id_attr: str
-) -> Generator[dict[str, Any], None, None]:
+) -> Generator[dict[str, Any]]:
     """A generator that yields records and accumulates their IDs.
     Args:
         records (Iterable[dict[str, Any]]): An iterable of records (dictionaries).

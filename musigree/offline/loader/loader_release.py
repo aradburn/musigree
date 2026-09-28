@@ -56,8 +56,10 @@ and `concurrent.futures.ProcessPoolExecutor` for concurrent processing.
 """
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from types import MappingProxyType
+from typing import Any
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
@@ -94,17 +96,17 @@ class LoaderRelease(LoaderBase):
 
     # CLASS VARIABLES
 
-    _artists_mapping: dict[str, Any] = {}
+    _artists_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     A mapping for artists, not currently used
     """
 
-    _companies_mapping: dict[str, Any] = {}
+    _companies_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     A mapping for companies, not currently used
     """
 
-    _tracks_mapping: dict[str, Any] = {}
+    _tracks_mapping: MappingProxyType[str, Any] = MappingProxyType({})
     """
     A mapping for tracks, not currently used
     """

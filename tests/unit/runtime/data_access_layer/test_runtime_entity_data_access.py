@@ -270,7 +270,7 @@ class TestStructuralRolesToRelations:
 
         assert len(result) == 1
 
-        relation = list(result.values())[0]
+        relation = next(iter(result.values()))
         assert relation.role == "Sublabel Of"
         assert relation.entity_one_id == 1  # this entity is sublabel
         assert relation.entity_two_id == 2  # of parent

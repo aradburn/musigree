@@ -1,7 +1,7 @@
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import select, Result
+from sqlalchemy import Result, select
 
 from musigree.exceptions import NotFoundError
 from musigree.offline.offline_database.base_repository import BaseRepository
@@ -31,7 +31,7 @@ class RoleRepository(BaseRepository["RoleTable"]):
     schema_class = mapped_entity(RoleTable)
     """The SQLAlchemy table class for roles."""
 
-    async def all(self) -> AsyncGenerator[Role, None]:
+    async def all(self) -> AsyncGenerator[Role]:
         """
         Retrieves all roles from the runtime_database.
 

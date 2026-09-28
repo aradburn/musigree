@@ -229,7 +229,7 @@ class TestTextSearchIndex:
         # This method prints information, so just ensure it doesn't raise exceptions
         try:
             index.print_sizes()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             pytest.fail(f"print_sizes() raised an exception: {e}")
 
     # Note: save_text_search_index_to_file method doesn't exist in the class

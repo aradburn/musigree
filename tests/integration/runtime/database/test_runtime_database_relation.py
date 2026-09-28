@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -19,9 +19,10 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_01(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 42
@@ -35,11 +36,11 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Producer",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Producer",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = RuntimeRelation.from_relation_internals(relation_internals)
@@ -134,9 +135,10 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_02(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 21209
@@ -150,11 +152,11 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Compiled By",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Compiled By",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = RuntimeRelation.from_relation_internals(relation_internals)
@@ -181,9 +183,10 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
     @pytest.mark.asyncio
     async def test_from_db_03(
         self,
-        offline_database_setup: AsyncGenerator[None, None],
-        runtime_database_setup: AsyncGenerator[None, None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        offline_database_setup: AsyncGenerator[None],
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         entity_one_id = 335173
@@ -197,11 +200,11 @@ class TestRuntimeDatabaseRelation(AbstractDatabaseTest):
 
             id_1 = to_entity_internal_id(entity_one_id, entity_one_type)
             id_2 = to_entity_internal_id(entity_two_id, entity_two_type)
-            key = dict(
-                subject=id_1,
-                role="Mastered By",
-                object=id_2,
-            )
+            key = {
+                "subject": id_1,
+                "role": "Mastered By",
+                "object": id_2,
+            }
 
             relation_internals = await relation_repository.find_by_key(key)
             relation = RuntimeRelation.from_relation_internals(relation_internals)

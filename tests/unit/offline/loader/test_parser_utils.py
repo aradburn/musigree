@@ -41,21 +41,21 @@ class TestParserUtils:
     @pytest.mark.parametrize(
         "date_string, expected_datetime",
         [
-            ("2023-10-27", datetime.datetime(2023, 10, 27, 0, 0)),
-            ("20231027", datetime.datetime(2023, 10, 27, 0, 0)),
-            ("2023", datetime.datetime(2023, 1, 1, 0, 0)),
+            ("2023-10-27", datetime.datetime(2023, 10, 27, 0, 0)),  # noqa: DTZ001
+            ("20231027", datetime.datetime(2023, 10, 27, 0, 0)),  # noqa: DTZ001
+            ("2023", datetime.datetime(2023, 1, 1, 0, 0)),  # noqa: DTZ001
             ("", None),
             (None, None),
-            ("2023-13-01", datetime.datetime(2023, 1, 13, 0, 0)),  # Invalid month
+            ("2023-13-01", datetime.datetime(2023, 1, 13, 0, 0)),  # Invalid month  # noqa: DTZ001
             (
                 "2023-02-30",
-                datetime.datetime(2023, 3, 2, 0, 0),
+                datetime.datetime(2023, 3, 2, 0, 0),  # noqa: DTZ001
             ),  # Invalid day for month
             ("2023-02-0", None),  # Invalid day
             ("2023-0-2", None),  # Invalid month
             ("????", None),
             ("Unknown", None),
-            ("20231132", datetime.datetime(2023, 12, 2, 0, 0)),
+            ("20231132", datetime.datetime(2023, 12, 2, 0, 0)),  # noqa: DTZ001
             ("2023-12-0", None),
             ("2023-0-12", None),
         ],
@@ -74,7 +74,7 @@ class TestParserUtils:
         date = ParserUtils.validate_release_date("2023", "10", "27")
 
         # THEN
-        assert date == datetime.datetime(2023, 10, 27, 0, 0)
+        assert date == datetime.datetime(2023, 10, 27, 0, 0)  # noqa: DTZ001
 
     def test_element_to_datetime(self) -> None:
         # GIVEN
@@ -85,7 +85,7 @@ class TestParserUtils:
         result = ParserUtils.element_to_datetime(element)
 
         # THEN
-        assert result == datetime.datetime(2023, 10, 27, 0, 0)
+        assert result == datetime.datetime(2023, 10, 27, 0, 0)  # noqa: DTZ001
 
     def test_element_to_datetime_none(self) -> None:
         # WHEN

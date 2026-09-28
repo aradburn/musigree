@@ -77,17 +77,17 @@ import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
 from musigree.constants import (
-    DISCOGS_DATA,
     DISCOGS_ARTISTS_TYPE,
-    DISCOGS_RELEASES_TYPE,
+    DISCOGS_DATA,
+    DISCOGS_FILE_TEMPLATE,
     DISCOGS_LABELS_TYPE,
     DISCOGS_MASTERS_TYPE,
-    DISCOGS_FILE_TEMPLATE,
+    DISCOGS_RELEASES_TYPE,
 )
 from musigree.offline.loader.loader_target import LoaderTarget
 from musigree.utils import (
-    get_discogs_dump_dates,
     download_file,
+    get_discogs_dump_dates,
     get_discogs_url,
 )
 
@@ -220,7 +220,7 @@ class DiscogsDownloaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
             ).total_seconds()
         )
         log.debug(f"DiscogsDownloaderTaskForDate priority: {diff}")
@@ -287,7 +287,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
         """
         diff = int(
             (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
             ).total_seconds()
         )
         log.debug(f"LoaderTaskForDate priority: {diff}")
@@ -314,7 +314,7 @@ class LoaderTaskForDate(luigi.WrapperTask):
             datetime.date.fromisoformat(str(self.dump_date)).strftime("%Y%m%d"),
             is_bulk_inserts=False,
         )
-        for stage in range(0, len(stages)):
+        for stage in range(len(stages)):
             yield LoaderTaskForDateAndStage(
                 data_directory=self.data_directory,
                 dump_date=self.dump_date,
@@ -359,7 +359,7 @@ class LoaderTaskForDateAndStage(luigi.Task):
         """
         diff = int(
             (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))
+                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
             ).total_seconds()
         ) + (100 - int(str(self.stage)))
         log.debug(
@@ -459,8 +459,8 @@ class LoaderTaskForDateAndStage(luigi.Task):
             loop.run_until_complete(task)
             self.isTaskComplete = True
 
-        except RuntimeError as e:
-            log.exception(e, exc_info=True)
+        except RuntimeError:
+            log.exception("RuntimeError")
 
     def complete(self) -> bool:
         # Persisted completion (metadata row) or successful run() this session.
@@ -540,18 +540,18 @@ class DiscogsDownloaderTask(luigi.Task):
                 try:
                     with open(temporary_binary_file_path, "wb") as output_file:
                         download_file(self.url, output_file)
-                except KeyboardInterrupt as e:
+                except KeyboardInterrupt:
                     temp_path = Path(temporary_binary_file_path)
                     if temp_path.exists():
                         log.debug(f"deleting temp file: {temp_path}")
                         temp_path.unlink()
-                    raise e
-                except Exception as e:
+                    raise
+                except Exception:
                     temp_path = Path(temporary_binary_file_path)
                     if temp_path.exists():
                         log.debug(f"deleting temp file: {temp_path}")
                         temp_path.unlink()
-                    raise e
+                    raise
 
         self.isDownloadingComplete = True
 

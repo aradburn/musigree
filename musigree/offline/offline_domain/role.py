@@ -14,11 +14,12 @@ Key functionalities include:
 """
 
 __all__ = [
-    "RoleUncommitted",
     "Role",
+    "RoleUncommitted",
 ]
 
 from pydantic import StrictInt
+
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.role_type import RoleType
 
@@ -63,8 +64,6 @@ class RoleUncommitted(_RoleBase):
     assigned an ID and stored in the runtime_database. It inherits attributes
     from `_RoleBase`.
     """
-
-    pass
 
 
 class Role(_RoleBase):

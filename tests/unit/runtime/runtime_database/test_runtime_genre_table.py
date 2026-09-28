@@ -50,7 +50,7 @@ class TestRuntimeGenreTable:
         expected_columns = {"id", "genre_name"}
 
         # WHEN
-        columns = set(column.name for column in class_mapper(RuntimeGenreTable).columns)
+        columns = {column.name for column in class_mapper(RuntimeGenreTable).columns}
 
         # THEN
         assert expected_columns.issubset(columns)

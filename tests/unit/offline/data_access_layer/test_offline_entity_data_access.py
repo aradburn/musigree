@@ -8,7 +8,8 @@ and text search index initialization.
 """
 
 import logging
-from typing import AsyncGenerator, Any
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -18,6 +19,7 @@ from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
+from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.offline_domain.release import Release
 
@@ -789,7 +791,7 @@ class TestCreateTextSearchIndex:
                 (3, "Label 1"),
             ]
 
-            async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]], None]:
+            async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]]]:
                 yield mock_id_name_pairs
 
             mock_entity_repository.all_ids_and_names = mock_all_ids_and_names
@@ -821,7 +823,7 @@ class TestCreateTextSearchIndex:
         ) as mock_text_search_index_class:
             # Setup
             # noinspection PyUnreachableCode
-            async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]], None]:
+            async def mock_all_ids_and_names() -> AsyncGenerator[list[tuple[int, str]]]:
                 # Empty async generator - yield nothing
                 return
                 # noinspection PyTypeChecker
@@ -928,6 +930,21 @@ class TestLogging:
 
 class TestProcessProfileLinks:
     """Test class for process_profile_links method."""
+
+    @pytest.fixture(autouse=True)
+    def enable_profile_link_error_logging(self) -> Generator[None]:
+        """Force logging_required=True regardless of leftover OfflineDatabaseManager state.
+
+        process_profile_links suppresses error logs when offline_config.TESTING is truthy.
+        Other unit tests can leave a Mock config on OfflineDatabaseManager, which makes
+        TESTING truthy and causes these logging assertions to flake when the full suite runs.
+        """
+        original_config = OfflineDatabaseManager.offline_config
+        OfflineDatabaseManager.offline_config = None
+        try:
+            yield
+        finally:
+            OfflineDatabaseManager.offline_config = original_config
 
     @pytest.fixture
     def mock_entity_repository(self) -> AsyncMock:

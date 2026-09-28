@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
@@ -32,7 +32,7 @@ class AbstractDatabaseTest:
 
 
 @pytest.fixture(scope="class")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+def event_loop() -> Generator[asyncio.AbstractEventLoop]:
     """Create an instance of the default event loop for the test session."""
     # noinspection deprecation
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -43,7 +43,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 @pytest_asyncio.fixture(scope="class")
 async def offline_database_setup(
     offline_config: Configuration, is_load_offline_data_required: bool
-) -> AsyncGenerator[None, None]:
+) -> AsyncGenerator[None]:
     setup_logging(is_testing=True)
 
     """Set up the offline database for testing."""
@@ -91,16 +91,17 @@ async def offline_database_setup(
     # Teardown
     log.info("Tearing down offline database")
     await OfflineDatabaseManager.shutdown_database()
+    # noinspection broad-exception
     try:
         await CacheManager.shutdown_cache()
-    except Exception as e:
-        log.exception(f"Error closing Redis client: {e}")
+    except Exception:
+        log.exception("Error closing Redis client")
 
     shutdown_logging()
 
 
 @pytest_asyncio.fixture(scope="class")
-async def offline_database_shutdown() -> AsyncGenerator[None, None]:
+async def offline_database_shutdown() -> AsyncGenerator[None]:
     # Teardown
     log.info("Tearing down offline database")
     await OfflineDatabaseManager.shutdown_database()
@@ -108,7 +109,7 @@ async def offline_database_shutdown() -> AsyncGenerator[None, None]:
 
 
 @pytest_asyncio.fixture
-async def offline_transaction_fixture() -> AsyncGenerator[AsyncSession, None]:
+async def offline_transaction_fixture() -> AsyncGenerator[AsyncSession]:
     """Provide an async transaction context for individual tests."""
     async with offline_transaction() as session:
         yield session
@@ -116,7 +117,7 @@ async def offline_transaction_fixture() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def reset_offline_database() -> AsyncGenerator[None, None]:
+async def reset_offline_database() -> AsyncGenerator[None]:
     """Reset offline database tables to start test with empty tables."""
     if OfflineDatabaseManager.offline_database_helper is not None:
         log.info("Resetting offline database tables")
@@ -134,7 +135,7 @@ async def reset_offline_database() -> AsyncGenerator[None, None]:
 @pytest_asyncio.fixture(scope="class")
 async def offline_database_update(
     offline_config: Configuration,
-) -> AsyncGenerator[None, None]:
+) -> AsyncGenerator[None]:
     log.info("Updating test data into offline database")
 
     # Load test data
@@ -151,7 +152,7 @@ async def offline_database_update(
 @pytest_asyncio.fixture(scope="class")
 async def runtime_database_setup(
     runtime_config: Configuration, is_load_runtime_data_required: bool
-) -> AsyncGenerator[None, None]:
+) -> AsyncGenerator[None]:
     setup_logging(is_testing=True)
 
     """Set up the runtime database for testing."""
@@ -201,16 +202,17 @@ async def runtime_database_setup(
     # Teardown
     log.info("Tearing down runtime database")
     await RuntimeDatabaseManager.shutdown_database()
+    # noinspection broad-exception
     try:
         await CacheManager.shutdown_cache()
-    except Exception as e:
-        log.exception(f"Error closing Redis client: {e}")
+    except Exception:
+        log.exception("Error closing Redis client")
 
     shutdown_logging()
 
 
 @pytest_asyncio.fixture(scope="class")
-async def runtime_database_shutdown() -> AsyncGenerator[None, None]:
+async def runtime_database_shutdown() -> AsyncGenerator[None]:
     # Teardown
     log.info("Tearing down runtime database")
     await RuntimeDatabaseManager.shutdown_database()
@@ -218,7 +220,7 @@ async def runtime_database_shutdown() -> AsyncGenerator[None, None]:
 
 
 @pytest_asyncio.fixture
-async def runtime_transaction_fixture() -> AsyncGenerator[AsyncSession, None]:
+async def runtime_transaction_fixture() -> AsyncGenerator[AsyncSession]:
     """Provide an async transaction context for individual tests."""
     async with runtime_transaction() as session:
         yield session
@@ -226,7 +228,7 @@ async def runtime_transaction_fixture() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def reset_runtime_database() -> AsyncGenerator[None, None]:
+async def reset_runtime_database() -> AsyncGenerator[None]:
     """Reset runtime database tables to start test with empty tables."""
     if RuntimeDatabaseManager.runtime_database_helper is not None:
         log.info("Resetting runtime database tables")

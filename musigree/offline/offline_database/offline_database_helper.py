@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Type
 
 from sqlalchemy import Table
 from sqlalchemy.engine import Connection
@@ -64,7 +63,6 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             Engine: The SQLAlchemy engine.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -72,7 +70,6 @@ class OfflineDatabaseHelper(ABC):
         """
         Abstract method to shut down the runtime_database connection.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -84,7 +81,6 @@ class OfflineDatabaseHelper(ABC):
             config: The runtime_database configuration.
             engine: The SQLAlchemy engine.
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -165,7 +161,6 @@ class OfflineDatabaseHelper(ABC):
             is_analyze: If True, performs an analyze operation.
             engine: The SQLAlchemy engine connected to the runtime_database.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -176,7 +171,6 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             bool: True if a full vacuum should be performed, False otherwise.
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -187,12 +181,11 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             bool: True if a vacuum analyze should be performed, False otherwise.
         """
-        pass
 
     @staticmethod
     @abstractmethod
     def generate_insert_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
@@ -207,12 +200,11 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             Insert: The insert query.
         """
-        pass
 
     @staticmethod
     @abstractmethod
     def generate_insert_bulk_query(
-        schema_class: Type[ConcreteTable],
+        schema_class: type[ConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
@@ -227,4 +219,3 @@ class OfflineDatabaseHelper(ABC):
         Returns:
             Insert[tuple[ConcreteTable]]: The bulk insert query.
         """
-        pass

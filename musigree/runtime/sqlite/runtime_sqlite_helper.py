@@ -55,20 +55,19 @@ import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
-from typing import Type
 
-from sqlalchemy import text, URL, Pool, AsyncAdaptedQueuePool, exc
-from sqlalchemy.dialects.sqlite import insert, Insert
+from sqlalchemy import URL, AsyncAdaptedQueuePool, Pool, exc, text
+from sqlalchemy.dialects.sqlite import Insert, insert
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.sql.dml import ReturningInsert
 
 from musigree.config import Configuration
 from musigree.constants import SQLITE_DRIVER_NAME
 from musigree.logging_config import LOGGING_TRACE
 from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
     RuntimeConcreteTable,
+    RuntimeDatabaseHelper,
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
@@ -198,7 +197,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("PRAGMA foreign_keys=OFF;")
             dbapi_con.execute("PRAGMA threads=8;")
 
-        except (DatabaseError, OperationalError):
+        except DatabaseError, OperationalError:
             """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
             sys.exit("Runtime Database Connection Error")
@@ -227,7 +226,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             dbapi_con.execute("PRAGMA foreign_keys=OFF;")
             dbapi_con.execute("PRAGMA threads=4;")
 
-        except (DatabaseError, OperationalError):
+        except DatabaseError, OperationalError:
             """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
             sys.exit("Runtime Database Connection Error")
@@ -246,8 +245,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
                 connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
                 raise exc.DisconnectionError(
-                    "Connection record belongs to pid %s, "
-                    "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                    "Connection record belongs to pid {}, attempting to check out in pid {}".format(
+                        connection_record.info["pid"], pid
+                    )
                 )
 
     @staticmethod
@@ -278,7 +278,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 """Commit the operation."""
 
             log.info("Runtime Database connected OK.")
-        except (DatabaseError, OperationalError):
+        except DatabaseError, OperationalError:
             """Handle runtime_database errors."""
             log.error("Runtime Database Connection Error")
             sys.exit("Runtime Database Connection Error")
@@ -395,7 +395,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
     @staticmethod
     def generate_insert_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values: dict,
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
@@ -426,7 +426,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
 
     @staticmethod
     def generate_insert_bulk_query(
-        schema_class: Type[RuntimeConcreteTable],
+        schema_class: type[RuntimeConcreteTable],
         values_list: list[dict],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:

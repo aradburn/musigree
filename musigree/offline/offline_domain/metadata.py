@@ -15,8 +15,8 @@ Key functionalities include:
 """
 
 __all__ = [
-    "MetadataUncommitted",
     "Metadata",
+    "MetadataUncommitted",
 ]
 
 import logging
@@ -61,8 +61,6 @@ class MetadataUncommitted(_MetadataBase):
     It inherits attributes from `_MetadataBase` and is used as a data structure
     for new metadata entries before they are assigned a unique ID by the runtime_database.
     """
-
-    pass
 
 
 class Metadata(_MetadataBase):

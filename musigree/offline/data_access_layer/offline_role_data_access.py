@@ -56,10 +56,9 @@ class OfflineRoleDataAccess:
 
             # find if we have a match
             found_role_name = OfflineRoleDataAccess.find_role_inner(queued_role_name)
-            if found_role_name is not None:
-                if found_role_name[1] > top_score:
-                    top_candidate = found_role_name[0]
-                    top_score = found_role_name[1]
+            if found_role_name is not None and found_role_name[1] > top_score:
+                top_candidate = found_role_name[0]
+                top_score = found_role_name[1]
 
             # Remove each word in turn and add to queue
             word_list = queued_role_name.split(" ")

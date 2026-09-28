@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -11,7 +11,7 @@ from tests.conftest import AbstractDatabaseTest
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 class TestDatabaseMaster(AbstractDatabaseTest):
     @pytest.mark.asyncio
-    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_from_db_01(self, offline_database_setup: AsyncGenerator[None],
                               is_load_offline_data_required: bool) -> None:
         master_id = 37574
         async with offline_transaction():
@@ -47,7 +47,7 @@ class TestDatabaseMaster(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None, None],
+    async def test_from_db_02(self, offline_database_setup: AsyncGenerator[None],
                               is_load_offline_data_required: bool) -> None:
         master_id = 19671
         async with offline_transaction():
