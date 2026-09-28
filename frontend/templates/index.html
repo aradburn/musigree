@@ -17,16 +17,8 @@
     <title>{{ title }}</title>
 
     {%- if not is_production %}
+    {# React refresh preamble is imported from the client entry so it is a hosted module. #}
     <script type="module" src="{{ asset('@vite/client') }}"></script>
-    <script type="module">
-        import RefreshRuntime from "{{ asset('@react-refresh') }}";
-
-        RefreshRuntime.injectIntoGlobalHook(window);
-        window.$RefreshReg$ = () => {
-        };
-        window.$RefreshSig$ = () => (type) => type;
-        window.__vite_plugin_react_preamble_installed__ = true;
-    </script>
     {%- endif %}
 
     <!-- Open Graph -->
@@ -86,7 +78,7 @@ labels using information derived from the Discogs.com database.">
     variables #}
 
     {%- if is_production %}
-    <script>
+    <script nonce="{{ request.state.csp_nonce }}">
         window.op = window.op || function () {
             var n = [];
             return new Proxy(function () {
@@ -142,7 +134,7 @@ labels using information derived from the Discogs.com database.">
 
 <!--@formatter:off-->
 {% if initial_json %}
-<script>{{ initial_json|safe }}</script>
+<script nonce="{{ request.state.csp_nonce }}">{{ initial_json|safe }}</script>
 {% endif %}
 <!--@formatter:on-->
 

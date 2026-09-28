@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+import secrets
 import sys
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from Secweb.headers.csp import Content_Security_Policy
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.config import Configuration
 from musigree.constants import AnalyticsType, CSPSetting
 
@@ -15,6 +17,11 @@ if TYPE_CHECKING:
     from Secweb._types import Content_Security_Policy_Options
 
 log = logging.getLogger(__name__)
+
+# 128 bits, the minimum recommended for a CSP nonce.
+_CSP_NONCE_BYTES = 16
+CSP_NONCE_STATE_KEY = "csp_nonce"
+_NONCE_DIRECTIVES = frozenset({"script-src", "script-src-elem"})
 
 
 def get_content_security_policy_report_only() -> Content_Security_Policy_Options:
@@ -46,17 +53,16 @@ def get_content_security_policy_production(
     # Setup CSP headers
     csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
-        "default-src": ["'self'"],
+        "default-src": ["'none'"],
         "script-src": [
             "'self'",
-            "data:",
+            # "data:",
             analytics_script_url,
         ],
-        # Need to remove 'unsafe-inline'
+        # Inline scripts are allowed per response by a nonce, not 'unsafe-inline'.
         "script-src-elem": [
             "'self'",
-            "data:",
-            "'unsafe-inline'",
+            # "data:",
             analytics_script_url,
         ],
         "style-src": [
@@ -94,18 +100,17 @@ def get_content_security_policy_development(
     # Setup CSP headers
     csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
-        "default-src": ["'self'"],
+        "default-src": ["'none'"],
         "script-src": [
             "'self'",
-            "data:",
+            # "data:",
             "http://localhost:5173",
             "http://localhost:5173/assets/@vite/client",
             analytics_script_url,
         ],
         "script-src-elem": [
             "'self'",
-            "data:",
-            "'unsafe-inline'",
+            # "data:",
             "http://localhost:5173",
             "http://localhost:5173/assets/@vite/client",
             analytics_script_url,
@@ -142,6 +147,67 @@ def get_content_security_policy_development(
         "worker-src": ["'self'"],
     }
     return csp
+
+
+def render_content_security_policy(
+    options: Content_Security_Policy_Options,
+    nonce: str,
+) -> str:
+    """Serialize a CSP policy, allowing this response's inline scripts by nonce.
+
+    ``script-src-elem`` overrides ``script-src`` for ``<script>`` elements, so the
+    nonce has to be present on both directives.
+    """
+    nonce_source = f"'nonce-{nonce}'"
+    parts: list[str] = []
+    for directive, values in options.items():
+        if isinstance(values, list):
+            sources = [str(value) for value in values]
+        else:
+            sources = [str(values)]
+        if directive in _NONCE_DIRECTIVES:
+            sources.append(nonce_source)
+        if sources:
+            parts.append(f"{directive} {' '.join(sources)}")
+        else:
+            parts.append(directive)
+    return "; ".join(parts)
+
+
+class ContentSecurityPolicyMiddleware:
+    """Set a per-request CSP nonce and emit the matching Content-Security-Policy header."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        options: Content_Security_Policy_Options,
+        report_only: bool = False,
+    ) -> None:
+        self.app = app
+        self.options = options
+        self._header_name = (
+            b"Content-Security-Policy-Report-Only" if report_only else b"Content-Security-Policy"
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        nonce = secrets.token_urlsafe(_CSP_NONCE_BYTES)
+        if "state" not in scope:
+            scope["state"] = {}
+        scope["state"][CSP_NONCE_STATE_KEY] = nonce
+        policy = render_content_security_policy(self.options, nonce).encode("latin-1")
+
+        async def send_with_csp(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((self._header_name, policy))
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_with_csp)
 
 
 def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
@@ -236,11 +302,13 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
     ):
         content_security_policy_options["report-uri"] = ["/csp-report"]
 
-    Content_Security_Policy(
+    # Secweb only attaches a nonce to script-src, and it stores that nonce in a
+    # process-global that is not safe under concurrent requests. script-src-elem
+    # is what governs <script> elements, so the nonce is applied here instead.
+    add_app_middleware(
         app,
+        ContentSecurityPolicyMiddleware,
         options=content_security_policy_options,
-        script_nonce_flag=False,
-        style_nonce_flag=False,
         report_only=is_report_only,
     )
 
