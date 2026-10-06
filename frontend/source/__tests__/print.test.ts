@@ -47,6 +47,22 @@ interface MockHTMLCanvasElement {
     height: number;
 }
 
+/**
+ * `svgString2Image` builds images with `new Image()`, which does not go
+ * through `document.createElement("img")`.
+ */
+function stubSvgImageElements(
+    mockImage: Partial<HTMLImageElement>,
+    mockLogoImage: Partial<HTMLImageElement>,
+): void {
+    let createdImages = 0;
+    function MockImage(): Partial<HTMLImageElement> {
+        createdImages += 1;
+        return createdImages === 1 ? mockImage : mockLogoImage;
+    }
+    vi.stubGlobal("Image", MockImage);
+}
+
 // Create a properly typed mock selection
 function createMockSelection(): MockD3Selection {
     const mockNode = vi.fn();
@@ -166,6 +182,7 @@ describe("Print SVG", () => {
         };
 
         imageCreationCount = 0;
+        stubSvgImageElements(mockImage, mockLogoImage);
 
         // Mock document.createElement for canvas and images
         const originalCreateElement = document.createElement;
@@ -227,6 +244,7 @@ describe("Print SVG", () => {
     });
 
     afterEach(() => {
+        vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
 
@@ -976,6 +994,7 @@ describe("SVG to Image Conversion", () => {
         };
 
         imageCreationCount = 0;
+        stubSvgImageElements(mockImage, mockLogoImage);
 
         // Mock createElement for canvas and images
         const createElement = vi.spyOn(document, "createElement");
@@ -1002,6 +1021,7 @@ describe("SVG to Image Conversion", () => {
     });
 
     afterEach(() => {
+        vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
 
