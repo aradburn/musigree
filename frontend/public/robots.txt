@@ -31,4 +31,5 @@ Disallow: /artist/
 Disallow: /label/
 
 # Sitemap location
-Sitemap: https://musigree.com
+Sitemap: https://musigree.com/sitemap_index.xml
+
