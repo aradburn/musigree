@@ -11,7 +11,8 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from musigree.app.fastapi_api import router
+from musigree.app.fastapi_api import network_cache_id, router
+from musigree.app.fastapi_ui import get_roles_with_defaults
 from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.exceptions import (
     BadRequestError,
@@ -19,6 +20,7 @@ from musigree.exceptions import (
     NotFoundError,
     UnprocessableContentError,
 )
+from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
 
 
@@ -1814,13 +1816,39 @@ class TestAdditionalEndpointScenarios:
             data = response.json()
             assert "graph" in data
 
-            # Verify cache was checked with correct key format including entity type
+            # Verify cache was checked with roles and mobile in the key
             mock_cache.hgetall.assert_called_once()
             cache_key = mock_cache.hgetall.call_args[0][0]
-            assert "api" in cache_key
-            assert "label" in cache_key  # Entity type should be in key
-            assert "network" in cache_key
-            assert "999" in cache_key  # Entity ID should be in key
+            expected_key = CacheManager.create_cache_hkey(
+                "api",
+                network_cache_id(
+                    EntityType.LABEL,
+                    999,
+                    get_roles_with_defaults(set(), EntityType.LABEL),
+                    False,
+                ),
+            )
+            assert cache_key == expected_key
+            assert mock_cache.hset.call_args[0][0] == expected_key
+
+
+def test_network_cache_id_includes_roles_and_mobile() -> None:
+    """Different roles or a mobile request must not share a cache entry."""
+    desktop = network_cache_id(EntityType.ARTIST, 10, ["Member Of", "Alias"], False)
+    same_roles = network_cache_id(EntityType.ARTIST, 10, ["Alias", "Member Of"], False)
+    mobile = network_cache_id(EntityType.ARTIST, 10, ["Alias", "Member Of"], True)
+    other_roles = network_cache_id(EntityType.ARTIST, 10, ["Producer"], False)
+    comma_role = network_cache_id(EntityType.ARTIST, 10, ["A,B"], False)
+    split_roles = network_cache_id(EntityType.ARTIST, 10, ["A", "B"], False)
+
+    assert desktop == same_roles
+    assert "mobile=0" in desktop
+    assert "Alias" in desktop
+    assert "Member%20Of" in desktop
+    assert mobile != desktop
+    assert "mobile=1" in mobile
+    assert other_roles != desktop
+    assert comma_role != split_roles
 
 
 class TestApiRouterConfiguration:
