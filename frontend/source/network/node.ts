@@ -6,17 +6,21 @@
  */
 
 import * as d3 from "d3";
-import { symbol, symbolCross, now } from "d3";
+import {now, symbol, symbolCross} from "d3";
 
 import debounce from "debounce";
-import { getNodeColorClass } from "../color";
-import { networkManager } from "../core/singletons";
-import { onDragStart, onDragEnd, onDrag, RequestNetworkEvent } from "./events";
-import { hideAllTooltips } from "./tooltips";
-import { SelectEntityEvent } from "./events";
-import { nodeTooltip } from "./tooltips";
-import type { SimNode } from "./data";
-import { NodeType } from "./data";
+import {getNodeColorClass} from "../color";
+import {networkManager} from "@/core";
+import {
+    onDrag,
+    onDragEnd,
+    onDragStart,
+    RequestNetworkEvent,
+    SelectEntityEvent
+} from "./events";
+import {hideAllTooltips, nodeTooltip} from "./tooltips";
+import type {SimNode} from "./data";
+import {NodeType} from "./data";
 
 // Configuration Constants
 /**

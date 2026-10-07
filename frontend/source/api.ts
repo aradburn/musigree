@@ -1,8 +1,7 @@
-import type { NodeKey, LinkKey } from "./network/data";
-import type { NetworkCenter } from "./network/data";
-import type { EntityData } from "./entities";
-import type { RelationsData } from "./relations";
-import { API } from "./constants";
+import type {LinkKey, NetworkCenter, NodeKey} from "./network/data";
+import type {EntityData} from "./entities";
+import type {RelationsData} from "./relations";
+import {API} from "./constants";
 
 interface APINetworkNode {
     cluster?: number;
@@ -19,6 +18,7 @@ interface APINetworkNode {
 interface APINetworkLink {
     key: LinkKey;
     role: string;
+    years: number[];
     source: NodeKey;
     target: NodeKey;
 }
@@ -36,7 +36,7 @@ const getNetworkURL = (entityKey: NodeKey, roles: string[]): string => {
     const [entityType, entityId] = entityKey.split("-");
     let url = API.ENDPOINTS.NETWORK(entityType, entityId);
     if (roles.length) {
-        url += `?${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
+        url += `?${new URLSearchParams({roles: roles.join(",")}).toString()}`;
     }
     return url;
 };
@@ -45,7 +45,7 @@ const getRandomURL = (roles: string[]): string => {
     const baseUrl = API.ENDPOINTS.RANDOM();
     let url = `${baseUrl}?r=${Math.floor(Math.random() * API.RANDOM_MAX)}`;
     if (roles.length) {
-        url += `&${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
+        url += `&${new URLSearchParams({roles: roles.join(",")}).toString()}`;
     }
     return url;
 };

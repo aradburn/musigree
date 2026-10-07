@@ -1,4 +1,4 @@
-import type { LinkKey, NodeKey, SimData } from "./data";
+import type {LinkKey, NodeKey, SimData} from "./data";
 
 // Graph size limits
 const MAX_NODES_BEFORE_PRUNING = 600; // Maximum nodes before pruning is triggered
@@ -48,6 +48,7 @@ export const pruneSimData = (simData: SimData): SimData => {
 
 /**
  * Prunes the network to keep it within size limits
+ * @param simData
  * @param {number} maxDist - Maximum distance from center to keep
  * @param {number} minLinks - Minimum number of links to keep a node
  */

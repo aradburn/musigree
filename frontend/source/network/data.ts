@@ -1,4 +1,4 @@
-import {networkManager} from "../core/singletons";
+import {networkManager} from "@/core";
 import {getOuterRadius} from "./node";
 import type {APINetworkDataResponse} from "../api";
 
@@ -56,6 +56,7 @@ export interface SimLink extends Omit<
     source: SimNode;
     target: SimNode;
     role: string;
+    years: number[];
     isSpline: boolean;
     distance: number;
     intermediate: SimNode;
@@ -98,6 +99,7 @@ export interface NetworkLink {
     source: NetworkNode;
     target: NetworkNode;
     role: string;
+    years: number[],
     distance: number;
     isSpline: boolean;
     intermediate: NetworkNode;
@@ -149,7 +151,7 @@ export const processAPINetworkDataResponse = (
             links: [] as NetworkLink[],
             cluster: node.cluster,
             missing: node.missing,
-            hasMissing: node.missing > 0 ? true : false,
+            hasMissing: node.missing > 0,
             lastClickTime: 0,
             lastTouchTime: 0,
             isIntermediate: false,
@@ -178,6 +180,7 @@ export const processAPINetworkDataResponse = (
         const processedLink: NetworkLink = {
             key: link.key,
             role: link.role,
+            years: link.years,
             source,
             target,
             distance: Math.min(source.distance, target.distance),
@@ -323,6 +326,7 @@ export const convertNetworkDataToSimData = (
                 source: sourceNode,
                 target: intermediateNode,
                 role: role,
+                years: link.years,
                 distance: 0,
                 intermediate: undefined,
                 highlighted: false,
@@ -335,6 +339,7 @@ export const convertNetworkDataToSimData = (
                 source: intermediateNode,
                 target: targetNode,
                 role: role,
+                years: link.years,
                 distance: 0,
                 intermediate: undefined,
                 highlighted: false,
@@ -352,6 +357,7 @@ export const convertNetworkDataToSimData = (
                 target: targetNode,
                 intermediate: intermediateNode,
                 role: link.role,
+                years: link.years,
                 distance: link.distance,
                 highlighted: false,
                 selected: false,
@@ -365,6 +371,7 @@ export const convertNetworkDataToSimData = (
                 target: targetNode,
                 intermediate: undefined,
                 role: link.role,
+                years: link.years,
                 distance: link.distance,
                 highlighted: false,
                 selected: false,

@@ -5,21 +5,21 @@
  */
 
 import * as d3 from "d3";
-import type { SimNode, SimLink } from "./data";
-import { onHullEnter, onHullUpdate, onHullExit } from "./hull";
-import { onHaloEnter, onHaloUpdate, onHaloExit } from "./halo";
-import { onNodeEnter, onNodeUpdate, onNodeExit } from "./node";
-import { onTextEnter, onTextUpdate, onTextExit } from "./text";
-import { onLinkEnter, onLinkUpdate, onLinkExit } from "./link";
-import { onTick } from "./tick";
+import type {SimLink, SimNode} from "./data";
+import {onHullEnter, onHullExit, onHullUpdate} from "./hull";
+import {onHaloEnter, onHaloExit, onHaloUpdate} from "./halo";
+import {onNodeEnter, onNodeExit, onNodeUpdate} from "./node";
+import {onTextEnter, onTextExit, onTextUpdate} from "./text";
+import {onLinkEnter, onLinkExit, onLinkUpdate} from "./link";
+import {onTick} from "./tick";
 import {
-    onNetworkStart,
     onNetworkEnd,
+    onNetworkStart,
     ResetForcesEvent,
     SetForcesEvent,
 } from "./events";
-import { musigreeManager, networkManager } from "../core/singletons";
-import { FORCE } from "../constants";
+import {musigreeManager, networkManager} from "@/core";
+import {FORCE} from "../constants";
 
 /**
  * Sets up the initial force simulation with basic forces
