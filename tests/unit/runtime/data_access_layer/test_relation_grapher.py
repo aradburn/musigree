@@ -1,850 +1,243 @@
-"""Unit tests for RelationGrapher class."""
+"""Unit tests for RelationGrapher."""
 
-from collections import OrderedDict
-from collections.abc import Generator
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
+from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
+from musigree.runtime.data_access_layer.relation_graph.assemble import assemble_network
+from musigree.runtime.data_access_layer.relation_graph.limits import GraphLimits
+from musigree.runtime.data_access_layer.relation_graph.roles import RolePartition
 from musigree.runtime.data_access_layer.relation_grapher import RelationGrapher
-from musigree.runtime.data_access_layer.trellis_node import TrellisNode
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
+ROLE_LOOKUP = {
+    "Artist": 1,
+    "Alias": 3,
+    "Member Of": 4,
+    "Sublabel Of": 5,
+    "Producer": 6,
+    "Released On": 7,
+}
 
-class TestRelationGrapher:
-    """Test cases for the RelationGrapher class."""
 
-    @pytest.fixture
-    def mock_center_entity(self) -> RuntimeEntity:
-        """Create a mock center entity for testing."""
-        return RuntimeEntity(
-            id=to_entity_internal_id(123, EntityType.ARTIST),
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-            entity_name="Test Artist",
-            relation_counts={"Artist": 5, "Album": 3},
-            entity_metadata={"test": "metadata"},
-            entities={"aliases": {"alias1": 456}},
-            countries="US",
-            genres="Rock",
-            styles="Alternative",
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    relation_counts: dict[str, int] | None = None,
+    entities: dict[str, object] | None = None,
+) -> RuntimeEntity:
+    return RuntimeEntity(
+        id=to_entity_internal_id(entity_id, EntityType.ARTIST),
+        entity_id=entity_id,
+        entity_type=EntityType.ARTIST,
+        entity_name=name,
+        relation_counts=relation_counts or {},
+        entity_metadata={},
+        entities=entities or {},
+        countries=None,
+        genres=None,
+        styles=None,
+    )
+
+
+def label(entity_id: int, name: str) -> RuntimeEntity:
+    return RuntimeEntity(
+        id=to_entity_internal_id(entity_id, EntityType.LABEL),
+        entity_id=entity_id,
+        entity_type=EntityType.LABEL,
+        entity_name=name,
+        relation_counts={},
+        entity_metadata={},
+        countries=None,
+        genres=None,
+        styles=None,
+    )
+
+
+class MemoryEntitySource:
+    def __init__(self, entities: dict[int, RuntimeEntity]) -> None:
+        self.entities = entities
+        self.calls: list[list[int]] = []
+
+    async def load(self, entity_ids: list[int]) -> list[RuntimeEntity]:
+        self.calls.append(list(entity_ids))
+        return [self.entities[entity_id] for entity_id in entity_ids if entity_id in self.entities]
+
+
+class MemoryRelationSource:
+    def __init__(self, by_entity: dict[int, list[RuntimeRelationResult]]) -> None:
+        self.by_entity = by_entity
+        self.calls: list[list[int]] = []
+
+    async def load(
+        self,
+        entity_ids: list[int],
+        role_names: list[str],
+        per_entity_limit: int,
+        *,
+        cacheable_ids: set[int] | None = None,
+    ) -> list[RuntimeRelationResult]:
+        del role_names, per_entity_limit, cacheable_ids
+        self.calls.append(list(entity_ids))
+        found: dict[str, RuntimeRelationResult] = {}
+        for entity_id in entity_ids:
+            for relation in self.by_entity.get(entity_id, []):
+                found[relation.link_key] = relation
+        return list(found.values())
+
+
+@pytest.fixture
+def role_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(RoleCache, "role_name_to_role_id_lookup", ROLE_LOOKUP)
+
+
+def test_constructor_splits_roles_and_limits(role_lookup: None) -> None:
+    center = artist(123, "Test Artist")
+
+    grapher = RelationGrapher(
+        center_entity=center,
+        degree=2,
+        link_ratio=15,
+        max_nodes=200,
+        role_names=["Artist", "Alias"],
+    )
+
+    assert grapher.center_entity == center
+    assert grapher.degree == 2
+    assert grapher.link_ratio == 15
+    assert grapher.max_nodes == 200
+    assert grapher.max_links == 3000
+    assert grapher.structural_role_names == ["Alias"]
+    assert grapher.relational_role_names == ["Artist"]
+    assert grapher.all_roles == ["Alias", "Artist"]
+
+
+def test_constructor_uses_helper_defaults_when_bounds_are_omitted(
+    role_lookup: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper.MAX_NODES",
+        1000,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper.LINK_RATIO",
+        20,
+        raising=False,
+    )
+
+    grapher = RelationGrapher(
+        center_entity=artist(123, "Test Artist"),
+        degree=1,
+        link_ratio=None,
+        max_nodes=None,
+        role_names=["Artist", "Alias", "Member Of"],
+    )
+
+    assert grapher.max_nodes == 1000
+    assert grapher.link_ratio == 20
+    assert grapher.structural_role_names == ["Alias", "Member Of"]
+    assert grapher.relational_role_names == ["Artist"]
+
+
+def test_constructor_rejects_a_non_positive_degree(role_lookup: None) -> None:
+    with pytest.raises(ValueError, match="degree"):
+        RelationGrapher(
+            center_entity=artist(123, "Test Artist"),
+            degree=0,
+            link_ratio=10,
+            max_nodes=100,
+            role_names=["Artist"],
         )
 
-    @pytest.fixture
-    def mock_role_cache(self) -> Generator[MagicMock | AsyncMock, Any]:
-        """Mock the RoleCache for testing."""
-        with patch("musigree.runtime.data_access_layer.relation_grapher.RoleCache") as mock:
-            mock.role_name_to_role_id_lookup = {
-                "Artist": 1,
-                "Album": 2,
-                "Alias": 3,
-                "Member Of": 4,
-                "Sublabel Of": 5,
-                "Producer": 6,
-                "Released On": 7,
-            }
-            yield mock
 
-    def test_constructor_valid_parameters(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test RelationGrapher constructor with valid parameters."""
-        # Given
-        degree = 2
-        link_ratio = 10
-        max_nodes = 100
-        role_names = ["Artist", "Album"]
-
-        # When
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ) as mock_helper:
-            mock_helper.MAX_NODES = 1000
-            mock_helper.LINK_RATIO = 20
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=degree,
-                link_ratio=link_ratio,
-                max_nodes=max_nodes,
-                role_names=role_names,
-            )
-
-        # Then
-        assert grapher.center_entity == mock_center_entity
-        assert grapher.degree == degree
-        assert grapher.link_ratio == link_ratio
-        assert grapher.max_nodes == max_nodes
-        assert grapher.all_roles == role_names
-        assert grapher.relational_role_names == role_names
-        assert grapher.structural_role_names == []
-
-    def test_constructor_with_structural_roles(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test constructor with structural roles."""
-        # Given
-        role_names = ["Artist", "Alias", "Member Of"]
-
-        # When
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ) as mock_helper:
-            mock_helper.MAX_NODES = 1000
-            mock_helper.LINK_RATIO = 20
-            # Note: The constructor accepts None values despite type annotations
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=None,
-                max_nodes=None,
-                role_names=role_names,
-            )
-
-        # Then
-        assert "Alias" in grapher.structural_role_names
-        assert "Member Of" in grapher.structural_role_names
-        assert "Artist" in grapher.relational_role_names
-        assert grapher.max_nodes == mock_helper.MAX_NODES
-        assert grapher.link_ratio == mock_helper.LINK_RATIO
-
-    def test_constructor_invalid_degree(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test constructor with invalid degree raises assertion error."""
-        with pytest.raises(AssertionError):
-            RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=0,  # Invalid
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-    def test_constructor_invalid_role_names(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test constructor with invalid role names raises assertion error."""
-        mock_role_cache.role_name_to_role_id_lookup = {"Artist": 1}
-
-        with pytest.raises(AssertionError):
-            RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["InvalidRole"],  # Not in cache
-            )
-
-    @pytest.mark.asyncio
-    async def test_search_entities_basic(self) -> None:
-        """Test the static search_entities method."""
-        # Given
-        mock_repository = AsyncMock()
-        ids_to_visit = {
-            to_entity_internal_id(123, EntityType.ARTIST),
-            to_entity_internal_id(456, EntityType.LABEL),
-        }
-
-        mock_entities = [
-            RuntimeEntity(
-                id=to_entity_internal_id(123, EntityType.ARTIST),
-                entity_id=123,
-                entity_type=EntityType.ARTIST,
-                entity_name="Artist 1",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-            RuntimeEntity(
-                id=to_entity_internal_id(456, EntityType.LABEL),
-                entity_id=456,
-                entity_type=EntityType.LABEL,
-                entity_name="Label 1",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-        ]
-        mock_repository.search_multi.return_value = mock_entities
-
-        # When
-        result = await RelationGrapher.search_entities(mock_repository, ids_to_visit)
-
-        # Then
-        assert len(result) == 2
-        assert result == mock_entities
-        mock_repository.search_multi.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_search_entities_large_batch(self) -> None:
-        """Test search_entities with large batch that gets chunked."""
-        # Given
-        mock_repository = AsyncMock()
-        # Create 1500 internal ids to trigger batching (step size is 1000)
-        ids_to_visit = {to_entity_internal_id(i, EntityType.ARTIST) for i in range(1500)}
-
-        mock_entities_batch1 = [Mock() for _ in range(1000)]
-        mock_entities_batch2 = [Mock() for _ in range(500)]
-        mock_repository.search_multi.side_effect = [
-            mock_entities_batch1,
-            mock_entities_batch2,
-        ]
-
-        # When
-        result = await RelationGrapher.search_entities(mock_repository, ids_to_visit)
-
-        # Then
-        assert len(result) == 1500
-        assert mock_repository.search_multi.call_count == 2
-
-    def test_process_entities_valid_entities(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test process_entities with valid entities."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        entities = [
-            RuntimeEntity(
-                id=to_entity_internal_id(123, EntityType.ARTIST),
-                entity_id=123,
-                entity_type=EntityType.ARTIST,
-                entity_name="Valid Artist",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-            RuntimeEntity(
-                id=to_entity_internal_id(456, EntityType.LABEL),
-                entity_id=456,
-                entity_type=EntityType.LABEL,
-                entity_name="Valid Label",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-        ]
-
-        # Add entities to visit set
-        for entity in entities:
-            grapher.ids_to_visit.add(entity.id)
-
-        # When
-        grapher.process_entities(distance=1, entities=entities)
-
-        # Then
-        assert len(grapher.nodes) == 2
-        for entity in entities:
-            assert entity.id in grapher.nodes
-            assert isinstance(grapher.nodes[entity.id], TrellisNode)
-            assert grapher.nodes[entity.id].distance == 1
-
-    def test_process_entities_pruned_entities(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test process_entities with entities that should be pruned."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        entities = [
-            RuntimeEntity(
-                id=to_entity_internal_id(123, EntityType.ARTIST),
-                entity_id=123,
-                entity_type=EntityType.ARTIST,
-                entity_name="Various",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-            RuntimeEntity(
-                id=to_entity_internal_id(456, EntityType.LABEL),
-                entity_id=456,
-                entity_type=EntityType.LABEL,
-                entity_name="Various Artists - Test",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-            RuntimeEntity(
-                id=to_entity_internal_id(789, EntityType.ARTIST),
-                entity_id=789,
-                entity_type=EntityType.ARTIST,
-                entity_name="Valid Artist",
-                relation_counts={},
-                entity_metadata={},
-                countries=None,
-                genres=None,
-                styles=None,
-            ),
-        ]
-
-        # Add entities to visit set
-        for entity in entities:
-            grapher.ids_to_visit.add(entity.id)
-
-        # When
-        grapher.process_entities(distance=1, entities=entities)
-
-        # Then
-        # Only the valid artist should remain
-        assert len(grapher.nodes) == 1
-        assert to_entity_internal_id(789, EntityType.ARTIST) in grapher.nodes
-        # Pruned entities should be removed from visit set
-        assert to_entity_internal_id(123, EntityType.ARTIST) not in grapher.ids_to_visit
-        assert to_entity_internal_id(456, EntityType.LABEL) not in grapher.ids_to_visit
-
-    def test_process_relations_valid_relations(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test process_relations with valid relation links."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        relation_links: dict[str, RuntimeRelationResult] = {
-            "link1": RuntimeRelationResult(
-                entity_one_id=123,
-                entity_one_type=EntityType.ARTIST,
-                entity_two_id=456,
-                entity_two_type=EntityType.LABEL,
-                releases={"release1": 5},
-                role="Artist",
-                distance=None,
-            ),
-            "link2": RuntimeRelationResult(
-                entity_one_id=456,
-                entity_one_type=EntityType.LABEL,
-                entity_two_id=789,
-                entity_two_type=EntityType.ARTIST,
-                releases={"release2": 3},
-                role="Artist",
-                distance=None,
-            ),
-        }
-
-        # When
-        grapher.process_relations(relation_links)
-
-        # Then
-        assert len(grapher.links) == 2
-        assert "link1" in grapher.links
-        assert "link2" in grapher.links
-        # New internal entity ids should be added to visit set
-        assert to_entity_internal_id(123, EntityType.ARTIST) in grapher.ids_to_visit
-        assert to_entity_internal_id(456, EntityType.LABEL) in grapher.ids_to_visit
-        assert to_entity_internal_id(789, EntityType.ARTIST) in grapher.ids_to_visit
-
-    def test_prune_roles_with_many_nodes(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test prune_roles when there are many nodes."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist", "Producer", "Released On"],
-            )
-
-        # Simulate many nodes to trigger pruning
-        for i in range(30):  # More than max_nodes / 4 (25)
-            grapher.nodes[i] = Mock()
-
-        provisional_role_names = ["Artist", "Producer", "Released On"]
-
-        # When
-        grapher.prune_roles(distance=1, provisional_role_names=provisional_role_names)
-
-        # Then
-        assert "Producer" not in provisional_role_names
-        assert "Released On" not in provisional_role_names
-        assert "Artist" in provisional_role_names  # Should remain
-
-    def test_prune_roles_artist_sublabel_pruning(self, mock_role_cache: Mock) -> None:
-        """Test pruning of Sublabel Of for artist entities."""
-        # Given
-        artist_entity = RuntimeEntity(
-            id=to_entity_internal_id(123, EntityType.ARTIST),
-            entity_id=123,
-            entity_type=EntityType.ARTIST,  # Artist type
-            entity_name="Test Artist",
-            relation_counts={},
-            entity_metadata={},
-            countries=None,
-            genres=None,
-            styles=None,
+def test_constructor_rejects_unknown_roles(role_lookup: None) -> None:
+    with pytest.raises(ValueError, match="Unknown roles"):
+        RelationGrapher(
+            center_entity=artist(123, "Test Artist"),
+            degree=1,
+            link_ratio=10,
+            max_nodes=100,
+            role_names=["InvalidRole"],
         )
 
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=artist_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist", "Sublabel Of"],
-            )
 
-        # Simulate many nodes to trigger pruning
-        for i in range(30):  # More than max_nodes / 4
-            grapher.nodes[i] = Mock()
+@pytest.mark.asyncio
+async def test_assemble_network_walks_structural_and_relational_links() -> None:
+    alias_internal_id = to_entity_internal_id(20, EntityType.ARTIST)
+    center = artist(
+        10,
+        "Center",
+        relation_counts={"Producer": 1},
+        entities={"aliases": {"stage": alias_internal_id}},
+    )
+    alias = artist(20, "Stage Name")
+    imprint = label(30, "Imprint")
+    produced = RuntimeRelationResult(
+        entity_one_id=10,
+        entity_one_type=EntityType.ARTIST,
+        entity_two_id=30,
+        entity_two_type=EntityType.LABEL,
+        releases={"9": 2001},
+        role="Producer",
+        distance=None,
+    )
+    alias_years = RuntimeRelationResult(
+        entity_one_id=20,
+        entity_one_type=EntityType.ARTIST,
+        entity_two_id=10,
+        entity_two_type=EntityType.ARTIST,
+        releases={"4": 1994, "5": None},
+        role="Alias",
+        distance=None,
+    )
+    entities = MemoryEntitySource({center.id: center, alias.id: alias, imprint.id: imprint})
+    relations = MemoryRelationSource({center.id: [produced, alias_years]})
 
-        provisional_role_names = ["Artist", "Sublabel Of"]
+    network = await assemble_network(
+        center_entity=center,
+        limits=GraphLimits(degree=1, max_nodes=100, link_ratio=10),
+        roles=RolePartition(("Alias",), ("Producer",)),
+        entity_source=entities,
+        relation_source=relations,
+    )
 
-        # When
-        grapher.prune_roles(distance=1, provisional_role_names=provisional_role_names)
+    assert network["center"] == {"key": "artist-10", "name": "Center"}
+    nodes = {node["name"]: node for node in network["nodes"]}
+    assert set(nodes) == {"Center", "Stage Name", "Imprint"}
+    assert nodes["Center"]["distance"] == 0
+    assert nodes["Stage Name"]["distance"] == 1
+    assert nodes["Center"]["cluster"] > 0
+    links = {link["role"]: link for link in network["links"]}
+    assert set(links) == {"Alias", "Producer"}
+    assert links["Alias"]["years"] == [1994]
+    assert links["Producer"]["years"] == [2001]
+    assert relations.calls == [[center.id]]
 
-        # Then
-        assert "Sublabel Of" not in provisional_role_names
-        assert "Artist" in provisional_role_names
 
-    def test_find_clusters(self) -> None:
-        """Test find_clusters assigns a cluster to entities that have aliases."""
-        # Given
-        entity1 = RuntimeEntity(
-            id=to_entity_internal_id(123, EntityType.ARTIST),
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-            entity_name="Main Artist",
-            relation_counts={},
-            entity_metadata={},
-            entities={"aliases": {"alias1": 456}},
-            countries=None,
-            genres=None,
-            styles=None,
-        )
-        entity2 = RuntimeEntity(
-            id=to_entity_internal_id(456, EntityType.ARTIST),
-            entity_id=456,
-            entity_type=EntityType.ARTIST,
-            entity_name="Alias Artist",
-            relation_counts={},
-            entity_metadata={},
-            entities={},
-            countries=None,
-            genres=None,
-            styles=None,
-        )
+@pytest.mark.asyncio
+async def test_get_relation_graph_uses_injected_sources(role_lookup: None) -> None:
+    center = artist(10, "Center")
+    entities = MemoryEntitySource({center.id: center})
+    relations = MemoryRelationSource({})
+    grapher = RelationGrapher(
+        center_entity=center,
+        degree=1,
+        link_ratio=10,
+        max_nodes=20,
+        role_names=["Artist"],
+        entity_source=entities,
+        relation_source=relations,
+    )
 
-        node1 = TrellisNode(entity1, 0)
-        node2 = TrellisNode(entity2, 1)
-        nodes: OrderedDict[int, TrellisNode] = OrderedDict()
-        nodes[entity1.id] = node1
-        nodes[entity2.id] = node2
+    network = await grapher.get_relation_graph(AsyncMock(), AsyncMock())
 
-        # When
-        RelationGrapher.find_clusters(nodes)
-
-        # Then
-        # Entities with aliases are clustered; alias targets without their own
-        # aliases list are skipped by the current algorithm.
-        assert node1.cluster > 0
-        assert node2.cluster == 0
-
-    def test_clear_method(self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock) -> None:
-        """Test clear method resets all collections."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        # Add some data
-        grapher.nodes[mock_center_entity.id] = Mock()
-        grapher.links["test_link"] = Mock()
-        grapher.ids_to_visit.add(to_entity_internal_id(456, EntityType.LABEL))
-        grapher.should_break_loop = True
-
-        # When
-        grapher.clear()
-
-        # Then
-        assert len(grapher.nodes) == 0
-        assert len(grapher.links) == 0
-        assert len(grapher.ids_to_visit) == 0
-        assert grapher.should_break_loop is False
-
-    def test_property_accessors(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test all property accessors."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=2,
-                link_ratio=15,
-                max_nodes=200,
-                role_names=["Artist", "Alias"],
-            )
-
-        # Then
-        assert grapher.center_entity == mock_center_entity
-        assert grapher.degree == 2
-        assert grapher.link_ratio == 15
-        assert grapher.max_nodes == 200
-        assert grapher.max_links == 200 * 15  # max_nodes * link_ratio
-        assert "Artist" in grapher.relational_role_names
-        assert "Alias" in grapher.structural_role_names
-        assert grapher.all_roles == ["Alias", "Artist"]
-
-        # Test should_break_loop setter
-        grapher.should_break_loop = True
-        assert grapher.should_break_loop is True
-        grapher.should_break_loop = False
-        assert grapher.should_break_loop is False
-
-    @pytest.mark.asyncio
-    async def test_get_relation_graph_basic_flow(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test the main get_relation_graph method with basic flow."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        mock_entity_repo = AsyncMock()
-        mock_relation_repo = AsyncMock()
-
-        # Mock search_entities to return the center entity
-        mock_entities = [mock_center_entity]
-
-        # Mock the static method properly
-        with (
-            patch(
-                "musigree.runtime.data_access_layer.relation_grapher.RelationGrapher.search_entities",
-                new_callable=AsyncMock,
-                return_value=mock_entities,
-            ) as _mock_search,
-            patch(
-                "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
-            ) as mock_entity_access,
-            patch(
-                "musigree.runtime.data_access_layer.relation_grapher.RuntimeRelationDataAccess"
-            ) as mock_relation_access,
-        ):
-            mock_entity_access.roles_to_relation_count.return_value = 5
-            mock_entity_access.structural_roles_to_relations.return_value = {}
-            mock_relation_access.search_multi = AsyncMock(return_value=[])
-
-            # When
-            result = await grapher.get_relation_graph(mock_entity_repo, mock_relation_repo)
-
-        # Then
-        assert "center" in result
-        assert "nodes" in result
-        assert "links" in result
-        assert result["center"]["key"] == mock_center_entity.json_entity_key
-        assert result["center"]["name"] == mock_center_entity.entity_name
-
-    @pytest.mark.asyncio
-    async def test_search_via_relational_roles(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test search_via_relational_roles method."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=2,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        mock_relation_repo = AsyncMock()
-        mock_node = TrellisNode(mock_center_entity, 0)
-        grapher.nodes[mock_center_entity.id] = mock_node
-        grapher.ids_to_visit.add(mock_center_entity.id)
-
-        mock_relations = [
-            RuntimeRelationResult(
-                entity_one_id=123,
-                entity_one_type=EntityType.ARTIST,
-                entity_two_id=456,
-                entity_two_type=EntityType.LABEL,
-                releases={"release1": 3},
-                role="Artist",
-                distance=None,
-            )
-        ]
-
-        with (
-            patch(
-                "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
-            ) as mock_entity_access,
-            patch(
-                "musigree.runtime.data_access_layer.relation_grapher.RuntimeRelationDataAccess"
-            ) as mock_relation_access,
-        ):
-            mock_entity_access.roles_to_relation_count.return_value = 5
-            # Make search_multi return an awaitable
-            mock_relation_access.search_multi = AsyncMock(return_value=mock_relations)
-
-            relations: dict[str, RuntimeRelationResult] = {}
-
-            # When
-            await grapher.search_via_relational_roles(
-                relation_repository=mock_relation_repo,
-                distance=0,
-                provisional_roles=["Artist"],
-                relations=relations,
-            )
-
-        # Then
-        assert len(relations) == 1
-        link_key = next(iter(relations.keys()))
-        assert relations[link_key].entity_one_id == 123
-        assert relations[link_key].entity_two_id == 456
-        mock_relation_access.search_multi.assert_called_once()
-        assert mock_relation_access.search_multi.call_args.kwargs["limit"] == grapher.max_links
-
-    def test_search_via_structural_roles(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test search_via_structural_roles method."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Alias"],
-            )
-
-        mock_node = TrellisNode(mock_center_entity, 0)
-        grapher.nodes[mock_center_entity.id] = mock_node
-        grapher.ids_to_visit.add(mock_center_entity.id)
-
-        mock_structural_relations = {
-            "struct_link1": RuntimeRelationResult(
-                entity_one_id=123,
-                entity_one_type=EntityType.ARTIST,
-                entity_two_id=456,
-                entity_two_type=EntityType.ARTIST,
-                releases={"release1": 1},
-                role="Alias",
-                distance=None,
-            )
-        }
-
-        with patch(
-            "musigree.runtime.data_access_layer.relation_grapher.RuntimeEntityDataAccess"
-        ) as mock_entity_access:
-            mock_entity_access.structural_roles_to_relations.return_value = (
-                mock_structural_relations
-            )
-
-            relation_links: dict[str, RuntimeRelationResult] = {}
-
-            # When
-            grapher.search_via_structural_roles(
-                distance=0, provisional_roles=["Alias"], relation_links=relation_links
-            )
-
-        # Then
-        assert len(relation_links) == 1
-        assert "struct_link1" in relation_links
-
-    def test_search_via_structural_roles_no_structural_roles(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test search_via_structural_roles with no structural roles."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],  # No structural roles
-            )
-
-        relation_links: dict[str, RuntimeRelationResult] = {}
-
-        # When
-        grapher.search_via_structural_roles(
-            distance=0, provisional_roles=["Artist"], relation_links=relation_links
-        )
-
-        # Then
-        assert len(relation_links) == 0  # Should do nothing
-
-    def test_build_trellis(self, mock_role_cache: Mock) -> None:
-        """Test build_trellis method."""
-        # Given
-        entity1 = RuntimeEntity(
-            id=to_entity_internal_id(123, EntityType.ARTIST),
-            entity_id=123,
-            entity_type=EntityType.ARTIST,
-            entity_name="Artist 1",
-            relation_counts={},
-            entity_metadata={},
-            countries=None,
-            genres=None,
-            styles=None,
-        )
-        entity2 = RuntimeEntity(
-            id=to_entity_internal_id(789, EntityType.ARTIST),
-            entity_id=789,
-            entity_type=EntityType.ARTIST,
-            entity_name="Artist 2",
-            relation_counts={},
-            entity_metadata={},
-            countries=None,
-            genres=None,
-            styles=None,
-        )
-
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=entity1,
-                degree=1,
-                link_ratio=10,
-                max_nodes=100,
-                role_names=["Artist"],
-            )
-
-        node1 = TrellisNode(entity1, 0)
-        node2 = TrellisNode(entity2, 1)
-        grapher.nodes[entity1.id] = node1
-        grapher.nodes[entity2.id] = node2
-
-        # Create a link between them
-        relation = RuntimeRelationResult(
-            entity_one_id=123,
-            entity_one_type=EntityType.ARTIST,
-            entity_two_id=789,
-            entity_two_type=EntityType.ARTIST,
-            releases={"release1": 3},
-            role="Artist",
-            distance=None,
-        )
-        grapher.links["link1"] = relation
-
-        # When
-        grapher.build_trellis()
-
-        # Then
-        assert "link1" in node1.links
-        assert "link1" in node2.links
-        assert node2 in node1.children
-        assert node1 in node2.parents
-        assert node1.subgraph_size == 2
-        assert node2.subgraph_size is not None
-        assert entity1.id in grapher.nodes
-        assert entity2.id in grapher.nodes
-        assert len(grapher.links) == 1
-
-    def test_test_loop_conditions(
-        self, mock_center_entity: RuntimeEntity, mock_role_cache: Mock
-    ) -> None:
-        """Test loop breaking conditions."""
-        # Given
-        with patch(
-            "musigree.runtime.runtime_database.runtime_database_helper.RuntimeDatabaseHelper"
-        ):
-            grapher = RelationGrapher(
-                center_entity=mock_center_entity,
-                degree=1,
-                link_ratio=2,  # Small link ratio for testing
-                max_nodes=10,  # Small max for testing
-                role_names=["Artist"],
-            )
-
-        # Test test_loop_one - should break when too many nodes
-        for i in range(15):  # More than max_nodes
-            grapher.nodes[i] = Mock()
-
-        grapher.check_nodes_size(distance=1)
-        assert grapher.should_break_loop is True
-
-        # Reset
-        grapher.should_break_loop = False
-
-        # Test test_loop_two - should break when too many relations
-        # max_links = max_nodes * link_ratio = 10 * 2 = 20
-        many_relations: dict[str, RuntimeRelationResult] = {
-            f"link_{i}": Mock() for i in range(25)
-        }  # More than max_links (20)
-        grapher.check_relations_size(
-            distance=2, relations=many_relations
-        )  # Use distance > 1 to trigger the condition
-        assert grapher.should_break_loop is True
-
-        # Test with empty relations
-        grapher.should_break_loop = False
-        grapher.check_relations_size(distance=1, relations={})
-        assert grapher.should_break_loop is True
+    assert network["center"]["name"] == "Center"
+    assert [node["name"] for node in network["nodes"]] == ["Center"]
+    assert entities.calls[0] == [center.id]
+    assert relations.calls == [[center.id]]

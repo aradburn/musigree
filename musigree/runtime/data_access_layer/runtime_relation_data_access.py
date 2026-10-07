@@ -7,8 +7,8 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_domain.runtime_relation import (
-    RuntimeRelation,
     RuntimeRelationInternal,
+    RuntimeRelationResult,
     to_runtime_relation_db_dict,
 )
 
@@ -24,13 +24,14 @@ class RuntimeRelationDataAccess:
         ids: list[int],
         role_names: list[str],
         limit: int,
-    ) -> list[RuntimeRelation]:
+    ) -> list[RuntimeRelationResult]:
         """
         Searches for relations involving multiple entities and specific roles.
 
         This method takes a list of entity keys and role names, and returns
         all relations that involve any of the specified entities in any of
-        the specified roles.
+        the specified roles. Each result keeps the release year for every
+        matching release.
 
         Args:
             relation_repository: The repository to use for runtime_database operations.
@@ -39,7 +40,7 @@ class RuntimeRelationDataAccess:
             limit: Maximum number of relation rows to retrieve.
 
         Returns:
-            list[RuntimeRelation]: List of relations matching the criteria.
+            list[RuntimeRelationResult]: List of relations matching the criteria.
         """
         assert ids
         assert role_names
@@ -60,9 +61,9 @@ class RuntimeRelationDataAccess:
             relation_internal_list.append(relation_internal)
             relations_map.update({key: relation_internal_list})
 
-        relations: list[RuntimeRelation] = []
+        relations: list[RuntimeRelationResult] = []
         for grouped_relation_internals in relations_map.values():
-            relation = RuntimeRelation.from_relation_internals(grouped_relation_internals)
+            relation = RuntimeRelationResult.from_relation_internals(grouped_relation_internals)
             relations.append(relation)
 
         # log.debug(f"    -> relations: {relations}")

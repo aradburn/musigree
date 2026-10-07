@@ -13,8 +13,8 @@ from musigree.runtime.data_access_layer.runtime_relation_data_access import (
     RuntimeRelationDataAccess,
 )
 from musigree.runtime.runtime_domain.runtime_relation import (
-    RuntimeRelation,
     RuntimeRelationInternal,
+    RuntimeRelationResult,
 )
 
 
@@ -87,7 +87,8 @@ class TestSearchMulti:
         )
 
         assert len(result) == 1
-        assert isinstance(result[0], RuntimeRelation)
+        assert isinstance(result[0], RuntimeRelationResult)
+        assert result[0].releases == {"10": 2020}
         mock_repo.find_by_entities_and_roles.assert_called_once_with([internal_id], [1], 100)
 
     @pytest.mark.asyncio
@@ -129,6 +130,11 @@ class TestSearchMulti:
         )
 
         assert len(result) == 2
+        releases_by_role = {relation.role: relation.releases for relation in result}
+        assert releases_by_role == {
+            "Alias": {"10": 2020},
+            "Member Of": {"11": 2021},
+        }
         mock_repo.find_by_entities_and_roles.assert_called_once_with([id_one, id_two], [1, 2], 50)
 
     @pytest.mark.asyncio

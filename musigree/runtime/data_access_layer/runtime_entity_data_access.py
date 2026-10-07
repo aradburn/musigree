@@ -21,6 +21,12 @@ from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
 log = logging.getLogger(__name__)
 
 
+def _debug(message: str, *args: object) -> None:
+    """Emit a debug line without formatting it when debug logging is off."""
+    if log.isEnabledFor(logging.DEBUG):
+        log.debug(message, *args)
+
+
 class RuntimeEntityDataAccess:
     @staticmethod
     def roles_to_relation_count(entity: RuntimeEntity, roles: list[str]) -> int:
@@ -51,10 +57,9 @@ class RuntimeEntityDataAccess:
     def structural_roles_to_relations(
         entity: RuntimeEntity, roles: list[str]
     ) -> dict[str, RuntimeRelationResult]:
-        log.debug(f"            structural_roles_to_relations id       : {entity.id}")
-        log.debug(f"            structural_roles_to_relations entity_id: {entity.entity_id}")
-        # log.debug(f"            structural_roles_to_relations entities: {entity.entities}")
-        log.debug(f"            structural_roles_to_relations roles    : {roles}")
+        _debug("            structural_roles_to_relations id       : %s", entity.id)
+        _debug("            structural_roles_to_relations entity_id: %s", entity.entity_id)
+        _debug("            structural_roles_to_relations roles    : %s", roles)
         relations: dict[str, RuntimeRelationResult] = {}
         if entity.entity_type == EntityType.ARTIST:
             role = "Alias"
@@ -64,8 +69,10 @@ class RuntimeEntityDataAccess:
                         continue
                     entity_id, entity_type = to_entity_external_id(_id)
                     if entity_id <= entity.entity_id:
-                        log.debug(
-                            f"            structural_roles_to_relations aliases: {entity_id}, {entity.entity_id}"
+                        _debug(
+                            "            structural_roles_to_relations aliases: %s, %s",
+                            entity_id,
+                            entity.entity_id,
                         )
                         relation = RuntimeRelationResult(
                             entity_one_id=entity_id,
@@ -77,8 +84,10 @@ class RuntimeEntityDataAccess:
                             distance=None,
                         )
                     else:
-                        log.debug(
-                            f"            structural_roles_to_relations aliases: {entity.entity_id}, {entity_id}"
+                        _debug(
+                            "            structural_roles_to_relations aliases: %s, %s",
+                            entity.entity_id,
+                            entity_id,
                         )
                         relation = RuntimeRelationResult(
                             entity_one_id=entity.entity_id,
@@ -96,7 +105,7 @@ class RuntimeEntityDataAccess:
                     for _id in entity.entities["groups"].values():
                         if not _id:
                             continue
-                        log.debug(f"            structural_roles_to_relations groups: {_id}")
+                        _debug("            structural_roles_to_relations groups: %s", _id)
                         entity_id, entity_type = to_entity_external_id(_id)
                         relation = RuntimeRelationResult(
                             entity_one_id=entity.entity_id,
@@ -112,7 +121,7 @@ class RuntimeEntityDataAccess:
                     for _id in entity.entities["members"].values():
                         if not _id:
                             continue
-                        log.debug(f"            structural_roles_to_relations members: {_id}")
+                        _debug("            structural_roles_to_relations members: %s", _id)
                         entity_id, entity_type = to_entity_external_id(_id)
                         relation = RuntimeRelationResult(
                             entity_one_id=entity_id,
@@ -130,7 +139,7 @@ class RuntimeEntityDataAccess:
                 for _id in entity.entities["parent_label"].values():
                     if not _id:
                         continue
-                    log.debug(f"            structural_roles_to_relations parent_label: {_id}")
+                    _debug("            structural_roles_to_relations parent_label: %s", _id)
                     entity_id, entity_type = to_entity_external_id(_id)
                     relation = RuntimeRelationResult(
                         entity_one_id=entity.entity_id,
@@ -146,7 +155,7 @@ class RuntimeEntityDataAccess:
                 for _id in entity.entities["sublabels"].values():
                     if not _id:
                         continue
-                    log.debug(f"            structural_roles_to_relations sublabels: {_id}")
+                    _debug("            structural_roles_to_relations sublabels: %s", _id)
                     entity_id, entity_type = to_entity_external_id(_id)
                     relation = RuntimeRelationResult(
                         entity_one_id=entity_id,
@@ -158,9 +167,7 @@ class RuntimeEntityDataAccess:
                         distance=None,
                     )
                     relations[relation.link_key] = relation
-        log.debug(
-            f"            structural_roles_to_relations relations size: {len(relations.items())}"
-        )
+        _debug("            structural_roles_to_relations relations size: %s", len(relations))
         return relations
 
     @staticmethod

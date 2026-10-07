@@ -32,7 +32,7 @@ __all__ = [
 ]
 
 import logging
-from typing import Any
+from typing import Any, Self
 
 from pydantic import StrictInt, field_serializer
 
@@ -131,13 +131,15 @@ class RuntimeRelationDB(_RuntimeRelationBase):
         Returns:
             RuntimeRelationInternal: The internal representation of the relation.
         """
-        relation_db_dict: dict = self.model_dump()
-        role_id: int | None = relation_db_dict.get("predicate")
-        if role_id is None:
-            raise ValueError("Role ID is None")
-        role_name = RoleCache.role_id_to_role_name_lookup[role_id]
-        relation_db_dict.update(role=role_name)
-        return RuntimeRelationInternal.model_validate(relation_db_dict)
+        role_name = RoleCache.role_id_to_role_name_lookup[self.predicate]
+        return RuntimeRelationInternal(
+            id=self.id,
+            subject=self.subject,
+            role=role_name,
+            object=self.object,
+            release_id=self.release_id,
+            year=self.year,
+        )
 
 
 class RuntimeRelation(_RuntimeRelationBase):
@@ -154,7 +156,7 @@ class RuntimeRelation(_RuntimeRelationBase):
         entity_two_id (int): The ID of the second entity.
         entity_two_type (EntityType): The type of the second entity.
         role (str): The role of the relation.
-        releases (dict[str, int | None] | None): The releases associated with the relation.
+        releases (dict[str, int | None] | None): Release ids mapped to their year.
     """
 
     entity_one_id: int
@@ -168,7 +170,7 @@ class RuntimeRelation(_RuntimeRelationBase):
     role: str
     """The role of the relation."""
     releases: dict[str, int | None] | None
-    """The releases associated with the relation."""
+    """Release ids mapped to their release year, when known."""
 
     @field_serializer("entity_one_type", "entity_two_type", when_used="json")
     def serialize_entity_types(self, entity_type: EntityType) -> str:
@@ -252,6 +254,19 @@ class RuntimeRelation(_RuntimeRelationBase):
         ]
         return "-".join(str(_) for _ in pieces)
 
+    @property
+    def ends_key(self) -> tuple[str, tuple[str, int], tuple[str, int]]:
+        """
+        Identify a relation by role and its two entities, ignoring direction.
+
+        Database rows and structural links can point opposite ways for the
+        same pair. This key lets release years attach to either one.
+        """
+        one = (self.entity_one_type.name, self.entity_one_id)
+        two = (self.entity_two_type.name, self.entity_two_id)
+        left, right = (one, two) if one <= two else (two, one)
+        return self.role, left, right
+
     def to_db(self) -> RuntimeRelationDB:
         """
         Converts the runtime relation to its runtime_database representation.
@@ -266,10 +281,16 @@ class RuntimeRelation(_RuntimeRelationBase):
         relation_dict: dict = self.model_dump()
         return RuntimeRelationDB.model_validate(relation_dict)
 
-    @staticmethod
+    @classmethod
     def from_relation_internals(
+        cls,
         relation_internals: list[RuntimeRelationInternal],
-    ) -> RuntimeRelation:
+    ) -> Self:
+        """
+        Aggregate database rows that share a subject, role, and object.
+
+        Each row's release year is kept, keyed by release id.
+        """
         releases: dict[str, int | None] = {}
         subjects: set[int] = set()
         roles: set[str] = set()
@@ -287,7 +308,7 @@ class RuntimeRelation(_RuntimeRelationBase):
         [_object] = objects
         entity_one_id, entity_one_type = to_entity_external_id(_subject)
         entity_two_id, entity_two_type = to_entity_external_id(_object)
-        return RuntimeRelation(
+        return cls(
             entity_one_id=entity_one_id,
             entity_one_type=entity_one_type,
             entity_two_id=entity_two_id,
@@ -296,17 +317,34 @@ class RuntimeRelation(_RuntimeRelationBase):
             releases=releases,
         )
 
+    def to_result(self, distance: int | None = None) -> RuntimeRelationResult:
+        """
+        Build a search result, keeping the release-year map.
+        """
+
+        return RuntimeRelationResult(
+            entity_one_id=self.entity_one_id,
+            entity_one_type=self.entity_one_type,
+            entity_two_id=self.entity_two_id,
+            entity_two_type=self.entity_two_type,
+            role=self.role,
+            releases=self.releases,
+            distance=distance,
+        )
+
 
 class RuntimeRelationResult(RuntimeRelation):
     """
     Represents a relation as a search result.
 
     This class extends the `RuntimeRelation` class to include additional
-    attributes relevant to search results, such as distance.
+    attributes relevant to search results, such as distance. Release years
+    stay on ``releases``, keyed by release id.
 
     Attributes:
         role (str): The role of the relation.
         distance (int | None): The distance of the relation, if available.
+        releases (dict[str, int | None] | None): Release ids mapped to their year.
     """
 
     role: str
@@ -318,6 +356,10 @@ class RuntimeRelationResult(RuntimeRelation):
         """
         Converts the relation result to a JSON representation.
 
+        ``years`` is the set of known release years, ordered from low to high.
+        Missing years are omitted. JSON has no set type, so the value is
+        that ordered set as a list.
+
         Returns:
             dict[str, Any]: The JSON representation of the relation result.
         """
@@ -326,10 +368,20 @@ class RuntimeRelationResult(RuntimeRelation):
             "role": self.role,
             "source": self.json_entity_one_key,
             "target": self.json_entity_two_key,
+            "years": self._release_years(),
         }
         if hasattr(self, "distance") and self.distance is not None:
             data["distance"] = int(self.distance)
         return data
+
+    def _release_years(self) -> list[int]:
+        """Return the set of known release years, ordered from low to high."""
+        years: set[int] = set()
+        if self.releases:
+            for year in self.releases.values():
+                if year is not None:
+                    years.add(year)
+        return sorted(years)
 
 
 class RuntimeRelationInternal(_RuntimeRelationBase):
