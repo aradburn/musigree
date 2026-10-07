@@ -149,13 +149,6 @@ def create_app(config: Configuration) -> FastAPI:
     # Configure CORS based on environment
     if config.PRODUCTION:
         # Production: specific origins only
-        # allowed_origins = [
-        #     "https://www.musigree.com",
-        #     "https://musigree.com",
-        #     "https://umami.musigree.com",
-        #     "https://swetrix.org/swetrix.js",
-        #     "https://cdn.jsdelivr.net/gh/Swetrix/",
-        # ]
         log.info("Configuring CORS for production")
         log.debug(f"Allowed origins: {ALLOWED_ORIGINS}")
 
@@ -163,7 +156,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CORSMiddleware,
             allow_origins=ALLOWED_ORIGINS,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
@@ -171,7 +164,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CustomCORSPreflightMiddleware,
             allow_origins=ALLOWED_ORIGINS,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
@@ -186,8 +179,6 @@ def create_app(config: Configuration) -> FastAPI:
             "http://127.0.0.1:5000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8080",
-            # "https://swetrix.org/swetrix.js",
-            # "https://cdn.jsdelivr.net/gh/Swetrix/",
         ]
         log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -195,7 +186,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
         )
 

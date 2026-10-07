@@ -26,6 +26,7 @@ role information.
 
 import logging
 from typing import Annotated, Any
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Path, status
 
@@ -40,6 +41,7 @@ from musigree.app.fastapi_dependencies import (
 from musigree.app.fastapi_ui import get_roles_with_defaults
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
+from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_utils import normalise_search_content
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 
@@ -64,6 +66,23 @@ SEARCH_RATE_LIMIT = Depends(
         period=DEFAULT_RATE_LIMIT_PERIOD_SECONDS,
     )
 )
+
+
+def network_cache_id(
+    entity_type: EntityType,
+    entity_id: int,
+    roles: list[str],
+    on_mobile: bool,
+) -> str:
+    """Identify one cached network by entity, applied roles, and mobile layout.
+
+    Role order does not change the key. Names are encoded so a comma inside
+    a role cannot be read as a separator.
+    """
+    encoded_roles = ",".join(quote(role, safe="") for role in sorted(roles))
+    mobile = "1" if on_mobile else "0"
+    return f"{entity_type.name.lower()}/network/{entity_id}/mobile={mobile}/roles={encoded_roles}"
+
 
 router = APIRouter(
     prefix="/api",
@@ -202,7 +221,8 @@ async def route__api__entity_type__network__entity_id(
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey(
-        "api", f"{entity_type.name.lower()}/network/{entity_id}"
+        "api",
+        network_cache_id(entity_type, entity_id, roles_with_defaults, on_mobile),
     )
     network_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if network_data is not None:
