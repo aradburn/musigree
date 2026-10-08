@@ -40,6 +40,7 @@ MAX_SITEMAPS_IN_INDEX = 500
 SITEMAP_INDEX_FILENAME = "sitemap_index.xml"
 #: Static urlset listed first in the sitemap index. The generator does not rewrite it.
 SITEMAP_ROOT_FILENAME = "sitemap-0.xml"
+# noinspection HttpUrlsUsage
 SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
 _XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>\n'
 

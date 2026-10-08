@@ -84,7 +84,7 @@ def assign_clusters(nodes: dict[int, TrellisNode]) -> None:
     cluster_map: dict[int, int] = {}
     ordered = sorted(
         nodes.values(),
-        key=lambda node: len(node.entity.entities.get("aliases", {})),
+        key=lambda _node: len(_node.entity.entities.get("aliases", {})),
         reverse=True,
     )
     for node in ordered:
