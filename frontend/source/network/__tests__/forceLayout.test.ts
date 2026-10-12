@@ -8,6 +8,7 @@ import {
     stopForceLayout,
     setNetworkForces,
     resetNetworkForces,
+    createForceLayoutRandom,
 } from "../forceLayout";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
@@ -23,6 +24,7 @@ vi.mock("d3", () => ({
         nodes: vi.fn().mockReturnThis(),
         alpha: vi.fn().mockReturnThis(),
         restart: vi.fn().mockReturnThis(),
+        randomSource: vi.fn().mockReturnThis(),
     })),
     forceCollide: vi.fn(() => ({
         radius: vi.fn().mockReturnThis(),
@@ -200,10 +202,66 @@ describe("Force Layout Display and Control", () => {
     it("should restart force layout with new alpha value", () => {
         networkManager.forceLayout = d3.forceSimulation();
         restartForceLayout(FORCE.SIMULATION.ALPHA);
+        expect(networkManager.forceLayout.randomSource).toHaveBeenCalledWith(
+            expect.any(Function),
+        );
         expect(networkManager.forceLayout.alpha).toHaveBeenCalledWith(
             FORCE.SIMULATION.ALPHA,
         );
         expect(networkManager.forceLayout.restart).toHaveBeenCalled();
+    });
+
+    it("resets the random source to the same sequence on every restart", () => {
+        networkManager.forceLayout = d3.forceSimulation();
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
+
+        const randomSource = vi.mocked(networkManager.forceLayout.randomSource);
+        const firstSource = randomSource.mock.calls[0][0];
+        const secondSource = randomSource.mock.calls[1][0];
+        const sample = (source: () => number): number[] => [
+            source(),
+            source(),
+            source(),
+        ];
+        const firstValues = sample(firstSource);
+
+        expect(sample(secondSource)).toEqual(firstValues);
+        expect(sample(createForceLayoutRandom())).toEqual(firstValues);
+    });
+
+    it("settles the same graph to the same positions on separate runs", async () => {
+        const d3Actual = await vi.importActual<typeof import("d3")>("d3");
+
+        const layoutPositions = (): Array<[number, number]> => {
+            const nodes = [
+                { key: "a", x: 400, y: 300 },
+                { key: "b", x: 400, y: 300 },
+                { key: "c", x: 400, y: 300 },
+            ];
+            const simulation = d3Actual
+                .forceSimulation(nodes)
+                .randomSource(createForceLayoutRandom())
+                .force("charge", d3Actual.forceManyBody())
+                .force(
+                    "link",
+                    d3Actual
+                        .forceLink([
+                            { source: "a", target: "b" },
+                            { source: "b", target: "c" },
+                        ])
+                        .id((node: { key: string }) => node.key),
+                )
+                .stop();
+
+            for (let tick = 0; tick < 40; tick += 1) {
+                simulation.tick();
+            }
+
+            return nodes.map((node) => [node.x, node.y]);
+        };
+
+        expect(layoutPositions()).toEqual(layoutPositions());
     });
 
     it("should stop force layout", () => {

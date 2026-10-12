@@ -22,6 +22,30 @@ import {musigreeManager, networkManager} from "@/core";
 import {FORCE} from "../constants";
 
 /**
+ * Numerical Recipes LCG parameters, the same generator d3-force uses by default.
+ * The simulation stores one generator for its lifetime, so each layout run
+ * installs a fresh copy and coincident nodes are jiggled identically.
+ */
+const FORCE_LAYOUT_RANDOM_MULTIPLIER = 1664525;
+const FORCE_LAYOUT_RANDOM_INCREMENT = 1013904223;
+const FORCE_LAYOUT_RANDOM_MODULUS = 4294967296;
+const FORCE_LAYOUT_RANDOM_SEED = 1;
+
+/**
+ * Returns a random source in [0, 1) that always starts at the same seed.
+ */
+export const createForceLayoutRandom = (): (() => number) => {
+    let state = FORCE_LAYOUT_RANDOM_SEED;
+    return (): number => {
+        state =
+            (FORCE_LAYOUT_RANDOM_MULTIPLIER * state +
+                FORCE_LAYOUT_RANDOM_INCREMENT) %
+            FORCE_LAYOUT_RANDOM_MODULUS;
+        return state / FORCE_LAYOUT_RANDOM_MODULUS;
+    };
+};
+
+/**
  * Sets up the initial force simulation with basic forces
  * and event listeners for tick and end events.
  * More forces are added in NetworkContext.
@@ -177,7 +201,10 @@ export const restartForceLayout = (alpha: number): void => {
 
     if (networkManager.forceLayout) {
         onNetworkStart();
-        networkManager.forceLayout.alpha(alpha).restart();
+        networkManager.forceLayout
+            .randomSource(createForceLayoutRandom())
+            .alpha(alpha)
+            .restart();
     } else {
         console.error("Force layout is not initialized");
     }
