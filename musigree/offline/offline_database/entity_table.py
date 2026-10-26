@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import JSON, Index, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, class_mapper, mapped_column
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
@@ -83,6 +83,22 @@ class EntityTable(OfflineBase):
         - idx_entity_id_and_entity_type: A unique index on the entity_id and entity_type columns.
         - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type columns.
     """
+
+    def __init__(self, **entries: Any) -> None:
+        """
+        Initializes an EntityTable instance.
+
+        This constructor allows for the initialization of an `EntityTable`
+        object with keyword arguments that match the table's columns. It
+        ensures that only valid column names are used during initialization.
+
+        Args:
+            entries (dict): Keyword arguments corresponding to the table's
+                columns and their values.
+        """
+        column_names = {column.name for column in class_mapper(EntityTable).columns}
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
+        super().__init__(**superentries)
 
     def __repr__(self) -> str:
         """

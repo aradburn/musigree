@@ -23,6 +23,7 @@ from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import TEMPLATES_DIR, AnalyticsType
 
 if TYPE_CHECKING:
+    # noinspection protected-member
     from Secweb._types import Content_Security_Policy_Options
 
 
