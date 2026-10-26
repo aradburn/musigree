@@ -133,7 +133,7 @@ import { initNetwork, resetNetworkTransform } from "../init";
 import { initForceLayout } from "../forceLayout";
 import { hideAllTooltips } from "../tooltips";
 import * as d3 from "d3";
-import { musigreeManager, networkManager } from "../../core/singletons";
+import { musigreeManager, networkManager } from "../../core";
 
 // Test suite
 describe("Network Initialization Module", () => {
@@ -199,6 +199,14 @@ describe("Network Initialization Module", () => {
 
         // Update mock d3.select return value with our configured mock
         mockD3SelectResult.append = mockAppend;
+
+        // resetNetworkTransform animates whatever root layer already exists.
+        // initNetwork replaces these when it runs.
+        mockLayers.root = mockRoot;
+        mockLayers.halo = mockHalo;
+        mockLayers.link = mockLink;
+        mockLayers.node = mockNode;
+        mockLayers.text = mockText;
 
         // Mock console methods
         vi.spyOn(console, "log").mockImplementation(() => {});

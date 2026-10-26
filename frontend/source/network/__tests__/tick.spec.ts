@@ -12,7 +12,7 @@ import {
 import { hideAllTooltips } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
-import { musigreeManager, networkManager } from "../../core/singletons";
+import { musigreeManager, networkManager } from "../../core";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({

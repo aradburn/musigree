@@ -14,16 +14,15 @@ let _networkManager: NetworkManager | null = null;
 let _relationsManager: RelationsManager | null = null;
 
 /**
- * Creates a lazy proxy for a manager instance
+ * Creates a lazy proxy for a manager instance.
+ * The proxy does not cache the instance itself: each access goes through
+ * `createInstance`, which owns the singleton. That lets `resetSingletons`
+ * drop the current instance and have the next access construct a new one.
  */
 function createLazyProxy<T extends object>(createInstance: () => T): T {
-    let instance: T | undefined;
-
     return new Proxy({} as T, {
         get(_target: T, prop: string | symbol): unknown {
-            if (!instance) {
-                instance = createInstance();
-            }
+            const instance = createInstance();
             const value = (instance as Record<string | symbol, unknown>)[prop];
             if (typeof value === "function") {
                 return (value as (...args: unknown[]) => unknown).bind(
@@ -33,32 +32,21 @@ function createLazyProxy<T extends object>(createInstance: () => T): T {
             return value;
         },
         set(_target: T, prop: string | symbol, value: unknown): boolean {
-            if (!instance) {
-                instance = createInstance();
-            }
+            const instance = createInstance();
             (instance as Record<string | symbol, unknown>)[prop] = value;
             return true;
         },
         has(_target: T, prop: string | symbol): boolean {
-            if (!instance) {
-                instance = createInstance();
-            }
-            return prop in instance;
+            return prop in createInstance();
         },
         ownKeys(_target: T): ArrayLike<string | symbol> {
-            if (!instance) {
-                instance = createInstance();
-            }
-            return Reflect.ownKeys(instance);
+            return Reflect.ownKeys(createInstance());
         },
         getOwnPropertyDescriptor(
             _target: T,
             prop: string | symbol,
         ): PropertyDescriptor | undefined {
-            if (!instance) {
-                instance = createInstance();
-            }
-            return Reflect.getOwnPropertyDescriptor(instance, prop);
+            return Reflect.getOwnPropertyDescriptor(createInstance(), prop);
         },
     });
 }

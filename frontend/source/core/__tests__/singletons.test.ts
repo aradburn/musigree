@@ -371,7 +371,9 @@ describe("singletons.ts", () => {
             } as any;
 
             getNetworkManagerConstructor().mockImplementationOnce(
-                () => mockManagerWithoutDispose,
+                function MockNetworkManagerWithoutDispose() {
+                    return mockManagerWithoutDispose;
+                },
             );
 
             // Initialize and reset
