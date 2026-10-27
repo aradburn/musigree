@@ -44,43 +44,27 @@ describe("index.ts", () => {
     });
 
     it("should initialize React app when DOM content is loaded", async () => {
-        // Import the index module
+        // Import the index module. When the document is already past
+        // "loading", startup runs immediately instead of waiting for the event.
         await import("../index");
 
-        // Get the callback from the addEventListener mock
         const domContentLoadedCallback = vi
             .mocked(document.addEventListener)
             .mock.calls.find((call) => call[0] === "DOMContentLoaded")?.[1];
 
-        if (domContentLoadedCallback) {
-            // Create a mock event
-            const mockEvent = new Event("DOMContentLoaded");
-
-            // Call the handler
-            if (typeof domContentLoadedCallback === "function") {
-                domContentLoadedCallback(mockEvent);
-            } else if (
-                domContentLoadedCallback &&
-                "handleEvent" in domContentLoadedCallback
-            ) {
-                domContentLoadedCallback.handleEvent(mockEvent);
-            }
-
-            // Allow async import promise to resolve
-            // The dynamic import in the handler returns a promise that needs to resolve
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // Verify initReactApp was called
-            expect(initReactApp).toHaveBeenCalled();
-
-            // Verify that initApp is called after React initialization
-            expect(initApp).toHaveBeenCalled();
-        } else {
-            // This assertion will fail if the event listener was not set up
-            expect(
-                vi.mocked(document.addEventListener).mock.calls.length,
-            ).toBeGreaterThan(0);
+        if (typeof domContentLoadedCallback === "function") {
+            domContentLoadedCallback(new Event("DOMContentLoaded"));
+        } else if (
+            domContentLoadedCallback &&
+            "handleEvent" in domContentLoadedCallback
+        ) {
+            domContentLoadedCallback.handleEvent(new Event("DOMContentLoaded"));
         }
+
+        await vi.waitFor(() => {
+            expect(initReactApp).toHaveBeenCalled();
+        });
+        expect(initApp).toHaveBeenCalled();
     });
 
     it("should handle error when initializing React app", async () => {

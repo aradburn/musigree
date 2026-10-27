@@ -114,11 +114,12 @@ const AppContent: React.FC = (): React.ReactElement => {
                         </Row>
 
                         <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
-                            <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
+                            {/* Mobile stacks main, right, then left. From sm up the row is left, main, right. */}
+                            <div className="sidebar-left-container p-0 order-3 order-sm-1">
                                 <SidebarLeft />
                             </div>
 
-                            <div className="main-container p-0 order-sm-2 order-1">
+                            <div className="main-container p-0 order-1 order-sm-2">
                                 <div className="flex-sm-column flex-row h-sm-100">
                                     <NetworkView />
                                     <LoadingAnimation />

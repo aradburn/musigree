@@ -274,16 +274,16 @@ describe("SVG Utilities", () => {
                 DOM_IDS.SVG_ID,
             ) as unknown as MockD3Selection;
 
-            // The SVG uses the canvas box, not a hardcoded sidebar deduction.
+            // Width follows the canvas. Desktop height is the viewport below the nav.
             const viewWidth = 800 * SVG.VIEWPORT_SIZE_MULTIPLIER;
-            const viewHeight = 600 * SVG.VIEWPORT_SIZE_MULTIPLIER;
+            const viewHeight = 750 * SVG.VIEWPORT_SIZE_MULTIPLIER;
             expect(svgSelection.attr).toHaveBeenCalledWith("width", "800");
-            expect(svgSelection.attr).toHaveBeenCalledWith("height", "600");
+            expect(svgSelection.attr).toHaveBeenCalledWith("height", "750");
             expect(svgSelection.attr).toHaveBeenCalledWith(
                 "viewBox",
                 `0 0 ${viewWidth} ${viewHeight}`,
             );
-            expect(musigreeManager.dimensions).toEqual([800, 600]);
+            expect(musigreeManager.dimensions).toEqual([800, 750]);
             expect(svgSelection.attr).toHaveBeenCalledWith(
                 "preserveAspectRatio",
                 "none",

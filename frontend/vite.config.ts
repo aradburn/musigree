@@ -91,7 +91,7 @@ export default defineConfig(({command}) => ({
         origin: "http://localhost:5173",
         host: "localhost",
         cors: {
-            origin: ["http://127.0.0.1:5000", "http://localhost:5000"],
+            origin: ["http://localhost:5000", "http://127.0.0.1:5000"],
             methods: "GET, PUT, POST, OPTIONS",
             preflightContinue: false,
             optionsSuccessStatus: 204,

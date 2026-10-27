@@ -6,9 +6,9 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager } from "./core/singletons";
-import { SVG, MARKER, SVG_IDS, DOM_IDS, GRADIENT } from "./constants";
-import { convertRemToPixels } from "./utils";
+import {musigreeManager} from "./core/singletons";
+import {DOM_IDS, GRADIENT, MARKER, SVG, SVG_IDS} from "./constants";
+import {convertRemToPixels} from "./utils";
 
 /** Fixed desktop sidebar widths, in rem. The canvas uses whatever is left. */
 const SIDEBAR_LEFT_REM = 20;
@@ -88,12 +88,11 @@ export const setSvgSize = (svgSelector: string): void => {
             svgContainer.clientWidth > 0
                 ? svgContainer.clientWidth
                 : fallbackWidth;
-        const height =
-            svgContainer.clientHeight > 0
-                ? svgContainer.clientHeight
-                : isDesktop
-                  ? window.innerHeight - navHeight
-                  : window.innerHeight / 2.0;
+        // Desktop height is the viewport below the top nav. The container can
+        // still report the SVG's intrinsic 150px before that layout exists.
+        const height = isDesktop
+            ? Math.max(0, window.innerHeight - navHeight)
+            : Math.max(0, (window.innerHeight - navHeight) / 2.0);
         const svgContainerDimensions: [number, number] = [width, height];
         const svgCanvasDimensions: [number, number] = [
             svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,
@@ -189,7 +188,7 @@ export const setupSvgDefs = (svgSelector: string): void => {
             .append("radialGradient")
             .attr("id", SVG_IDS.RADIAL_GRADIENT);
 
-        GRADIENT.STOPS.forEach(({ offset, opacity }) => {
+        GRADIENT.STOPS.forEach(({offset, opacity}) => {
             gradient
                 .append("stop")
                 .attr("offset", offset)
