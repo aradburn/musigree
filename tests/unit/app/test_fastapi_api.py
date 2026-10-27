@@ -411,15 +411,18 @@ class TestFastAPIRoutes:
             mock_db_manager_class.runtime_database_helper = mock_db_helper
 
             # Act
-            response = client.get("/api/artist/network/123?year=2020")
+            response = client.get("/api/artist/network/123?min_year=1970&max_year=1979")
 
             # Assert
             assert response.status_code == 200
             data = response.json()
             assert "graph" in data
 
-            # Verify that get_network was called
+            # Verify that get_network was called with the year bounds
             mock_db_helper.get_network.assert_called_once()
+            call_args = mock_db_helper.get_network.call_args
+            assert call_args[1]["min_year"] == 1970
+            assert call_args[1]["max_year"] == 1979
 
             # Verify cache was checked
             mock_cache.hgetall.assert_called_once()
@@ -1849,6 +1852,20 @@ def test_network_cache_id_includes_roles_and_mobile() -> None:
     assert "mobile=1" in mobile
     assert other_roles != desktop
     assert comma_role != split_roles
+    filtered = network_cache_id(
+        EntityType.ARTIST, 10, ["Alias", "Member Of"], False, 1970, 1979
+    )
+    assert filtered != desktop
+    assert "min_year=1970" in filtered
+    assert "max_year=1979" in filtered
+    assert "min_year=" in desktop
+    assert desktop.endswith("max_year=")
+
+
+def test_network_rejects_inverted_year_bounds(client: TestClient) -> None:
+    """min_year greater than max_year is a bad request."""
+    response = client.get("/api/artist/network/123?min_year=1980&max_year=1970")
+    assert response.status_code == 400
 
 
 class TestApiRouterConfiguration:

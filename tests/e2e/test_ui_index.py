@@ -57,7 +57,7 @@ class TestUIIndex:
     ) -> None:
         """Test that the index page loads with query parameters."""
         base_page = BasePage(page, base_url)
-        await base_page.navigate("/?roles=Producer&year=1990")
+        await base_page.navigate("/?roles=Producer&min_year=1990&max_year=1990")
 
         assert page.url.startswith(f"{base_url}/")
         title = await page.title()

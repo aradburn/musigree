@@ -314,6 +314,26 @@ class TestRuntimeRelationRepository:
             assert "67890" in compiled_sql
 
     @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_year_bounds(self) -> None:
+        """Year bounds keep the null-year clause and the inclusive range in SQL."""
+        entity_ids = [12345]
+        role_ids = [3]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            mock_get_all.return_value = []
+
+            await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10, min_year=1970, max_year=1979
+            )
+
+            query = mock_get_all.call_args[0][0]
+            compiled_sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+            compiled_sql_upper = compiled_sql.upper()
+            assert "1970" in compiled_sql
+            assert "1979" in compiled_sql
+            assert "IS NULL" in compiled_sql_upper or "ISNULL" in compiled_sql_upper
+
+    @pytest.mark.asyncio
     async def test_find_by_entities_and_roles_empty_roles(self) -> None:
         """Test find_by_entities_and_roles with empty role list returns no results."""
         # GIVEN

@@ -329,6 +329,8 @@ class RuntimeDatabaseHelper(ABC):
         entity_type: EntityType,
         on_mobile: bool,
         roles: list[str],
+        min_year: int | None = None,
+        max_year: int | None = None,
     ) -> dict[str, Any] | None:
         """
         Retrieves a network of entities and relations.
@@ -340,6 +342,8 @@ class RuntimeDatabaseHelper(ABC):
             entity_type: The type of the entity.
             on_mobile: Whether the request is from a mobile device.
             roles: A list of role names to filter by.
+            min_year: Inclusive lower bound for release year.
+            max_year: Inclusive upper bound for release year.
 
         Returns:
             dict: The network data.
@@ -368,6 +372,8 @@ class RuntimeDatabaseHelper(ABC):
             link_ratio=RuntimeDatabaseHelper.LINK_RATIO,
             max_nodes=max_nodes,
             role_names=roles,
+            min_year=min_year,
+            max_year=max_year,
         )
         data = await relation_grapher.get_relation_graph(entity_repository, relation_repository)
         return data

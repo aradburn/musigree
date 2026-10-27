@@ -135,6 +135,23 @@ async def test_structural_cache_is_separate_from_neighborhoods(memory_cache: Sim
 
 
 @pytest.mark.asyncio
+async def test_neighborhood_cache_is_separate_for_year_bounds(memory_cache: SimpleCache) -> None:
+    """A filtered neighborhood must not be reused for an unfiltered request."""
+    filtered_query = RecordingQuery([relation(1, 2)])
+    filtered = CachingRelationSource(filtered_query, min_year=1970, max_year=1979)
+    await filtered.load([1], ["Producer"], per_entity_limit=10)
+
+    unfiltered_query = RecordingQuery([relation(1, 2)])
+    unfiltered = CachingRelationSource(unfiltered_query)
+    await unfiltered.load([1], ["Producer"], per_entity_limit=10)
+
+    assert len(filtered_query.calls) == 1
+    assert len(unfiltered_query.calls) == 1
+    assert await memory_cache.get(neighborhood_cache_key(1, ["Producer"], 1970, 1979)) is not None
+    assert await memory_cache.get(neighborhood_cache_key(1, ["Producer"])) is not None
+
+
+@pytest.mark.asyncio
 async def test_load_without_a_cache_still_returns_relations() -> None:
     previous = CacheManager.cache
     CacheManager.cache = None

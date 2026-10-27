@@ -42,6 +42,8 @@ class RelationGrapher:
         "_center_entity",
         "_entity_source",
         "_limits",
+        "_max_year",
+        "_min_year",
         "_relation_source",
         "_roles",
     )
@@ -54,6 +56,8 @@ class RelationGrapher:
         max_nodes: int | None,
         role_names: list[str],
         *,
+        min_year: int | None = None,
+        max_year: int | None = None,
         entity_source: EntitySource | None = None,
         relation_source: RelationSource | None = None,
     ) -> None:
@@ -61,6 +65,8 @@ class RelationGrapher:
         self._center_entity = center_entity
         self._limits = resolve_limits(degree, max_nodes, link_ratio)
         self._roles = partition_roles(role_names)
+        self._min_year = min_year
+        self._max_year = max_year
         self._entity_source = entity_source
         self._relation_source = relation_source
 
@@ -79,7 +85,10 @@ class RelationGrapher:
         relation_source = self._relation_source
         if entity_source is None or relation_source is None:
             default_entities, default_relations = repository_sources(
-                entity_repository, relation_repository
+                entity_repository,
+                relation_repository,
+                min_year=self._min_year,
+                max_year=self._max_year,
             )
             if entity_source is None:
                 entity_source = default_entities

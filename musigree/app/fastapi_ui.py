@@ -10,7 +10,7 @@ Key functionalities include:
       and roles.
     - Serving entity-specific pages, displaying the network graph for a given
       entity.
-    - Handling request argument parsing for roles and year.
+    - Handling request argument parsing for roles and year bounds.
     - Integrating with `RoleCache` for role data and `RuntimeDatabaseManager`
       for network data.
     - Using `RuntimeEntityRepository` and `RuntimeRelationRepository` for
@@ -34,7 +34,7 @@ from musigree.app.fastapi_dependencies import (
     EntityTypeDep,
     OnMobileQuery,
     RolesDep,
-    YearDep,
+    YearBoundsDep,
 )
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -71,7 +71,7 @@ Default roles to display if none are specified in the request.
 async def route__index(
     request: Request,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: YearBoundsDep,
 ) -> HTMLResponse:
     """
     Serves the main index page.
@@ -83,7 +83,7 @@ async def route__index(
     Args:
         request: The FastAPI request object.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
 
     Returns:
         HTMLResponse: The rendered index page.
@@ -116,12 +116,7 @@ async def route__index(
 
     # Build URL with query parameters
     og_url = application_url
-    # if roles:
-    #     og_url += f"?roles={','.join(roles)}"
-    #     if year:
-    #         og_url += f"&year={year}"
-    # elif year:
-    #     og_url += f"?year={year}"
+    min_year, max_year = year_bounds
 
     og_title = "Musigree - An Interactive Map of Artists, Bands & Labels"
     og_image = application_url + "/img/og_image.png"
@@ -136,7 +131,8 @@ async def route__index(
         "og_image": og_image,
         "og_url": og_url,
         "original_roles": roles,
-        "original_year": year,
+        "original_min_year": min_year,
+        "original_max_year": max_year,
     }
 
     """Generate the URL for the current request with the selected roles."""
@@ -148,7 +144,7 @@ async def route__entity_type__entity_id(
     entity_type: EntityTypeDep,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: tuple[int | None, int | None] = (None, None),
     on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
@@ -163,7 +159,7 @@ async def route__entity_type__entity_id(
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
@@ -191,6 +187,7 @@ async def route__entity_type__entity_id(
 
     log.debug("route__entity_type__entity_id")
 
+    min_year, max_year = year_bounds
     roles_with_defaults = get_roles_with_defaults(roles, entity_type)
 
     try:
@@ -205,6 +202,8 @@ async def route__entity_type__entity_id(
                 entity_type,
                 on_mobile=on_mobile,
                 roles=roles_with_defaults,
+                min_year=min_year,
+                max_year=max_year,
             )
     except NotFoundError as _ex:
         raise NotFoundError(message="Entity not found") from None
@@ -243,13 +242,12 @@ async def route__entity_type__entity_id(
     application_url = str(request.base_url.replace(scheme="https")).rstrip("/")
 
     # Build URL with query parameters
-    og_url = f"{application_url}/{entity_type.name.lower()}/{entity_id}"
-    if roles:
-        og_url += f"?roles={','.join(roles)}"
-        if year:
-            og_url += f"&year={year}"
-    elif year:
-        og_url += f"?year={year}"
+    og_url = append_filter_query(
+        f"{application_url}/{entity_type.name.lower()}/{entity_id}",
+        roles,
+        min_year,
+        max_year,
+    )
 
     og_title = f'Musigree: The "{entity_name}" network'
     og_image = application_url + "/img/og_image.png"
@@ -271,7 +269,8 @@ async def route__entity_type__entity_id(
         "og_image": og_image,
         "og_url": og_url,
         "original_roles": roles,
-        "original_year": year,
+        "original_min_year": min_year,
+        "original_max_year": max_year,
     }
 
     return templates.TemplateResponse(request, name="index.html", context=context)
@@ -282,7 +281,7 @@ async def route__artist__entity_id(
     request: Request,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: YearBoundsDep,
     on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
@@ -296,7 +295,7 @@ async def route__artist__entity_id(
         request: The FastAPI request object.
         entity_id: The ID of the entity.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
@@ -307,7 +306,7 @@ async def route__artist__entity_id(
         UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
-        request, EntityType.ARTIST, entity_id, roles, year, on_mobile
+        request, EntityType.ARTIST, entity_id, roles, year_bounds, on_mobile
     )
 
 
@@ -316,7 +315,7 @@ async def route__label__entity_id(
     request: Request,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: YearBoundsDep,
     on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
@@ -330,7 +329,7 @@ async def route__label__entity_id(
         request: The FastAPI request object.
         entity_id: The ID of the entity.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
@@ -341,8 +340,27 @@ async def route__label__entity_id(
         UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
-        request, EntityType.LABEL, entity_id, roles, year, on_mobile
+        request, EntityType.LABEL, entity_id, roles, year_bounds, on_mobile
     )
+
+
+def append_filter_query(
+    url: str,
+    roles: set[str],
+    min_year: int | None,
+    max_year: int | None,
+) -> str:
+    """Append role and year filters to a page URL."""
+    parts: list[str] = []
+    if roles:
+        parts.append(f"roles={','.join(roles)}")
+    if min_year is not None:
+        parts.append(f"min_year={min_year}")
+    if max_year is not None:
+        parts.append(f"max_year={max_year}")
+    if not parts:
+        return url
+    return f"{url}?{'&'.join(parts)}"
 
 
 def get_roles_with_defaults(roles: set[str], entity_type: EntityType) -> list[str]:

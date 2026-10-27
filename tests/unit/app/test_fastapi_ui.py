@@ -57,7 +57,7 @@ class TestFastAPIUI:
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Index route receives parsed roles as a set (defaults applied elsewhere)
-        response = await route__index(mock_request, roles=set(UI_DEFAULT_ARTIST_ROLES), year=None)
+        response = await route__index(mock_request, roles=set(UI_DEFAULT_ARTIST_ROLES), year_bounds=(None, None))
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -75,7 +75,8 @@ class TestFastAPIUI:
         )
         assert context["og_title"] == "Musigree - An Interactive Map of Artists, Bands & Labels"
         assert context["original_roles"] == set(UI_DEFAULT_ARTIST_ROLES)
-        assert context["original_year"] is None
+        assert context["original_min_year"] is None
+        assert context["original_max_year"] is None
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -98,7 +99,7 @@ class TestFastAPIUI:
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
         # Call the route
-        response = await route__index(mock_request, roles={"Artist", "Album"}, year=2000)
+        response = await route__index(mock_request, roles={"Artist", "Album"}, year_bounds=(2000, 2000))
 
         # Verify the response
         assert isinstance(response, HTMLResponse)
@@ -107,7 +108,8 @@ class TestFastAPIUI:
         call_args = mock_templates.TemplateResponse.call_args
         context = call_args.kwargs["context"]
         assert context["original_roles"] == {"Artist", "Album"}
-        assert context["original_year"] == 2000
+        assert context["original_min_year"] == 2000
+        assert context["original_max_year"] == 2000
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -147,7 +149,7 @@ class TestFastAPIUI:
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
         with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             response = await route__entity_type__entity_id(
-                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year=2000
+                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year_bounds=(2000, 2000)
             )
 
         # Verify the response
@@ -200,7 +202,7 @@ class TestFastAPIUI:
             pytest.raises(NotFoundError) as exc_info,
         ):
             await route__entity_type__entity_id(
-                mock_request, EntityType.ARTIST, 123, roles=set(), year=None
+                mock_request, EntityType.ARTIST, 123, roles=set(), year_bounds=(None, None)
             )
 
         assert "No Network Data" in str(exc_info.value)
@@ -238,7 +240,7 @@ class TestFastAPIUI:
         mock_request = Mock(spec=Request)
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        _response = await route__index(mock_request, roles={"Artist"}, year=2000)
+        _response = await route__index(mock_request, roles={"Artist"}, year_bounds=(2000, 2000))
 
         # Verify template context contains URL
         call_args = mock_templates.TemplateResponse.call_args
@@ -283,7 +285,7 @@ class TestFastAPIUI:
         mock_transaction.__aexit__ = AsyncMock(return_value=None)
         with patch("musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction):
             _response = await route__entity_type__entity_id(
-                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year=2000
+                mock_request, EntityType.ARTIST, 123, roles={"Artist"}, year_bounds=(2000, 2000)
             )
 
         # Verify template context contains URL
@@ -292,7 +294,8 @@ class TestFastAPIUI:
         assert "og_url" in context
         assert "/artist/123" in context["og_url"]
         assert "roles=Artist" in context["og_url"]
-        assert "year=2000" in context["og_url"]
+        assert "min_year=2000" in context["og_url"]
+        assert "max_year=2000" in context["og_url"]
 
     def test_entity_type_validation(self) -> None:
         """Test entity type validation via dependency function."""

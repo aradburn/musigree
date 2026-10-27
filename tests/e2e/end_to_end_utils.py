@@ -106,7 +106,8 @@ class APIHelper:
         entity_type: str,
         entity_id: int | str,
         roles: list[str] | None = None,
-        year: int | None = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
     ) -> tuple[APIResponse, dict[str, Any] | None]:
         """Get entity network from the API.
 
@@ -114,7 +115,8 @@ class APIHelper:
             entity_type: The type of entity (e.g., 'artist', 'label').
             entity_id: The ID of the entity.
             roles: Optional list of roles to filter by.
-            year: Optional year to filter by.
+            min_year: Optional inclusive lower bound for release year.
+            max_year: Optional inclusive upper bound for release year.
 
         Returns:
             A tuple of (response, json_data).
@@ -123,8 +125,10 @@ class APIHelper:
         params: list[str] = []
         if roles:
             params.append(f"roles={','.join(roles)}")
-        if year:
-            params.append(f"year={year}")
+        if min_year is not None:
+            params.append(f"min_year={min_year}")
+        if max_year is not None:
+            params.append(f"max_year={max_year}")
         if params:
             path += "?" + "&".join(params)
         response = await self.page.request.get(f"{self.base_url}{path}")

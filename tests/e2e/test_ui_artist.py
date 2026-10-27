@@ -62,7 +62,7 @@ class TestUIArtist:
     ) -> None:
         """Test that the artist page loads with query parameters."""
         base_page = BasePage(page, base_url)
-        await base_page.navigate(f"/artist/{TEST_ARTIST_ID}?roles=Producer&year=1990")
+        await base_page.navigate(f"/artist/{TEST_ARTIST_ID}?roles=Producer&min_year=1990&max_year=1990")
 
         assert page.url.startswith(f"{base_url}/artist/{TEST_ARTIST_ID}")
         title = await page.title()

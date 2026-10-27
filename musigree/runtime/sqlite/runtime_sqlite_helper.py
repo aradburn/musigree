@@ -55,6 +55,7 @@ import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
+from urllib.parse import quote
 
 from sqlalchemy import URL, AsyncAdaptedQueuePool, Pool, exc, text
 from sqlalchemy.dialects.sqlite import Insert, insert
@@ -109,20 +110,21 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
         log.info(f"Sqlite runtime_database path: {target_path}")
 
-        # target_parent = target_path.parent
-        """Get the parent folder of the runtime_database file."""
-        # target_parent.mkdir(parents=True, exist_ok=True)
-        """Create the parent folder if it does not exist."""
-
         if config.IS_READ_ONLY:
+            # mode and immutable are SQLite URI options. SQLAlchemy only forwards
+            # them when uri=true is also in the query string, and the database
+            # name must be a file: URI.
+            database = "file:" + quote(os.path.abspath(target_path), safe="/")
             query = {
                 "mode": "ro",
                 "immutable": "1",
+                "uri": "true",
             }
         else:
+            database = str(target_path)
             query = {}
 
-        target_url = URL.create(SQLITE_DRIVER_NAME, database=str(target_path), query=query)
+        target_url = URL.create(SQLITE_DRIVER_NAME, database=database, query=query)
 
         log.info(f"Sqlite Database URL: {target_url}")
 
@@ -137,32 +139,8 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
             },
             poolclass=poolclass,
             pool_size=multiprocessing.cpu_count(),
-            # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
             max_overflow=0,
         )
-        # if config.IS_READ_ONLY:
-        #     poolclass = AsyncAdaptedQueuePool
-        #     engine = create_async_engine(
-        #         target_url,
-        #         connect_args={
-        #             "check_same_thread": False,
-        #             "timeout": 60,
-        #         },
-        #         poolclass=poolclass,
-        #         pool_size=4,
-        #         max_overflow=0,
-        #     )
-        # else:
-        #     # During loading we have a single thread, so we can use a static pool
-        #     poolclass = StaticPool
-        #     engine = create_async_engine(
-        #         target_url,
-        #         connect_args={
-        #             "check_same_thread": False,
-        #             "timeout": 600,
-        #         },
-        #         poolclass=poolclass,
-        #     )
 
         """Create the engine."""
         return engine

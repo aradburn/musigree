@@ -1,7 +1,7 @@
 import logging
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import Result, Select, delete, select, union
+from sqlalchemy import ColumnElement, Result, Select, and_, delete, or_, select, union
 from sqlalchemy.sql.base import Executable
 
 from musigree.exceptions import DatabaseError, NotFoundError
@@ -18,6 +18,27 @@ from musigree.runtime.runtime_domain.runtime_relation import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def year_bounds_clause(
+    min_year: int | None,
+    max_year: int | None,
+) -> ColumnElement[bool] | None:
+    """Keep undated rows and rows inside the inclusive year bounds.
+
+    Either bound may be omitted. No bounds means the caller should not filter.
+    """
+    if min_year is None and max_year is None:
+        return None
+
+    column = RuntimeRelationTable.year
+    comparisons: list[ColumnElement[bool]] = []
+    if min_year is not None:
+        comparisons.append(column >= min_year)
+    if max_year is not None:
+        comparisons.append(column <= max_year)
+    in_range = comparisons[0] if len(comparisons) == 1 else and_(*comparisons)
+    return or_(column.is_(None), in_range)
 
 
 # noinspection PyTypeChecker
@@ -242,7 +263,12 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
         return await self._get_all_by_query(query)
 
     async def find_by_entities_and_roles(
-        self, ids: list[int], role_ids: list[int], limit: int
+        self,
+        ids: list[int],
+        role_ids: list[int],
+        limit: int,
+        min_year: int | None = None,
+        max_year: int | None = None,
     ) -> list[RuntimeRelationInternal]:
         """
         Retrieves relations associated with any of the given entity IDs and roles.
@@ -255,6 +281,8 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
             ids: The IDs of the entities.
             role_ids: A list of role IDs to filter by.
             limit: Maximum number of relations to return.
+            min_year: Inclusive lower bound. Omitted when there is no lower bound.
+            max_year: Inclusive upper bound. Omitted when there is no upper bound.
 
         Returns:
             List[RuntimeRelationInternal]: A list of relations associated with
@@ -265,12 +293,20 @@ class RuntimeRelationRepository(RuntimeBaseRepository["RuntimeRelationTable"]):
             return []
 
         table = mapped_entity(RuntimeRelationTable)
-        subject_query = select(table).where(
-            RuntimeRelationTable.subject.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
-        )
-        object_query = select(table).where(
-            RuntimeRelationTable.object.in_(ids) & RuntimeRelationTable.predicate.in_(role_ids)
-        )
+        year_clause = year_bounds_clause(min_year, max_year)
+        subject_filters = [
+            RuntimeRelationTable.subject.in_(ids),
+            RuntimeRelationTable.predicate.in_(role_ids),
+        ]
+        object_filters = [
+            RuntimeRelationTable.object.in_(ids),
+            RuntimeRelationTable.predicate.in_(role_ids),
+        ]
+        if year_clause is not None:
+            subject_filters.append(year_clause)
+            object_filters.append(year_clause)
+        subject_query = select(table).where(*subject_filters)
+        object_query = select(table).where(*object_filters)
         combined = union(subject_query, object_query)
         compound = combined.order_by(
             combined.selected_columns.predicate,

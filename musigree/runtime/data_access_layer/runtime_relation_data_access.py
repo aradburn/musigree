@@ -24,6 +24,8 @@ class RuntimeRelationDataAccess:
         ids: list[int],
         role_names: list[str],
         limit: int,
+        min_year: int | None = None,
+        max_year: int | None = None,
     ) -> list[RuntimeRelationResult]:
         """
         Searches for relations involving multiple entities and specific roles.
@@ -38,6 +40,8 @@ class RuntimeRelationDataAccess:
             ids: List of ids to search for.
             role_names: List of role names to filter by.
             limit: Maximum number of relation rows to retrieve.
+            min_year: Inclusive lower bound for release year.
+            max_year: Inclusive upper bound for release year.
 
         Returns:
             list[RuntimeRelationResult]: List of relations matching the criteria.
@@ -51,7 +55,13 @@ class RuntimeRelationDataAccess:
 
         relation_internals: list[
             RuntimeRelationInternal
-        ] = await relation_repository.find_by_entities_and_roles(ids, role_ids, limit)
+        ] = await relation_repository.find_by_entities_and_roles(
+            ids,
+            role_ids,
+            limit,
+            min_year=min_year,
+            max_year=max_year,
+        )
 
         # Group relation_internals by link_key
         relations_map: dict[str, list[RuntimeRelationInternal]] = {}

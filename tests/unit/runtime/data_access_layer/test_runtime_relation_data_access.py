@@ -89,7 +89,9 @@ class TestSearchMulti:
         assert len(result) == 1
         assert isinstance(result[0], RuntimeRelationResult)
         assert result[0].releases == {"10": 2020}
-        mock_repo.find_by_entities_and_roles.assert_called_once_with([internal_id], [1], 100)
+        mock_repo.find_by_entities_and_roles.assert_called_once_with(
+            [internal_id], [1], 100, min_year=None, max_year=None
+        )
 
     @pytest.mark.asyncio
     @patch("musigree.runtime.data_access_layer.runtime_relation_data_access.RoleCache")
@@ -135,7 +137,9 @@ class TestSearchMulti:
             "Alias": {"10": 2020},
             "Member Of": {"11": 2021},
         }
-        mock_repo.find_by_entities_and_roles.assert_called_once_with([id_one, id_two], [1, 2], 50)
+        mock_repo.find_by_entities_and_roles.assert_called_once_with(
+            [id_one, id_two], [1, 2], 50, min_year=None, max_year=None
+        )
 
     @pytest.mark.asyncio
     async def test_search_multi_empty_ids_asserts(self) -> None:

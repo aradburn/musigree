@@ -66,7 +66,7 @@ class TestAPIEntityNetwork:
         """Test getting network graph with year filtering."""
         api_helper = APIHelper(page, base_url)
         response, json_data = await api_helper.get_entity_network(
-            TEST_ENTITY_TYPE_ARTIST, TEST_ARTIST_ID, year=1990
+            TEST_ENTITY_TYPE_ARTIST, TEST_ARTIST_ID, min_year=1990, max_year=1990
         )
         assert response.status == 200
         assert json_data is not None

@@ -165,9 +165,17 @@ async def assemble_network(
 def repository_sources(
     entity_repository: RuntimeEntityRepository,
     relation_repository: RuntimeRelationRepository,
+    *,
+    min_year: int | None = None,
+    max_year: int | None = None,
 ) -> tuple[EntitySource, RelationSource]:
     """Sources used by a request that did not inject its own."""
+    query = DatabaseRelationQuery(
+        relation_repository,
+        min_year=min_year,
+        max_year=max_year,
+    )
     return (
         RepositoryEntitySource(entity_repository),
-        CachingRelationSource(DatabaseRelationQuery(relation_repository)),
+        CachingRelationSource(query, min_year=min_year, max_year=max_year),
     )

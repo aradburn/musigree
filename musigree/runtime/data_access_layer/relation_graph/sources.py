@@ -76,8 +76,16 @@ class RepositoryEntitySource:
 class DatabaseRelationQuery:
     """One relation query for the ids that were not already cached."""
 
-    def __init__(self, repository: RuntimeRelationRepository) -> None:
+    def __init__(
+        self,
+        repository: RuntimeRelationRepository,
+        *,
+        min_year: int | None = None,
+        max_year: int | None = None,
+    ) -> None:
         self._repository = repository
+        self._min_year = min_year
+        self._max_year = max_year
 
     async def fetch(
         self,
@@ -92,4 +100,6 @@ class DatabaseRelationQuery:
             ids=entity_ids,
             role_names=role_names,
             limit=limit,
+            min_year=self._min_year,
+            max_year=self._max_year,
         )

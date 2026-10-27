@@ -35,7 +35,7 @@ from musigree.app.fastapi_dependencies import (
     EntityTypeDep,
     OnMobileQuery,
     RolesDep,
-    YearDep,
+    YearBoundsDep,
     rate_limiter,
 )
 from musigree.app.fastapi_ui import get_roles_with_defaults
@@ -73,15 +73,23 @@ def network_cache_id(
     entity_id: int,
     roles: list[str],
     on_mobile: bool,
+    min_year: int | None = None,
+    max_year: int | None = None,
 ) -> str:
-    """Identify one cached network by entity, applied roles, and mobile layout.
+    """Identify one cached network by entity, roles, layout, and year bounds.
 
     Role order does not change the key. Names are encoded so a comma inside
-    a role cannot be read as a separator.
+    a role cannot be read as a separator. Empty year tokens mean that bound
+    was not sent.
     """
     encoded_roles = ",".join(quote(role, safe="") for role in sorted(roles))
     mobile = "1" if on_mobile else "0"
-    return f"{entity_type.name.lower()}/network/{entity_id}/mobile={mobile}/roles={encoded_roles}"
+    lower = "" if min_year is None else str(min_year)
+    upper = "" if max_year is None else str(max_year)
+    return (
+        f"{entity_type.name.lower()}/network/{entity_id}"
+        f"/mobile={mobile}/roles={encoded_roles}/min_year={lower}/max_year={upper}"
+    )
 
 
 router = APIRouter(
@@ -179,7 +187,7 @@ async def route__api__entity_type__network__entity_id(
     entity_type: EntityTypeDep,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: YearBoundsDep,
     on_mobile: OnMobileQuery = False,
 ) -> dict[str, Any]:
     """
@@ -192,7 +200,7 @@ async def route__api__entity_type__network__entity_id(
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
@@ -216,13 +224,21 @@ async def route__api__entity_type__network__entity_id(
 
     log.debug("route__api__entity_type__network__entity_id")
 
+    min_year, max_year = year_bounds
     roles_with_defaults = get_roles_with_defaults(roles, entity_type)
 
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey(
         "api",
-        network_cache_id(entity_type, entity_id, roles_with_defaults, on_mobile),
+        network_cache_id(
+            entity_type,
+            entity_id,
+            roles_with_defaults,
+            on_mobile,
+            min_year,
+            max_year,
+        ),
     )
     network_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if network_data is not None:
@@ -239,6 +255,8 @@ async def route__api__entity_type__network__entity_id(
                 entity_type,
                 on_mobile=on_mobile,
                 roles=roles_with_defaults,
+                min_year=min_year,
+                max_year=max_year,
             )
     except NotFoundError:
         raise NotFoundError(message="Entity network not found") from None

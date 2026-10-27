@@ -23,9 +23,21 @@ def structural_cache_key(entity_id: int, role_names: list[str]) -> str:
     return f"relation:structural:{entity_id}:{roles}"
 
 
-def neighborhood_cache_key(entity_id: int, role_names: list[str]) -> str:
+def neighborhood_cache_key(
+    entity_id: int,
+    role_names: list[str],
+    min_year: int | None = None,
+    max_year: int | None = None,
+) -> str:
+    """Identify a cached neighborhood by entity, roles, and year bounds.
+
+    Missing bounds use ``*`` so an unfiltered neighborhood cannot be reused
+    for a filtered request.
+    """
     roles = ",".join(sorted(role_names))
-    return f"relation:neighborhood:{entity_id}:{roles}"
+    lower = "*" if min_year is None else str(min_year)
+    upper = "*" if max_year is None else str(max_year)
+    return f"relation:neighborhood:{entity_id}:{roles}:min={lower}:max={upper}"
 
 
 def active_cache() -> BaseCache | None:
@@ -111,8 +123,16 @@ class CachingRelationSource:
     be incomplete. Hubs are omitted from ``cacheable_ids`` by the caller.
     """
 
-    def __init__(self, query: RelationQuery) -> None:
+    def __init__(
+        self,
+        query: RelationQuery,
+        *,
+        min_year: int | None = None,
+        max_year: int | None = None,
+    ) -> None:
         self._query = query
+        self._min_year = min_year
+        self._max_year = max_year
 
     async def load(
         self,
@@ -133,7 +153,13 @@ class CachingRelationSource:
         misses: list[int] = []
         for entity_id in entity_ids:
             cached = await read_cached_relations(
-                cache, neighborhood_cache_key(entity_id, role_names)
+                cache,
+                neighborhood_cache_key(
+                    entity_id,
+                    role_names,
+                    self._min_year,
+                    self._max_year,
+                ),
             )
             if cached is None:
                 misses.append(entity_id)
@@ -153,7 +179,12 @@ class CachingRelationSource:
                     continue
                 await write_cached_relations(
                     cache,
-                    neighborhood_cache_key(entity_id, role_names),
+                    neighborhood_cache_key(
+                        entity_id,
+                        role_names,
+                        self._min_year,
+                        self._max_year,
+                    ),
                     relations,
                 )
         return hits + fresh
