@@ -74,20 +74,6 @@ describe("ForceControls", () => {
         expect(screen.getByLabelText(/Node Strength/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Link Strength/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Gravity Strength/i)).toBeInTheDocument();
-
-        // Check buttons are present - use getAllByText instead of getByText
-        const layoutButtons = screen.getAllByText(/LAYOUT/i, {
-            selector: "div[role='button'] span",
-        });
-        expect(layoutButtons).toHaveLength(2);
-
-        // Check for icon elements
-        expect(
-            screen.getByText("", { selector: "i.bi-lightning" }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByText("", { selector: "i.bi-sign-stop" }),
-        ).toBeInTheDocument();
     });
 
     it("updates node strength when slider is changed", () => {
@@ -151,34 +137,6 @@ describe("ForceControls", () => {
         expect(forceLayout.restartForceLayout).toHaveBeenCalledWith(
             FORCE.SIMULATION.ALPHA / 10.0,
         );
-    });
-
-    it("calls restartForceLayout when start layout button is clicked", () => {
-        render(<ForceControls />);
-
-        // Find the start layout button
-        const startButton = screen.getByText(/LAYOUT/i, {
-            selector: "div[role='button']:not(:last-child) span",
-        });
-        fireEvent.click(startButton.parentElement as HTMLElement);
-
-        // Verify restartForceLayout was called
-        expect(forceLayout.restartForceLayout).toHaveBeenCalledWith(
-            FORCE.SIMULATION.ALPHA / 10.0,
-        );
-    });
-
-    it("calls stopForceLayout when stop layout button is clicked", () => {
-        render(<ForceControls />);
-
-        // Find the stop layout button
-        const stopButton = screen.getByText(/LAYOUT/i, {
-            selector: "div[role='button']:last-child span",
-        });
-        fireEvent.click(stopButton.parentElement as HTMLElement);
-
-        // Verify stopForceLayout was called
-        expect(forceLayout.stopForceLayout).toHaveBeenCalled();
     });
 
     it("renders with custom className when provided", () => {

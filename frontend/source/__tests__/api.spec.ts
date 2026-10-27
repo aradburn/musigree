@@ -81,6 +81,27 @@ describe("API Functions", () => {
             expect(result).toEqual(mockResponse);
         });
 
+        it("should append min_year and max_year when a year range is set", async () => {
+            const mockResponse: APINetworkDataResponse = {
+                center: { key: "artist-1", name: "Test Artist" },
+                nodes: [],
+                links: [],
+            };
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockResponse),
+            });
+
+            await fetchAPINetwork("artist-1", ["producer"], {
+                minYear: 1970,
+                maxYear: 1979,
+            });
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                "/api/artist/network/1?roles=producer&min_year=1970&max_year=1979",
+            );
+        });
+
         it("should throw error when fetch fails", async () => {
             // Arrange
             const emptyRoles: string[] = [];
@@ -183,6 +204,25 @@ describe("API Functions", () => {
                 /^\/api\/random\?r=\d+&roles=producer$/,
             );
             expect(result).toEqual(mockResponse);
+        });
+
+        it("should append min_year and max_year when a year range is set", async () => {
+            const mockResponse: NetworkCenter = {
+                center: "artist-1",
+            };
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockResponse),
+            });
+
+            await fetchAPIRandom(["producer"], {
+                minYear: 1970,
+                maxYear: 1979,
+            });
+
+            expect(mockFetch.mock.calls[0][0]).toMatch(
+                /^\/api\/random\?r=\d+&roles=producer&min_year=1970&max_year=1979$/,
+            );
         });
 
         it("should throw error when fetch fails", async () => {

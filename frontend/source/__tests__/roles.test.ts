@@ -5,6 +5,9 @@ import {
     convertRolesToArboristFormat,
     updateSelectedRoleIds,
     getSelectedRoles,
+    rememberRoleNames,
+    replaceManagedRoleSelection,
+    splitRoleTree,
 } from "../roles";
 
 /**
@@ -289,6 +292,141 @@ describe("roles.ts", () => {
             expect(roles3).toContain("Child 3");
             expect(roles3).not.toContain("Child 4");
             expect(roles3.length).toBe(3);
+        });
+    });
+
+    describe("splitRoleTree", () => {
+        const structuralTree = (): TreeConfig => ({
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "other",
+                        text: "Other",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "alias",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "split",
+                        text: "Split With",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "released",
+                        text: "Released On",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "compiled",
+                        text: "Compiled On",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "sublabel",
+                        text: "Sublabel Of",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "collaborated",
+                        text: "Collaborated With",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "member",
+                        text: "Member Of",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "producer",
+                        text: "Producer",
+                        parent: "Production",
+                    },
+                ],
+            },
+        });
+
+        it("keeps four links in the checkbox group and the rest in the roles tree", () => {
+            const split = splitRoleTree(structuralTree());
+
+            expect(split.relationships.map((node) => node.text)).toEqual([
+                "Alias",
+                "Member Of",
+                "Released On",
+                "Sublabel Of",
+            ]);
+            expect(split.roles?.core.data.map((node) => node.text)).toEqual([
+                "Production",
+                "Relationships",
+                "Collaborated With",
+                "Compiled On",
+                "Split With",
+                "Other",
+                "Producer",
+            ]);
+            expect(
+                split.roles?.core.data.find(
+                    (node) => node.text === "Collaborated With",
+                )?.parent,
+            ).toBe("Relationships");
+        });
+
+        it("submits tree relationship names when that section is fully selected", () => {
+            const split = splitRoleTree(structuralTree());
+            convertRolesToArboristFormat(split.roles);
+            rememberRoleNames(split.relationships);
+            updateSelectedRoleIds(
+                split.roles?.core.data
+                    .filter(
+                        (node) =>
+                            node.id === "Relationships" ||
+                            node.parent === "Relationships",
+                    )
+                    .map((node) => node.id) ?? [],
+            );
+
+            const selected = getSelectedRoles();
+            expect(selected).toEqual([
+                "Collaborated With",
+                "Compiled On",
+                "Split With",
+                "Other",
+            ]);
+            expect(selected).not.toContain("Relationships");
+        });
+
+        it("returns no relationships when the tree is missing", () => {
+            expect(splitRoleTree(undefined)).toEqual({ relationships: [] });
+        });
+    });
+
+    describe("replaceManagedRoleSelection", () => {
+        it("replaces one filter's ids and keeps the other filter selected", () => {
+            const config: TreeConfig = {
+                core: {
+                    data: [
+                        { id: "alias", text: "Alias" },
+                        { id: "producer", text: "Producer" },
+                    ],
+                },
+            };
+            convertRolesToArboristFormat(config);
+            updateSelectedRoleIds(["alias", "producer"]);
+
+            replaceManagedRoleSelection(["producer"], []);
+
+            const roles = getSelectedRoles();
+            expect(roles).toContain("Alias");
+            expect(roles).not.toContain("Producer");
         });
     });
 });

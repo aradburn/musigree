@@ -274,29 +274,67 @@ describe("SVG Utilities", () => {
                 DOM_IDS.SVG_ID,
             ) as unknown as MockD3Selection;
 
-            // Calculate expected dimensions based on implementation
-            // window.innerWidth >= 576, so uses calculatedSvgContainerWidth
-            // calculatedSvgContainerWidth = window.innerWidth - convertRemToPixels(45)
-            // convertRemToPixels(45) = 45 * 16 = 720
-            // width = 1200 - 720 = 480
-            // height = window.innerHeight - navTop.clientHeight = 800 - 50 = 750
-            // For test, we'll check that attr was called with valid numeric strings
-            expect(svgSelection.attr).toHaveBeenCalledWith(
-                "width",
-                expect.stringMatching(/^\d+$/),
-            );
-            expect(svgSelection.attr).toHaveBeenCalledWith(
-                "height",
-                expect.stringMatching(/^\d+$/),
-            );
+            // The SVG uses the canvas box, not a hardcoded sidebar deduction.
+            const viewWidth = 800 * SVG.VIEWPORT_SIZE_MULTIPLIER;
+            const viewHeight = 600 * SVG.VIEWPORT_SIZE_MULTIPLIER;
+            expect(svgSelection.attr).toHaveBeenCalledWith("width", "800");
+            expect(svgSelection.attr).toHaveBeenCalledWith("height", "600");
             expect(svgSelection.attr).toHaveBeenCalledWith(
                 "viewBox",
-                expect.stringMatching(/^0 0 \d+ \d+$/),
+                `0 0 ${viewWidth} ${viewHeight}`,
             );
+            expect(musigreeManager.dimensions).toEqual([800, 600]);
             expect(svgSelection.attr).toHaveBeenCalledWith(
                 "preserveAspectRatio",
                 "none",
             );
+        });
+
+        it("reserves the fixed sidebars when the canvas has not been measured", () => {
+            vi.spyOn(mockContainer, "clientWidth", "get").mockReturnValue(0);
+            vi.spyOn(mockContainer, "clientHeight", "get").mockReturnValue(0);
+            Object.defineProperty(window, "innerWidth", {
+                writable: true,
+                configurable: true,
+                value: 1600,
+            });
+            Object.defineProperty(window, "innerHeight", {
+                writable: true,
+                configurable: true,
+                value: 900,
+            });
+            Object.defineProperty(window, "devicePixelRatio", {
+                writable: true,
+                configurable: true,
+                value: 1,
+            });
+            window.getComputedStyle = vi.fn().mockReturnValue({
+                fontSize: "16px",
+            } as CSSStyleDeclaration);
+
+            const mockNavTop = document.createElement("div");
+            mockNavTop.id = DOM_IDS.NAV_TOP;
+            vi.spyOn(mockNavTop, "clientHeight", "get").mockReturnValue(50);
+            vi.spyOn(document, "getElementById").mockImplementation(
+                (id: string): HTMLElement | null => {
+                    if (id === DOM_IDS.SVG_CONTAINER) {
+                        return mockContainer as HTMLElement;
+                    }
+                    if (id === DOM_IDS.NAV_TOP) {
+                        return mockNavTop as HTMLElement;
+                    }
+                    return null;
+                },
+            );
+            musigreeManager.isSidebarRightCollapsed = false;
+
+            setSvgSize(DOM_IDS.SVG_ID);
+
+            const svgSelection = d3.select(
+                DOM_IDS.SVG_ID,
+            ) as unknown as MockD3Selection;
+            expect(svgSelection.attr).toHaveBeenCalledWith("width", "800");
+            expect(svgSelection.attr).toHaveBeenCalledWith("height", "850");
         });
 
         it("should handle missing SVG container gracefully", () => {

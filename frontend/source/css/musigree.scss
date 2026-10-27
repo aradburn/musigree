@@ -137,9 +137,12 @@ body {
 
 .sidebar-left-container {
     background-color: $mg-background-dark-color !important;
-    width: 15rem;
-    min-width: 15rem;
-    max-width: 15rem;
+    width: 20rem;
+    min-width: 20rem;
+    max-width: 20rem;
+    // The column stays in the row; its contents keep their own height and scroll.
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .sidebar-right-container {
@@ -156,15 +159,41 @@ body {
     max-width: 5rem;
 }
 
-#svg-container-fluid {
-//     width: calc(100vw - 45rem);
-    //     min-width: calc(100vw - 45rem);
-    //     max-width: calc(100vw - 45rem);
-}
-
 @media (min-width: 576px) {
     .h-sm-100 {
         height: calc(100vh - var(--navbar-height)) !important;
+    }
+
+    // Sidebars keep a fixed width. The canvas takes only the space between them.
+    .row > .sidebar-left-container {
+        flex: 0 0 20rem;
+    }
+
+    .row > .sidebar-right-container {
+        flex: 0 0 30rem;
+    }
+
+    .row > .sidebar-right-container-collapsed {
+        flex: 0 0 5rem;
+    }
+
+    .row > .main-container {
+        flex: 1 1 0;
+        width: auto;
+        max-width: none;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .main-container > .h-sm-100 {
+        min-width: 0;
+    }
+
+    #svg-container-fluid {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
     }
 }
 
@@ -274,19 +303,156 @@ body {
     height: 250px;
 }
 
-#roles-overlay {
-    background-color: $mg-background-light-color !important;
-    top: var(--navbar-height);
-    width: 25rem;
-    height: calc(100vh - var(--navbar-height)) !important;
+.sidebar-left {
+    .h6 {
+        font-weight: 700;
+    }
+
+    .sidebar-accordion {
+        --bs-accordion-bg: transparent;
+        --bs-accordion-color: #{$mg-text-outer-color};
+        --bs-accordion-border-color: rgba(255, 255, 255, 0.18);
+        --bs-accordion-border-width: 0;
+        --bs-accordion-border-radius: 0;
+        --bs-accordion-inner-border-radius: 0;
+        --bs-accordion-btn-color: #{$mg-text-outer-color};
+        --bs-accordion-btn-bg: transparent;
+        --bs-accordion-btn-padding-x: 0.25rem;
+        --bs-accordion-btn-padding-y: 0.55rem;
+        --bs-accordion-active-color: #{$mg-text-outer-color};
+        --bs-accordion-active-bg: rgba(255, 255, 255, 0.08);
+        --bs-accordion-btn-focus-box-shadow: none;
+        --bs-accordion-body-padding-x: 0.25rem;
+        --bs-accordion-body-padding-y: 0.75rem;
+    }
+
+    .accordion-item {
+        background: transparent;
+        color: inherit;
+        border: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .accordion-button {
+        font-size: 1.25rem;
+        font-weight: 500;
+        box-shadow: none;
+
+        &::after {
+            filter: brightness(0) invert(1);
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.75);
+            outline-offset: 2px;
+        }
+    }
+
+    .accordion-body {
+        color: inherit;
+    }
 }
 
-.roles-title {
-    color: $mg-text-color;
+.roles-tree {
+    // Rows size the tree. Hide the virtual list scrollbar so the sidebar scrolls.
+    overflow: hidden !important;
 }
 
-#roles-panel {
-    background-color: $mg-background-light-color !important;
+.relationships-filter {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: row;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    align-items: start;
+}
+
+.relationships-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.2;
+}
+
+.relationships-option input {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+    accent-color: $mg-text-outer-color;
+}
+
+$year-range-thumb-size: 0.8rem;
+
+.year-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.year-range-track {
+    position: relative;
+    height: 1.6rem;
+}
+
+.year-range-rail {
+    position: absolute;
+    left: calc(#{$year-range-thumb-size} / 2);
+    right: calc(#{$year-range-thumb-size} / 2);
+    top: 50%;
+    height: 4px;
+    transform: translateY(-50%);
+    background-color: rgba($mg-text-outer-color, 0.25);
+    pointer-events: none;
+}
+
+.year-range-highlight {
+    position: absolute;
+    top: 50%;
+    height: 4px;
+    transform: translateY(-50%);
+    // Span thumb center to thumb center so the bar meets both handles.
+    left: calc(
+        var(--year-min-ratio) * (100% - #{$year-range-thumb-size}) + #{$year-range-thumb-size} *
+            0.5
+    );
+    width: calc(
+        (var(--year-max-ratio) - var(--year-min-ratio)) *
+            (100% - #{$year-range-thumb-size})
+    );
+    background-color: #fff;
+    pointer-events: none;
+}
+
+input.year-range-input[type="range"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 1.6rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    pointer-events: none;
+    background: none;
+}
+
+input.year-range-input[type="range"]::-webkit-slider-thumb {
+    margin-top: 0;
+    pointer-events: auto;
+}
+
+input.year-range-input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+}
+
+input.year-range-input[type="range"]::-webkit-slider-runnable-track {
+    background: transparent;
+    border: 0;
 }
 
 .tree-expanded-indicator {
@@ -298,12 +464,12 @@ body {
     margin-right: 8px;
     cursor: pointer;
     font-size: 1rem;
-    background-color: $mg-background-light-color;
+    background-color: transparent;
 }
 
 .tree-expanded-indicator span {
     display: inline-block;
-    background-color: $mg-background-light-color;
+    background-color: transparent;
     width: 100%;
     height: 100%;
     text-align: center;
@@ -312,7 +478,7 @@ body {
 
 .tree-expanded-indicator span svg path {
     fill: none;
-    stroke: $mg-text-color;
+    stroke: $mg-text-outer-color;
     stroke-width: 1.8;
 }
 
@@ -358,8 +524,10 @@ body {
     display: flex;
     align-items: center;
     cursor: pointer;
-    background-color: $mg-background-light-color;
-    padding: 4px 8px;
+    background-color: transparent;
+    color: $mg-text-outer-color;
+    height: 100%;
+    padding: 0;
 }
 
 .tree-item-leaf {

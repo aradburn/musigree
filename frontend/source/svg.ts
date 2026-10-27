@@ -10,6 +10,11 @@ import { musigreeManager } from "./core/singletons";
 import { SVG, MARKER, SVG_IDS, DOM_IDS, GRADIENT } from "./constants";
 import { convertRemToPixels } from "./utils";
 
+/** Fixed desktop sidebar widths, in rem. The canvas uses whatever is left. */
+const SIDEBAR_LEFT_REM = 20;
+const SIDEBAR_RIGHT_REM = 30;
+const SIDEBAR_RIGHT_COLLAPSED_REM = 5;
+
 /**
  * Initializes the SVG element with basic setup
  * - Sets up window dimensions
@@ -70,21 +75,25 @@ export const setSvgSize = (svgSelector: string): void => {
             return;
         }
 
-        const calculatedSvgContainerWidth =
-            musigreeManager.isSidebarRightCollapsed
-                ? window.innerWidth - convertRemToPixels(20)
-                : window.innerWidth - convertRemToPixels(45);
-        const smallSvgContainerHeight = window.innerHeight / 2.0;
-        const largeSvgContainerHeight =
-            window.innerHeight - navTopContainer.clientHeight;
+        // Prefer the laid-out canvas. Before that exists, reserve the fixed sidebars.
+        const navHeight = navTopContainer?.clientHeight ?? 0;
+        const isDesktop = window.innerWidth >= 576;
+        const sidebarRem = musigreeManager.isSidebarRightCollapsed
+            ? SIDEBAR_LEFT_REM + SIDEBAR_RIGHT_COLLAPSED_REM
+            : SIDEBAR_LEFT_REM + SIDEBAR_RIGHT_REM;
+        const fallbackWidth = isDesktop
+            ? Math.max(0, window.innerWidth - convertRemToPixels(sidebarRem))
+            : window.innerWidth;
         const width =
-            window.innerWidth >= 576
-                ? calculatedSvgContainerWidth
-                : window.innerWidth;
+            svgContainer.clientWidth > 0
+                ? svgContainer.clientWidth
+                : fallbackWidth;
         const height =
-            window.innerWidth >= 576
-                ? largeSvgContainerHeight
-                : smallSvgContainerHeight;
+            svgContainer.clientHeight > 0
+                ? svgContainer.clientHeight
+                : isDesktop
+                  ? window.innerHeight - navHeight
+                  : window.innerHeight / 2.0;
         const svgContainerDimensions: [number, number] = [width, height];
         const svgCanvasDimensions: [number, number] = [
             svgContainerDimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,

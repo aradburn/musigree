@@ -480,6 +480,7 @@ describe("MusigreeFSM", () => {
                 expect(fetchAPINetworkSpy).toHaveBeenCalledWith(
                     "artist-123",
                     [],
+                    undefined,
                 );
             });
         });

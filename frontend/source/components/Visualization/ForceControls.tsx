@@ -3,7 +3,7 @@ import React, { useCallback } from "react";
 import Form from "react-bootstrap/Form";
 import { FORCE } from "../../constants";
 import { useNetwork } from "../../contexts/useNetwork";
-import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";
+import { restartForceLayout } from "../../network/forceLayout";
 
 interface ForceControlsProps {
     className?: string;
@@ -64,15 +64,6 @@ export const ForceControls: React.FC<ForceControlsProps> = ({
         [dispatch, setupGravityForce],
     );
 
-    // Create new handlers to directly use startForceLayout and stopForceLayout
-    const handleStartLayout = useCallback((): void => {
-        restartForceLayout(FORCE.SIMULATION.ALPHA / 10.0);
-    }, []);
-
-    const handleStopLayout = useCallback((): void => {
-        stopForceLayout();
-    }, []);
-
     return (
         <div className={`force-controls ${className}`}>
             {/* Node strength slider */}
@@ -104,27 +95,6 @@ export const ForceControls: React.FC<ForceControlsProps> = ({
                 min={0}
                 max={100}
             />
-
-            {/* Layout buttons */}
-            <div className="d-flex flex-column w-100">
-                <div
-                    className="navbar-text px-sm-0 px-2 justify-content-end"
-                    role="button"
-                    onClick={handleStartLayout}
-                >
-                    <i className="fs-5 bi-lightning"></i>
-                    <span className="ms-1 d-none d-sm-inline">LAYOUT</span>
-                </div>
-
-                <div
-                    className="navbar-text px-sm-0 px-2 justify-content-end"
-                    role="button"
-                    onClick={handleStopLayout}
-                >
-                    <i className="fs-5 bi-sign-stop"></i>
-                    <span className="ms-1 d-none d-sm-inline">LAYOUT</span>
-                </div>
-            </div>
         </div>
     );
 };

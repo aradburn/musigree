@@ -43,6 +43,36 @@ export interface ArboristNode {
     selected?: boolean;
 }
 
+/** Category name from the server role tree. Its children are structural links. */
+export const STRUCTURAL_RELATIONSHIPS_CATEGORY = "Structural Relationships";
+
+/** Checkboxes above the roles tree, in display order. */
+export const STANDALONE_RELATIONSHIP_NAMES = [
+    "Alias",
+    "Member Of",
+    "Released On",
+    "Sublabel Of",
+] as const;
+
+/** Remaining structural links, shown under this roles-tree section. */
+export const ROLE_TREE_RELATIONSHIPS_SECTION = "Relationships";
+
+const ROLE_TREE_RELATIONSHIP_ORDER = [
+    "Collaborated With",
+    "Compiled On",
+    "Split With",
+    "Other",
+] as const;
+
+const ROLE_TREE_RELATIONSHIP_INDEX = new Map<string, number>(
+    ROLE_TREE_RELATIONSHIP_ORDER.map((name, index) => [name, index]),
+);
+
+export interface SplitRoleTree {
+    relationships: TreeNode[];
+    roles?: TreeConfig;
+}
+
 // Keep track of the selected role IDs when using react-arborist
 let selectedRoleIds: Set<string | number> = new Set();
 
@@ -136,12 +166,129 @@ export const convertRolesToArboristFormat = (
     return rootNodes;
 };
 
+const isStructuralCategory = (node: TreeNode): boolean =>
+    node.id === STRUCTURAL_RELATIONSHIPS_CATEGORY ||
+    node.text === STRUCTURAL_RELATIONSHIPS_CATEGORY;
+
+const compareTreeRelationships = (left: TreeNode, right: TreeNode): number => {
+    const leftIndex =
+        ROLE_TREE_RELATIONSHIP_INDEX.get(left.text) ??
+        ROLE_TREE_RELATIONSHIP_INDEX.size;
+    const rightIndex =
+        ROLE_TREE_RELATIONSHIP_INDEX.get(right.text) ??
+        ROLE_TREE_RELATIONSHIP_INDEX.size;
+    if (leftIndex !== rightIndex) {
+        return leftIndex - rightIndex;
+    }
+    return left.text.localeCompare(right.text);
+};
+
+/**
+ * Pulls the primary structural links out for the checkbox group.
+ * The other structural links stay in the roles tree under Relationships.
+ */
+export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
+    if (!config?.core?.data) {
+        return { relationships: [] };
+    }
+
+    const standaloneNames = new Set<string>(STANDALONE_RELATIONSHIP_NAMES);
+    const standaloneByName = new Map<string, TreeNode>();
+    const treeRelationships: TreeNode[] = [];
+    let categoryParent: TreeNode["parent"] = "#";
+
+    for (const node of config.core.data) {
+        if (isStructuralCategory(node)) {
+            categoryParent = node.parent ?? "#";
+            continue;
+        }
+        if (node.parent !== STRUCTURAL_RELATIONSHIPS_CATEGORY) {
+            continue;
+        }
+        if (standaloneNames.has(node.text)) {
+            standaloneByName.set(node.text, node);
+            continue;
+        }
+        treeRelationships.push({
+            ...node,
+            parent: ROLE_TREE_RELATIONSHIPS_SECTION,
+        });
+    }
+
+    treeRelationships.sort(compareTreeRelationships);
+
+    const roleNodes: TreeNode[] = [];
+    for (const node of config.core.data) {
+        if (isStructuralCategory(node)) {
+            if (treeRelationships.length === 0) {
+                continue;
+            }
+            roleNodes.push({
+                id: ROLE_TREE_RELATIONSHIPS_SECTION,
+                text: ROLE_TREE_RELATIONSHIPS_SECTION,
+                parent: categoryParent,
+            });
+            roleNodes.push(...treeRelationships);
+            continue;
+        }
+        if (node.parent === STRUCTURAL_RELATIONSHIPS_CATEGORY) {
+            continue;
+        }
+        roleNodes.push(node);
+    }
+
+    const relationships = STANDALONE_RELATIONSHIP_NAMES.flatMap((name) => {
+        const node = standaloneByName.get(name);
+        return node ? [node] : [];
+    });
+
+    return {
+        relationships,
+        roles: {
+            ...config,
+            core: {
+                ...config.core,
+                data: roleNodes,
+            },
+        },
+    };
+};
+
+/**
+ * Records role labels without resetting names already stored for other nodes.
+ */
+export const rememberRoleNames = (nodes: TreeNode[]): void => {
+    for (const node of nodes) {
+        roleIdToNameMap.set(node.id, node.text);
+    }
+};
+
 /**
  * Updates the set of selected role IDs
  * @param {string | number[]} ids - Array of selected role IDs
  */
 export const updateSelectedRoleIds = (ids: (string | number)[]): void => {
     selectedRoleIds = new Set(ids);
+};
+
+/**
+ * Replaces selection for one filter while leaving the other filter's ids in place.
+ */
+export const replaceManagedRoleSelection = (
+    managedIds: readonly (string | number)[],
+    selectedIds: readonly (string | number)[],
+): void => {
+    const managed = new Set(managedIds);
+    const next = new Set(selectedRoleIds);
+    for (const id of managed) {
+        next.delete(id);
+    }
+    for (const id of selectedIds) {
+        if (managed.has(id)) {
+            next.add(id);
+        }
+    }
+    selectedRoleIds = next;
 };
 
 /**
@@ -159,6 +306,14 @@ export const getSelectedRoles = (): string[] => {
     const fullySelectedParents = new Set<string | number>();
 
     parentToChildrenMap.forEach((children, parentId) => {
+        // The tree section is a grouping label. Send its roles individually
+        // so a full selection does not expand to every structural link.
+        if (
+            parentId === ROLE_TREE_RELATIONSHIPS_SECTION ||
+            parentId === STRUCTURAL_RELATIONSHIPS_CATEGORY
+        ) {
+            return;
+        }
         // Check if the parent is selected and if all its children are selected
         if (selectedRoleIds.has(parentId)) {
             const allChildrenSelected = Array.from(children).every((childId) =>
@@ -173,6 +328,12 @@ export const getSelectedRoles = (): string[] => {
 
     // Second pass: add selected roles to the result, excluding children of fully selected parents
     for (const id of selectedIds) {
+        if (
+            id === ROLE_TREE_RELATIONSHIPS_SECTION ||
+            id === STRUCTURAL_RELATIONSHIPS_CATEGORY
+        ) {
+            continue;
+        }
         const parentId = childToParentMap.get(id);
 
         // Include the ID if:

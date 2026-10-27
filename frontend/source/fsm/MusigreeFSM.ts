@@ -49,6 +49,7 @@ import { UninitializedState } from "./states/UninitializedState";
 import debounce from "debounce";
 import { AbstractFSM, type TransitionFunction } from "./AbstractFSM";
 import { getSelectedRoles } from "../roles";
+import { getSelectedYearBounds, getYearQuery, isFullYearTrack } from "../yearBounds";
 
 /** Lazy-loaded analytics track; defers loading analytics until first use. */
 let trackPromise: Promise<
@@ -311,31 +312,12 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
                 } else if (this.state === "state-viewing-radial") {
                     this.handle("show-network", null, false, false);
                 }
-                this.hideRolesOverlay();
             });
         }
 
         // Initialize application state
         this.loadInlineData();
         this.toggleRadial(false);
-    }
-
-    /**
-     * Shows the roles panel overlay
-     */
-    showRolesOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:show-roles-overlay");
-        window.dispatchEvent(event);
-    }
-
-    /**
-     * Hides the roles panel overlay
-     */
-    hideRolesOverlay(): void {
-        // Dispatch the event for React to handle
-        const event = new CustomEvent("musigree:hide-roles-overlay");
-        window.dispatchEvent(event);
     }
 
     // Action implementations (from Actions interface)
@@ -413,7 +395,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         const roles = getSelectedRoles() || [];
 
-        fetchAPINetwork(entityKey, roles)
+        fetchAPINetwork(entityKey, roles, getYearQuery())
             .then((apiNetworkDataResponse) => {
                 const networkData = processAPINetworkDataResponse(
                     apiNetworkDataResponse,
@@ -479,7 +461,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         const roles = getSelectedRoles() || [];
 
-        fetchAPIRandom(roles)
+        fetchAPIRandom(roles, getYearQuery())
             .then((networkCenter) => {
                 this.handle("received-random", networkCenter, true, false);
             })
@@ -503,10 +485,13 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             return;
         }
 
-        const filterSelect =
-            document.querySelector<HTMLSelectElement>("#filter select");
-        const filterValue = filterSelect?.value;
-        const params = { roles: Array.isArray(filterValue) ? filterValue : [] };
+        const roles = getSelectedRoles() || [];
+        const yearBounds = getSelectedYearBounds();
+        const params: Record<string, unknown> = { roles };
+        if (!isFullYearTrack(yearBounds)) {
+            params.min_year = yearBounds.minYear;
+            params.max_year = yearBounds.maxYear;
+        }
 
         // Update the network data
         document.title = "Musigree: " + networkData.center.name;
