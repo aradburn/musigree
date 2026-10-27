@@ -5,7 +5,9 @@
  */
 import React, { useEffect, useState } from "react";
 import {
-    rememberRoleNames,
+    RANDOM_ARTIST_FILTER_RESET_EVENT,
+    RANDOM_ARTIST_RELATIONSHIP_NAMES,
+    rememberRelationships,
     replaceManagedRoleSelection,
 } from "../../roles";
 import type { TreeNode } from "../../roles";
@@ -30,11 +32,34 @@ export const RelationshipsFilter: React.FC<RelationshipsFilterProps> = ({
                 .map((role) => role.id),
         );
         setSelectedIds(initial);
-        rememberRoleNames(relationships);
+        rememberRelationships(relationships);
         replaceManagedRoleSelection(
             relationships.map((role) => role.id),
             Array.from(initial),
         );
+    }, [relationships]);
+
+    useEffect(() => {
+        const artistNames = new Set<string>(RANDOM_ARTIST_RELATIONSHIP_NAMES);
+        const applyRandomArtistRelationships = (): void => {
+            setSelectedIds(
+                new Set(
+                    relationships
+                        .filter((role) => artistNames.has(role.text))
+                        .map((role) => role.id),
+                ),
+            );
+        };
+        window.addEventListener(
+            RANDOM_ARTIST_FILTER_RESET_EVENT,
+            applyRandomArtistRelationships,
+        );
+        return (): void => {
+            window.removeEventListener(
+                RANDOM_ARTIST_FILTER_RESET_EVENT,
+                applyRandomArtistRelationships,
+            );
+        };
     }, [relationships]);
 
     const handleToggle = (id: string | number, checked: boolean): void => {

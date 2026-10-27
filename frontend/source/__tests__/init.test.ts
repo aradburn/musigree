@@ -85,6 +85,7 @@ vi.mock("../roles", () => ({
     convertRolesToArboristFormat: vi.fn(),
     updateSelectedRoleIds: vi.fn(),
     getSelectedRoles: vi.fn(),
+    initializeStructuralRelationships: vi.fn(),
 }));
 
 vi.mock("../svg", () => ({
@@ -148,6 +149,7 @@ interface MockedRoles {
     convertRolesToArboristFormat: typeof roles.convertRolesToArboristFormat;
     updateSelectedRoleIds: typeof roles.updateSelectedRoleIds;
     getSelectedRoles: typeof roles.getSelectedRoles;
+    initializeStructuralRelationships: typeof roles.initializeStructuralRelationships;
 }
 
 interface MockedFsm {
@@ -338,6 +340,9 @@ describe("Init Module", () => {
             expect(spyInitRelations).toHaveBeenCalled();
             expect(spyInitFSM).toHaveBeenCalled();
             expect(spyResetNetworkForces).toHaveBeenCalled();
+            expect(roles.initializeStructuralRelationships).toHaveBeenCalledWith(
+                window.dgRoles,
+            );
 
             // Restore all spies
             vi.restoreAllMocks();
@@ -399,17 +404,12 @@ describe("Init Module", () => {
         });
 
         it("should not call initRoles if window.dgRoles is not defined", () => {
-            // Remove window.dgRoles
             delete global.window.dgRoles;
 
-            // Act
             initApp();
 
-            // Based on init.ts, the initRoles function is no longer called directly
-            // The test is kept for backwards compatibility
-            // No assertions needed here since we're verifying absence of behavior
+            expect(roles.initializeStructuralRelationships).not.toHaveBeenCalled();
 
-            // Re-initialize dgRoles for other tests
             window.dgRoles = {
                 core: { data: [] },
                 plugins: [],

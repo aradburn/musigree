@@ -13,7 +13,7 @@ import { RequestNetworkEvent } from "../../network/events";
 import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";
 import {
     convertRolesToArboristFormat,
-    rememberRoleNames,
+    rememberRelationships,
     splitRoleTree,
     updateSelectedRoleIds,
 } from "../../roles";
@@ -62,7 +62,7 @@ export const SidebarLeft: React.FC = () => {
         if (roles) {
             convertRolesToArboristFormat(roles);
         }
-        rememberRoleNames(relationships);
+        rememberRelationships(relationships);
         updateSelectedRoleIds(
             [...(roles?.core.data ?? []), ...relationships]
                 .filter((node) => node.state?.selected)
@@ -136,7 +136,6 @@ export const SidebarLeft: React.FC = () => {
                                 relationships={relationships}
                                 onSelectionChange={requestFilteredNetwork}
                             />
-                            <div className="h6 mt-3 mb-1">Roles</div>
                             <RolesFilter
                                 roles={roles}
                                 onSelectionChange={requestFilteredNetwork}

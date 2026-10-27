@@ -29,12 +29,8 @@ class TestFastAPIUI:
 
     def test_ui_default_roles(self) -> None:
         """Test that UI default role lists are properly defined."""
-        assert isinstance(UI_DEFAULT_ARTIST_ROLES, list)
-        assert "Alias" in UI_DEFAULT_ARTIST_ROLES
-        assert "Member Of" in UI_DEFAULT_ARTIST_ROLES
-        assert isinstance(UI_DEFAULT_LABEL_ROLES, list)
-        assert "Sublabel Of" in UI_DEFAULT_LABEL_ROLES
-        assert "Released On" in UI_DEFAULT_LABEL_ROLES
+        assert UI_DEFAULT_ARTIST_ROLES == ["Alias", "Member Of"]
+        assert UI_DEFAULT_LABEL_ROLES == ["Released On"]
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -56,7 +52,7 @@ class TestFastAPIUI:
         mock_request = Mock(spec=Request)
         mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
 
-        # Index route receives parsed roles as a set (defaults applied elsewhere)
+        # A non-empty roles set is copied into the role tree as given.
         response = await route__index(mock_request, roles=set(UI_DEFAULT_ARTIST_ROLES), year_bounds=(None, None))
 
         # Verify the response
@@ -77,6 +73,7 @@ class TestFastAPIUI:
         assert context["original_roles"] == set(UI_DEFAULT_ARTIST_ROLES)
         assert context["original_min_year"] is None
         assert context["original_max_year"] is None
+        mock_roles_json.assert_called_once_with(set(UI_DEFAULT_ARTIST_ROLES))
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -110,6 +107,31 @@ class TestFastAPIUI:
         assert context["original_roles"] == {"Artist", "Album"}
         assert context["original_min_year"] == 2000
         assert context["original_max_year"] == 2000
+        mock_roles_json.assert_called_once_with({"Artist", "Album"})
+
+    @patch("musigree.app.fastapi_app.templates")
+    @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
+    @pytest.mark.asyncio
+    async def test_route_index_uses_artist_defaults_when_roles_omitted(
+        self,
+        mock_multiselect: Mock,
+        mock_roles_json: Mock,
+        mock_templates: Mock,
+    ) -> None:
+        """Home page selects the artist default roles in the JS tree."""
+        mock_multiselect.return_value = {"test": "mapping"}
+        mock_roles_json.return_value = '{"role1": "data"}'
+        mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
+
+        mock_request = Mock(spec=Request)
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
+
+        await route__index(mock_request, roles=set(), year_bounds=(None, None))
+
+        mock_roles_json.assert_called_once_with(set(UI_DEFAULT_ARTIST_ROLES))
+        context = mock_templates.TemplateResponse.call_args.kwargs["context"]
+        assert context["original_roles"] == set()
 
     @patch("musigree.app.fastapi_app.templates")
     @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
@@ -162,6 +184,52 @@ class TestFastAPIUI:
         context = call_args.kwargs["context"]
         assert context["title"] == "Musigree: The Beatles"
         assert "The Beatles" in context["og_title"]
+        mock_roles_json.assert_called_once_with({"Artist"})
+
+    @patch("musigree.app.fastapi_app.templates")
+    @patch("musigree.library.cache.role_cache.RoleCache.get_roles_json")
+    @patch("musigree.runtime.data_access_layer.role_entry.RoleEntry.get_multiselect_mapping")
+    @patch("musigree.runtime.runtime_database_manager.RuntimeDatabaseManager")
+    @pytest.mark.asyncio
+    async def test_route_entity_uses_defaults_when_roles_omitted(
+        self,
+        mock_db_manager: Mock,
+        mock_multiselect: Mock,
+        mock_roles_json: Mock,
+        mock_templates: Mock,
+    ) -> None:
+        """Artist and label pages select that entity's default roles."""
+        mock_multiselect.return_value = {"test": "mapping"}
+        mock_roles_json.return_value = '{"role1": "data"}'
+        mock_templates.TemplateResponse.return_value = HTMLResponse("<html></html>")
+        mock_helper = Mock()
+        mock_helper.get_network = AsyncMock(
+            return_value={"center": {"name": "Example"}, "nodes": [], "edges": []}
+        )
+        mock_db_manager.runtime_database_helper = mock_helper
+        mock_request = Mock(spec=Request)
+        mock_request.base_url = _create_mock_base_url("http://localhost:8000/")
+        mock_transaction = AsyncMock()
+        mock_transaction.__aenter__ = AsyncMock(return_value=None)
+        mock_transaction.__aexit__ = AsyncMock(return_value=None)
+        cases = (
+            (EntityType.ARTIST, set(UI_DEFAULT_ARTIST_ROLES)),
+            (EntityType.LABEL, set(UI_DEFAULT_LABEL_ROLES)),
+        )
+
+        for entity_type, expected_roles in cases:
+            mock_roles_json.reset_mock()
+            mock_helper.get_network.reset_mock()
+            with patch(
+                "musigree.app.fastapi_ui.runtime_transaction", return_value=mock_transaction
+            ):
+                await route__entity_type__entity_id(
+                    mock_request, entity_type, 123, roles=set(), year_bounds=(None, None)
+                )
+
+            mock_roles_json.assert_called_once_with(expected_roles)
+            mock_helper.get_network.assert_awaited_once()
+            assert mock_helper.get_network.await_args.kwargs["roles"] == sorted(expected_roles)
 
     def test_get_entity_type_invalid(self) -> None:
         """Test the get_entity_type dependency with invalid entity type."""

@@ -6,7 +6,10 @@ import {
     updateSelectedRoleIds,
     getSelectedRoles,
     rememberRoleNames,
+    rememberRelationships,
     replaceManagedRoleSelection,
+    resetFiltersForRandomArtist,
+    initializeStructuralRelationships,
     splitRoleTree,
 } from "../roles";
 
@@ -37,6 +40,7 @@ describe("roles.ts", () => {
 
         // Reset any module state by calling with empty array
         updateSelectedRoleIds([]);
+        rememberRelationships([]);
     });
 
     describe("convertRolesToArboristFormat", () => {
@@ -366,7 +370,7 @@ describe("roles.ts", () => {
             ]);
             expect(split.roles?.core.data.map((node) => node.text)).toEqual([
                 "Production",
-                "Relationships",
+                "Structural Relationships",
                 "Collaborated With",
                 "Compiled On",
                 "Split With",
@@ -377,7 +381,7 @@ describe("roles.ts", () => {
                 split.roles?.core.data.find(
                     (node) => node.text === "Collaborated With",
                 )?.parent,
-            ).toBe("Relationships");
+            ).toBe("Structural Relationships");
         });
 
         it("submits tree relationship names when that section is fully selected", () => {
@@ -388,8 +392,8 @@ describe("roles.ts", () => {
                 split.roles?.core.data
                     .filter(
                         (node) =>
-                            node.id === "Relationships" ||
-                            node.parent === "Relationships",
+                            node.id === "Structural Relationships" ||
+                            node.parent === "Structural Relationships",
                     )
                     .map((node) => node.id) ?? [],
             );
@@ -401,11 +405,39 @@ describe("roles.ts", () => {
                 "Split With",
                 "Other",
             ]);
-            expect(selected).not.toContain("Relationships");
+            expect(selected).not.toContain("Structural Relationships");
         });
 
         it("returns no relationships when the tree is missing", () => {
             expect(splitRoleTree(undefined)).toEqual({ relationships: [] });
+        });
+
+        it("keeps only Alias and Member Of when preparing a random artist", () => {
+            const split = splitRoleTree(structuralTree());
+            convertRolesToArboristFormat(split.roles);
+            rememberRelationships(split.relationships);
+            updateSelectedRoleIds([
+                "alias",
+                "released",
+                "sublabel",
+                "producer",
+                "Production",
+            ]);
+
+            resetFiltersForRandomArtist();
+
+            expect(getSelectedRoles()).toEqual(["Alias", "Member Of"]);
+        });
+
+        it("initializes the four relationship checkboxes from Structural Relationships", () => {
+            initializeStructuralRelationships(structuralTree());
+
+            const selected = getSelectedRoles();
+            expect(selected).toContain("Alias");
+            expect(selected).not.toContain("Member Of");
+            expect(selected).not.toContain("Released On");
+            expect(selected).not.toContain("Sublabel Of");
+            expect(selected).not.toContain("Structural Relationships");
         });
     });
 

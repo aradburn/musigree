@@ -1,12 +1,14 @@
 /** @jsxImportSource react */
 /**
  * Roles filter shown in the left sidebar.
- * Uses react-arborist for the role tree that used to live in an overlay.
+ * The heading reset clears this tree and reloads the network the same way a
+ * checkbox change does. Uses react-arborist for the role tree.
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Tree } from "react-arborist";
 import type { RowRendererProps, TreeApi } from "react-arborist";
 import {
+    RANDOM_ARTIST_FILTER_RESET_EVENT,
     convertRolesToArboristFormat,
     replaceManagedRoleSelection,
 } from "../../roles";
@@ -200,6 +202,22 @@ export const RolesFilter: React.FC<RolesFilterProps> = ({
         );
     }, [roles]);
 
+    useEffect(() => {
+        const clearRolesForRandomArtist = (): void => {
+            setSelectedIds(new Set());
+        };
+        window.addEventListener(
+            RANDOM_ARTIST_FILTER_RESET_EVENT,
+            clearRolesForRandomArtist,
+        );
+        return (): void => {
+            window.removeEventListener(
+                RANDOM_ARTIST_FILTER_RESET_EVENT,
+                clearRolesForRandomArtist,
+            );
+        };
+    }, []);
+
     const handleToggle = useCallback((): void => {
         const tree = treeRef.current;
         if (!tree) {
@@ -291,6 +309,13 @@ export const RolesFilter: React.FC<RolesFilterProps> = ({
         onSelectionChange();
     };
 
+    /** Drops every role in this tree and reloads the network, same as a checkbox change. */
+    const handleResetRoles = (): void => {
+        setSelectedIds(new Set());
+        replaceManagedRoleSelection(collectNodeIds(arboristData), []);
+        onSelectionChange();
+    };
+
     const renderCheckbox = (node: NodeData): React.ReactNode => {
         const checkboxState = getNodeCheckboxState(node);
         const isSelected = selectedIds.has(node.id);
@@ -330,84 +355,100 @@ export const RolesFilter: React.FC<RolesFilterProps> = ({
     };
 
     return (
-        <div className="roles-filter-tree">
-            {roles && arboristData.length > 0 ? (
-                <Tree<NodeData>
-                    key={treeGeneration}
-                    ref={treeRef}
-                    data={arboristData}
-                    width="100%"
-                    height={treeHeight}
-                    rowHeight={roleRowHeightPx()}
-                    padding={TREE_VERTICAL_PADDING}
-                    renderRow={RoleTreeRow}
-                    disableDrag={true}
-                    disableDrop={true}
-                    selection="none"
-                    className="roles-tree w-100"
-                    openByDefault={false}
-                    initialOpenState={initialOpenState}
-                    onToggle={handleToggle}
+        <>
+            <div className="roles-heading h6 mt-3 mb-1">
+                Roles
+                <button
+                    type="button"
+                    className="roles-reset"
+                    aria-label="Reset roles"
+                    onClick={handleResetRoles}
                 >
-                    {({ node, style, dragHandle }) => (
-                        <div
-                            className="tree-item"
-                            style={style}
-                            ref={dragHandle}
-                            title={node.data.name}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                            }}
-                        >
-                            <div className="tree-item-inner">
-                                {node.isLeaf ? (
-                                    <div className="tree-item-leaf" />
-                                ) : (
-                                    <div
-                                        className="tree-expanded-indicator text-primary-emphasis"
+                    <i
+                        className="bi bi-arrow-counterclockwise"
+                        aria-hidden="true"
+                    ></i>
+                </button>
+            </div>
+            <div className="roles-filter-tree">
+                {roles && arboristData.length > 0 ? (
+                    <Tree<NodeData>
+                        key={treeGeneration}
+                        ref={treeRef}
+                        data={arboristData}
+                        width="100%"
+                        height={treeHeight}
+                        rowHeight={roleRowHeightPx()}
+                        padding={TREE_VERTICAL_PADDING}
+                        renderRow={RoleTreeRow}
+                        disableDrag={true}
+                        disableDrop={true}
+                        selection="none"
+                        className="roles-tree w-100"
+                        openByDefault={false}
+                        initialOpenState={initialOpenState}
+                        onToggle={handleToggle}
+                    >
+                        {({ node, style, dragHandle }) => (
+                            <div
+                                className="tree-item"
+                                style={style}
+                                ref={dragHandle}
+                                title={node.data.name}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                }}
+                            >
+                                <div className="tree-item-inner">
+                                    {node.isLeaf ? (
+                                        <div className="tree-item-leaf" />
+                                    ) : (
+                                        <div
+                                            className="tree-expanded-indicator text-primary-emphasis"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                node.toggle();
+                                            }}
+                                        >
+                                            <span>
+                                                {node.isOpen ? (
+                                                    <svg
+                                                        width="10"
+                                                        height="10"
+                                                        viewBox="0 0 10 10"
+                                                    >
+                                                        <path d="M1 4L5 8L9 4" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg
+                                                        width="10"
+                                                        height="10"
+                                                        viewBox="0 0 10 10"
+                                                    >
+                                                        <path d="M4 1L8 5L4 9" />
+                                                    </svg>
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {renderCheckbox(node.data)}
+                                    <span
                                         onClick={(event) => {
                                             event.stopPropagation();
-                                            node.toggle();
+                                            if (!node.isLeaf) {
+                                                node.toggle();
+                                            }
                                         }}
                                     >
-                                        <span>
-                                            {node.isOpen ? (
-                                                <svg
-                                                    width="10"
-                                                    height="10"
-                                                    viewBox="0 0 10 10"
-                                                >
-                                                    <path d="M1 4L5 8L9 4" />
-                                                </svg>
-                                            ) : (
-                                                <svg
-                                                    width="10"
-                                                    height="10"
-                                                    viewBox="0 0 10 10"
-                                                >
-                                                    <path d="M4 1L8 5L4 9" />
-                                                </svg>
-                                            )}
-                                        </span>
-                                    </div>
-                                )}
-                                {renderCheckbox(node.data)}
-                                <span
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        if (!node.isLeaf) {
-                                            node.toggle();
-                                        }
-                                    }}
-                                >
-                                    {node.data.name}
-                                </span>
+                                        {node.data.name}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </Tree>
-            ) : null}
-        </div>
+                        )}
+                    </Tree>
+                ) : null}
+            </div>
+        </>
     );
 };
 

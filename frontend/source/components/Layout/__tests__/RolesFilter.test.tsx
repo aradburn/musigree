@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { RolesFilter } from "../RolesFilter";
-import { getSelectedRoles, updateSelectedRoleIds } from "../../../roles";
+import {
+    getSelectedRoles,
+    rememberRelationships,
+    resetFiltersForRandomArtist,
+    updateSelectedRoleIds,
+} from "../../../roles";
 import type { TreeConfig } from "../../../roles";
 
 const roles: TreeConfig = {
@@ -72,5 +77,69 @@ describe("RolesFilter", () => {
 
         expect(getSelectedRoles()).toContain("alias");
         expect(getSelectedRoles()).not.toContain("Production");
+    });
+
+    it("clears every role in the tree and notifies the parent", () => {
+        updateSelectedRoleIds(["alias"]);
+        const onSelectionChange = vi.fn();
+        render(
+            <RolesFilter roles={roles} onSelectionChange={onSelectionChange} />,
+        );
+
+        const heading = screen.getByText("Roles");
+        const reset = screen.getByRole("button", { name: "Reset roles" });
+        expect(heading).toHaveClass("h6");
+        expect(heading).toContainElement(reset);
+        expect(heading.lastElementChild).toBe(reset);
+        expect(
+            reset.querySelector("i.bi-arrow-counterclockwise"),
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText("Production"));
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+
+        fireEvent.click(reset);
+
+        expect(
+            screen.getByRole("checkbox", { name: "Production" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).not.toBeChecked();
+        expect(getSelectedRoles()).toEqual(["alias"]);
+        expect(onSelectionChange).toHaveBeenCalledTimes(1);
+    });
+
+    it("clears the role tree when a random artist is requested", () => {
+        rememberRelationships([
+            { id: "alias", text: "Alias" },
+            { id: "member", text: "Member Of" },
+            { id: "released", text: "Released On" },
+        ]);
+        updateSelectedRoleIds(["alias", "released"]);
+        const onSelectionChange = vi.fn();
+        render(
+            <RolesFilter roles={roles} onSelectionChange={onSelectionChange} />,
+        );
+
+        fireEvent.click(screen.getByText("Production"));
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+
+        act(() => {
+            resetFiltersForRandomArtist();
+        });
+
+        expect(
+            screen.getByRole("checkbox", { name: "Production" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).not.toBeChecked();
+        expect(onSelectionChange).not.toHaveBeenCalled();
+        expect(getSelectedRoles()).toEqual(["Alias", "Member Of"]);
     });
 });

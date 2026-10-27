@@ -308,6 +308,38 @@ body {
         font-weight: 700;
     }
 
+    .roles-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .roles-reset {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover {
+            color: inherit;
+            opacity: 0.75;
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.75);
+            outline-offset: 2px;
+        }
+    }
+
     .sidebar-accordion {
         --bs-accordion-bg: transparent;
         --bs-accordion-color: #{$mg-text-outer-color};

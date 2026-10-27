@@ -57,9 +57,9 @@ UI_DEFAULT_ARTIST_ROLES = [
     "Member Of",
 ]
 UI_DEFAULT_LABEL_ROLES = [
-    "Alias",
-    "Member Of",
-    "Sublabel Of",
+    # "Alias",
+    # "Member Of",
+    # "Sublabel Of",
     "Released On",
 ]
 """
@@ -97,8 +97,10 @@ async def route__index(
     """Initial JavaScript for the network graph, set to null."""
     log.debug(f"network_js: {network_js}")
 
-    roles_json = RoleCache.get_roles_json()
-    """Get all the roles JSON data from the RoleCache."""
+    # The home page has no entity, so it uses the artist role defaults.
+    selected_roles = set(get_roles_with_defaults(roles, EntityType.ARTIST))
+    roles_json = RoleCache.get_roles_json(selected_roles)
+    """Get the roles JSON with this page's selected roles."""
     roles_js = f"var dgRoles = {roles_json};\n"
     # log.debug(f"roles_js: {roles_js}")
 
@@ -223,8 +225,8 @@ async def route__entity_type__entity_id(
     """Create a JavaScript variable for the network data."""
     log.debug(f"network_js: {network_js}")
 
-    roles_json = RoleCache.get_roles_json()
-    """Get the roles JSON data from the RoleCache."""
+    roles_json = RoleCache.get_roles_json(set(roles_with_defaults))
+    """Get the roles JSON with this page's selected roles."""
     roles_js = f"var dgRoles = {roles_json};\n"
     # log.debug(f"roles_js: {roles_js}")
 
@@ -364,6 +366,12 @@ def append_filter_query(
 
 
 def get_roles_with_defaults(roles: set[str], entity_type: EntityType) -> list[str]:
+    """Return the roles for a page, filling in defaults when the URL omits them.
+
+    A ``roles`` query parameter is used as given. With no roles, ``/`` and
+    artist pages use ``UI_DEFAULT_ARTIST_ROLES``, and label pages use
+    ``UI_DEFAULT_LABEL_ROLES``.
+    """
     roles_result = roles
     if len(roles) == 0:
         if entity_type == EntityType.ARTIST:

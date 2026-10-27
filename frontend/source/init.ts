@@ -2,6 +2,7 @@ import { initRelations } from "./relations";
 import { initFSM } from "./fsm/index";
 import { DOM_IDS } from "./constants";
 import { resetNetworkForces } from "./network/forceLayout";
+import { initializeStructuralRelationships } from "./roles";
 
 declare global {
     interface Window {
@@ -29,6 +30,10 @@ export const initApp = (): void => {
         }
 
         console.log("SVG container found, initializing application...");
+
+        if (typeof window.dgRoles !== "undefined") {
+            initializeStructuralRelationships(window.dgRoles);
+        }
 
         // Initialize all required components
         initRelations();

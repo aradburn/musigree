@@ -54,8 +54,15 @@ export const STANDALONE_RELATIONSHIP_NAMES = [
     "Sublabel Of",
 ] as const;
 
-/** Remaining structural links, shown under this roles-tree section. */
-export const ROLE_TREE_RELATIONSHIPS_SECTION = "Relationships";
+/**
+ * Relationships that still apply when Random loads an artist.
+ * Released On and Sublabel Of describe labels, so they are turned off.
+ */
+export const RANDOM_ARTIST_RELATIONSHIP_NAMES = ["Alias", "Member Of"] as const;
+
+/** Tells the open filters to match {@link resetFiltersForRandomArtist}. */
+export const RANDOM_ARTIST_FILTER_RESET_EVENT =
+    "musigree:random-artist-filter-reset";
 
 const ROLE_TREE_RELATIONSHIP_ORDER = [
     "Collaborated With",
@@ -79,6 +86,9 @@ let selectedRoleIds: Set<string | number> = new Set();
 // Map of role IDs to their names for looking up text values
 const roleIdToNameMap: Map<string | number, string> = new Map();
 
+/** Ids of the relationship checkboxes, in display order. */
+const standaloneRelationshipIds: (string | number)[] = [];
+
 // Map to track parent-child relationships
 const parentToChildrenMap: Map<
     string | number,
@@ -98,6 +108,16 @@ export const convertRolesToArboristFormat = (
 
     const rootNodes: ArboristNode[] = [];
     const nodeMap = new Map<string | number, ArboristNode>();
+
+    // The roles tree rebuild drops every label. Keep the relationship
+    // checkbox names so a later random reset can still find Alias and Member Of.
+    const preservedRelationshipNames = new Map<string | number, string>();
+    for (const id of standaloneRelationshipIds) {
+        const name = roleIdToNameMap.get(id);
+        if (name !== undefined) {
+            preservedRelationshipNames.set(id, name);
+        }
+    }
 
     // Clear and rebuild the ID to name mapping
     roleIdToNameMap.clear();
@@ -163,6 +183,10 @@ export const convertRolesToArboristFormat = (
         }
     });
 
+    for (const [id, name] of preservedRelationshipNames) {
+        roleIdToNameMap.set(id, name);
+    }
+
     return rootNodes;
 };
 
@@ -184,8 +208,8 @@ const compareTreeRelationships = (left: TreeNode, right: TreeNode): number => {
 };
 
 /**
- * Pulls the primary structural links out for the checkbox group.
- * The other structural links stay in the roles tree under Relationships.
+ * Pulls Alias, Member Of, Released On, and Sublabel Of out for the checkbox
+ * group. The other structural links stay under Structural Relationships.
  */
 export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
     if (!config?.core?.data) {
@@ -195,11 +219,9 @@ export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
     const standaloneNames = new Set<string>(STANDALONE_RELATIONSHIP_NAMES);
     const standaloneByName = new Map<string, TreeNode>();
     const treeRelationships: TreeNode[] = [];
-    let categoryParent: TreeNode["parent"] = "#";
 
     for (const node of config.core.data) {
         if (isStructuralCategory(node)) {
-            categoryParent = node.parent ?? "#";
             continue;
         }
         if (node.parent !== STRUCTURAL_RELATIONSHIPS_CATEGORY) {
@@ -209,10 +231,7 @@ export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
             standaloneByName.set(node.text, node);
             continue;
         }
-        treeRelationships.push({
-            ...node,
-            parent: ROLE_TREE_RELATIONSHIPS_SECTION,
-        });
+        treeRelationships.push({ ...node });
     }
 
     treeRelationships.sort(compareTreeRelationships);
@@ -223,11 +242,7 @@ export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
             if (treeRelationships.length === 0) {
                 continue;
             }
-            roleNodes.push({
-                id: ROLE_TREE_RELATIONSHIPS_SECTION,
-                text: ROLE_TREE_RELATIONSHIPS_SECTION,
-                parent: categoryParent,
-            });
+            roleNodes.push(node);
             roleNodes.push(...treeRelationships);
             continue;
         }
@@ -255,12 +270,58 @@ export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
 };
 
 /**
+ * Seeds Alias, Member Of, Released On, and Sublabel Of from Structural
+ * Relationships in the page role tree.
+ */
+export const initializeStructuralRelationships = (
+    config?: TreeConfig,
+): void => {
+    const { relationships } = splitRoleTree(config);
+    rememberRelationships(relationships);
+    replaceManagedRoleSelection(
+        relationships.map((role) => role.id),
+        relationships
+            .filter((role) => role.state?.selected)
+            .map((role) => role.id),
+    );
+};
+
+/**
  * Records role labels without resetting names already stored for other nodes.
  */
 export const rememberRoleNames = (nodes: TreeNode[]): void => {
     for (const node of nodes) {
         roleIdToNameMap.set(node.id, node.text);
     }
+};
+
+/**
+ * Records the relationship checkbox ids used when Random resets the filters.
+ */
+export const rememberRelationships = (nodes: TreeNode[]): void => {
+    rememberRoleNames(nodes);
+    standaloneRelationshipIds.length = 0;
+    for (const node of nodes) {
+        standaloneRelationshipIds.push(node.id);
+    }
+};
+
+/**
+ * Clears the roles tree and leaves Alias and Member Of selected.
+ * Random loads an artist, so label relationships are turned off.
+ * The filter panels update from the event and do not start their own fetch.
+ */
+export const resetFiltersForRandomArtist = (): void => {
+    const artistNames = new Set<string>(RANDOM_ARTIST_RELATIONSHIP_NAMES);
+    const next = new Set<string | number>();
+    for (const id of standaloneRelationshipIds) {
+        const name = roleIdToNameMap.get(id);
+        if (name !== undefined && artistNames.has(name)) {
+            next.add(id);
+        }
+    }
+    selectedRoleIds = next;
+    window.dispatchEvent(new CustomEvent(RANDOM_ARTIST_FILTER_RESET_EVENT));
 };
 
 /**
@@ -308,10 +369,7 @@ export const getSelectedRoles = (): string[] => {
     parentToChildrenMap.forEach((children, parentId) => {
         // The tree section is a grouping label. Send its roles individually
         // so a full selection does not expand to every structural link.
-        if (
-            parentId === ROLE_TREE_RELATIONSHIPS_SECTION ||
-            parentId === STRUCTURAL_RELATIONSHIPS_CATEGORY
-        ) {
+        if (parentId === STRUCTURAL_RELATIONSHIPS_CATEGORY) {
             return;
         }
         // Check if the parent is selected and if all its children are selected
@@ -328,10 +386,7 @@ export const getSelectedRoles = (): string[] => {
 
     // Second pass: add selected roles to the result, excluding children of fully selected parents
     for (const id of selectedIds) {
-        if (
-            id === ROLE_TREE_RELATIONSHIPS_SECTION ||
-            id === STRUCTURAL_RELATIONSHIPS_CATEGORY
-        ) {
+        if (id === STRUCTURAL_RELATIONSHIPS_CATEGORY) {
             continue;
         }
         const parentId = childToParentMap.get(id);

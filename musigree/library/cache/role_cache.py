@@ -4,6 +4,7 @@ from typing import Any
 from musigree.library.fields.role_type import RoleType
 from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTree,
+    RuntimeRoleJSTreeEntry,
     RuntimeRoleJSTreeWrapper,
 )
 
@@ -61,17 +62,52 @@ class RoleCache:
         return data
 
     @staticmethod
-    def get_roles_json() -> str:
+    def get_roles_json(selected_roles: set[str] | None = None) -> str:
         """
         Retrieves a JSON representation of the roles in a tree structure.
+
+        The cached tree stays unselected. Pass ``selected_roles`` to mark those
+        role names in the JSON for this response without changing the cache.
+
+        Args:
+            selected_roles: Role names to mark selected. ``None`` keeps the
+                cached selection flags.
 
         Returns:
             str: A JSON string representing the roles in a tree structure, suitable for UI rendering.
         """
+        tree = RoleCache.role_jstree
+        if selected_roles is not None:
+            tree = _tree_with_selected_roles(tree, selected_roles)
         roles_data = RuntimeRoleJSTreeWrapper(
-            core=RoleCache.role_jstree,
+            core=tree,
             checkbox={"keep_selected_style": False},
             plugins=["checkbox"],
         )
         roles_json = roles_data.model_dump_json()
         return roles_json
+
+
+def _tree_with_selected_roles(
+    tree: RuntimeRoleJSTree,
+    selected_roles: set[str],
+) -> RuntimeRoleJSTree:
+    """Return a copy of ``tree`` with role nodes selected by name.
+
+    Only role nodes, whose ids are numeric, are matched against
+    ``selected_roles``. Category and subcategory nodes stay unselected.
+    """
+    data: list[RuntimeRoleJSTreeEntry] = []
+    for entry in tree.data:
+        is_selected = entry.id.isdecimal() and entry.text in selected_roles
+        if entry.state.selected == is_selected:
+            data.append(entry)
+            continue
+        data.append(
+            entry.model_copy(
+                update={
+                    "state": entry.state.model_copy(update={"selected": is_selected}),
+                }
+            )
+        )
+    return tree.model_copy(update={"data": data})

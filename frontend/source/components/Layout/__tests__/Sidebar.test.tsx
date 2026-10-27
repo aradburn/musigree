@@ -254,16 +254,133 @@ describe("SidebarLeft Component", () => {
             "Sublabel Of",
         ]);
         expect(
-            screen.queryByRole("checkbox", {
+            screen.getByRole("checkbox", {
                 name: "Structural Relationships",
             }),
-        ).not.toBeInTheDocument();
-        expect(
-            screen.getByRole("checkbox", { name: "Relationships" }),
         ).toBeInTheDocument();
+        expect(
+            screen.queryByRole("checkbox", { name: "Relationships" }),
+        ).not.toBeInTheDocument();
         expect(
             screen.getByRole("checkbox", { name: "Production" }),
         ).toBeInTheDocument();
+    });
+
+    it("checks the roles marked selected in the page tree", () => {
+        window.dgRoles = {
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "1",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "2",
+                        text: "Member Of",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "3",
+                        text: "Released On",
+                        parent: "Structural Relationships",
+                        state: { selected: false },
+                    },
+                    {
+                        id: "4",
+                        text: "Sublabel Of",
+                        parent: "Structural Relationships",
+                        state: { selected: false },
+                    },
+                    {
+                        id: "5",
+                        text: "Producer",
+                        parent: "Production",
+                        state: { selected: true },
+                    },
+                ],
+            },
+        };
+
+        render(<SidebarLeft />);
+        fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+        expect(screen.getByRole("checkbox", { name: "Alias" })).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Member Of" }),
+        ).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Released On" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Sublabel Of" }),
+        ).not.toBeChecked();
+
+        fireEvent.click(screen.getByText("Production"));
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+    });
+
+    it("clears selected roles and requests a new network from the roles reset", () => {
+        window.dgRoles = {
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "alias",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "producer",
+                        text: "Producer",
+                        parent: "Production",
+                        state: { selected: true },
+                    },
+                ],
+            },
+        };
+
+        render(<SidebarLeft />);
+        fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+        const reset = screen.getByRole("button", { name: "Reset roles" });
+        expect(screen.getByText("Roles")).toContainElement(reset);
+        expect(screen.getByRole("checkbox", { name: "Alias" })).toBeChecked();
+        fireEvent.click(screen.getByText("Production"));
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+
+        fireEvent.click(reset);
+
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).not.toBeChecked();
+        expect(screen.getByRole("checkbox", { name: "Alias" })).toBeChecked();
+        expect(window.dispatchEvent).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(INIT.DEBOUNCE_DELAY);
+
+        expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+        const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
+            .calls[0][0];
+        expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
     });
 
     it("requests a new network after the year range changes", () => {

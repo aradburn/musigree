@@ -24,6 +24,7 @@ import {
 import { musigreeManager, networkManager } from "../../core/singletons";
 import { RequestNetworkEvent } from "../../network/events";
 import { FSM, INIT } from "../../constants";
+import { rememberRelationships, updateSelectedRoleIds } from "../../roles";
 import * as analyticsModule from "../../analytics";
 
 // Create a type for private methods we need to spy on
@@ -516,6 +517,30 @@ describe("MusigreeFSM", () => {
                     "state-requesting-network",
                 );
                 expect(fetchAPIRandomSpy).toHaveBeenCalled();
+            });
+
+            it("fetches a random artist with only Alias and Member Of", () => {
+                rememberRelationships([
+                    { id: "alias", text: "Alias" },
+                    { id: "member", text: "Member Of" },
+                    { id: "released", text: "Released On" },
+                    { id: "sublabel", text: "Sublabel Of" },
+                ]);
+                updateSelectedRoleIds([
+                    "alias",
+                    "released",
+                    "sublabel",
+                    "producer",
+                ]);
+
+                fsm.requestRandom();
+
+                expect(vi.mocked(fetchAPIRandom).mock.calls[0]?.[0]).toEqual([
+                    "Alias",
+                    "Member Of",
+                ]);
+                rememberRelationships([]);
+                updateSelectedRoleIds([]);
             });
         });
 

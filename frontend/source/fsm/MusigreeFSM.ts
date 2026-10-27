@@ -48,8 +48,12 @@ import { RequestingRandomState } from "./states/RequestingRandomState";
 import { UninitializedState } from "./states/UninitializedState";
 import debounce from "debounce";
 import { AbstractFSM, type TransitionFunction } from "./AbstractFSM";
-import { getSelectedRoles } from "../roles";
-import { getSelectedYearBounds, getYearQuery, isFullYearTrack } from "../yearBounds";
+import { getSelectedRoles, resetFiltersForRandomArtist } from "../roles";
+import {
+    getSelectedYearBounds,
+    getYearQuery,
+    isFullYearTrack,
+} from "../yearBounds";
 
 /** Lazy-loaded analytics track; defers loading analytics until first use. */
 let trackPromise: Promise<
@@ -456,6 +460,10 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
      */
     requestRandom(): void {
         console.log("FSM requestRandom");
+
+        // Random returns an artist, so drop role filters and label relationships
+        // before the request reads the current selection.
+        resetFiltersForRandomArtist();
 
         this.transition("state-requesting-network");
 
