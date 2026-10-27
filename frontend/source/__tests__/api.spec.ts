@@ -551,6 +551,7 @@ describe("API Functions", () => {
                     {
                         key: "link-1",
                         role: "producer",
+                        years: [1970, 1979],
                         source: "artist-1",
                         target: "artist-2",
                     },
