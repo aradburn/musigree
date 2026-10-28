@@ -51,7 +51,6 @@ runtime operation.
 """
 
 import logging
-import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
@@ -110,19 +109,21 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
         log.info(f"Sqlite runtime_database path: {target_path}")
 
+        database = "file:" + quote(os.path.abspath(target_path), safe="/")
+
         if config.IS_READ_ONLY:
             # mode and immutable are SQLite URI options. SQLAlchemy only forwards
             # them when uri=true is also in the query string, and the database
             # name must be a file: URI.
-            database = "file:" + quote(os.path.abspath(target_path), safe="/")
             query = {
                 "mode": "ro",
                 "immutable": "1",
                 "uri": "true",
             }
         else:
-            database = str(target_path)
-            query = {}
+            query = {
+                "uri": "true",
+            }
 
         target_url = URL.create(SQLITE_DRIVER_NAME, database=database, query=query)
 
@@ -138,7 +139,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 "timeout": 60,
             },
             poolclass=poolclass,
-            pool_size=multiprocessing.cpu_count(),
+            pool_size=RuntimeDatabaseManager.get_concurrency_count(),
             max_overflow=0,
         )
 

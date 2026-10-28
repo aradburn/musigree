@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -206,7 +205,7 @@ class LoaderEntity(LoaderBase):
                 "OfflineDatabaseManager threading_model must be initialized"
             )
             await utils.queue_worker_functions(
-                multiprocessing.cpu_count(),
+                OfflineDatabaseManager.get_concurrency_count(),
                 worker_coroutines,
                 OfflineDatabaseManager.threading_model,
             )

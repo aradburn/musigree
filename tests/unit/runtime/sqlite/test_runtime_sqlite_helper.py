@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, SAWarning
 
 from musigree.config import SqliteReadOnlyTestConfiguration, SqliteTestConfiguration
+from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.sqlite.runtime_sqlite_helper import RuntimeSqliteHelper
 
 
@@ -22,6 +23,7 @@ class TestRuntimeSqliteHelperSetupDatabase:
 
         config = SqliteReadOnlyTestConfiguration()
         config.SQLITE_RUNTIME_DATABASE_NAME = database_path
+        RuntimeDatabaseManager.threading_model = config.THREADING_MODEL
 
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -44,11 +46,12 @@ class TestRuntimeSqliteHelperSetupDatabase:
         finally:
             await engine.dispose()
 
-    async def test_writable_url_has_no_sqlite_uri_arguments(self, tmp_path: Path) -> None:
-        """Writable mode keeps a plain filesystem path."""
+    async def test_writable_url_has_sqlite_uri_arguments(self, tmp_path: Path) -> None:
+        """Writable mode is also a URI."""
         database_path = tmp_path / "runtime.db"
         config = SqliteTestConfiguration()
         config.SQLITE_RUNTIME_DATABASE_NAME = database_path
+        RuntimeDatabaseManager.threading_model = config.THREADING_MODEL
 
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -56,7 +59,7 @@ class TestRuntimeSqliteHelperSetupDatabase:
 
         try:
             assert not any(issubclass(item.category, SAWarning) for item in caught)
-            assert engine.url.query == {}
-            assert engine.url.database == str(database_path)
+            assert engine.url.query["uri"] == "true"
+            assert engine.url.database == "file:" + str(database_path)
         finally:
             await engine.dispose()

@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import shutil
 from pathlib import Path
 
@@ -133,14 +132,6 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # connect_args={
                     #     "connect_timeout": 10,
                     # },
-                    # isolation_level="REPEATABLE READ",
-                    # isolation_level="SERIALIZABLE",
-                    # execution_options={
-                    #     # "isolation_level": "REPEATABLE READ",
-                    #     "statement_timeout": 20000,
-                    #     "lock_timeout": 10000,
-                    #     "idle_in_transaction_session_timeout": 30000,
-                    # },
                     # poolclass=NullPool,
                     # echo = True,
                     # echo_pool = "debug",
@@ -166,25 +157,15 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # poolclass=NullPool,
                     # poolclass=StaticPool,
                     poolclass=AsyncAdaptedQueuePool,
-                    # pool_size=OfflineDatabaseManager.get_concurrency_count() * 2,
                     pool_timeout=30,
                     pool_recycle=1,
                     pool_pre_ping=True,
-                    pool_size=multiprocessing.cpu_count(),
-                    # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+                    pool_size=OfflineDatabaseManager.get_concurrency_count(),
                     max_overflow=0,
                     # echo_pool=True,
                     connect_args={
                         "connect_timeout": 100000,
                     },
-                    # isolation_level="REPEATABLE READ",
-                    # isolation_level="SERIALIZABLE",
-                    # execution_options={
-                    #     # "isolation_level": "REPEATABLE READ",
-                    #     "statement_timeout": 20000,
-                    #     "lock_timeout": 10000,
-                    #     "idle_in_transaction_session_timeout": 30000,
-                    # },
                 )
 
         return engine
