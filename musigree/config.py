@@ -128,7 +128,7 @@ class PostgresDevelopmentConfiguration(Configuration):
     POSTGRES_DATABASE_PORT: int = 5432
     POSTGRES_OFFLINE_DATABASE_NAME: str = "musigree_dev"
     REDIS_USERNAME: str = ""
-    REDIS_PASSWORD: str = ""
+    REDIS_PASSWORD: str = "redis_dev"
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
@@ -213,7 +213,7 @@ class SqliteDevelopmentConfiguration(Configuration):
 
     # Redis cache settings
     REDIS_USERNAME: str = ""
-    REDIS_PASSWORD: str = ""
+    REDIS_PASSWORD: str = "redis_dev"
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
