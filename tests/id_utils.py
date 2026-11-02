@@ -3,8 +3,10 @@ from pathlib import Path
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_entity import ParserEntity
+from musigree.offline.loader.parser_master import ParserMaster
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.offline_domain.entity import Entity
+from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_domain.release import Release
 
 
@@ -32,3 +34,14 @@ def get_test_release_by_id(discogs_data_directory: Path, release_id: int) -> Rel
         if release.release_id == release_id:
             break
     return release
+
+
+def get_test_master_by_id(discogs_data_directory: Path, master_id: int) -> Master:
+    iterator = LoaderUtils.get_iterator(discogs_data_directory, "master", "testinsert")
+
+    while True:
+        element = next(iterator)
+        master = ParserMaster().from_element(element)
+        if master.master_id == master_id:
+            break
+    return master
