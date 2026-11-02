@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = "==3.14.7"
 
 [[package]]
@@ -790,7 +790,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/cb/d0/7555686ae7ff57312
 
 [[package]]
 name = "musigree"
-version = "1.0.90"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
