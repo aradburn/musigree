@@ -122,7 +122,7 @@ USER nonroot
 EXPOSE 5000
 
 # Health check for container orchestration
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=120s --retries=3 \
     CMD ["python", "health.py"]
 
 # Run the application with gunicorn
