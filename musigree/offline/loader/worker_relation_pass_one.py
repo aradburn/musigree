@@ -55,10 +55,12 @@ from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.data_access_layer.offline_relation_data_access import (
     OfflineRelationDataAccess,
 )
+from musigree.offline.offline_database.master_repository import MasterRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_domain.relation import RelationUncommitted
 from musigree.offline.offline_domain.release import Release
 
@@ -176,6 +178,8 @@ async def process_release(release_id: int) -> None:
     """Instance of ReleaseRepository for database operations on releases."""
     relation_repository = RelationRepository()
     """Instance of RelationRepository for database operations on relations."""
+    master_repository = MasterRepository()
+    """Instance of MasterRepository for database operations on master records."""
 
     release: Release | None = None
     """Initialize release variable."""
@@ -184,24 +188,38 @@ async def process_release(release_id: int) -> None:
         """Attempt to process the release."""
         release = await release_repository.get_by_id(release_id)
         """Retrieve the release."""
-        if release is not None:
-            relations = OfflineRelationDataAccess.from_release(release)
-        """Extract relations from the release."""
     except NotFoundError:
         """Handle the case where the release is not found."""
         log.debug(f"process_relation_pass_one_worker release_id not found: {release_id}")
     except DatabaseError:
         """Handle database errors."""
-        log.error("Error in process_relation_pass_one_worker")
+        log.error("Error in process_relation_pass_one_worker release")
         raise
 
-    if len(relations) > 0 and release is not None:
-        """If relations were found and release is valid."""
-        await create_relation_bulk(
-            relation_repository,
-            relations,
-        )
-        """Create the relations in bulk."""
+    master: Master | None = None
+
+    if release is not None and release.master_id is not None and release.master_id > 0:
+        try:
+            master = await master_repository.get_by_id(release.master_id)
+        except NotFoundError:
+            """Handle the case where the release is not found."""
+            log.debug(f"process_relation_pass_one_worker master_id not found: {release.master_id}")
+        except DatabaseError:
+            """Handle database errors."""
+            log.error("Error in process_relation_pass_one_worker master")
+            raise
+
+    if release is not None:
+        relations = OfflineRelationDataAccess.from_release(release, master)
+        """Extract relations from the release."""
+
+        if len(relations) > 0:
+            """If relations were found and release is valid."""
+            await create_relation_bulk(
+                relation_repository,
+                relations,
+            )
+            """Create the relations in bulk."""
 
 
 def process_relation_pass_one_worker(

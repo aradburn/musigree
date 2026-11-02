@@ -29,12 +29,14 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        assert release.master_id is not None
+        master = id_utils.get_test_master_by_id(discogs_data_directory, release.master_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
             await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = OfflineRelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release, master)
 
         # THEN
         expected = [
@@ -290,12 +292,14 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release_id = 1700
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        assert release.master_id is not None
+        master = id_utils.get_test_master_by_id(discogs_data_directory, release.master_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
             await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = OfflineRelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release, master)
 
         # THEN
         expected = [

@@ -36,6 +36,7 @@ from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
 from musigree.offline.offline_database.relation_repository import RelationRepository
+from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_domain.relation import Relation, RelationUncommitted
 from musigree.offline.offline_domain.release import Release
 
@@ -55,7 +56,7 @@ class OfflineRelationDataAccess:
     """
 
     @classmethod
-    def from_release(cls, release: Release) -> list[RelationUncommitted]:
+    def from_release(cls, release: Release, master: Master | None) -> list[RelationUncommitted]:
         """
         Extracts relations from a `Release` object.
 
@@ -67,6 +68,7 @@ class OfflineRelationDataAccess:
 
         Args:
             release (Release): The release object to extract relations from.
+            master (Master): The release's master record.
 
         Returns:
             list[RelationUncommitted]: A list of uncommitted relations.
@@ -163,7 +165,7 @@ class OfflineRelationDataAccess:
         triples_list = list(triples)
         """Sort the triples for consistency."""
         # log.debug(f"      triples: {triples}")
-        relation_dicts = cls.from_triples(triples_list, release=release)
+        relation_dicts = cls.from_triples(triples_list, release=release, master=master)
         """Convert the triples to a list of relations."""
         # log.debug(f"      relations: {relations}")
         relations = RelationUncommitted.from_dicts(relation_dicts)
@@ -249,7 +251,10 @@ class OfflineRelationDataAccess:
 
     @classmethod
     def from_triples(
-        cls, triples: list[tuple[int, str, int]], release: Release | None = None
+        cls,
+        triples: list[tuple[int, str, int]],
+        release: Release | None = None,
+        master: Master | None = None,
     ) -> list[dict[str, Any]]:
         """
         Converts a list of triples to a list of relations.
@@ -260,6 +265,7 @@ class OfflineRelationDataAccess:
         Args:
             triples: A set of triples.
             release: The release object (optional).
+            master: The master object (optional).
 
         Returns:
             list[dict[str, Any]]: A list of relation dictionaries.
@@ -278,7 +284,11 @@ class OfflineRelationDataAccess:
                 if release.release_date is not None:
                     relation["year"] = release.release_date.year
                 else:
-                    relation["year"] = None
+                    if master is not None:
+                        # Use the year from the master record
+                        relation["year"] = master.year
+                    else:
+                        relation["year"] = None
             relations.append(relation)
         return relations
 
