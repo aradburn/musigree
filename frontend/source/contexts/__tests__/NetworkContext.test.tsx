@@ -35,6 +35,7 @@ describe("NetworkContext", () => {
         mockForceManyBody = vi.fn().mockReturnValue({
             strength: vi.fn().mockReturnThis(),
             distanceMax: vi.fn().mockReturnThis(),
+            distanceMin: vi.fn().mockReturnThis(),
             theta: vi.fn().mockReturnThis(),
         });
 

@@ -1,21 +1,21 @@
 /** @jsxImportSource react */
+import type {ReactNode} from "react";
 import React, {
-    useReducer,
-    useEffect,
     useCallback,
+    useEffect,
     useMemo,
+    useReducer,
     useRef,
 } from "react";
-import type { ReactNode } from "react";
-import { networkManager, musigreeManager } from "../core/singletons";
-import type { SimNode, SimLink } from "../network/data";
-import { NodeType } from "../network/data";
-import { FORCE } from "../constants";
+import {musigreeManager, networkManager} from "../core/singletons";
+import type {SimLink, SimNode} from "../network/data";
+import {NodeType} from "../network/data";
+import {FORCE} from "../constants";
 import * as d3 from "d3";
-import { clamp } from "../utils";
+import {clamp} from "../utils";
 import {
-    NetworkContext,
     initialState,
+    NetworkContext,
     networkReducer,
 } from "./networkContextInstance";
 
@@ -25,8 +25,8 @@ interface NetworkProviderProps {
 }
 
 export const NetworkProvider = ({
-    children,
-}: NetworkProviderProps): React.ReactElement => {
+                                    children,
+                                }: NetworkProviderProps): React.ReactElement => {
     const [state, dispatch] = useReducer(networkReducer, initialState);
 
     // Create a ref to always track the latest state
@@ -58,6 +58,7 @@ export const NetworkProvider = ({
                 .forceManyBody<SimNode>()
                 .strength(calculateNodeStrength)
                 .distanceMax(FORCE.DISTANCE.MAX)
+                .distanceMin(10)
                 .theta(FORCE.SIMULATION.THETA),
         );
 
@@ -66,8 +67,8 @@ export const NetworkProvider = ({
             const baseStrength = d.isIntermediate
                 ? FORCE.NODE.STRENGTH_INTERMEDIATE
                 : d.cluster
-                  ? FORCE.NODE.STRENGTH_CLUSTER
-                  : FORCE.NODE.STRENGTH;
+                    ? FORCE.NODE.STRENGTH_CLUSTER
+                    : FORCE.NODE.STRENGTH;
 
             const isLevelOne = d.distance == 1;
             const levelOneBoost = isLevelOne
@@ -80,11 +81,11 @@ export const NetworkProvider = ({
             const strength =
                 baseStrength * nodeStrengthMultiplier -
                 d.radius *
-                    d.radius *
-                    d.radius *
-                    intermediateMultiplier *
-                    typeMultiplier *
-                    nodeStrengthMultiplier -
+                d.radius *
+                d.radius *
+                intermediateMultiplier *
+                typeMultiplier *
+                nodeStrengthMultiplier -
                 levelOneBoost;
             //             console.log("setupChargeForce radius:", d.radius);
             //             console.log("setupChargeForce strength:", strength);
@@ -185,17 +186,17 @@ export const NetworkProvider = ({
                 musigreeManager.svgDimensions[0] >=
                 musigreeManager.svgDimensions[1]
                     ? Math.hypot(
-                          d.x - musigreeManager.svgDimensions[0] / 2.0,
-                          (d.y - musigreeManager.svgDimensions[1] / 2.0) *
-                              xyScale *
-                              xyScale,
-                      )
+                        d.x - musigreeManager.svgDimensions[0] / 2.0,
+                        (d.y - musigreeManager.svgDimensions[1] / 2.0) *
+                        xyScale *
+                        xyScale,
+                    )
                     : Math.hypot(
-                          (d.x - musigreeManager.svgDimensions[0] / 2.0) *
-                              xyScale *
-                              xyScale,
-                          d.y - musigreeManager.svgDimensions[1] / 2.0,
-                      );
+                        (d.x - musigreeManager.svgDimensions[0] / 2.0) *
+                        xyScale *
+                        xyScale,
+                        d.y - musigreeManager.svgDimensions[1] / 2.0,
+                    );
             const scaledRadialDistance = (maxDist - radialDistance) / maxDist;
             //             var radialDistance =
             //                 (maxDimension -
@@ -205,7 +206,7 @@ export const NetworkProvider = ({
             //                     )) /
             //                 maxDimension;
             const result =
-                scaledRadialDistance * scaling * gravStrengthMultiplier * 0.5;
+                scaledRadialDistance * scaling * gravStrengthMultiplier * 1.0;
             // console.log(d.x, d.y);
             // console.log(result);
             return result;
@@ -258,7 +259,7 @@ export const NetworkProvider = ({
     useEffect(() => {
         const handleSetForces = (): void => {
             console.log("Received set forces event");
-            dispatch({ type: "SET_FORCES" });
+            dispatch({type: "SET_FORCES"});
             // Use the ref to get current state values
             const currentState = stateRef.current;
             setupChargeForce(currentState.nodeStrength);
@@ -270,7 +271,7 @@ export const NetworkProvider = ({
 
         const handleResetForces = (): void => {
             console.log("Received reset forces event");
-            dispatch({ type: "RESET_FORCES" });
+            dispatch({type: "RESET_FORCES"});
             setupChargeForce(initialState.nodeStrength);
             setupLinkForce(initialState.linkStrength);
             setupGravityForce(initialState.gravityStrength);
@@ -289,7 +290,7 @@ export const NetworkProvider = ({
 
     // Define setForces and resetForces as separate callbacks with proper dependencies
     const setForces = useCallback((): void => {
-        dispatch({ type: "SET_FORCES" });
+        dispatch({type: "SET_FORCES"});
         // Use the ref to get current state values
         const currentState = stateRef.current;
         setupChargeForce(currentState.nodeStrength);
@@ -298,7 +299,7 @@ export const NetworkProvider = ({
     }, [dispatch, setupChargeForce, setupLinkForce, setupGravityForce]);
 
     const resetForces = useCallback((): void => {
-        dispatch({ type: "RESET_FORCES" });
+        dispatch({type: "RESET_FORCES"});
         setupChargeForce(initialState.nodeStrength);
         setupLinkForce(initialState.linkStrength);
         setupGravityForce(initialState.gravityStrength);

@@ -127,6 +127,52 @@ describe("Network Data Processing", () => {
             expect(splineLinks.length).toBeGreaterThan(0);
         });
 
+        it("places nodes from a generator seeded by the center key", () => {
+            networkManager.newNodeCoords = [400, 300];
+
+            const first = convertNetworkDataToSimData(networkData);
+            const second = convertNetworkDataToSimData(networkData);
+            const firstNode = first.nodeMap.get("node1");
+            const repeatedNode = second.nodeMap.get("node1");
+            const otherNode = first.nodeMap.get("node2");
+
+            expect(firstNode.x).toBe(repeatedNode.x);
+            expect(firstNode.y).toBe(repeatedNode.y);
+            expect([firstNode.x, firstNode.y]).not.toEqual([
+                otherNode.x,
+                otherNode.y,
+            ]);
+            expect(firstNode.x).toBeGreaterThanOrEqual(200);
+            expect(firstNode.x).toBeLessThan(600);
+            expect(firstNode.y).toBeGreaterThanOrEqual(100);
+            expect(firstNode.y).toBeLessThan(500);
+            expect(otherNode.x).toBeGreaterThanOrEqual(200);
+            expect(otherNode.x).toBeLessThan(600);
+            expect(otherNode.y).toBeGreaterThanOrEqual(100);
+            expect(otherNode.y).toBeLessThan(500);
+
+            networkManager.newNodeCoords = [0, 0];
+        });
+
+        it("changes the arrangement when the center key changes", () => {
+            networkManager.newNodeCoords = [0, 0];
+            const centeredOnNode1 = convertNetworkDataToSimData(networkData);
+            const centeredOnNode2 = convertNetworkDataToSimData(
+                processAPINetworkDataResponse({
+                    ...mockAPIResponse,
+                    center: { key: "node2", name: "Label 1" },
+                }),
+            );
+
+            expect([
+                centeredOnNode1.nodeMap.get("node1").x,
+                centeredOnNode1.nodeMap.get("node1").y,
+            ]).not.toEqual([
+                centeredOnNode2.nodeMap.get("node1").x,
+                centeredOnNode2.nodeMap.get("node1").y,
+            ]);
+        });
+
         it("should handle Alias links differently", () => {
             const aliasResponse = {
                 ...mockAPIResponse,

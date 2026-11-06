@@ -145,9 +145,11 @@ class RedisCache(BaseCache):
         try:
             if username is not None and password is not None:
                 redis_url = f"redis://{username}:{password}@{host}:{port}/{db}"
+                redacted_url = redis_url.replace(password, "**********")
+                log.info(f"Redis server: {redacted_url}")
             else:
                 redis_url = f"redis://{host}:{port}/{db}"
-            log.info(f"Redis server: {redis_url}")
+                log.info(f"Redis server: {redis_url}")
             # redis-py 8 defaults to RESP3 on the wire; legacy response shapes keep
             # get/set/etc. compatible with existing callers.
             pool = aioredis.ConnectionPool.from_url(redis_url)

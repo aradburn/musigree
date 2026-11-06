@@ -123,13 +123,19 @@ const translate = (d: SimNode): string => `translate(${d.x},${d.y})`;
  * Optimized to reduce update frequency with throttling
  * @param {d3.Simulation<SimNode, undefined>} e - The tick event object
  */
-export const onTick = (_e: d3.Simulation<SimNode, undefined>): void => {
+export const onTick = (
+    _e: d3.Simulation<SimNode, undefined>,
+    renderEveryStep = false,
+): void => {
     networkManager.tick += 1;
 
     // Throttle updates to reduce CPU usage
-    // Still process every tick for physics but only update the DOM periodically
-    const shouldUpdateDOM = networkManager.tick % TICK_THROTTLE === 0;
-    const shouldUpdateHulls = networkManager.tick % HULL_THROTTLE === 0;
+    // Still process every tick for physics but only update the DOM periodically.
+    // Slow playback draws every step so the opening movement stays visible.
+    const shouldUpdateDOM =
+        renderEveryStep || networkManager.tick % TICK_THROTTLE === 0;
+    const shouldUpdateHulls =
+        renderEveryStep || networkManager.tick % HULL_THROTTLE === 0;
 
     if (!shouldUpdateDOM && !shouldUpdateHulls) {
         return;
