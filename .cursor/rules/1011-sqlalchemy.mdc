@@ -262,8 +262,5 @@ alembic upgrade head
 
 Leverage Python's `typing` and SQLAlchemy's `Mapped` for comprehensive type checking with tools like Mypy or Ruff. This catches schema mismatches and API misuses early.
 
-```python
-# mypy.ini or pyproject.toml configuration for mypy
-[mypy]
-plugins = sqlalchemy.ext.mypy.plugin
-```
+SQLAlchemy 2.1 types `Mapped` columns and `select()` natively. Do not enable
+`sqlalchemy.ext.mypy.plugin`; that module was removed.
