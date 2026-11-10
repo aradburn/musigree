@@ -146,7 +146,7 @@ async def route__entity_type__entity_id(
     entity_type: EntityTypeDep,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year_bounds: tuple[int | None, int | None] = (None, None),
+    year_bounds: YearBoundsDep,
     on_mobile: OnMobileQuery = False,
 ) -> HTMLResponse:
     """
@@ -308,7 +308,12 @@ async def route__artist__entity_id(
         UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
-        request, EntityType.ARTIST, entity_id, roles, year_bounds, on_mobile
+        request,
+        EntityType.ARTIST,
+        entity_id,
+        roles,
+        year_bounds,
+        on_mobile,
     )
 
 
@@ -342,7 +347,12 @@ async def route__label__entity_id(
         UnprocessableError: If no network data is found for the given entity.
     """
     return await route__entity_type__entity_id(
-        request, EntityType.LABEL, entity_id, roles, year_bounds, on_mobile
+        request,
+        EntityType.LABEL,
+        entity_id,
+        roles,
+        year_bounds,
+        on_mobile,
     )
 
 
