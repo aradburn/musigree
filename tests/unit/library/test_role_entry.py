@@ -6,7 +6,10 @@ from musigree.runtime.data_access_layer.role_entry import RoleEntry
 class TestRoleEntry:
     def test_role_entry_from_element_1(self) -> None:
         element = ElementTree.fromstring("<test></test>")
-        element.text = "Shekere [Xequere, Original Musician], Guiro [Original Musician], Claves [Original Musician]"
+        element.text = (
+            "Shekere [Xequere, Original Musician], Guiro [Original Musician], Claves [Original "
+            "Musician]"
+        )
         roles = RoleEntry.from_element(element)
         assert roles == [
             RoleEntry(name="Shekere", detail="Xequere, Original Musician"),

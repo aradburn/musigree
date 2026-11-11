@@ -1,11 +1,8 @@
 import logging
-from collections.abc import Callable
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE
-from musigree.library.fields.entity_type import EntityType
 from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
@@ -29,7 +26,13 @@ from musigree.offline.offline_database.release_repository import ReleaseReposito
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.token import Token
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from musigree.library.fields.entity_type import EntityType
+    from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +122,7 @@ class LoaderEntity(LoaderBase):
         await cls.loader_start_workers(process_entity_pass_four_worker)
 
     @classmethod
-    async def loader_start_workers(cls, worker_function: Callable) -> None:
+    async def loader_start_workers(cls, worker_function: Callable[[list[int], int, int], None]) -> None:
         async with offline_transaction():
             entity_repository = EntityRepository()
             total_count = await entity_repository.count()
@@ -152,9 +155,7 @@ class LoaderEntity(LoaderBase):
 
         async with offline_transaction():
             entity_repository = EntityRepository()
-            text_search_index = await OfflineEntityDataAccess.create_text_search_index(
-                entity_repository
-            )
+            text_search_index = await OfflineEntityDataAccess.create_text_search_index(entity_repository)
         return text_search_index
 
     @classmethod

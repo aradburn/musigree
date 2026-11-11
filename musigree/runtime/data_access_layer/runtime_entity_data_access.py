@@ -1,5 +1,5 @@
 import logging
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import IntegrityError
 
@@ -9,14 +9,16 @@ from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.offline_domain.entity import Entity
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, to_runtime_entity_dict
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
-from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.entity import Entity
+    from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
 
 log = logging.getLogger(__name__)
 
@@ -35,17 +37,17 @@ class RuntimeEntityDataAccess:
         for role in roles:
             if role == "Alias":
                 if "aliases" in entity.entities:
-                    count += len(cast(dict, entity.entities["aliases"]))
+                    count += len(entity.entities["aliases"])
             elif role == "Member Of":
                 if "groups" in entity.entities:
-                    count += len(cast(dict, entity.entities["groups"]))
+                    count += len(entity.entities["groups"])
                 if "members" in entity.entities:
-                    count += len(cast(dict, entity.entities["members"]))
+                    count += len(entity.entities["members"])
             elif role == "Sublabel Of":
                 if "parent_label" in entity.entities:
-                    count += len(cast(dict, entity.entities["parent_label"]))
+                    count += len(entity.entities["parent_label"])
                 if "sublabels" in entity.entities:
-                    count += len(cast(dict, entity.entities["sublabels"]))
+                    count += len(entity.entities["sublabels"])
             else:
                 count += relation_counts.get(role, 0)
         # log.debug(
@@ -54,9 +56,7 @@ class RuntimeEntityDataAccess:
         return count
 
     @staticmethod
-    def structural_roles_to_relations(
-        entity: RuntimeEntity, roles: list[str]
-    ) -> dict[str, RuntimeRelationResult]:
+    def structural_roles_to_relations(entity: RuntimeEntity, roles: list[str]) -> dict[str, RuntimeRelationResult]:
         _debug("            structural_roles_to_relations id       : %s", entity.id)
         _debug("            structural_roles_to_relations entity_id: %s", entity.entity_id)
         _debug("            structural_roles_to_relations roles    : %s", roles)
@@ -183,7 +183,8 @@ class RuntimeEntityDataAccess:
         queries the runtime_database and updates the cache.
 
         Args:
-            entity_repository (RuntimeEntityRepository): The repository for entity runtime_database operations.
+            entity_repository (RuntimeEntityRepository): The repository for entity runtime_database
+            operations.
             entity_type (EntityType): The type of the entity (e.g., ARTIST, LABEL).
             entity_name (str): The name of the entity.
 
@@ -208,30 +209,22 @@ class RuntimeEntityDataAccess:
         if id_ is None:
             try:
                 # Get the internal id from the db.
-                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
+                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(entity_type, entity_name)
 
                 # Cache the internal id, not entity_id
                 await cache.set(entity_key_str, str(internal_id))
                 id_ = internal_id
             except IntegrityError:
                 # Handle potential runtime_database errors.
-                log.warning(
-                    f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}"
-                )
+                log.warning(f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}")
                 await entity_repository.rollback()
             except DatabaseError:
                 # Handle potential runtime_database errors.
-                log.warning(
-                    f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}"
-                )
+                log.warning(f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}")
                 await entity_repository.rollback()
             except NotFoundError:
                 if LOGGING_TRACE:
-                    log.debug(
-                        f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
-                    )
+                    log.debug(f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}")
                 id_ = None
                 # Mark the cache entry as null.
                 await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
@@ -241,9 +234,7 @@ class RuntimeEntityDataAccess:
         return int(id_)
 
     @staticmethod
-    async def get_entity_name_by_id(
-        entity_repository: RuntimeEntityRepository, id_: int
-    ) -> str | None:
+    async def get_entity_name_by_id(entity_repository: RuntimeEntityRepository, id_: int) -> str | None:
         cache = CacheManager.get_cache()
 
         # Create the cache key.
@@ -308,9 +299,7 @@ class RuntimeEntityDataAccess:
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             try:
-                await RuntimeDatabaseManager.runtime_database_helper.get_entity_count(
-                    entity_repository
-                )
+                await RuntimeDatabaseManager.runtime_database_helper.get_entity_count(entity_repository)
             except Exception:
                 log.exception("Error in initialising API for /random")
                 raise DatabaseError(message="API error") from None

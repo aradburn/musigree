@@ -7,8 +7,7 @@ It tests role loading, tree building, and cache management functionality.
 """
 
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from musigree.library.fields.role_type import RoleType
@@ -20,6 +19,9 @@ from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTreeEntry,
     RuntimeRoleJSTreeState,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class TestBuildRoleTree:
@@ -450,12 +452,12 @@ class TestLoadAllRolesIntoCache:
         mock_repository_class.return_value = mock_repository
 
         # Setup cache mocks with existing data - create custom mock dicts
-        class MockDict(dict):
+        class MockDict(dict[Any, Any]):
             def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.clear = MagicMock(return_value=None)  # type: ignore
 
-        class MockSet(set):
+        class MockSet(set[Any]):
             def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.clear = MagicMock(return_value=None)  # type: ignore

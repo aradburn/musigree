@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import pytest
@@ -11,6 +11,9 @@ from musigree.runtime.runtime_database.runtime_genre_repository import RuntimeGe
 from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 from musigree.runtime.runtime_database.runtime_session import RuntimeSession
 from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker

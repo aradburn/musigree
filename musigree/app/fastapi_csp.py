@@ -2,21 +2,26 @@ from __future__ import annotations
 
 import logging
 import secrets
-import sys
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
-
 from musigree.app.fastapi_middleware import add_app_middleware
-from musigree.config import Configuration
 from musigree.constants import AnalyticsType, CSPSetting
 
 if TYPE_CHECKING:
     # noinspection protected-member
+    from fastapi import FastAPI
     from Secweb._types import Content_Security_Policy_Options
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+    from musigree.config import Configuration
 
 log = logging.getLogger(__name__)
+
+
+def _configured_csp_setting(setting: CSPSetting) -> CSPSetting:
+    """Return the active CSP mode without narrowing it to one enum member."""
+    return setting
+
 
 # 128 bits, the minimum recommended for a CSP nonce.
 _CSP_NONCE_BYTES = 16
@@ -161,10 +166,7 @@ def render_content_security_policy(
     nonce_source = f"'nonce-{nonce}'"
     parts: list[str] = []
     for directive, values in options.items():
-        if isinstance(values, list):
-            sources = [str(value) for value in values]
-        else:
-            sources = [str(values)]
+        sources = [str(value) for value in values] if isinstance(values, list) else [str(values)]
         if directive in _NONCE_DIRECTIVES:
             sources.append(nonce_source)
         if sources:
@@ -185,9 +187,7 @@ class ContentSecurityPolicyMiddleware:
     ) -> None:
         self.app = app
         self.options = options
-        self._header_name = (
-            b"Content-Security-Policy-Report-Only" if report_only else b"Content-Security-Policy"
-        )
+        self._header_name = b"Content-Security-Policy-Report-Only" if report_only else b"Content-Security-Policy"
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -226,24 +226,19 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
             analytics_script_url = "https://umami.musigree.com "
             analytics_api_url = "https://umami.musigree.com "
         case AnalyticsType.SWETRIX:
-            analytics_script_url = (
-                "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
-            )
+            analytics_script_url = "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
             analytics_api_url = "https://swetrix-api.musigree.com/ "
         case AnalyticsType.OPENPANEL:
             analytics_script_url = "https://openpanel.dev/op1.js "
             analytics_api_url = "https://opapi.musigree.com/ "
 
     is_report_only = False
-    content_security_policy_options: Content_Security_Policy_Options = (
-        get_content_security_policy_production(
-            analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
-        )
+    content_security_policy_options: Content_Security_Policy_Options = get_content_security_policy_production(
+        analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
     )
 
     if config.PRODUCTION:
-        production_csp_setting = CSPSetting.ENFORCE_CSP
-        # noinspection PyUnreachableCode
+        production_csp_setting = _configured_csp_setting(CSPSetting.ENFORCE_CSP)
         match production_csp_setting:
             case CSPSetting.REPORT_ONLY:
                 log.info("CSP Report Only")
@@ -263,14 +258,9 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
                 content_security_policy_options = get_content_security_policy_production(
                     analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
                 )
-            case _:
-                content_security_policy_options = get_content_security_policy_report_only()
-                log.error("CSP Production Security Headers Not Set")
-                sys.exit("CSP Production Security Headers Not Set")
 
     else:
-        development_csp_setting = CSPSetting.ENFORCE_CSP
-        # noinspection PyUnreachableCode
+        development_csp_setting = _configured_csp_setting(CSPSetting.ENFORCE_CSP)
         match development_csp_setting:
             case CSPSetting.REPORT_ONLY:
                 log.info("CSP Report Only")
@@ -289,10 +279,6 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
                 content_security_policy_options = get_content_security_policy_development(
                     analytics_script_url=analytics_script_url, analytics_api_url=analytics_api_url
                 )
-            case _:
-                content_security_policy_options = get_content_security_policy_report_only()
-                log.error("CSP Development Security Headers Not Set")
-                sys.exit("CSP Development Security Headers Not Set")
 
     # Secweb 2.0 requires a reporting endpoint when CSP is report-only.
     if (
@@ -312,6 +298,4 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
         report_only=is_report_only,
     )
 
-    log.info(
-        f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment"
-    )
+    log.info(f"Security middleware configured for {'production' if config.PRODUCTION else 'development'} environment")

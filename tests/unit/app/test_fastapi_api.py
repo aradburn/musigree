@@ -2,13 +2,12 @@
 Unit tests for musigree.app.fastapi_api module.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from musigree.app.fastapi_api import network_cache_id, router
@@ -22,6 +21,9 @@ from musigree.exceptions import (
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
+
+if TYPE_CHECKING:
+    from starlette.requests import Request
 
 
 def _async_cache_mock() -> MagicMock:
@@ -351,7 +353,8 @@ class TestFastAPIRoutes:
             # Verify that get_network was called with roles parameter
             mock_db_helper.get_network.assert_called_once()
             call_args = mock_db_helper.get_network.call_args
-            # Check that roles are passed - they will be the default roles since the test roles aren't in the cache
+            # Check that roles are passed - they will be the default roles since the test roles
+            # aren't in the cache
             assert "roles" in call_args[1]
             # Invalid role names yield an empty set, so artist defaults are applied
             assert call_args[1]["roles"] == ["Alias", "Member Of"]
@@ -618,7 +621,8 @@ class TestFastAPIRoutes:
             mock_context_manager.__aexit__.return_value = None
             mock_runtime_transaction.return_value = mock_context_manager
 
-            # Act & Assert - The unhandled exception in the search endpoint will cause the test client to raise it
+            # Act & Assert - The unhandled exception in the search endpoint will cause the test
+            # client to raise it
             with pytest.raises(Exception, match="Search index error"):
                 client.get("/api/search/test")
 
@@ -794,7 +798,8 @@ class TestFastAPIRoutes:
         self,
         client: TestClient,
     ) -> None:
-        """Test entity details with cache hit - should return cached result without calling repository."""
+        """Test entity details with cache hit - should return cached result without calling
+        repository."""
         with (
             patch(
                 "musigree.library.cache.cache_manager.CacheManager.get_cache"
@@ -852,7 +857,8 @@ class TestFastAPIRoutes:
         self,
         client: TestClient,
     ) -> None:
-        """Test entity details with cache miss - should fetch from repository and cache the result."""
+        """Test entity details with cache miss - should fetch from repository and cache the
+        result."""
         with (
             patch(
                 "musigree.library.cache.cache_manager.CacheManager.get_cache"
@@ -996,7 +1002,8 @@ class TestFastAPIRoutes:
             # Configure the mock to return None (entity not found)
             mock_entity_repo.get_by_entity_id_and_entity_type = AsyncMock(return_value=None)
 
-            # Act & Assert - entity not found causes AttributeError because the endpoint doesn't handle None
+            # Act & Assert - entity not found causes AttributeError because the endpoint doesn't
+            # handle None
             with pytest.raises(
                 AttributeError, match="'NoneType' object has no attribute 'entity_id'"
             ):
@@ -1065,7 +1072,8 @@ class TestFastAPIRoutes:
         self,
         client: TestClient,
     ) -> None:
-        """Test entity relations with cache hit - should return cached result without calling database."""
+        """Test entity relations with cache hit - should return cached result without calling
+        database."""
         with (
             patch(
                 "musigree.library.cache.cache_manager.CacheManager.get_cache"
@@ -1113,7 +1121,8 @@ class TestFastAPIRoutes:
         self,
         client: TestClient,
     ) -> None:
-        """Test entity relations with cache miss - should fetch from database and cache the result."""
+        """Test entity relations with cache miss - should fetch from database and cache the
+        result."""
         with (
             patch(
                 "musigree.library.cache.cache_manager.CacheManager.get_cache"
@@ -1182,7 +1191,8 @@ class TestFastAPIRoutes:
         self,
         client: TestClient,
     ) -> None:
-        """Test entity network with cache hit - should return cached result without calling database."""
+        """Test entity network with cache hit - should return cached result without calling
+        database."""
         with (
             patch(
                 "musigree.library.cache.cache_manager.CacheManager.get_cache"
@@ -1852,9 +1862,7 @@ def test_network_cache_id_includes_roles_and_mobile() -> None:
     assert "mobile=1" in mobile
     assert other_roles != desktop
     assert comma_role != split_roles
-    filtered = network_cache_id(
-        EntityType.ARTIST, 10, ["Alias", "Member Of"], False, 1970, 1979
-    )
+    filtered = network_cache_id(EntityType.ARTIST, 10, ["Alias", "Member Of"], False, 1970, 1979)
     assert filtered != desktop
     assert "min_year=1970" in filtered
     assert "max_year=1979" in filtered

@@ -43,7 +43,8 @@ The `update_master_worker` function interacts with the following components:
     - `DatabaseError`: Used for handling the runtime_database exception.
     - `LOGGING_TRACE`: Used to check if trace logging is activated.
 
-The module utilizes `logging` for logging operations, `sqlalchemy.exc.DatabaseError` for runtime_database
+The module utilizes `logging` for logging operations, `sqlalchemy.exc.DatabaseError` for
+runtime_database
 related exception and `pprint` for pretty print the diff between master. It
 interacts with `musigree.offline.runtime_database` for runtime_database related operations,
 and `musigree.offline.offline_database_manager` for managing concurrency.
@@ -206,15 +207,11 @@ async def update_master_worker_async(
                 """Log the runtime_database error."""
                 raise
 
-    log.info(
-        f"worker updated {updated_count} inserted {inserted_count} master total processed {processed_count}"
-    )
+    log.info(f"worker updated {updated_count} inserted {inserted_count} master total processed {processed_count}")
     """Log the number of updated and inserted master."""
 
 
-def update_master_worker(
-    bulk_updates: list[dict[str, Any]], current_total: int, total_count: int
-) -> None:
+def update_master_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

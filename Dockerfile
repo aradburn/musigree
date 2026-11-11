@@ -1,5 +1,5 @@
 # Stage 1: ----- Build the React Vite frontend -----
-FROM node:26.10.0-alpine3.24 AS frontend-builder
+FROM node:26.13-alpine3.24 AS frontend-builder
 
 WORKDIR /app/frontend
 

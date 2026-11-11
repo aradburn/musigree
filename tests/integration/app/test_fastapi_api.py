@@ -1,11 +1,15 @@
 """Integration tests for the FastAPI API endpoints."""
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from httpx import AsyncClient
 
 from musigree.utils import normalize_dict_list
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from httpx import AsyncClient
 
 
 # noinspection HttpUrlsUsage
@@ -51,7 +55,10 @@ class TestFastAPIAPI:
             "type": "artist",
             "name": "Seefeel",
             "metadata": {
-                "profile": "British electronic/rock group formed in the early 1990s. They are currently signed to Warp Records.",
+                "profile": (
+                    "British electronic/rock group formed in the early 1990s. They are currently "
+                    "signed to Warp Records."
+                ),
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
                 "urls": [
                     "http://www.myspace.com/seefeelmyspace",
@@ -135,7 +142,10 @@ class TestFastAPIAPI:
             "type": "artist",
             "name": "Seefeel",
             "metadata": {
-                "profile": "British electronic/rock group formed in the early 1990s. They are currently signed to Warp Records.",
+                "profile": (
+                    "British electronic/rock group formed in the early 1990s. They are currently "
+                    "signed to Warp Records."
+                ),
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
                 "urls": [
                     "http://www.myspace.com/seefeelmyspace",
@@ -206,7 +216,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
+                "profile": ("Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"),
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -261,7 +271,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
+                "profile": ("Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"),
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -386,8 +396,8 @@ class TestFastAPIAPI:
                     "D:Note",
                     "D_Note",
                 ],
-                "profile": "D*Note's blend of Ambient, Nu-Jazz, Drum & Bass, House and rare groove springs from "
-                + "Matt Winn (Matt Wienevski) and musical friends consisting of keyboard player [a115515] "
+                "profile": ("D*Note's blend of Ambient, Nu-Jazz, Drum & Bass, House and rare groove springs from ")
+                + ("Matt Winn (Matt Wienevski) and musical friends consisting of keyboard player [a115515] ")
                 + "who records as [a2649], guitarist Keith Osbourne, and others. Vocalists have "
                 + "included [a14920], [a126446], [a19738] of "
                 + "[a14449=Sunship], [a242942] and more. Other "
@@ -458,7 +468,7 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
         actual = response.json()
-        expected: dict = {
+        expected: dict[str, Any] = {
             "center": {
                 "key": "artist-2239",
                 "name": "Seefeel",
@@ -469,7 +479,7 @@ class TestFastAPIAPI:
                     "role": "Member Of",
                     "source": "artist-115880",
                     "target": "artist-2239",
-                    "years": [],
+                    "years": [1994, 1999, 2003, 2008, 2009],
                 },
                 {
                     "key": "artist-1920-alias-artist-51674",
@@ -511,7 +521,7 @@ class TestFastAPIAPI:
                     "role": "Member Of",
                     "source": "artist-489350",
                     "target": "artist-2239",
-                    "years": [],
+                    "years": [1994, 1995, 1999, 2008, 2009],
                 },
                 {
                     "key": "artist-51674-member-of-artist-1656080",
@@ -525,14 +535,14 @@ class TestFastAPIAPI:
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-2239",
-                    "years": [],
+                    "years": [1994, 1995, 1999, 2003, 2008, 2009],
                 },
                 {
                     "key": "artist-66803-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-66803",
                     "target": "artist-2239",
-                    "years": [],
+                    "years": [1994, 1999, 2008, 2009],
                 },
             ],
             "nodes": [
@@ -687,7 +697,7 @@ class TestFastAPIAPI:
         assert response.status_code == 404
 
         actual = response.json()
-        expected: dict = {
+        expected: dict[str, Any] = {
             "success": False,
             "status": 404,
             "message": "No Data",
@@ -708,7 +718,7 @@ class TestFastAPIAPI:
         assert response.status_code == 200
 
         actual = response.json()
-        expected: dict = {
+        expected: dict[str, Any] = {
             "center": {"key": "label-1", "name": "Planet E"},
             "links": [
                 {
@@ -5054,7 +5064,7 @@ class TestFastAPIAPI:
             ],
         }
 
-        for index in expected:  # noqa: PLC0206
+        for index in expected:
             assert actual[index] == expected[index]
         assert actual == expected
 
@@ -5068,13 +5078,11 @@ class TestFastAPIAPI:
         client: AsyncClient,
     ) -> None:
         """Test network endpoint with valid label ID."""
-        response = await client.get(
-            "/api/label/network/1?roles=Member+Of,Released+On,Alias,Sublabel+Of"
-        )
+        response = await client.get("/api/label/network/1?roles=Member+Of,Released+On,Alias,Sublabel+Of")
         assert response.status_code == 200
 
         actual = response.json()
-        expected: dict = {
+        expected: dict[str, Any] = {
             "center": {"key": "label-1", "name": "Planet E"},
             "links": [
                 {
@@ -14108,7 +14116,7 @@ class TestFastAPIAPI:
             ],
         }
 
-        for index in expected:  # noqa: PLC0206
+        for index in expected:
             assert actual[index] == expected[index]
         assert actual == expected
 

@@ -16,14 +16,14 @@ class TestRuntimeDatabaseManager:
     @staticmethod
     def setup_method() -> None:
         """Reset class variables before each test."""
-        RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
-        RuntimeDatabaseManager.threading_model = None  # type: ignore
+        RuntimeDatabaseManager.runtime_database_helper = None
+        RuntimeDatabaseManager.threading_model = None
 
     @staticmethod
     def teardown_method() -> None:
         """Clean up after each test."""
-        RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
-        RuntimeDatabaseManager.threading_model = None  # type: ignore
+        RuntimeDatabaseManager.runtime_database_helper = None
+        RuntimeDatabaseManager.threading_model = None
 
     # Test get_concurrency_count method
     @patch("multiprocessing.cpu_count")
@@ -57,7 +57,7 @@ class TestRuntimeDatabaseManager:
     def test_get_concurrency_count_not_configured(self) -> None:
         """Test get_concurrency_count raises error when threading model not configured."""
         # Arrange
-        RuntimeDatabaseManager.threading_model = None  # type: ignore
+        RuntimeDatabaseManager.threading_model = None
 
         # Act & Assert
         with pytest.raises(NotImplementedError, match="THREADING_MODEL not configured"):
@@ -233,13 +233,13 @@ class TestRuntimeDatabaseManager:
     ) -> None:
         """Test shutdown_database when helper is None."""
         # Arrange
-        RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
+        RuntimeDatabaseManager.runtime_database_helper = None
         mock_close_all_sessions.return_value = None
 
         # Act & Assert
         with pytest.raises(
             AssertionError,
-            match="RuntimeDatabaseManager.runtime_database_helper must be initialized",
+            match=r"RuntimeDatabaseManager\.runtime_database_helper must be initialized",
         ):
             await RuntimeDatabaseManager.shutdown_database()
 

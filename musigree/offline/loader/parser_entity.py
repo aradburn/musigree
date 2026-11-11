@@ -45,14 +45,16 @@ also uses `musigree` library for musigree specific operations.
 
 import logging
 from types import MappingProxyType
-from typing import Any
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
 from musigree.offline.offline_domain.entity import Entity
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 """

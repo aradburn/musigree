@@ -5,9 +5,7 @@ import logging
 import multiprocessing
 import threading
 import time
-from collections.abc import AsyncGenerator
-from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -31,6 +29,9 @@ from musigree.utils import (
     normalize_str_list,
     strip_trailing_newline,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 def test_split_list_1() -> None:
@@ -89,7 +90,8 @@ def test_split_list_5() -> None:
 
 
 def test_strip_input() -> None:
-    """Test strip_input removes leading and trailing whitespace while preserving internal structure."""
+    """Test strip_input removes leading and trailing whitespace while preserving internal
+    structure."""
     input_str = """
         aaa
         bbb
@@ -556,7 +558,7 @@ def test_strip_trailing_newline() -> None:
 
 def test_get_discogs_url() -> None:
     """Test get_discogs_url generates correct URL format."""
-    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, "xyz")
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_xyz.xml.gz"
     assert result == expected
@@ -564,7 +566,7 @@ def test_get_discogs_url() -> None:
 
 def test_get_discogs_artists_url() -> None:
     """Test get_discogs_url with artists type constant."""
-    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_ARTISTS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_artists.xml.gz"
     assert result == expected
@@ -572,7 +574,7 @@ def test_get_discogs_artists_url() -> None:
 
 def test_get_discogs_releases_url() -> None:
     """Test get_discogs_url with releases type constant."""
-    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_RELEASES_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_releases.xml.gz"
     assert result == expected
@@ -580,7 +582,7 @@ def test_get_discogs_releases_url() -> None:
 
 def test_get_discogs_labels_url() -> None:
     """Test get_discogs_url with labels type constant."""
-    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_LABELS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_labels.xml.gz"
     assert result == expected
@@ -588,7 +590,7 @@ def test_get_discogs_labels_url() -> None:
 
 def test_get_discogs_masters_url() -> None:
     """Test get_discogs_url with masters type constant."""
-    input_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
+    input_date = datetime.datetime(2023, 8, 1)
     result = utils.get_discogs_url(input_date, DISCOGS_MASTERS_TYPE)
     expected = "https://data.discogs.com/,?download=data/2023/discogs_20230801_masters.xml.gz"
     assert result == expected
@@ -596,8 +598,8 @@ def test_get_discogs_masters_url() -> None:
 
 def test_get_discogs_dump_dates() -> None:
     """Test get_discogs_dump_dates returns correct monthly date sequence."""
-    start_date = datetime.datetime(2023, 8, 1)  # noqa: DTZ001
-    end_date = datetime.datetime(2024, 6, 13)  # noqa: DTZ001
+    start_date = datetime.datetime(2023, 8, 1)
+    end_date = datetime.datetime(2024, 6, 13)
     result = utils.get_discogs_dump_dates(start_date, end_date)
     expected = [
         datetime.date(2023, 8, 1),
@@ -930,8 +932,7 @@ async def test_queue_worker_functions_empty_generator() -> None:
 
     # noinspection PyUnreachableCode
     def empty_generator() -> Any:
-        return
-        yield [0]  # This line never executes, making it an empty generator
+        yield from ()
 
     worker_partials = utils.worker_generator(_test_worker_function, empty_generator(), 0)
 
@@ -965,15 +966,17 @@ async def test_queue_worker_functions_exception_handling() -> None:
         yield [2]
         yield [3]
 
-    worker_partials = []
+    worker_partials: list[utils.WorkerPartial] = []
     processed_count = 0
     for i, records in enumerate(mixed_generator()):
         if i == 1:
             worker_partials.append(
-                partial(_test_failing_worker_function, records, processed_count, 3)
+                utils.WorkerPartial(_test_failing_worker_function, (records, processed_count, 3))
             )
         else:
-            worker_partials.append(partial(_test_worker_function, records, processed_count, 3))
+            worker_partials.append(
+                utils.WorkerPartial(_test_worker_function, (records, processed_count, 3))
+            )
         processed_count += len(records)
 
     with pytest.raises(ValueError, match="Test error"):
@@ -1023,9 +1026,9 @@ async def test_queue_worker_functions_with_list_input() -> None:
     """Test queue_worker_functions with list of partial functions."""
     _processed_batches.clear()
 
-    worker_partials = [
-        partial(_test_tracking_worker_function, [1, 2], 0, 4),
-        partial(_test_tracking_worker_function, [3, 4], 2, 4),
+    worker_partials: list[utils.WorkerPartial] = [
+        utils.WorkerPartial(_test_tracking_worker_function, ([1, 2], 0, 4)),
+        utils.WorkerPartial(_test_tracking_worker_function, ([3, 4], 2, 4)),
     ]
 
     await utils.queue_worker_functions(2, worker_partials, threading_model=ThreadingModel.THREAD)
@@ -1036,7 +1039,9 @@ async def test_queue_worker_functions_with_list_input() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_timing() -> None:
     """Test queue_worker_functions records processing duration."""
-    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
+    worker_partials: list[utils.WorkerPartial] = [
+        utils.WorkerPartial(_test_worker_function, ([1], 0, 1))
+    ]
 
     with patch.object(logging.Logger, "debug") as mock_log_debug:
         await utils.queue_worker_functions(
@@ -1074,7 +1079,9 @@ async def test_queue_worker_functions_large_number_of_tasks() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_uses_thread_pool_by_default() -> None:
     """Test queue_worker_functions uses ThreadPoolExecutor by default."""
-    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
+    worker_partials: list[utils.WorkerPartial] = [
+        utils.WorkerPartial(_test_worker_function, ([1], 0, 1))
+    ]
     mock_executor = MagicMock()
 
     with (
@@ -1099,7 +1106,9 @@ async def test_queue_worker_functions_uses_thread_pool_by_default() -> None:
 @pytest.mark.asyncio
 async def test_queue_worker_functions_uses_process_pool_when_requested() -> None:
     """Test queue_worker_functions uses ProcessPoolExecutor for process model."""
-    worker_partials = [partial(_test_worker_function, [1], 0, 1)]
+    worker_partials: list[utils.WorkerPartial] = [
+        utils.WorkerPartial(_test_worker_function, ([1], 0, 1))
+    ]
     mock_executor = MagicMock()
     mock_mp_context = MagicMock()
     loop = asyncio.get_running_loop()
@@ -1170,7 +1179,9 @@ async def test_queue_worker_functions_process_pool_inherits_parent_state() -> No
 
     _PROCESS_POOL_INHERITANCE_MARKER["value"] = "parent-state"
     try:
-        worker_partials = [partial(_process_pool_inheritance_worker, [i], i, 3) for i in range(3)]
+        worker_partials: list[utils.WorkerPartial] = [
+            utils.WorkerPartial(_process_pool_inheritance_worker, ([i], i, 3)) for i in range(3)
+        ]
         await utils.queue_worker_functions(
             2, worker_partials, threading_model=ThreadingModel.PROCESS
         )
@@ -1215,8 +1226,7 @@ def test_worker_generator_empty_generator() -> None:
     # noinspection PyUnreachableCode
     def empty_records_generator() -> Any:
         """Empty generator."""
-        return
-        yield [0]  # This line is never reached but keeps it as a generator
+        yield from ()
 
     # Act
     worker_partials = utils.worker_generator(mock_worker_function, empty_records_generator(), 0)
@@ -1845,8 +1855,9 @@ async def test_async_worker_generator_empty_generator() -> None:
     # noinspection PyUnreachableCode
     async def empty_async_generator() -> AsyncGenerator[list[int]]:
         """Empty async generator."""
-        return
-        yield [0]  # This line is never reached
+        items: list[list[int]] = []
+        for item in items:
+            yield item
 
     # Act
     worker_partials = await utils.async_worker_generator(mock_worker, empty_async_generator(), 0)
@@ -2208,7 +2219,7 @@ class TestNormalizeDict:
 
     def test_normalize_dict_with_datetime(self) -> None:
         """Test normalize_dict with datetime object."""
-        test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 45)  # noqa: DTZ001
+        test_datetime = datetime.datetime(2023, 12, 15, 10, 30, 45)
         data = {"datetime_field": test_datetime}
 
         result = normalize_dict(data)

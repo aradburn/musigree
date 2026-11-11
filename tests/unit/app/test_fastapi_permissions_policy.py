@@ -2,14 +2,17 @@
 Unit tests for musigree.app.fastapi_permissions_policy module.
 """
 
-from collections.abc import MutableMapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from starlette.types import Send
 
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy, PermissionsPolicyOptions
+
+if TYPE_CHECKING:
+    from collections.abc import MutableMapping
+
+    from starlette.types import Send
 
 
 class TestPermissionsPolicy:
@@ -31,7 +34,7 @@ class TestPermissionsPolicy:
     def test_init_valid_option_builds_policy_string(self) -> None:
         """Test valid Option builds PolicyString (single feature, self)."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031
+        with pytest.warns(SyntaxWarning):
             options: PermissionsPolicyOptions = {"camera": ["self"]}
             policy = PermissionsPolicy(app, Option=options)
         assert "camera" in policy.PolicyString
@@ -39,7 +42,7 @@ class TestPermissionsPolicy:
     def test_init_valid_option_star(self) -> None:
         """Test valid Option with wildcard *."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031
+        with pytest.warns(SyntaxWarning):
             options: PermissionsPolicyOptions = {"camera": ["*"]}
             policy = PermissionsPolicy(app, Option=options)
         assert policy.PolicyString == "camera=*, "
@@ -47,7 +50,7 @@ class TestPermissionsPolicy:
     def test_init_invalid_policy_key_raises_syntax_error(self) -> None:
         """Test that unknown policy key raises SyntaxError."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031, SIM117
+        with pytest.warns(SyntaxWarning):  # noqa: SIM117
             with pytest.raises(SyntaxError, match="does not exist"):
                 # noinspection Mypy
                 options: PermissionsPolicyOptions = {"invalid-feature": ["self"]}  # type: ignore[typeddict-unknown-key]
@@ -56,7 +59,7 @@ class TestPermissionsPolicy:
     def test_init_wildcard_with_others_raises_syntax_error(self) -> None:
         """Test that * with other values raises SyntaxError."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031, SIM117
+        with pytest.warns(SyntaxWarning):  # noqa: SIM117
             with pytest.raises(SyntaxError, match="Cannot use wildcard"):
                 options: PermissionsPolicyOptions = {"camera": ["*", "self"]}
                 PermissionsPolicy(app, Option=options)
@@ -64,7 +67,7 @@ class TestPermissionsPolicy:
     def test_init_quoted_url_value(self) -> None:
         """Test Option with quoted URL allowlist."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031
+        with pytest.warns(SyntaxWarning):
             options: PermissionsPolicyOptions = {"camera": ['"https://example.com"']}
             policy = PermissionsPolicy(app, Option=options)
         assert "camera" in policy.PolicyString
@@ -73,7 +76,7 @@ class TestPermissionsPolicy:
     def test_init_invalid_allowlist_item_raises_syntax_error(self) -> None:
         """Test unquoted URL raises SyntaxError."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031, SIM117
+        with pytest.warns(SyntaxWarning):  # noqa: SIM117
             with pytest.raises(SyntaxError, match="Invalid allowlist item"):
                 options: PermissionsPolicyOptions = {"camera": ["https://example.com"]}
                 PermissionsPolicy(app, Option=options)
@@ -82,7 +85,7 @@ class TestPermissionsPolicy:
     async def test_call_http_scope_sets_permissions_policy_header(self) -> None:
         """Test __call__ with http scope adds Permissions-Policy header to response."""
         app = MagicMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031
+        with pytest.warns(SyntaxWarning):
             options: PermissionsPolicyOptions = {"camera": ["self"]}
             policy = PermissionsPolicy(app, Option=options)
         scope = {"type": "http"}
@@ -122,7 +125,7 @@ class TestPermissionsPolicy:
     async def test_call_non_http_scope_passes_through(self) -> None:
         """Test __call__ with non-http scope passes to app without wrapping send."""
         app = AsyncMock()
-        with pytest.warns(SyntaxWarning):  # noqa: PT031
+        with pytest.warns(SyntaxWarning):
             options: PermissionsPolicyOptions = {"camera": ["self"]}
             policy = PermissionsPolicy(app, Option=options)
         scope = {"type": "websocket"}

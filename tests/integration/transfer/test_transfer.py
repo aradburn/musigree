@@ -1,8 +1,7 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
-from musigree.config import Configuration
 from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
 from musigree.offline.offline_database.offline_transaction import offline_transaction
@@ -25,6 +24,11 @@ from musigree.runtime.runtime_database.runtime_transaction import runtime_transa
 from musigree.transfer.transfer_manager import TransferManager
 from tests.conftest import AbstractDatabaseTest
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
+
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [False], scope="class")
@@ -33,8 +37,9 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_roles(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         async with offline_transaction():
@@ -56,8 +61,9 @@ class TestTransfer(AbstractDatabaseTest):
         self,
         runtime_config: Configuration,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         entity_details_path = (
@@ -80,8 +86,9 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_relations(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         async with offline_transaction():
@@ -102,8 +109,9 @@ class TestTransfer(AbstractDatabaseTest):
     async def test_transfer_entity_details(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         async with runtime_transaction():

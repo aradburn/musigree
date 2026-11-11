@@ -31,6 +31,7 @@ from musigree.app.fastapi_dependencies import (
 )
 from musigree.exceptions import BadRequestError, RateLimitError
 from musigree.library.fields.entity_type import EntityType
+from tests.type_helpers import as_object
 
 
 class TestGetEntityType:
@@ -150,9 +151,7 @@ class TestGetRoles:
     @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_valid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup works with valid role entries."""
-        mock_role_cache.role_category_to_role_name_lookup = {
-            "Production": ["Producer", "Co-Producer"]
-        }
+        mock_role_cache.role_category_to_role_name_lookup = {"Production": ["Producer", "Co-Producer"]}
         mock_role_cache.role_name_to_role_id_lookup = {"Producer": 1, "Co-Producer": 2}
 
         result = get_roles("Production")
@@ -161,9 +160,7 @@ class TestGetRoles:
     @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_invalid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup skips invalid role entries."""
-        mock_role_cache.role_category_to_role_name_lookup = {
-            "Production": ["Producer", "InvalidRole"]
-        }
+        mock_role_cache.role_category_to_role_name_lookup = {"Production": ["Producer", "InvalidRole"]}
         mock_role_cache.role_name_to_role_id_lookup = {
             "Producer": 1
             # InvalidRole is not in role_name_to_role_id_lookup
@@ -220,9 +217,7 @@ class TestRateLimiter:
         return response
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_allows_request_within_limit(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_allows_request_within_limit(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter allows request within limit."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -249,9 +244,7 @@ class TestRateLimiter:
             assert "X-RateLimit-Reset" in mock_response.headers
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_raises_error_when_limit_exceeded(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_raises_error_when_limit_exceeded(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter raises RateLimitError when limit exceeded."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -270,9 +263,7 @@ class TestRateLimiter:
             mock_cache.incr.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_none_redis_value(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_none_redis_value(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles None value from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -292,15 +283,11 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_bytes_redis_value(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_bytes_redis_value(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles bytes value from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
-            mock_cache.get = AsyncMock(
-                return_value=b"3"
-            )  # Bytes value (defensive check in implementation)
+            mock_cache.get = AsyncMock(return_value=b"3")  # Bytes value (defensive check in implementation)
             mock_cache.ttl = AsyncMock(return_value=45)
             mock_cache.incr = AsyncMock()
             mock_cache.expire = AsyncMock()
@@ -334,9 +321,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_get_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_get_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache get exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -354,9 +339,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # Fallback values
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_ttl_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_ttl_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache TTL exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -376,9 +359,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_incr_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_incr_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache incr exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -446,9 +427,7 @@ class TestRateLimiter:
             mock_cache.get.assert_called_with(expected_key)
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_uses_valid_ttl_from_redis(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_uses_valid_ttl_from_redis(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter uses valid TTL from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -468,9 +447,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_uses_period_for_invalid_ttl(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_uses_period_for_invalid_ttl(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter uses period for invalid TTL values."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -490,9 +467,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_none_ttl(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_none_ttl(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles None TTL from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -512,9 +487,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_increments_request_count(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_increments_request_count(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter increments request count correctly."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -533,9 +506,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "6"  # 10 - 3 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_sets_expire_for_new_key(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_sets_expire_for_new_key(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter sets expiration for new cache keys."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -554,9 +525,7 @@ class TestRateLimiter:
             mock_cache.expire.assert_called_once_with(cache_key, 60)
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_enforces_limit_at_boundary(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_enforces_limit_at_boundary(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter enforces limit exactly at the boundary."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -575,9 +544,7 @@ class TestRateLimiter:
             mock_cache.incr.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_enforces_limit_when_exceeded(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_enforces_limit_when_exceeded(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter raises error when limit is exceeded."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -612,12 +579,14 @@ class TestAnnotatedDependencies:
         assert get_args(YearBoundsDep)[1].dependency is get_year_bounds
 
     def test_min_year_dep_wraps_get_min_year(self) -> None:
-        assert get_origin(MinYearDep) is Annotated
-        assert get_args(MinYearDep)[1].dependency is get_min_year
+        min_year_dep = as_object(MinYearDep)
+        assert get_origin(min_year_dep) is Annotated
+        assert get_args(min_year_dep)[1].dependency is get_min_year
 
     def test_max_year_dep_wraps_get_max_year(self) -> None:
-        assert get_origin(MaxYearDep) is Annotated
-        assert get_args(MaxYearDep)[1].dependency is get_max_year
+        max_year_dep = as_object(MaxYearDep)
+        assert get_origin(max_year_dep) is Annotated
+        assert get_args(max_year_dep)[1].dependency is get_max_year
 
     def test_roles_dep_wraps_get_roles(self) -> None:
         assert get_origin(RolesDep) is Annotated

@@ -38,7 +38,7 @@ class TestEntityType:
         """Test EntityType equality comparison."""
         assert EntityType.ARTIST == EntityType.ARTIST
         assert EntityType.LABEL == EntityType.LABEL
-        assert EntityType.ARTIST != EntityType.LABEL
+        assert len({EntityType.ARTIST, EntityType.LABEL}) == 2
 
     def test_entity_type_string_representation(self) -> None:
         """Test string representation of EntityType."""

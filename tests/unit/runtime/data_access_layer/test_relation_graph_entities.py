@@ -1,5 +1,7 @@
 """Unit tests for relation-graph entity filtering."""
 
+from typing import overload
+
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.relation_graph.entities import (
@@ -13,6 +15,26 @@ from musigree.runtime.data_access_layer.trellis_node import TrellisNode
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    relation_counts: dict[str, int] = ...,
+    entities: dict[str, object] = ...,
+) -> RuntimeEntity: ...
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    relation_counts: None = None,
+    entities: None = None,
+) -> RuntimeEntity: ...
+
+
 def artist(
     entity_id: int,
     name: str,
@@ -20,14 +42,16 @@ def artist(
     relation_counts: dict[str, int] | None = None,
     entities: dict[str, object] | None = None,
 ) -> RuntimeEntity:
+    # Callers that pass a dict match the overload above, so literal keys are
+    # widened. None is the runtime default and is not a shared mutable value.
     return RuntimeEntity(
         id=to_entity_internal_id(entity_id, EntityType.ARTIST),
         entity_id=entity_id,
         entity_type=EntityType.ARTIST,
         entity_name=name,
-        relation_counts=relation_counts or {},
+        relation_counts=dict(relation_counts or {}),
         entity_metadata={},
-        entities=entities or {},
+        entities=dict(entities or {}),
         countries=None,
         genres=None,
         styles=None,

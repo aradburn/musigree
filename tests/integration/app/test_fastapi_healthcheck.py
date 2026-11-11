@@ -1,7 +1,11 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
-from httpx import AsyncClient
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from httpx import AsyncClient
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")

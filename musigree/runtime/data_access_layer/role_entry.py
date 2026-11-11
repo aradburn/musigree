@@ -28,11 +28,14 @@ musigree specific operations.
 """
 
 import collections
-from typing import Self
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING, Self
 
 from musigree.library.cache.role_cache import RoleCache
-from musigree.library.fields.role_type import RoleType
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
+
+    from musigree.library.fields.role_type import RoleType
 
 
 class RoleEntry:
@@ -155,7 +158,7 @@ class RoleEntry:
                     """Assign the current buffer to the role name."""
                     current_buffer = ""
                     had_detail = True
-                elif 1 < bracket_depth:
+                elif bracket_depth > 1:
                     current_buffer += character
                     """Append the character to the current buffer."""
             elif character == "]":
@@ -182,7 +185,7 @@ class RoleEntry:
         return cls(name=role_name, detail=role_detail_opt)
 
     @classmethod
-    def get_multiselect_mapping(cls) -> collections.OrderedDict:
+    def get_multiselect_mapping(cls) -> collections.OrderedDict[RoleType.Category, list[str]]:
         """
         Creates a multiselect mapping of roles by category.
 

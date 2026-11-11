@@ -102,7 +102,8 @@ class TestRuntimeLoaderFunctions:
 
             # Assert
             mock_get_stages.assert_called_once_with(mock_data_directory, mock_date)
-        # Note: We can't easily assert which specific stage was called due to the way coroutines work
+        # Note: We can't easily assert which specific stage was called due to the way coroutines
+        # work
         # but we can verify the function was called with correct parameters
 
     def test_get_load_runtime_table_stages_success(

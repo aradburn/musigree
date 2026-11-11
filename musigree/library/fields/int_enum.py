@@ -1,10 +1,12 @@
-import enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Integer, TypeDecorator
 
+if TYPE_CHECKING:
+    import enum
 
-class IntEnum(TypeDecorator):
+
+class IntEnum(TypeDecorator[Any]):
     """
     Enables using Python enums with integer values directly in a SQLAlchemy database.
 

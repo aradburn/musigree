@@ -12,9 +12,8 @@ See https://developers.google.com/search/docs/crawling-indexing/sitemaps/large-s
 import asyncio
 import gzip
 import logging
-from collections.abc import Sequence
 from datetime import UTC, date, datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 from xml.sax.saxutils import escape
 
 from sqlalchemy.exc import OperationalError
@@ -28,6 +27,10 @@ from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeE
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.utils import log_banner
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -144,9 +147,7 @@ def write_sitemap_files(
         raise ValueError("Sitemap limits must be positive")
 
     ordered_ids = sorted(internal_ids)
-    url_count = sum(
-        1 for internal_id in ordered_ids if entity_page_url(internal_id, base_url) is not None
-    )
+    url_count = sum(1 for internal_id in ordered_ids if entity_page_url(internal_id, base_url) is not None)
     capacity = max_urls_per_sitemap * max_sitemaps
     if url_count > capacity:
         raise SitemapLimitError(

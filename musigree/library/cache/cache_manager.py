@@ -1,15 +1,31 @@
 import json
 import logging
+from collections.abc import Awaitable
 from json import JSONDecodeError
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import fakeredis.aioredis
 from redis import asyncio as aioredis
 
-from musigree.config import Configuration
 from musigree.constants import CACHE_KEY_SEPARATOR, CacheType
 
+if TYPE_CHECKING:
+    from musigree.config import Configuration
+
 log = logging.getLogger(__name__)
+
+
+async def _await_redis(result: object) -> object:
+    """Return the value of a redis command.
+
+    Sync clients are typed as returning the value and async clients as an
+    awaitable of that value. A client that matches both is typed as the union,
+    which cannot be awaited directly.
+    """
+    if isinstance(result, Awaitable):
+        return await result
+    return result
+
 
 __all__ = [
     "BaseCache",
@@ -154,7 +170,7 @@ class RedisCache(BaseCache):
             # get/set/etc. compatible with existing callers.
             pool = aioredis.ConnectionPool.from_url(redis_url)
             self._client = aioredis.Redis.from_pool(pool)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.warning(f"Failed to connect to Redis server: {e}")
 
     def _get_redis_client(self) -> aioredis.Redis:
@@ -190,7 +206,7 @@ class RedisCache(BaseCache):
         if timeout > 0:
             await redis_client.setex(name=key, time=timeout, value=value)
         else:
-            await redis_client.set(name=key, value=value)
+            await _await_redis(redis_client.set(name=key, value=value))
 
     async def incr(self, key: str) -> None:
         """Increment value in cache for the given key."""
@@ -205,34 +221,22 @@ class RedisCache(BaseCache):
     async def ttl(self, key: str) -> int:
         """Get the timeout for the given key."""
         redis_client = self._get_redis_client()
-        raw_value = await redis_client.ttl(key)
-
-        # Return None if the key doesn't exist
-        if raw_value is None:
-            return -2
-
-        # Type guard: ensure we have a dict (not an Awaitable)
-        # Since this is a synchronous method, hgetall should return a dict
+        # The client is typed to return int, but a stand-in may return None or str.
+        # -2 means the key does not exist; -1 means it has no expiry.
+        raw_value: object = await redis_client.ttl(key)
         if not isinstance(raw_value, int):
             return -2
-
-        return int(raw_value)
+        return raw_value
 
     async def hgetall(self, key: str) -> dict[str, Any] | None:
         """Get hash value from cache for the given key."""
         redis_client = self._get_redis_client()
-        raw_value = await redis_client.get(key)
-
-        # Return None if the key doesn't exist
-        if raw_value is None:
+        # The client is typed to return bytes or str; a stand-in may return other values.
+        raw_value: object = await redis_client.get(key)
+        if not isinstance(raw_value, (bytes, str)):
             return None
 
-        # Type guard: ensure we have a dict (not an Awaitable)
-        # Since this is a synchronous method, hgetall should return a dict
-        if not (isinstance(raw_value, (bytes, str))):
-            return None
-
-        json_value = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else str(raw_value)
+        json_value = raw_value.decode("utf-8") if isinstance(raw_value, bytes) else raw_value
         result: dict[str, Any] | None
         try:
             result = json.loads(json_value)
@@ -249,7 +253,7 @@ class RedisCache(BaseCache):
         if timeout > 0:
             await redis_client.setex(name=key, time=timeout, value=json_str)
         else:
-            await redis_client.set(name=key, value=json_str)
+            await _await_redis(redis_client.set(name=key, value=json_str))
 
     async def clear(self) -> None:
         """Clear all cache entries."""
@@ -302,7 +306,8 @@ class CacheManager:
     It supports different cache types such as memory, filesystem, and Redis.
 
     Attributes:
-        cache (BaseCache | None): The active cache instance. It can be None if the cache is not yet initialized.
+        cache (BaseCache | None): The active cache instance. It can be None if the cache is not \
+yet initialized.
     """
 
     cache: BaseCache | None = None
@@ -319,7 +324,8 @@ class CacheManager:
             - CacheType.REDIS: Uses a RedisCache for caching in a Redis server.
 
         Args:
-            config (Configuration): A Configuration dictionary containing the application's configuration.
+            config (Configuration): A Configuration dictionary containing the application's \
+configuration.
                            The 'CACHE_TYPE' key is used to determine the cache type.
 
         Raises:
@@ -328,14 +334,14 @@ class CacheManager:
 
         # Based on configuration, use a different cache setup.
         cache_type = config.CACHE_TYPE
-        # noinspection PyUnreachableCode
         if cache_type == CacheType.MEMORY:
             cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
             # log.info("Using memory cache")
 
         elif cache_type == CacheType.REDIS:
             try:
-                cls.cache = RedisCache(
+                # cls.cache stays BaseCache | None, so ping the concrete client.
+                redis_cache = RedisCache(
                     username=None if config.REDIS_USERNAME == "" else config.REDIS_USERNAME,
                     password=None if config.REDIS_PASSWORD == "" else config.REDIS_PASSWORD,
                     host="localhost" if config.REDIS_HOST is None else config.REDIS_HOST,
@@ -343,27 +349,15 @@ class CacheManager:
                     db=0,
                     default_timeout=60 * 60 * 24 * 7,
                 )
+                cls.cache = redis_cache
                 log.info("Using Redis cache")
 
-                # Test connection
-                if cls.cache is not None:
-                    ping_result = await cls.cache.ping()
-                    if ping_result:
-                        log.info("Successfully connected to Redis server")
-                    else:
-                        log.info("Cannot ping Redis cache")
+                ping_result = await redis_cache.ping()
+                if ping_result:
+                    log.info("Successfully connected to Redis server")
                 else:
-                    cls.cache = FakeRedisCache()
-                    # Test connection
-                    if cls.cache is not None:
-                        ping_result = await cls.cache.ping()
-                        if ping_result:
-                            log.info("Successfully connected to Fake Redis cache")
-                        else:
-                            log.info("Cannot ping Fake Redis cache")
-                    else:
-                        log.info("Cannot connect to Fake Redis cache")
-            except Exception as e:  # noqa: BLE001
+                    log.info("Cannot ping Redis cache")
+            except Exception as e:
                 log.warning(f"Redis error: {e}. Falling back to memory cache")
                 cls.cache = SimpleCache(threshold=1000000, default_timeout=0)
                 log.info("Fallback to memory cache")

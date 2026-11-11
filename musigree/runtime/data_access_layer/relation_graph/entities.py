@@ -1,10 +1,14 @@
 """Decide which entities enter the graph and which ids are queried."""
 
+from typing import TYPE_CHECKING
+
 from musigree.runtime.data_access_layer.runtime_entity_data_access import (
     RuntimeEntityDataAccess,
 )
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+
+if TYPE_CHECKING:
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 ENTITIES_TO_PRUNE: frozenset[str] = frozenset(
     {

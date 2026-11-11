@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, func, select
 
@@ -10,6 +10,9 @@ from musigree.runtime.runtime_database.runtime_base_repository import (
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_token_table import RuntimeTokenTable
 from musigree.runtime.runtime_domain.runtime_token import RuntimeToken
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +58,7 @@ class RuntimeTokenRepository(RuntimeBaseRepository["RuntimeTokenTable"]):
             UnprocessableError: If the runtime_database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -79,7 +82,7 @@ class RuntimeTokenRepository(RuntimeBaseRepository["RuntimeTokenTable"]):
             NotFoundError: If no token is found.
         """
         query = select(RuntimeTokenTable.entity_id).where(RuntimeTokenTable.token == token)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         ids = result.scalars().all()
 

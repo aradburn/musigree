@@ -121,7 +121,9 @@ class TestEntityRepository:
     ) -> None:
         """Test successful _get_all_by_query execution."""
         # Arrange
-        query = select(mapped_entity(EntityTable)).where(EntityTable.entity_type == EntityType.ARTIST)
+        query = select(mapped_entity(EntityTable)).where(
+            EntityTable.entity_type == EntityType.ARTIST
+        )
 
         with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)
@@ -145,7 +147,9 @@ class TestEntityRepository:
     async def test_get_all_by_query_empty_result(self, entity_repository: EntityRepository) -> None:
         """Test _get_all_by_query when no entities are found."""
         # Arrange
-        query = select(mapped_entity(EntityTable)).where(EntityTable.entity_type == EntityType.LABEL)
+        query = select(mapped_entity(EntityTable)).where(
+            EntityTable.entity_type == EntityType.LABEL
+        )
 
         with patch.object(OfflineSession, "execute") as mock_execute:
             mock_result = Mock(spec=Result)

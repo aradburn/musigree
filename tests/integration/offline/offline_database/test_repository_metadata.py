@@ -1,7 +1,7 @@
 """Tests for MetadataRepository with async/await and pytest fixtures."""
 
 import datetime
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -10,6 +10,9 @@ from musigree.offline.offline_database.metadata_repository import MetadataReposi
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")
@@ -24,7 +27,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
+        timestamp = datetime.datetime(year=2024, month=6, day=1)
         metadata = MetadataUncommitted(
             metadata_key="key1",
             metadata_value="value1",
@@ -62,7 +65,7 @@ class TestRepositoryMetadata(AbstractDatabaseTest):
             offline_database_setup: Pytest fixture for runtime_database setup.
         """
         # GIVEN
-        timestamp = datetime.datetime(year=2024, month=6, day=1)  # noqa: DTZ001
+        timestamp = datetime.datetime(year=2024, month=6, day=1)
         metadata = MetadataUncommitted(
             metadata_key="key2",
             metadata_value="value2",

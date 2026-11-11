@@ -9,6 +9,7 @@ from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationDB,
     RuntimeRelationResult,
 )
+from tests.release_years import release_years
 
 
 def test_creates_runtime_relation_with_valid_data() -> None:
@@ -19,7 +20,7 @@ def test_creates_runtime_relation_with_valid_data() -> None:
         entity_two_id=200,
         entity_two_type=EntityType.LABEL,
         role="Producer",
-        releases={"release1": 1},
+        releases=release_years({"release1": 1}),
     )
     assert relation.entity_one_id == 100
     assert relation.entity_one_type == EntityType.ARTIST
@@ -152,7 +153,7 @@ def test_to_result_keeps_release_years() -> None:
         entity_two_id=200,
         entity_two_type=EntityType.LABEL,
         role="Producer",
-        releases={"12": 1999, "13": None},
+        releases=release_years({"12": 1999, "13": None}),
     )
 
     result = relation.to_result(distance=4)
@@ -191,7 +192,7 @@ def test_as_json_returns_years_as_an_ordered_set() -> None:
         entity_two_id=200,
         entity_two_type=EntityType.LABEL,
         role="Producer",
-        releases={"12": 2001, "13": None, "14": 1990, "15": 2001, "16": 1995},
+        releases=release_years({"12": 2001, "13": None, "14": 1990, "15": 2001, "16": 1995}),
         distance=None,
     )
 

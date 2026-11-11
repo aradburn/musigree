@@ -6,7 +6,7 @@ which provides data access functionality for releases in the Musigree offline sy
 It tests the creation and population of EntityDetailsIndex from release data.
 """
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import pytest
@@ -15,14 +15,17 @@ from musigree.offline.data_access_layer.offline_release_data_access import Offli
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
-async def async_iterator(items: list) -> AsyncGenerator:
+
+async def async_iterator[T](items: list[T]) -> AsyncGenerator[T]:
     """Helper function to create async iterator from list."""
     for item in items:
         yield item
 
 
-async def async_batch_iterator(items: list) -> AsyncGenerator[list]:
+async def async_batch_iterator[T](items: list[T]) -> AsyncGenerator[list[T]]:
     """Helper function to create async iterator that yields lists (like repository.all())."""
     if items:
         yield items

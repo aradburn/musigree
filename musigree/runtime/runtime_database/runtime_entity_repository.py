@@ -22,21 +22,24 @@ operations and inherits common functionality from `RuntimeBaseRepository`.
 
 import logging
 import random
-from collections.abc import AsyncGenerator, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, Select, delete, func, null, select, update
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.runtime_database import RuntimeEntityTable
 from musigree.runtime.runtime_database.runtime_base_repository import (
     RuntimeBaseRepository,
 )
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity, RuntimeEntityDB
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+
+    from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +79,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         Raises:
             NotFoundError: If no entity is found matching the query.
         """
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -84,9 +87,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         entity_db = RuntimeEntityDB.model_validate(instance)
         return entity_db.to_domain()
 
-    async def _get_all_by_query(
-        self, query: Select[tuple[RuntimeEntityTable]]
-    ) -> list[RuntimeEntity]:
+    async def _get_all_by_query(self, query: Select[tuple[RuntimeEntityTable]]) -> list[RuntimeEntity]:
         """
         Executes a query that should return multiple `RuntimeEntity` objects.
 
@@ -96,7 +97,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         Returns:
             List[RuntimeEntity]: A list of retrieved entities.
         """
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         instances = result.scalars().all()
         entity_dbs = [RuntimeEntityDB.model_validate(instance) for instance in instances]
         entities = [entity_db.to_domain() for entity_db in entity_dbs]
@@ -115,12 +116,8 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         Raises:
             UnprocessableError: If the runtime_database query returns a non-integer value.
         """
-        query = (
-            select(func.count())
-            .select_from(self.schema_class)
-            .where(RuntimeEntityTable.entity_type == entity_type)
-        )
-        result: Result = await self.execute(query)
+        query = select(func.count()).select_from(self.schema_class).where(RuntimeEntityTable.entity_type == entity_type)
+        result: Result[Any] = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -171,9 +168,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         query = select(mapped_entity(RuntimeEntityTable)).where(RuntimeEntityTable.id == _id)
         return await self._get_one_by_query(query)
 
-    async def get_by_entity_id_and_entity_type(
-        self, entity_id: int, entity_type: EntityType
-    ) -> RuntimeEntity:
+    async def get_by_entity_id_and_entity_type(self, entity_id: int, entity_type: EntityType) -> RuntimeEntity:
         """
         Retrieves an entity by its external entity ID and entity type.
 
@@ -226,9 +221,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
             list[int]: A list of external entity IDs of the specified type.
         """
         result = await self._session.scalars(
-            select(RuntimeEntityTable.entity_id).where(
-                RuntimeEntityTable.entity_type == entity_type
-            )
+            select(RuntimeEntityTable.entity_id).where(RuntimeEntityTable.entity_type == entity_type)
         )
         return result.all()
 
@@ -247,15 +240,12 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         """
         result = await self._session.execute(
             select(RuntimeEntityTable.entity_id).where(
-                (RuntimeEntityTable.entity_name == entity_name)
-                & (RuntimeEntityTable.entity_type == entity_type)
+                (RuntimeEntityTable.entity_name == entity_name) & (RuntimeEntityTable.entity_type == entity_type)
             )
         )
         return result.scalar_one_or_none()
 
-    async def get_id_by_entity_type_and_entity_name(
-        self, entity_type: EntityType, entity_name: str
-    ) -> int | None:
+    async def get_id_by_entity_type_and_entity_name(self, entity_type: EntityType, entity_name: str) -> int | None:
         """
         Retrieves an internal entity ID by entity type and entity name.
 
@@ -268,8 +258,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         """
         result = await self._session.execute(
             select(RuntimeEntityTable.id).where(
-                (RuntimeEntityTable.entity_name == entity_name)
-                & (RuntimeEntityTable.entity_type == entity_type)
+                (RuntimeEntityTable.entity_name == entity_name) & (RuntimeEntityTable.entity_type == entity_type)
             )
         )
         return result.scalar_one_or_none()
@@ -305,9 +294,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         Returns:
             str | None: The entity name, or None if not found.
         """
-        result = await self._session.execute(
-            select(RuntimeEntityTable.entity_name).where(RuntimeEntityTable.id == id_)
-        )
+        result = await self._session.execute(select(RuntimeEntityTable.entity_name).where(RuntimeEntityTable.id == id_))
         return result.scalar_one_or_none()
 
     async def create(self, entity: RuntimeEntity) -> RuntimeEntity:
@@ -325,9 +312,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         entity_db = RuntimeEntityDB.model_validate(instance)
         return entity_db.to_domain()
 
-    async def get_by_type_and_name(
-        self, entity_type: EntityType, entity_name: str
-    ) -> RuntimeEntity:
+    async def get_by_type_and_name(self, entity_type: EntityType, entity_name: str) -> RuntimeEntity:
         """
         Retrieves an entity by its type and name.
 
@@ -343,10 +328,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
         """
         query = (
             select(mapped_entity(RuntimeEntityTable))
-            .where(
-                (RuntimeEntityTable.entity_type == entity_type)
-                & (RuntimeEntityTable.entity_name == entity_name)
-            )
+            .where((RuntimeEntityTable.entity_type == entity_type) & (RuntimeEntityTable.entity_name == entity_name))
             .limit(1)
         )
         return await self._get_one_by_query(query)
@@ -370,7 +352,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
             DatabaseError: If there is an error during the update operation.
         """
         query = update(self.schema_class).where(RuntimeEntityTable.id == id_).values(payload)
-        _result: Result = await self._session.execute(query)
+        _result: Result[Any] = await self._session.execute(query)
         await self._session.flush()
 
     async def delete_by_id(self, id_: int) -> None:
@@ -413,7 +395,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
             RuntimeEntityTable.genres,
             RuntimeEntityTable.styles,
         ).where(RuntimeEntityTable.id.in_(ids))
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         # mappings() yields a dict per row; scalars() would return only the first
         # column (entity_id) and break model_validate.
         rows = result.mappings().all()
@@ -435,7 +417,7 @@ class RuntimeEntityRepository(RuntimeBaseRepository["RuntimeEntityTable"]):
             .order_by(RuntimeEntityTable.id)
             .limit(1)
         )
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         instance = result.scalar_one_or_none()
         if instance is None:
             return None

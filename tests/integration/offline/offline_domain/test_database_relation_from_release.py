@@ -1,10 +1,9 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
 import pytest
 
 from musigree import utils
-from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
@@ -19,6 +18,11 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_domain.relation import RelationUncommitted
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 # noinspection HttpUrlsUsage
@@ -228,9 +232,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_03(
-        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
-    ) -> None:
+    async def test_03(self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             """
             <?xml version="1.0" ?>
@@ -371,9 +373,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         release_document = ParserRelease().from_element(release_element)
         async with offline_transaction():
             entity_repository = EntityRepository()
-            await OfflineEntityDataAccess().resolve_release_references(
-                entity_repository, release_document
-            )
+            await OfflineEntityDataAccess().resolve_release_references(entity_repository, release_document)
             actual = OfflineRelationDataAccess.from_release(release_document, None)
 
         expected = [
@@ -451,9 +451,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_04(
-        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
-    ) -> None:
+    async def test_04(self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>
@@ -812,9 +810,7 @@ class TestDatabaseRelationFromRelease(AbstractDatabaseTest):
         assert actual == expected
 
     @pytest.mark.asyncio
-    async def test_05(
-        self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool
-    ) -> None:
+    async def test_05(self, offline_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool) -> None:
         source = utils.normalize(
             r"""
             <?xml version="1.0" ?>

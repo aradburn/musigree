@@ -2,7 +2,7 @@
 
 import sqlite3
 import warnings
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import text
@@ -11,6 +11,9 @@ from sqlalchemy.exc import OperationalError, SAWarning
 from musigree.config import SqliteReadOnlyTestConfiguration, SqliteTestConfiguration
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.sqlite.runtime_sqlite_helper import RuntimeSqliteHelper
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestRuntimeSqliteHelperSetupDatabase:
@@ -31,9 +34,10 @@ class TestRuntimeSqliteHelperSetupDatabase:
 
         try:
             assert not any(issubclass(item.category, SAWarning) for item in caught)
-            assert engine.url.database is not None
-            assert engine.url.database.startswith("file:")
-            assert "%20" in engine.url.database
+            database = engine.url.database
+            assert database is not None
+            assert database.startswith("file:")
+            assert "%20" in database
             assert engine.url.query["uri"] == "true"
             assert engine.url.query["mode"] == "ro"
             assert engine.url.query["immutable"] == "1"

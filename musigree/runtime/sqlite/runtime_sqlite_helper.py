@@ -51,25 +51,28 @@ runtime operation.
 """
 
 import logging
+import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from sqlalchemy import URL, AsyncAdaptedQueuePool, Pool, exc, text
 from sqlalchemy.dialects.sqlite import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.sql.dml import ReturningInsert
 
-from musigree.config import Configuration
 from musigree.constants import SQLITE_DRIVER_NAME
 from musigree.logging_config import LOGGING_TRACE
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeConcreteTable,
-    RuntimeDatabaseHelper,
-)
+from musigree.runtime.runtime_database.runtime_database_helper import RuntimeDatabaseHelper
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.dml import ReturningInsert
+
+    from musigree.config import Configuration
+    from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 
 log = logging.getLogger(__name__)
 """
@@ -120,14 +123,16 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 "immutable": "1",
                 "uri": "true",
             }
+            pool_size = multiprocessing.cpu_count()
         else:
             query = {
                 "uri": "true",
             }
+            pool_size = RuntimeDatabaseManager.get_concurrency_count()
 
         target_url = URL.create(SQLITE_DRIVER_NAME, database=database, query=query)
 
-        log.info(f"Sqlite Database URL: {target_url}")
+        log.info(f"Sqlite Database URL: {target_url} pool_size: {pool_size}")
 
         poolclass: type[Pool]
         engine: AsyncEngine
@@ -139,7 +144,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 "timeout": 60,
             },
             poolclass=poolclass,
-            pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+            pool_size=pool_size,
             max_overflow=0,
         )
 
@@ -295,9 +300,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    async def vacuum(
-        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the runtime_database.
 
@@ -348,10 +351,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """
         log.debug(f"ANALYZE {table_name}")
 
-        if table_name is not None:
-            query = f"ANALYZE {table_name};"
-        else:
-            query = "ANALYZE;"
+        query = f"ANALYZE {table_name};" if table_name is not None else "ANALYZE;"
 
         async with engine.connect() as connection:
             await connection.execute(text(query))
@@ -375,7 +375,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: type[RuntimeConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
@@ -396,9 +396,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """
         if on_conflict_do_nothing:
             """If `on_conflict_do_nothing` is enabled."""
-            return (
-                insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
-            )
+            return insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
         else:
             """If `on_conflict_do_nothing` is disabled."""
             return insert(schema_class).values(values).returning(schema_class)
@@ -406,7 +404,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: type[RuntimeConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

@@ -18,6 +18,7 @@ __all__ = [
     "RoleUncommitted",
 ]
 
+
 from pydantic import StrictInt
 
 from musigree.library.domain.base import InternalDomainObject

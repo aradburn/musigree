@@ -294,8 +294,10 @@ class TestEntityDetailsIndex:
     #     """Test special country cases combined with delimiters."""
     #     self.index.index_country(1, "Congo, Democratic Republic of the & Congo, Republic of the")
     #
-    #     assert self.index.countries_list == ["Democratic Republic of the Congo", "Republic of the Congo"]
-    #     assert self.index.get_countries_for_id(1) == "Democratic Republic of the Congo,Republic of the Congo"
+    #     assert self.index.countries_list == ["Democratic Republic of the Congo", "Republic of the
+    # Congo"]
+    #     assert self.index.get_countries_for_id(1) == "Democratic Republic of the Congo,Republic of
+    # the Congo"
 
     def test_edge_case_empty_input(self) -> None:
         """Test edge cases with empty or whitespace-only input."""

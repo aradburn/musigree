@@ -31,7 +31,7 @@ class MockTable(OfflineBase):
 
 
 # noinspection PyTypeChecker
-class ConcreteTestRepository(BaseRepository):
+class ConcreteTestRepository(BaseRepository[MockTable]):
     """Concrete repository used by BaseRepository unit tests."""
 
     schema_class: Any = mapped_entity(MockTable)
@@ -54,8 +54,8 @@ class TestBaseRepository:
     def test_base_repository_init_no_schema_class(self) -> None:
         """Test initialization fails without schema_class."""
 
-        class BadRepository(BaseRepository):
-            schema_class = None  # type: ignore[assignment]
+        class BadRepository(BaseRepository[OfflineBase]):
+            schema_class = None
 
         with pytest.raises(
             DatabaseError,

@@ -1,14 +1,12 @@
 import asyncio
 import logging
-from collections.abc import AsyncGenerator, Generator
+from typing import TYPE_CHECKING
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree import constants
-from musigree.config import Configuration
 from musigree.constants import (
     ALL_OFFLINE_DATABASE_TABLE_NAMES,
     ALL_RUNTIME_DATABASE_TABLE_NAMES,
@@ -21,6 +19,13 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Generator
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from musigree.config import Configuration
 
 log = logging.getLogger(__name__)
 

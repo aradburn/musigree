@@ -1,12 +1,14 @@
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from musigree.library.fields.role_type import RoleType
 from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTree,
     RuntimeRoleJSTreeEntry,
     RuntimeRoleJSTreeWrapper,
 )
+
+if TYPE_CHECKING:
+    from musigree.library.fields.role_type import RoleType
 
 log = logging.getLogger(__name__)
 
@@ -22,12 +24,10 @@ class RoleCache:
     Attributes:
         role_name_to_role_id_lookup (dict[str, int]): A dictionary mapping role names to role IDs.
         role_name_set (Set[str]): A set containing all role names.
-        role_id_to_role_category_lookup (dict[int, RoleType.Category]): A dictionary mapping role IDs
-                                                                        to role categories.
+        role_id_to_role_category_lookup (dict[int, RoleType.Category]): A dictionary mapping role IDs to role categories.
         role_id_to_role_name_lookup (dict[int, str]): A dictionary mapping role IDs to role names.
         role_jstree (RuntimeRoleJSTree): A tree structure representing roles for the UI.
-        role_category_to_role_name_lookup (dict[str, list[str]]): A dictionary mapping role categories to
-                                                                  lists of role names.
+        role_category_to_role_name_lookup (dict[str, list[str]]): A dictionary mapping role categories to lists of role names.
     """
 
     # CLASS VARIABLES
@@ -74,7 +74,8 @@ class RoleCache:
                 cached selection flags.
 
         Returns:
-            str: A JSON string representing the roles in a tree structure, suitable for UI rendering.
+            str: A JSON string representing the roles in a tree structure, suitable for UI
+            rendering.
         """
         tree = RoleCache.role_jstree
         if selected_roles is not None:

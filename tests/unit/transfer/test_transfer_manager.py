@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Iterable
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -6,6 +6,9 @@ import pytest
 from musigree import utils
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.transfer.transfer_manager import TransferManager
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Iterable
 
 
 def make_async_gen(items: Iterable[object]) -> AsyncGenerator[object]:

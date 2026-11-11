@@ -1,8 +1,13 @@
 """End-to-end tests for the index page UI route."""
+
+from typing import TYPE_CHECKING
+
 import pytest
-from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import BasePage
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 
 @pytest.mark.asyncio

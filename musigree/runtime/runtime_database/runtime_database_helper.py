@@ -1,5 +1,6 @@
 """
-This module defines the `RuntimeDatabaseHelper` class and related utilities for managing the runtime runtime_database.
+This module defines the `RuntimeDatabaseHelper` class and related utilities for managing the runtime
+runtime_database.
 
 It provides an abstract base class for interacting with various runtime_database backends,
 handling runtime_database setup, shutdown, table management, and various data access operations.
@@ -21,19 +22,12 @@ implement.
 
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Connection, Table
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.ddl import DropTable
-from sqlalchemy.sql.dml import Insert, ReturningInsert
 
-from musigree.config import Configuration
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
-from musigree.library.full_text_search.text_search_index import TextSearchIndex
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.data_access_layer.relation_grapher import (
     RelationGrapher,
 )
@@ -41,12 +35,23 @@ from musigree.runtime.runtime_database.runtime_base_table import (
     RuntimeBase,
     RuntimeConcreteTable,
 )
-from musigree.runtime.runtime_database.runtime_entity_repository import (
-    RuntimeEntityRepository,
-)
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy import Connection, Table
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+    from sqlalchemy.sql.dml import Insert, ReturningInsert
+
+    from musigree.config import Configuration
+    from musigree.library.full_text_search.text_search_index import TextSearchIndex
+    from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +88,8 @@ class RuntimeDatabaseHelper(ABC):
     functionality.
 
     Attributes:
-        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime runtime_database.
+        runtime_async_engine (Engine | None): The SQLAlchemy engine for the runtime
+        runtime_database.
         runtime_async_session_factory (async_sessionmaker | None): The SQLAlchemy session factory
             for creating runtime_database sessions.
         text_search_index (TextSearchIndex | None): An index for text-based searches.
@@ -98,7 +104,7 @@ class RuntimeDatabaseHelper(ABC):
 
     runtime_async_engine: AsyncEngine | None = None
     """The SQLAlchemy engine for the runtime runtime_database."""
-    runtime_async_session_factory: async_sessionmaker | None = None
+    runtime_async_session_factory: async_sessionmaker[AsyncSession] | None = None
     """The SQLAlchemy session factory for creating runtime_database sessions."""
 
     text_search_index: TextSearchIndex
@@ -186,9 +192,7 @@ class RuntimeDatabaseHelper(ABC):
             log.debug(f"table definition for: {table_class.__tablename__}")
         for table_name in RuntimeBase.metadata.tables:
             log.debug(f"table in metadata: {table_name}")
-        table_definitions: list[Table] = [
-            RuntimeBase.metadata.tables[table_name] for table_name in tables
-        ]
+        table_definitions: list[Table] = [RuntimeBase.metadata.tables[table_name] for table_name in tables]
         for table in table_definitions:
             log.debug(f"creating table: {table.name}")
 
@@ -198,9 +202,7 @@ class RuntimeDatabaseHelper(ABC):
         assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
             "runtime_async_engine must be initialized before calling create_tables()"
         )
-        async with (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
-        ):
+        async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
             await conn.run_sync(
                 _create_all_tables,
                 tables=table_definitions,
@@ -225,21 +227,15 @@ class RuntimeDatabaseHelper(ABC):
             "runtime_async_engine must be initialized before calling drop_tables()"
         )
 
-        table_definitions: list[Table] = [
-            RuntimeBase.metadata.tables[table_name] for table_name in tables
-        ]
-        async with (
-            RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn
-        ):
+        table_definitions: list[Table] = [RuntimeBase.metadata.tables[table_name] for table_name in tables]
+        async with RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.begin() as conn:
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
                 await conn.execute(DropTable(table, if_exists=True))
 
     @staticmethod
     @abstractmethod
-    async def vacuum(
-        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -287,7 +283,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_query(
         schema_class: type[RuntimeConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
@@ -306,7 +302,7 @@ class RuntimeDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: type[RuntimeConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
@@ -352,9 +348,7 @@ class RuntimeDatabaseHelper(ABC):
         log.debug("get_network")
 
         try:
-            entity = await entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
-            )
+            entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
         except NotFoundError:
             return None
         except ValueError:
@@ -437,8 +431,6 @@ class RuntimeDatabaseHelper(ABC):
             relation_counts = entity.relation_counts
             entities = entity.entities
             counter += 1
-            if entity.entity_type == EntityType.LABEL:
-                continue
             if (
                 relation_counts is not None
                 and (
@@ -514,6 +506,4 @@ class RuntimeDatabaseHelper(ABC):
         )
 
         if RuntimeDatabaseManager.runtime_database_helper.entity_count_cached == 0:
-            RuntimeDatabaseManager.runtime_database_helper.entity_count_cached = (
-                await entity_repository.count()
-            )
+            RuntimeDatabaseManager.runtime_database_helper.entity_count_cached = await entity_repository.count()

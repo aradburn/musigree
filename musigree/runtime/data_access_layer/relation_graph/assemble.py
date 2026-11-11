@@ -1,7 +1,7 @@
 """Breadth-first search that assembles one relation network."""
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.relation_graph.cache import (
@@ -14,11 +14,14 @@ from musigree.runtime.data_access_layer.relation_graph.entities import (
     ids_to_query,
     node_limit_reached,
 )
-from musigree.runtime.data_access_layer.relation_graph.limits import GraphLimits
 from musigree.runtime.data_access_layer.relation_graph.relations import (
+    apply_cross_role_release_years,
     commit_relations,
+    drop_undated_center_member_links,
     merge_database_relations,
     relation_limit_reached,
+    release_year_probes,
+    restrict_links_to_year_bounds,
 )
 from musigree.runtime.data_access_layer.relation_graph.roles import (
     RolePartition,
@@ -31,6 +34,7 @@ from musigree.runtime.data_access_layer.relation_graph.sources import (
     EntitySource,
     RelationSource,
     RepositoryEntitySource,
+    as_probe_release_lookup,
 )
 from musigree.runtime.data_access_layer.relation_graph.trellis import (
     assign_clusters,
@@ -38,15 +42,18 @@ from musigree.runtime.data_access_layer.relation_graph.trellis import (
     build_trellis,
     network_payload,
 )
-from musigree.runtime.data_access_layer.trellis_node import TrellisNode
-from musigree.runtime.runtime_database.runtime_entity_repository import (
-    RuntimeEntityRepository,
-)
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
-from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+
+if TYPE_CHECKING:
+    from musigree.runtime.data_access_layer.relation_graph.limits import GraphLimits
+    from musigree.runtime.data_access_layer.trellis_node import TrellisNode
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+    from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +117,8 @@ async def assemble_network(
     roles: RolePartition,
     entity_source: EntitySource,
     relation_source: RelationSource,
+    min_year: int | None = None,
+    max_year: int | None = None,
 ) -> dict[str, Any]:
     """Search outward from ``center_entity`` and return the network payload."""
     nodes: dict[int, TrellisNode] = {}
@@ -155,11 +164,42 @@ async def assemble_network(
         frontier = commit_relations(links, relations, nodes)
 
     nodes, links = build_trellis(nodes, links, center_entity.id)
+    await _attach_cross_role_release_years(links, nodes, relation_source, center_entity.id)
+    links = restrict_links_to_year_bounds(links, min_year, max_year)
+    links = drop_undated_center_member_links(links, nodes, center_entity.id, min_year, max_year)
+    nodes, links = build_trellis(nodes, links, center_entity.id)
     assign_clusters(nodes)
     assign_missing_links(nodes, roles.all_roles)
     log.debug("number of links: %s", len(links))
     log.debug("number of nodes: %s", len(nodes))
     return network_payload(center_entity, nodes, links)
+
+
+async def _attach_cross_role_release_years(
+    links: dict[str, RuntimeRelationResult],
+    nodes: dict[int, TrellisNode],
+    relation_source: RelationSource,
+    center_id: int,
+) -> None:
+    """Fill the center's structural links from release years of any role.
+
+    Credit links already carry the years of their own rows. Alias, Member Of,
+    and Sublabel Of do not. Only links that touch the center are looked up.
+    Links farther out stay undated.
+    """
+    lookup = as_probe_release_lookup(relation_source)
+    if lookup is None:
+        return
+    center = nodes.get(center_id)
+    if center is None:
+        return
+    center_links = {key: links[key] for key in center.links if key in links}
+    probes = release_year_probes(center_links, nodes)
+    if not probes:
+        return
+    releases_by_pair = await lookup.release_years_for_probes(probes)
+    filled = apply_cross_role_release_years(links, releases_by_pair)
+    log.debug("Attached release years to %s links from %s probes", filled, len(probes))
 
 
 def repository_sources(

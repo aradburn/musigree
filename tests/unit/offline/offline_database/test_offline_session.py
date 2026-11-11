@@ -54,7 +54,7 @@ class TestGetOfflineSession:
         # Execute & Verify
         with pytest.raises(
             AssertionError,
-            match="OfflineDatabaseManager.offline_database_helper must be initialized",
+            match=r"OfflineDatabaseManager\.offline_database_helper must be initialized",
         ):
             await get_offline_session()
 

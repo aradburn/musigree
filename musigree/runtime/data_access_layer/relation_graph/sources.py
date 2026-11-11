@@ -1,18 +1,20 @@
 """Load entities and relations from the runtime repositories."""
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 from musigree.runtime.data_access_layer.runtime_relation_data_access import (
     RuntimeRelationDataAccess,
 )
-from musigree.runtime.runtime_database.runtime_entity_repository import (
-    RuntimeEntityRepository,
-)
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
-from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+
+if TYPE_CHECKING:
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+    from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
 # One IN-list this size stays within a single query for the usual node cap.
 ENTITY_LOOKUP_BATCH_SIZE = 1000
@@ -37,6 +39,37 @@ class RelationQuery(Protocol):
     ) -> list[RuntimeRelationResult]:
         """Return up to ``limit`` relations touching ``entity_ids``."""
         ...
+
+
+class ProbeReleaseLookup(Protocol):
+    """Release years for specific entity pairs, across every role."""
+
+    async def release_years_for_probes(
+        self,
+        probes: dict[int, set[int]],
+    ) -> dict[tuple[int, int], dict[str, int | None]]:
+        """Return release id to year for each probed pair that has a dated release."""
+        ...
+
+
+def supports_probe_release_lookup(source: object) -> bool:
+    """True when this object's class implements the pair year lookup.
+
+    Checking the class avoids treating a mock as a lookup. A mock answers
+    ``hasattr`` for every name.
+    """
+    return callable(getattr(type(source), "release_years_for_probes", None))
+
+
+def as_probe_release_lookup(source: object) -> ProbeReleaseLookup | None:
+    """Return the source when its class implements the pair year lookup.
+
+    ``RelationSource`` and ``ProbeReleaseLookup`` do not share a base. The
+    cast is from ``object``, after the class method has been checked.
+    """
+    if not supports_probe_release_lookup(source):
+        return None
+    return cast("ProbeReleaseLookup", source)
 
 
 class RelationSource(Protocol):
@@ -66,9 +99,7 @@ class RepositoryEntitySource:
         entities: list[RuntimeEntity] = []
         stop = len(entity_ids)
         for start in range(0, stop, ENTITY_LOOKUP_BATCH_SIZE):
-            found = await self._repository.search_multi(
-                entity_ids[start : start + ENTITY_LOOKUP_BATCH_SIZE]
-            )
+            found = await self._repository.search_multi(entity_ids[start : start + ENTITY_LOOKUP_BATCH_SIZE])
             entities.extend(found)
         return entities
 
@@ -103,3 +134,11 @@ class DatabaseRelationQuery:
             min_year=self._min_year,
             max_year=self._max_year,
         )
+
+    async def release_years_for_probes(
+        self,
+        probes: dict[int, set[int]],
+    ) -> dict[tuple[int, int], dict[str, int | None]]:
+        # Every dated year is returned. The graph then drops a link whose
+        # years all miss the request bounds, and trims the years it keeps.
+        return await self._repository.find_release_years_for_probes(probes)

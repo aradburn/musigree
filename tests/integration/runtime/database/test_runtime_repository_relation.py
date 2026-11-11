@@ -1,11 +1,10 @@
 """Tests for RelationRepository with async/await and pytest fixtures."""
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
 from musigree import utils
-from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
@@ -28,6 +27,12 @@ from musigree.runtime.runtime_domain.runtime_relation import (
 )
 from musigree.transfer.transfer_manager import TransferManager
 from tests.conftest import AbstractDatabaseTest
+from tests.release_years import release_years
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -116,7 +121,7 @@ class TestRuntimeRepositoryRelation(AbstractDatabaseTest):
             entity_two_id=created_entity_2.entity_id,
             entity_two_type=created_entity_2.entity_type,
             role="Composed By",
-            releases={"12": 1999},
+            releases=release_years({"12": 1999}),
         )
         expected = utils.normalize_dict(expected_relation.model_dump())
         assert actual == expected

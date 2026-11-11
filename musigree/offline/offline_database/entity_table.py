@@ -50,15 +50,15 @@ class EntityTable(OfflineBase):
     """
      The name of the entity.
     """
-    relation_counts: Mapped[dict | None] = mapped_column(type_=JSON, nullable=True)
+    relation_counts: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """
       Counts of relations to other entities.
     """
-    entity_metadata: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
+    entity_metadata: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
     """
      Additional metadata about the entity.
     """
-    entities: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
+    entities: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
     """
      Information about related entities.
     """
@@ -81,7 +81,8 @@ class EntityTable(OfflineBase):
     """
     Additional table arguments, including:
         - idx_entity_id_and_entity_type: A unique index on the entity_id and entity_type columns.
-        - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type columns.
+        - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type \
+columns.
     """
 
     def __init__(self, **entries: Any) -> None:

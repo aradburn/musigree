@@ -53,12 +53,14 @@ It uses `musigree` library for musigree specific operations.
 
 import logging
 from types import MappingProxyType
-from typing import Any
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING, Any
 
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
 from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 """
@@ -272,7 +274,7 @@ class ParserRelease(ParserBase):
                         name = current_buffer
                         current_buffer = ""
                         had_detail = True
-                    elif 1 < _bracket_depth:
+                    elif _bracket_depth > 1:
                         current_buffer += _character
                 elif _character == "]":
                     _bracket_depth -= 1

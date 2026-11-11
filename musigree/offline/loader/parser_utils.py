@@ -28,14 +28,16 @@ operations, `re` for regular expressions, `Optional` for type hinting,
 """
 
 import datetime
-import gzip
 import logging
 import re
-from collections.abc import Iterator
-from typing import IO
+from typing import IO, TYPE_CHECKING
 from xml.dom import minidom
 from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
+
+if TYPE_CHECKING:
+    import gzip
+    from collections.abc import Iterator
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 """
@@ -52,7 +54,8 @@ class ParserUtils:
 
     Attributes:
         DATE_REGEX (re.Pattern): Regular expression for matching date strings in YYYY-MM-DD format.
-        DATE_NO_DASHES_REGEX (re.Pattern): Regular expression for matching date strings in YYYYMMDD format.
+        DATE_NO_DASHES_REGEX (re.Pattern): Regular expression for matching date strings in YYYYMMDD
+        format.
         YEAR_REGEX (re.Pattern): Regular expression for matching year strings in YYYY format.
     """
 
@@ -139,9 +142,7 @@ class ParserUtils:
         return None
 
     @staticmethod
-    def validate_release_date(
-        year_str: str, month_str: str, day_str: str
-    ) -> datetime.datetime | None:
+    def validate_release_date(year_str: str, month_str: str, day_str: str) -> datetime.datetime | None:
         """
         Validates and creates a datetime object from year, month, and day strings.
 
@@ -168,7 +169,7 @@ class ParserUtils:
             if month > 12 >= day:
                 day, month = month, day
 
-            date = datetime.datetime(year, month, 1, 0, 0)  # noqa: DTZ001
+            date = datetime.datetime(year, month, 1, 0, 0)
             day_offset = day - 1
             date = date + datetime.timedelta(days=day_offset)
         except ValueError:
@@ -245,7 +246,8 @@ class ParserUtils:
             element (Element): The XML element.
 
         Returns:
-            list[str], optional: A list of strings, or None if the element is None or has no children.
+            list[str], optional: A list of strings, or None if the element is None or has no
+            children.
         """
         if element is not None and len(element):
             return [_.text for _ in element if _.text is not None]
@@ -269,7 +271,7 @@ class ParserUtils:
         return None
 
     @staticmethod
-    def iterparse(source: IO | gzip.GzipFile, tag: str) -> Iterator[Element]:
+    def iterparse(source: IO[bytes] | IO[str] | gzip.GzipFile, tag: str) -> Iterator[Element]:
         """
         Provides an iterator for parsing XML, yielding elements with a specific tag.
 

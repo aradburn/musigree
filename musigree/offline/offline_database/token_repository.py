@@ -1,6 +1,6 @@
 import logging
 import random
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, func, select
 
@@ -9,6 +9,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.token_table import TokenTable
 from musigree.offline.offline_domain.token import Token
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +56,7 @@ class TokenRepository(BaseRepository["TokenTable"]):
             UnprocessableError: If the offline_database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -77,7 +80,7 @@ class TokenRepository(BaseRepository["TokenTable"]):
             NotFoundError: If no token is found.
         """
         query = select(TokenTable.entity_id).where(TokenTable.token == token)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         ids = result.scalars().all()
 
@@ -93,7 +96,7 @@ class TokenRepository(BaseRepository["TokenTable"]):
         max_row = await self.count()
         random_row = random.randint(0, max_row - 1)
         query = select(TokenTable.entity_id).where(TokenTable.id == random_row)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         return result.scalar_one_or_none()
 

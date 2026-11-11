@@ -1,8 +1,7 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
-from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA, TEST_DIR
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
@@ -11,6 +10,11 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_database.token_repository import TokenRepository
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -146,7 +150,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         async with offline_transaction():
             entity_repository = EntityRepository()
             token_repository = TokenRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(
+                entity_repository, token_repository, entity
+            )
             actual = entity.entities
 
         # THEN
@@ -174,7 +180,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         async with offline_transaction():
             entity_repository = EntityRepository()
             token_repository = TokenRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(
+                entity_repository, token_repository, entity
+            )
             actual = entity.entities
 
         # THEN
@@ -203,7 +211,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         async with offline_transaction():
             entity_repository = EntityRepository()
             token_repository = TokenRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(
+                entity_repository, token_repository, entity
+            )
             actual = entity.entities
 
         # THEN
@@ -229,7 +239,9 @@ class TestEntityDataAccess(AbstractDatabaseTest):
         async with offline_transaction():
             entity_repository = EntityRepository()
             token_repository = TokenRepository()
-            await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
+            await OfflineEntityDataAccess.resolve_entity_references(
+                entity_repository, token_repository, entity
+            )
             actual = entity.entities
 
         # THEN
@@ -244,7 +256,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_resolve_release_references_1(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 637
@@ -268,7 +281,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_resolve_release_references_2(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 158
@@ -320,7 +334,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_resolve_release_references_3(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 1700
@@ -341,7 +356,8 @@ class TestEntityDataAccess(AbstractDatabaseTest):
     async def test_resolve_release_references_4(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_config: Configuration, is_load_offline_data_required: bool
+        offline_config: Configuration,
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         release_id = 1700

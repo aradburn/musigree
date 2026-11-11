@@ -1,13 +1,17 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
-from musigree.config import Configuration
 from musigree.constants import INSTRUMENTS_DATA, ROLES_DATA
 from musigree.library.cache.role_cache import RoleCache
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.loader.loader_role import LoaderRole
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")

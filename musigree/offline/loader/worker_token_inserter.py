@@ -1,14 +1,16 @@
 import asyncio
 import logging
 import multiprocessing
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.offline.offline_domain.token import Token
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.token import Token
 
 log = logging.getLogger(__name__)
 
@@ -61,13 +63,9 @@ def worker_token_inserter(token_list: list[Token], current_total: int, total_cou
     OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
     """Initialize the database engine."""
 
-    offline_token_dicts_list = OfflineEntityDataAccess.get_offline_token_dicts_from_offline_tokens(
-        token_list
-    )
+    offline_token_dicts_list = OfflineEntityDataAccess.get_offline_token_dicts_from_offline_tokens(token_list)
 
-    loop.run_until_complete(
-        worker_token_inserter_async(offline_token_dicts_list, current_total, total_count)
-    )
+    loop.run_until_complete(worker_token_inserter_async(offline_token_dicts_list, current_total, total_count))
 
     OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
     """Close the database engine."""

@@ -1,8 +1,9 @@
 """Common utilities and helper classes for end-to-end tests."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from playwright.async_api import APIResponse, Page
+if TYPE_CHECKING:
+    from playwright.async_api import APIResponse, Page
 
 # Test constants
 TEST_ARTIST_ID = 2239  # Seefeel

@@ -1,7 +1,7 @@
 """Public entry point for building a relation network around one entity."""
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.runtime.data_access_layer.relation_graph.assemble import (
     assemble_network,
@@ -15,17 +15,19 @@ from musigree.runtime.data_access_layer.relation_graph.roles import (
     RolePartition,
     partition_roles,
 )
-from musigree.runtime.data_access_layer.relation_graph.sources import (
-    EntitySource,
-    RelationSource,
-)
-from musigree.runtime.runtime_database.runtime_entity_repository import (
-    RuntimeEntityRepository,
-)
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+
+if TYPE_CHECKING:
+    from musigree.runtime.data_access_layer.relation_graph.sources import (
+        EntitySource,
+        RelationSource,
+    )
+    from musigree.runtime.runtime_database.runtime_entity_repository import (
+        RuntimeEntityRepository,
+    )
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +102,8 @@ class RelationGrapher:
             roles=self._roles,
             entity_source=entity_source,
             relation_source=relation_source,
+            min_year=self._min_year,
+            max_year=self._max_year,
         )
 
     @property

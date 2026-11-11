@@ -144,7 +144,8 @@ class TestOfflineRelationDataAccess:
         assert isinstance(artist_ids, set)
         assert isinstance(label_ids, set)
         assert isinstance(is_compilation, bool)
-        # For compilations, artist_ids should include track artists, not the "Various Artists" placeholder
+        # For compilations, artist_ids should include track artists, not the "Various Artists"
+        # placeholder
         assert artist_ids == {5, 6}  # Track artists
         assert label_ids == {2}
         assert is_compilation is True
@@ -319,7 +320,8 @@ class TestOfflineRelationDataAccess:
     #     }
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
     #
     #     # Assert
     #     assert result is not None
@@ -333,7 +335,8 @@ class TestOfflineRelationDataAccess:
     #     invalid_dict = {"incomplete": "data"}
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
     #
     #     # Assert
     #     assert result is None
@@ -358,7 +361,8 @@ class TestOfflineRelationDataAccess:
     #     ]
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
     #
     #     # Assert
     #     assert isinstance(result, list)
@@ -570,6 +574,7 @@ class TestRelationDataAccessEdgeCases:
     #         {"invalid": "data"},
     #         {"also": "invalid"},
     #     ]
-    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
     #     assert isinstance(result, list)
     #     assert len(result) == 0

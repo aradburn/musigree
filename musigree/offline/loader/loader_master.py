@@ -10,11 +10,8 @@ master data.
 """
 
 import logging
-from collections.abc import Callable
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_master import ParserMaster
 from musigree.offline.loader.worker_master_deleter import delete_masters_worker
@@ -23,6 +20,12 @@ from musigree.offline.loader.worker_master_updater import update_master_worker
 from musigree.offline.offline_database.master_repository import MasterRepository
 from musigree.offline.offline_database.master_table import MasterTable
 from musigree.offline.offline_database.offline_transaction import offline_transaction
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 """
@@ -63,9 +66,7 @@ class LoaderMaster(LoaderBase):
         log.debug(f"loader release pass one - date: {date}")
 
         master_repository = MasterRepository()
-        """Instance of MasterRepository for runtime_database operations on master data records."""
         master_parser = ParserMaster()
-        """Instance of ParserMaster for parsing master data."""
         masters_loaded = await cls.loader_pass_one_manager(
             repository=master_repository,
             parser=master_parser,
@@ -104,7 +105,6 @@ class LoaderMaster(LoaderBase):
         """
         async with offline_transaction():
             master_repository = MasterRepository()
-            """Instance of MasterRepository for runtime_database operations on master data records."""
             ids = await master_repository.get_ids()
         set_of_ids = set(ids)
         return set_of_ids

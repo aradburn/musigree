@@ -10,7 +10,6 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from starlette.middleware import Middleware
 from starlette.responses import HTMLResponse
 
 from musigree.app.fastapi_csp import (
@@ -21,18 +20,18 @@ from musigree.app.fastapi_csp import (
 )
 from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import TEMPLATES_DIR, AnalyticsType
+from tests.type_helpers import as_object
 
 if TYPE_CHECKING:
     # noinspection protected-member
     from Secweb._types import Content_Security_Policy_Options
+    from starlette.middleware import Middleware
 
 
 def _csp_middleware(app: FastAPI) -> Middleware:
     """Return the CSP middleware registered on the application."""
     matches = [
-        middleware
-        for middleware in app.user_middleware
-        if middleware.cls is ContentSecurityPolicyMiddleware
+        middleware for middleware in app.user_middleware if as_object(middleware.cls) is ContentSecurityPolicyMiddleware
     ]
     assert len(matches) == 1
     return matches[0]
@@ -137,10 +136,7 @@ class TestCSPMiddleware:
 
         # Assert
         csp_options = _csp_options(_csp_middleware(app))
-        assert (
-            "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
-            in csp_options["script-src"]
-        )
+        assert "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ " in csp_options["script-src"]
         assert "https://swetrix-api.musigree.com/ " in csp_options["connect-src"]
 
     def test_rendered_policy_adds_nonce_to_script_elements(

@@ -5,8 +5,8 @@ This module tests the MetadataRepository class which manages Metadata objects
 in the offline runtime_database.
 """
 
-from collections.abc import AsyncGenerator
 from datetime import datetime
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
@@ -19,6 +19,9 @@ from musigree.offline.offline_database.metadata_repository import MetadataReposi
 from musigree.offline.offline_database.metadata_table import MetadataTable
 from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker
@@ -37,7 +40,7 @@ class TestMetadataRepository:
             metadata_id=1,
             metadata_key="test_key",
             metadata_value="test_value",
-            metadata_timestamp=datetime(2023, 1, 1, 12, 0, 0),  # noqa: DTZ001
+            metadata_timestamp=datetime(2023, 1, 1, 12, 0, 0),
         )
 
     @pytest.fixture
@@ -46,7 +49,7 @@ class TestMetadataRepository:
         return MetadataUncommitted(
             metadata_key="new_key",
             metadata_value="new_value",
-            metadata_timestamp=datetime(2023, 1, 2, 12, 0, 0),  # noqa: DTZ001
+            metadata_timestamp=datetime(2023, 1, 2, 12, 0, 0),
         )
 
     @pytest.fixture
@@ -56,7 +59,7 @@ class TestMetadataRepository:
         table_mock.metadata_id = 1
         table_mock.metadata_key = "test_key"
         table_mock.metadata_value = "test_value"
-        table_mock.metadata_timestamp = datetime(2023, 1, 1, 12, 0, 0)  # noqa: DTZ001
+        table_mock.metadata_timestamp = datetime(2023, 1, 1, 12, 0, 0)
         return table_mock
 
     @pytest.fixture

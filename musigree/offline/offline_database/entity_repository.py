@@ -1,17 +1,20 @@
 import logging
 import re
-from collections.abc import AsyncGenerator, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, Select, delete, func, select, tuple_, update
 
 from musigree.constants import BULK_YIELD_SIZE
 from musigree.exceptions import DatabaseError, NotFoundError
-from musigree.library.fields.entity_type import EntityType
 from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_domain.entity import Entity
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+
+    from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 
@@ -89,11 +92,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         Raises:
             UnprocessableError: If the count function returns a non-integer value.
         """
-        query = (
-            select(func.count())
-            .select_from(self.schema_class)
-            .where(EntityTable.entity_type == entity_type)
-        )
+        query = select(func.count()).select_from(self.schema_class).where(EntityTable.entity_type == entity_type)
         result = await self.execute(query)
         value = result.scalar()
 
@@ -170,9 +169,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         query = select(mapped_entity(EntityTable)).where(EntityTable.id == id_)
         return await self._get_one_by_query(query)
 
-    async def get_by_entity_id_and_entity_type(
-        self, entity_id: int, entity_type: EntityType
-    ) -> Entity:
+    async def get_by_entity_id_and_entity_type(self, entity_id: int, entity_type: EntityType) -> Entity:
         """
         Retrieves an entity by its external entity ID and type.
 
@@ -251,9 +248,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         one = result.scalar()
         return one
 
-    async def get_id_by_entity_type_and_entity_name(
-        self, entity_type: EntityType, entity_name: str
-    ) -> int | None:
+    async def get_id_by_entity_type_and_entity_name(self, entity_type: EntityType, entity_name: str) -> int | None:
         """
         Retrieves an entity ID by its type and name.
 
@@ -272,9 +267,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         one = result.scalar()
         return one
 
-    async def get_id_by_entity_type_and_entity_id(
-        self, entity_type: EntityType, entity_id: int
-    ) -> int | None:
+    async def get_id_by_entity_type_and_entity_id(self, entity_type: EntityType, entity_id: int) -> int | None:
         """
         Retrieves an entity ID by its type and external entity ID.
 
@@ -301,9 +294,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         Returns:
             str | None: The entity name, or None if not found.
         """
-        result = await self._session.execute(
-            select(EntityTable.entity_name).where(EntityTable.id == id_)
-        )
+        result = await self._session.execute(select(EntityTable.entity_name).where(EntityTable.id == id_))
         return result.scalar_one_or_none()
 
     async def create(self, entity: Entity) -> Entity:
@@ -335,9 +326,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
         """
         query = (
             select(mapped_entity(EntityTable))
-            .where(
-                (EntityTable.entity_type == entity_type) & (EntityTable.entity_name == entity_name)
-            )
+            .where((EntityTable.entity_type == entity_type) & (EntityTable.entity_name == entity_name))
             .limit(1)
         )
         return await self._get_one_by_query(query)
@@ -361,7 +350,7 @@ class EntityRepository(BaseRepository["EntityTable"]):
             DatabaseError: If there is an error updating the entity.
         """
         query = update(self.schema_class).where(EntityTable.id == id_).values(payload)
-        _result: Result = await self._session.execute(query)
+        _result: Result[Any] = await self._session.execute(query)
         await self._session.flush()
 
     async def delete_by_id(self, id_: int) -> None:

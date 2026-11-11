@@ -2,7 +2,7 @@
 
 import gzip
 from datetime import date
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from xml.etree import ElementTree
 
@@ -27,6 +27,9 @@ from musigree.loader.run_generate_sitemap import (
     sitemap_filename,
     write_sitemap_files,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _NS = {"sm": SITEMAP_NAMESPACE}
 _GENERATED_ON = date(2026, 10, 6)

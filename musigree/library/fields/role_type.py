@@ -12,10 +12,14 @@ class RoleType:
     expression pattern for parsing bracketed text, and lists of aggregate roles.
 
     Attributes:
-        RoleType.Category (enum.Enum): An enumeration of the high-level categories that roles can fall into.
-        RoleType.Subcategory (enum.Enum): An enumeration of subcategories for more granular role classification.
-        category_names (MappingProxyType): A read-only mapping from Category enum members to their human-readable names.
-        subcategory_names (MappingProxyType): A read-only mapping from Subcategory enum members to their human-readable names.
+        RoleType.Category (enum.Enum): An enumeration of the high-level categories that roles can
+        fall into.
+        RoleType.Subcategory (enum.Enum): An enumeration of subcategories for more granular role
+        classification.
+        category_names (MappingProxyType): A read-only mapping from Category enum members to their
+        human-readable names.
+        subcategory_names (MappingProxyType): A read-only mapping from Subcategory enum members to
+        their human-readable names.
         aggregate_roles (tuple): A collection of role names that are considered "aggregate" roles.
     """
 

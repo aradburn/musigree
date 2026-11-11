@@ -5,8 +5,7 @@ This module tests the TokenRepository class which manages Token objects
 in the offline database.
 """
 
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -20,6 +19,9 @@ from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database.token_table import TokenTable
 from musigree.offline.offline_domain.token import Token
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker

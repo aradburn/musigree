@@ -7,11 +7,13 @@ or "MagicMock can't be used in 'await' expression" warnings when tests use
 TestClient without patching the cache.
 """
 
-from collections.abc import Generator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def cache_mock_with_async_methods(

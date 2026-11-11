@@ -146,7 +146,7 @@ def main() -> None:
 
     try:
         run_profiled_test()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"Error during test execution: {e}")
         import traceback
 

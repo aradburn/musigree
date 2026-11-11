@@ -52,8 +52,7 @@ def test_module_specific_role_cache():
     role_mappings = {"Producer": 1, "Engineer": 2}
 
     with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.runtime_database.runtime_relation_repository",
-        role_mappings
+        "musigree.runtime.runtime_database.runtime_relation_repository", role_mappings
     ):
         # Test code that uses RoleCache in that specific module
         result = repository.find_by_key({"role_name": "Producer", "subject": 1, "object": 2})
@@ -69,9 +68,7 @@ def test_with_role_categories():
     role_mappings = {"Producer": 1, "Engineer": 2}
     role_categories = {1: "Production", 2: "Technical"}
 
-    with RoleCacheMockHelper.mock_role_cache_with_categories(
-        role_mappings, role_categories
-    ):
+    with RoleCacheMockHelper.mock_role_cache_with_categories(role_mappings, role_categories):
         # Test code that uses both role lookups and categories
         mapping = RoleEntry.get_multiselect_mapping()
         assert "Production" in mapping
@@ -84,12 +81,10 @@ When you need more control or are using existing `@patch` decorators:
 ```python
 from unittest.mock import patch
 
-@patch('musigree.library.cache.role_cache.RoleCache')
+
+@patch("musigree.library.cache.role_cache.RoleCache")
 def test_with_patch_decorator(mock_role_cache):
-    RoleCacheMockHelper.setup_role_cache_mock(
-        mock_role_cache,
-        {"Producer": 1, "Engineer": 2}
-    )
+    RoleCacheMockHelper.setup_role_cache_mock(mock_role_cache, {"Producer": 1, "Engineer": 2})
     # Test code here
 ```
 
@@ -101,7 +96,7 @@ When testing code that spans multiple modules that import RoleCache:
 def test_multiple_modules():
     modules = [
         "musigree.runtime.runtime_database.runtime_relation_repository",
-        "musigree.runtime.data_access_layer.runtime_relation_data_access"
+        "musigree.runtime.data_access_layer.runtime_relation_data_access",
     ]
     role_mappings = {"Producer": 1, "Engineer": 2}
 
@@ -119,7 +114,7 @@ from tests.unit.runtime.runtime_database.test_utils import (
     COMMON_TEST_ROLES,
     PRODUCTION_ROLES,
     INSTRUMENT_ROLES,
-    VOCAL_ROLES
+    VOCAL_ROLES,
 )
 
 # Use predefined roles
@@ -139,8 +134,7 @@ with RoleCacheMockHelper.mock_role_cache(PRODUCTION_ROLES):
 ```python
 def test_runtime_relation_repository():
     with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.runtime_database.runtime_relation_repository",
-        {"Producer": 1}
+        "musigree.runtime.runtime_database.runtime_relation_repository", {"Producer": 1}
     ):
         # Test repository methods that use role_name lookups
         pass
@@ -154,8 +148,7 @@ def test_role_entry():
     role_categories = {1: "Production", 2: "Technical"}
 
     with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.data_access_layer.role_entry",
-        role_mappings
+        "musigree.runtime.data_access_layer.role_entry", role_mappings
     ) as mock_cache:
         mock_cache.role_id_to_role_category_lookup = role_categories
         # Test RoleEntry.get_multiselect_mapping()
@@ -169,8 +162,7 @@ def test_runtime_role_repository():
     # These typically don't need RoleCache mocking since they manage roles
     # But if they do interact with cache, use:
     with RoleCacheMockHelper.mock_role_cache_in_module(
-        "musigree.runtime.runtime_database.runtime_role_repository",
-        {"Producer": 1}
+        "musigree.runtime.runtime_database.runtime_role_repository", {"Producer": 1}
     ):
         pass
 ```

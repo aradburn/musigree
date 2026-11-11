@@ -1,5 +1,6 @@
 """
-This module provides a context manager for managing runtime_database transactions in the runtime environment.
+This module provides a context manager for managing runtime_database transactions in the runtime
+environment.
 
 It defines the `runtime_transaction` context manager, which is used to
 encapsulate runtime_database operations within a transaction. This ensures that
@@ -17,17 +18,21 @@ Key functionalities include:
 """
 
 import logging
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_session import (
     CTX_RUNTIME_SESSION,
     get_runtime_session,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
 

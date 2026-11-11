@@ -47,6 +47,7 @@ exceptions including `DatabaseError`, `IntegrityError`, and `OperationalError`.
 import asyncio
 import logging
 import multiprocessing
+from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -60,9 +61,11 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.offline.offline_domain.master import Master
-from musigree.offline.offline_domain.relation import RelationUncommitted
-from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.master import Master
+    from musigree.offline.offline_domain.relation import RelationUncommitted
+    from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
@@ -70,9 +73,7 @@ The logger for the worker relation pass one module.
 """
 
 
-async def process_relation_pass_one_worker_async(
-    release_ids: list[int], current_total: int, total_count: int
-) -> None:
+async def process_relation_pass_one_worker_async(release_ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing relations in the first pass.
 
@@ -183,7 +184,7 @@ async def process_release(release_id: int) -> None:
 
     release: Release | None = None
     """Initialize release variable."""
-    relations: list[RelationUncommitted] = []
+
     try:
         """Attempt to process the release."""
         release = await release_repository.get_by_id(release_id)
@@ -222,9 +223,7 @@ async def process_release(release_id: int) -> None:
             """Create the relations in bulk."""
 
 
-def process_relation_pass_one_worker(
-    release_ids: list[int], current_total: int, total_count: int
-) -> None:
+def process_relation_pass_one_worker(release_ids: list[int], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -237,9 +236,7 @@ def process_relation_pass_one_worker(
     OfflineDatabaseManager.reinitialize_offline_database_async_engine(loop)
     """Initialize the database engine."""
 
-    loop.run_until_complete(
-        process_relation_pass_one_worker_async(release_ids, current_total, total_count)
-    )
+    loop.run_until_complete(process_relation_pass_one_worker_async(release_ids, current_total, total_count))
 
     OfflineDatabaseManager.dispose_offline_database_async_engine(loop)
     """Close the database engine."""

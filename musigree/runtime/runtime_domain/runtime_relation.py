@@ -1,5 +1,6 @@
 """
-This module defines the offline_domain objects for representing relations in the Musigree runtime system.
+This module defines the offline_domain objects for representing relations in the Musigree runtime
+system.
 
 It provides classes for handling relations, including their representation in
 various stages, such as before runtime_database persistence (`RuntimeRelationUncommitted`),
@@ -32,7 +33,7 @@ __all__ = [
 ]
 
 import logging
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import StrictInt, field_serializer
 
@@ -41,7 +42,9 @@ from musigree.library.cache.role_cache import RoleCache
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_id import to_entity_external_id
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.offline_domain.relation import RelationDB
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -278,7 +281,7 @@ class RuntimeRelation(_RuntimeRelationBase):
         Returns:
             RuntimeRelationDB: The runtime_database representation of the runtime relation.
         """
-        relation_dict: dict = self.model_dump()
+        relation_dict: dict[str, Any] = self.model_dump()
         return RuntimeRelationDB.model_validate(relation_dict)
 
     @classmethod

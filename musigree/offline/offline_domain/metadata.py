@@ -55,7 +55,8 @@ class _MetadataBase(InternalDomainObject):
 
 class MetadataUncommitted(_MetadataBase):
     """
-    Schema used for creating an instance without an ID before it is persisted into the runtime_database.
+    Schema used for creating an instance without an ID before it is persisted into the
+    runtime_database.
 
     This class represents metadata that has not yet been stored in the runtime_database.
     It inherits attributes from `_MetadataBase` and is used as a data structure

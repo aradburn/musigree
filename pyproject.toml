@@ -14,7 +14,7 @@ dependencies = [
     "fastapi==0.162.0",
     "secweb==2.0.0",
     "sqlalchemy[asyncio]==2.1.6",
-    "psycopg[binary]==3.3.6",
+    "psycopg[binary]==3.3.8",
     "aiosqlite==0.22.1",
     "pydantic==2.14.1",
     "pydantic-settings==2.16.1",
@@ -74,14 +74,14 @@ dev = [
     "pytest-mock==3.17.0",
     "pytest-asyncio==1.4.1",
     "pytest-cov==7.1.0",
-    "mypy==2.4.0",
+    "mypy==2.4.1",
     "memray==1.20.0",
     "pytest-memray==1.11.0",
     "sortedcontainers-stubs==2.4.3",
     "types-requests==2.33.0.20261006",
     "locust==2.47.0",
-    "ruff==0.17.2",
-    "hatchling==1.32.4",
+    "ruff==0.17.4",
+    "hatchling==1.33.0",
     "yappi==1.7.6",
     "pre-commit==4.7.0",
     "playwright==1.64.1",
@@ -92,14 +92,24 @@ reinstall-package = ["musigree"]
 
 [tool.mypy]
 python_version = "3.14"
-#strict = true                    # Enable more checks
-warn_return_any = true
+strict = true                    # Enable more checks
+warn_unused_ignores = true
 disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
 ignore_missing_imports = false   # Display error for all missing imports
+# Luigi is py.typed, but Task, Parameter, Target, and build() have no annotations.
+# Module names are prefixes, so this covers luigi.task, luigi.parameter, and so on.
+untyped_calls_exclude = ["luigi"]
 # SQLAlchemy 2.1 removed sqlalchemy.ext.mypy; typed ORM mappings are checked natively.
 
 [tool.ruff]
-line-length = 100                # Line length for formatting
+line-length = 120                # Line length for formatting
 target-version = "py314"         # Target Python version
 
 [tool.ruff.format]
@@ -107,5 +117,50 @@ indent-style = "space"
 quote-style = "double"
 
 [tool.ruff.lint]
-extend-select = ["B"]
+# Modern, aggressive rule selections for clean Python 3.14 code
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes (vital syntax/logic checks)
+    "I", # isort (native high-speed import sorting)
+    "B", # flake8-bugbear (catches modern anti-patterns)
+    "UP", # pyupgrade (forces Python 3.14 language optimizations)
+    "C4", # flake8-comprehensions (optimizes dict/list allocation)
+    "SIM", # flake8-simplify (suggests modern idiomatic code expressions)
+    "TCH", # flake8-type-checking (manages type-checking import blocks)
+    "RUF", # Ruff-specific rules (including block-suppression tracking)
+]
+
+# Explicitly exclude outdated rules or hyper-pedantic noise
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "E501", # Line length handled by formatter
+]
+
 fixable = ["ALL"]                # Allow automatic fixes for all fixable issues
+unfixable = []
+# Discogs role names include these characters on purpose.
+allowed-confusables = ["–", "＆", "［", "］"]
+
+[tool.ruff.lint.flake8-type-checking]
+# FastAPI reads route annotations while registering endpoints. Python 3.14
+# evaluates those annotations lazily, so the dependency aliases must exist
+# at runtime.
+runtime-evaluated-decorators = [
+    "fastapi.APIRouter.get",
+    "fastapi.APIRouter.post",
+    "fastapi.APIRouter.put",
+    "fastapi.APIRouter.patch",
+    "fastapi.APIRouter.delete",
+    "fastapi.FastAPI.get",
+]
+# SQLAlchemy and Pydantic evaluate annotations while creating classes.
+runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+    "sqlalchemy.orm.DeclarativeBase",
+    "musigree.library.domain.base.InternalDomainObject",
+    "musigree.offline.offline_database.base_table.OfflineBase",
+    "musigree.runtime.runtime_database.runtime_base_table.RuntimeBase",
+]

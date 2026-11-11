@@ -1,16 +1,18 @@
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.cache.role_cache import RoleCache
-from musigree.offline.offline_domain.relation import RelationDB
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
 from musigree.runtime.runtime_domain.runtime_relation import (
     RuntimeRelationInternal,
     RuntimeRelationResult,
     to_runtime_relation_db_dict,
 )
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.relation import RelationDB
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -49,13 +51,9 @@ class RuntimeRelationDataAccess:
         assert ids
         assert role_names
 
-        role_ids: list[int] = [
-            RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names
-        ]
+        role_ids: list[int] = [RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names]
 
-        relation_internals: list[
-            RuntimeRelationInternal
-        ] = await relation_repository.find_by_entities_and_roles(
+        relation_internals: list[RuntimeRelationInternal] = await relation_repository.find_by_entities_and_roles(
             ids,
             role_ids,
             limit,

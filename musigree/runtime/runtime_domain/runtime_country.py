@@ -1,7 +1,9 @@
 """
-This module defines the offline_domain objects for representing countries in the Musigree runtime system.
+This module defines the offline_domain objects for representing countries in the Musigree runtime
+system.
 
-It provides the `RuntimeCountry` class for handling unique country names. These names are not official names and can be whatever the entry in the Discogs runtime_database is.
+It provides the `RuntimeCountry` class for handling unique country names. These names are not
+official names and can be whatever the entry in the Discogs runtime_database is.
 
 """
 

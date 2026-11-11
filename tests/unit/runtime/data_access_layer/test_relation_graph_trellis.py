@@ -1,14 +1,36 @@
 """Unit tests for trellis layout."""
 
+from typing import overload
+
 from musigree.library.fields.entity_id import to_entity_internal_id
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.relation_graph.trellis import (
     assign_clusters,
     build_trellis,
+    find_trellis_distance,
 )
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+from tests.release_years import release_years
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    entities: dict[str, object] = ...,
+) -> RuntimeEntity: ...
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    entities: None = None,
+) -> RuntimeEntity: ...
 
 
 def artist(
@@ -17,6 +39,8 @@ def artist(
     *,
     entities: dict[str, object] | None = None,
 ) -> RuntimeEntity:
+    # Callers that pass a dict match the overload above, so literal keys are
+    # widened. None is the runtime default and is not a shared mutable value.
     return RuntimeEntity(
         id=to_entity_internal_id(entity_id, EntityType.ARTIST),
         entity_id=entity_id,
@@ -24,7 +48,7 @@ def artist(
         entity_name=name,
         relation_counts={},
         entity_metadata={},
-        entities=entities or {},
+        entities=dict(entities or {}),
         countries=None,
         genres=None,
         styles=None,
@@ -37,7 +61,7 @@ def link(one: int, two: int) -> RuntimeRelationResult:
         entity_one_type=EntityType.ARTIST,
         entity_two_id=two,
         entity_two_type=EntityType.ARTIST,
-        releases={"1": 3},
+        releases=release_years({"1": 3}),
         role="Artist",
         distance=None,
     )
@@ -117,3 +141,46 @@ def test_assign_clusters_numbers_entities_that_list_aliases() -> None:
 
     assert nodes[main.id].cluster > 0
     assert nodes[alias.id].cluster == 0
+
+
+def test_find_trellis_distance_chooses_the_largest_mean_under_the_threshold() -> None:
+    """Means are sum(sizes) ** (1/n). The highest mean still below the threshold wins."""
+    center = TrellisNode(artist(1, "Center"), 0)
+    near = TrellisNode(artist(2, "Near"), 1)
+    far = TrellisNode(artist(3, "Far"), 2)
+    center.subgraph_size = 1
+    near.subgraph_size = 4
+    far.subgraph_size = 9
+
+    winning_distance = find_trellis_distance({0: [center], 1: [near], 2: [far]}, 5)
+
+    assert winning_distance == 1
+
+
+def test_find_trellis_distance_promotes_a_shallow_winner() -> None:
+    """A winner in the first half of the distances is moved one step deeper."""
+    center = TrellisNode(artist(1, "Center"), 0)
+    middle = TrellisNode(artist(2, "Middle"), 1)
+    far = TrellisNode(artist(3, "Far"), 2)
+    center.subgraph_size = 1
+    middle.subgraph_size = 100
+    far.subgraph_size = 100
+
+    winning_distance = find_trellis_distance({0: [center], 1: [middle], 2: [far]}, 10)
+
+    assert winning_distance == 1
+
+
+def test_find_trellis_distance_ignores_unmeasured_nodes_and_sorts_by_entity_key() -> None:
+    """Nodes without a subgraph size are left out of the mean. The distance list is sorted."""
+    later = TrellisNode(artist(9, "Later"), 1)
+    earlier = TrellisNode(artist(2, "Earlier"), 1)
+    unmeasured = TrellisNode(artist(4, "Unmeasured"), 1)
+    later.subgraph_size = 4
+    earlier.subgraph_size = 4
+    by_distance = {1: [later, unmeasured, earlier]}
+
+    winning_distance = find_trellis_distance(by_distance, 10)
+
+    assert winning_distance == 1
+    assert by_distance[1] == [earlier, unmeasured, later]

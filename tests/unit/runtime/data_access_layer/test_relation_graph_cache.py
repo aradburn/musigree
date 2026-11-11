@@ -1,6 +1,6 @@
 """Unit tests for relation neighborhood caching."""
 
-from collections.abc import Iterator
+from typing import TYPE_CHECKING, overload
 
 import pytest
 
@@ -15,11 +15,38 @@ from musigree.runtime.data_access_layer.relation_graph.cache import (
 )
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+from tests.release_years import release_years
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    entities: dict[str, object] = ...,
+) -> RuntimeEntity: ...
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    entities: None = None,
+) -> RuntimeEntity: ...
 
 
 def artist(
-    entity_id: int, name: str, *, entities: dict[str, object] | None = None
+    entity_id: int,
+    name: str,
+    *,
+    entities: dict[str, object] | None = None,
 ) -> RuntimeEntity:
+    # Callers that pass a dict match the overload above, so literal keys are
+    # widened. None is the runtime default and is not a shared mutable value.
     return RuntimeEntity(
         id=to_entity_internal_id(entity_id, EntityType.ARTIST),
         entity_id=entity_id,
@@ -27,7 +54,7 @@ def artist(
         entity_name=name,
         relation_counts={},
         entity_metadata={},
-        entities=entities or {},
+        entities=dict(entities or {}),
         countries=None,
         genres=None,
         styles=None,
@@ -40,7 +67,7 @@ def relation(one: int, two: int, role: str = "Producer") -> RuntimeRelationResul
         entity_one_type=EntityType.ARTIST,
         entity_two_id=two,
         entity_two_type=EntityType.ARTIST,
-        releases={"1": 1999},
+        releases=release_years({"1": 1999}),
         role=role,
         distance=None,
     )

@@ -3,8 +3,7 @@ Unit tests for musigree.app.fastapi_app module.
 """
 
 import logging
-from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -27,10 +26,31 @@ from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.exceptions import BaseError
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 def _stub_assets_router() -> tuple[APIRouter, MagicMock]:
     """Return a real APIRouter; FastAPI 0.141 rejects MagicMock routers."""
     return APIRouter(), MagicMock()
+
+
+async def _invoke_http_exception_handler(
+    handler: Callable[..., Any],
+    request: Any,
+    exc: BaseException,
+) -> Response:
+    """Call an HTTP exception handler and return its response.
+
+    Starlette types these handlers as returning either a response or an
+    awaitable response. The ``isinstance`` check keeps the await on the
+    awaitable path.
+    """
+    result = handler(request, exc)
+    if isinstance(result, Response):
+        return result
+    awaited_result: Response = await result
+    return awaited_result
 
 
 def _middleware_entry(
@@ -72,9 +92,9 @@ class TestCreateApp:
 
             # Assert
             assert isinstance(app, FastAPI)
-            assert app.title == "Musigree"  # type: ignore
-            assert app.description == "Musigree API for exploring music relationships"  # type: ignore
-            assert app.version == "1.0.0"  # type: ignore
+            assert app.title == "Musigree"
+            assert app.description == "Musigree API for exploring music relationships"
+            assert app.version == "1.0.0"
             tag_names = [tag["name"] for tag in (app.openapi_tags or [])]
             assert tag_names == ["api", "ui", "healthcheck", "assets"]
 
@@ -151,14 +171,10 @@ class TestCreateApp:
                 _middleware_entry(app, middleware_class)
 
             headers = {
-                name.decode(): value.decode()
-                for name, value in _middleware_entry(app, SetMiddleware).kwargs["headers"]
+                name.decode(): value.decode() for name, value in _middleware_entry(app, SetMiddleware).kwargs["headers"]
             }
             assert headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
-            assert (
-                headers["Strict-Transport-Security"]
-                == "max-age=2592000; includeSubDomains; preload"
-            )
+            assert headers["Strict-Transport-Security"] == "max-age=2592000; includeSubDomains; preload"
             assert headers["X-Content-Type-Options"] == "nosniff"
             assert headers["X-DNS-Prefetch-Control"] == "on"
             assert headers["X-Frame-Options"] == "DENY"
@@ -190,16 +206,8 @@ class TestCreateApp:
             # Check that routes exist (the routers have been included)
             # We should have routes from the included routers plus static files
             assert len(app.routes) > 0
-            route_paths = {
-                context.path
-                for context in iter_route_contexts(app.routes)
-                if context.path is not None
-            }
-            assert any(
-                path.startswith("/api/") or path == "/api"
-                for path in route_paths
-                if path is not None
-            )
+            route_paths = {context.path for context in iter_route_contexts(app.routes) if context.path is not None}
+            assert any(path.startswith("/api/") or path == "/api" for path in route_paths if path is not None)
             assert "/health" in route_paths
 
 
@@ -240,7 +248,7 @@ class TestExceptionHandlers:
         error = BaseError(message="Test error", status_code=400)
 
         # Find the exception handler
-        handler: Callable | None = None
+        handler: Callable[..., Any] | None = None
         for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
@@ -249,17 +257,11 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        if handler is not None:
-            # noinspection PyCallingNonCallable
-            result: Response | Awaitable[Response] = handler(mock_request, error)
-            if hasattr(result, "__await__"):
-                response: Response = await result  # type: ignore
-            else:
-                response = result  # type: ignore
+        response = await _invoke_http_exception_handler(handler, mock_request, error)
 
-            # Assert
-            assert isinstance(response, JSONResponse)
-            assert response.status_code == 400
+        # Assert
+        assert isinstance(response, JSONResponse)
+        assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_base_error_handler_non_api_route(self, app: FastAPI) -> None:
@@ -270,7 +272,7 @@ class TestExceptionHandlers:
         error = BaseError(message="Test error", status_code=500)
 
         # Find the exception handler
-        handler: Callable | None = None
+        handler: Callable[..., Any] | None = None
         for exc_type, exc_handler in app.exception_handlers.items():
             if exc_type == BaseError:
                 handler = exc_handler
@@ -279,19 +281,12 @@ class TestExceptionHandlers:
         assert handler is not None, "BaseError handler not found"
 
         # Act
-        if handler is not None:
-            # noinspection PyCallingNonCallable
-            result: Response | Awaitable[Response] = handler(mock_request, error)
-            response: Response
-            if hasattr(result, "__await__"):
-                response = await result  # type: ignore
-            else:
-                response = result  # type: ignore
+        response = await _invoke_http_exception_handler(handler, mock_request, error)
 
-            # Assert
-            assert response.status_code == 500
-            # Response should be a TemplateResponse for non-API routes
-            assert hasattr(response, "template")
+        # Assert
+        assert response.status_code == 500
+        # Response should be a TemplateResponse for non-API routes
+        assert hasattr(response, "template")
 
     @pytest.mark.asyncio
     async def test_not_found_handler(self, app: FastAPI) -> None:
@@ -306,12 +301,7 @@ class TestExceptionHandlers:
         assert handler is not None, "404 handler not found"
 
         # Act
-        result: Response | Awaitable[Response] = handler(mock_request, exc)
-        response: Response
-        if hasattr(result, "__await__"):
-            response = await result  # type: ignore
-        else:
-            response = result  # type: ignore
+        response = await _invoke_http_exception_handler(handler, mock_request, exc)
 
         # Assert
         assert response.status_code == 404
@@ -330,12 +320,7 @@ class TestExceptionHandlers:
         assert handler is not None, "500 handler not found"
 
         # Act
-        result: Response | Awaitable[Response] = handler(mock_request, exc)
-        response: Response
-        if hasattr(result, "__await__"):
-            response = await result  # type: ignore
-        else:
-            response = result  # type: ignore
+        response = await _invoke_http_exception_handler(handler, mock_request, exc)
 
         # Assert
         assert response.status_code == 500
@@ -509,14 +494,14 @@ class TestIntegrationScenarios:
 
             # Assert
             # Check that exception handlers are registered
-            assert BaseError in app.exception_handlers  # type: ignore
-            assert 404 in app.exception_handlers  # type: ignore
-            assert 500 in app.exception_handlers  # type: ignore
+            assert BaseError in app.exception_handlers
+            assert 404 in app.exception_handlers
+            assert 500 in app.exception_handlers
 
             # Test the handlers exist and are callable
-            base_error_handler = app.exception_handlers[BaseError]  # type: ignore
-            not_found_handler = app.exception_handlers[404]  # type: ignore
-            server_error_handler = app.exception_handlers[500]  # type: ignore
+            base_error_handler = app.exception_handlers[BaseError]
+            not_found_handler = app.exception_handlers[404]
+            server_error_handler = app.exception_handlers[500]
 
             assert callable(base_error_handler)
             assert callable(not_found_handler)

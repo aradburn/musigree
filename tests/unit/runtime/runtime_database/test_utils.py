@@ -41,10 +41,12 @@ Examples:
         pass
 """
 
-from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 class SessionMockHelper:

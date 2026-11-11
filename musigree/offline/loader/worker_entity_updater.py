@@ -180,7 +180,8 @@ async def update_entities_worker_async(
             except NotFoundError:
                 """Handle the case where the entity is not found."""
                 # log.debug(
-                #     f"New insert in update_entities_worker: {updated_entity.entity_id}-{updated_entity.entity_type}"
+                #     f"New insert in update_entities_worker:
+                # {updated_entity.entity_id}-{updated_entity.entity_type}"
                 # )
                 try:
                     """Attempt to create a new entity."""
@@ -200,15 +201,12 @@ async def update_entities_worker_async(
                 raise
 
     log.info(
-        f"[{proc_name}] processed_count: {processed_count}, "
-        + f"updated: {updated_count}, inserted: {inserted_count}"
+        f"[{proc_name}] processed_count: {processed_count}, " + f"updated: {updated_count}, inserted: {inserted_count}"
     )
     """Log the number of entities processed, updated, and inserted."""
 
 
-def update_entities_worker(
-    bulk_updates: list[dict[str, Any]], current_total: int, total_count: int
-) -> None:
+def update_entities_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

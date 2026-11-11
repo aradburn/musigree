@@ -37,12 +37,10 @@ sorted sets of IDs, and `concurrent.futures.ProcessPoolExecutor` for concurrent 
 """
 
 import logging
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
-from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.worker_relation_pass_one import (
     process_relation_pass_one_worker,
@@ -50,6 +48,11 @@ from musigree.offline.loader.worker_relation_pass_one import (
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 """
@@ -89,9 +92,7 @@ class LoaderRelation(LoaderBase):
 
         batched_release_ids = utils.batched(release_ids, BULK_INSERT_BATCH_SIZE)
 
-        worker_coroutines = utils.worker_generator(
-            process_relation_pass_one_worker, batched_release_ids, total_count
-        )
+        worker_coroutines = utils.worker_generator(process_relation_pass_one_worker, batched_release_ids, total_count)
 
         assert OfflineDatabaseManager.offline_config is not None
 

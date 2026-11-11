@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, select
 
@@ -10,6 +10,9 @@ from musigree.runtime.runtime_database.runtime_base_repository import (
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_genre_table import RuntimeGenreTable
 from musigree.runtime.runtime_domain.runtime_genre import RuntimeGenre
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +62,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository["RuntimeGenreTable"]):
         """
         query = select(mapped_entity(RuntimeGenreTable)).where(RuntimeGenreTable.id == id_)
 
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -80,7 +83,7 @@ class RuntimeGenreRepository(RuntimeBaseRepository["RuntimeGenreTable"]):
             NotFoundError: If no genre is found with the given name.
         """
         query = select(mapped_entity(RuntimeGenreTable)).where(RuntimeGenreTable.genre_name == name)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError

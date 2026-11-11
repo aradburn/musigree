@@ -1,5 +1,6 @@
 """
-This module defines the base class for declarative base and a type variable for runtime runtime_database tables.
+This module defines the base class for declarative base and a type variable for runtime
+runtime_database tables.
 
 It provides a foundation for creating tables in the runtime runtime_database using SQLAlchemy's
 Declarative Base system.

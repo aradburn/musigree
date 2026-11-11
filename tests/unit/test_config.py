@@ -1,6 +1,5 @@
 import os
-
-from pytest import MonkeyPatch
+from typing import TYPE_CHECKING
 
 from musigree.config import (
     PostgresDevelopmentConfiguration,
@@ -10,6 +9,9 @@ from musigree.config import (
     SqliteTestConfiguration,
 )
 from musigree.constants import CacheType, DatabaseType, ThreadingModel
+
+if TYPE_CHECKING:
+    from pytest import MonkeyPatch
 
 
 def test_pydantic_sqlite_test_config() -> None:

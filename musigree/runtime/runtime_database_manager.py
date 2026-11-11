@@ -1,15 +1,19 @@
 import logging
 import multiprocessing
-from asyncio import AbstractEventLoop
+from typing import TYPE_CHECKING
 
 from sqlalchemy.event import listen
 from sqlalchemy.ext.asyncio import async_sessionmaker, close_all_sessions
 
-from musigree.config import Configuration
 from musigree.constants import DatabaseType, ThreadingModel
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeDatabaseHelper,
-)
+
+if TYPE_CHECKING:
+    from asyncio import AbstractEventLoop
+
+    from musigree.config import Configuration
+    from musigree.runtime.runtime_database.runtime_database_helper import (
+        RuntimeDatabaseHelper,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -71,11 +75,9 @@ class RuntimeDatabaseManager:
         )
 
         # a async_sessionmaker(), also in the same scope as the engine
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = (
-            async_sessionmaker(
-                bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
-                expire_on_commit=False,
-            )
+        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory = async_sessionmaker(
+            bind=RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine,
+            expire_on_commit=False,
         )
 
         # Logging level for SqlAlchemy set in logging_config
@@ -116,9 +118,7 @@ class RuntimeDatabaseManager:
                 and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
             ):
                 loop.run_until_complete(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
-                        close=False
-                    )
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=False)
                 )
 
     @classmethod
@@ -137,7 +137,5 @@ class RuntimeDatabaseManager:
                 and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
             ):
                 loop.run_until_complete(
-                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(
-                        close=True
-                    )
+                    RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=True)
                 )

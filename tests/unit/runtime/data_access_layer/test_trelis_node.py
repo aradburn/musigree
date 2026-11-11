@@ -1,3 +1,5 @@
+from typing import cast
+
 from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.trellis_node import TrellisNode
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
@@ -310,11 +312,11 @@ def test_subgraph_size_property_setter() -> None:
 
     # Test setting subgraph_size
     node.subgraph_size = 10
-    assert node.subgraph_size == 10
+    assert cast("int", node.subgraph_size) == 10
 
     # Test setting subgraph_size with int
     node.subgraph_size = 15
-    assert node.subgraph_size == 15
+    assert cast("int", node.subgraph_size) == 15
 
 
 def test_entity_key_property() -> None:

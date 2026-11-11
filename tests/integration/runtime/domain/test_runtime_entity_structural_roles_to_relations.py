@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,6 +14,9 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 log = logging.getLogger(__name__)
 
 
@@ -24,8 +27,9 @@ class TestRuntimeEntityStructuralRolesToRelations(AbstractDatabaseTest):
     async def test_01(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """Test structural roles to relations conversion."""
         entity_id = 430141

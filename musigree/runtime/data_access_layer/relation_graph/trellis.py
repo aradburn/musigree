@@ -1,16 +1,18 @@
 """Turn collected nodes and links into a trellis rooted at the center."""
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.library.fields.entity_type import EntityType
 from musigree.runtime.data_access_layer.runtime_entity_data_access import (
     RuntimeEntityDataAccess,
 )
-from musigree.runtime.data_access_layer.trellis_node import TrellisNode
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
-from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+
+if TYPE_CHECKING:
+    from musigree.library.fields.entity_type import EntityType
+    from musigree.runtime.data_access_layer.trellis_node import TrellisNode
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+    from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
 
 log = logging.getLogger(__name__)
 
@@ -67,12 +69,12 @@ def build_trellis(
     center_id: int,
 ) -> tuple[dict[int, TrellisNode], dict[str, RuntimeRelationResult]]:
     """Connect links, measure the center's tree, and drop anything unreachable."""
+    for node in nodes.values():
+        node.clear_connections()
     links = links_inside_nodes(links, nodes)
     attach_links(nodes, links)
     measure_subgraphs(nodes[center_id])
-    reachable = {
-        entity_id: node for entity_id, node in nodes.items() if node.subgraph_size is not None
-    }
+    reachable = {entity_id: node for entity_id, node in nodes.items() if node.subgraph_size is not None}
     links = links_inside_nodes(links, reachable)
     log.debug("Built trellis: %s nodes / %s links", len(reachable), len(links))
     return reachable, links
@@ -115,12 +117,8 @@ def network_payload(
     links: dict[str, RuntimeRelationResult],
 ) -> dict[str, Any]:
     """JSON-ready network, with nodes and links ordered by key."""
-    json_links = tuple(
-        link.as_json() for _key, link in sorted(links.items(), key=lambda item: item[0])
-    )
-    json_nodes = tuple(
-        node.as_json() for _entity_id, node in sorted(nodes.items(), key=lambda item: item[0])
-    )
+    json_links = tuple(link.as_json() for _key, link in sorted(links.items(), key=lambda item: item[0]))
+    json_nodes = tuple(node.as_json() for _entity_id, node in sorted(nodes.items(), key=lambda item: item[0]))
     return {
         "center": {
             "key": center_entity.json_entity_key,
@@ -131,7 +129,10 @@ def network_payload(
     }
 
 
-def find_trellis_distance(trellis_nodes_by_distance: dict[int, list], threshold: float) -> int:
+def find_trellis_distance(
+    trellis_nodes_by_distance: dict[int, list[TrellisNode]],
+    threshold: float,
+) -> int:
     """Pick a distance whose average subgraph size falls under ``threshold``."""
     log.debug("Maximum depth: %s", max(trellis_nodes_by_distance))
     log.debug("Subgraph threshold: %s", threshold)
@@ -139,16 +140,22 @@ def find_trellis_distance(trellis_nodes_by_distance: dict[int, list], threshold:
     for distance, trellis_nodes in trellis_nodes_by_distance.items():
         trellis_nodes_by_distance[distance] = sorted(
             trellis_nodes,
-            key=lambda node: node.entity_key,
+            key=lambda _node: _node.entity_key,
         )
-        sizes = sorted(node.subgraph_size for node in trellis_nodes)
+        # subgraph_size stays None until the node is measured. sum() only accepts numbers.
+        measured_sizes: list[int] = []
+        for node in trellis_nodes:
+            subgraph_size = node.subgraph_size
+            if subgraph_size is not None:
+                measured_sizes.append(subgraph_size)
+        sizes = sorted(measured_sizes)
+        if not sizes:
+            continue
         geometric = sum(sizes) ** (1.0 / len(sizes))
         distancewise_average_subgraph_size[distance] = geometric
         log.debug("At distance %s: %s geometric mean", distance, geometric)
     winning_distance = 0
-    pairs = (
-        (average, distance) for distance, average in distancewise_average_subgraph_size.items()
-    )
+    pairs = ((average, distance) for distance, average in distancewise_average_subgraph_size.items())
     sorted_pairs = sorted(pairs, reverse=True)
     for average, distance in sorted_pairs:
         log.debug("Testing %s @ distance %s", average, distance)

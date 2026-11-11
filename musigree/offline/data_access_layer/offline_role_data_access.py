@@ -48,7 +48,7 @@ class OfflineRoleDataAccess:
         top_score = 0
 
         # Using a breadth-first breakdown of words in role_name
-        queue: deque = deque()
+        queue: deque[str] = deque()
         queue.append(role_name)
 
         while queue:
@@ -148,9 +148,7 @@ class OfflineRoleDataAccess:
                 RoleCache.role_id_to_role_name_lookup[role.id] = role.role_name
                 RoleCache.role_id_to_role_category_lookup[role.id] = role.role_category
 
-        RoleCache.role_name_to_role_id_lookup = {
-            v: k for k, v in RoleCache.role_id_to_role_name_lookup.items()
-        }
+        RoleCache.role_name_to_role_id_lookup = {v: k for k, v in RoleCache.role_id_to_role_name_lookup.items()}
         for role_name in RoleCache.role_id_to_role_name_lookup.values():
             RoleCache.role_name_set.add(role_name)
         if LOGGING_TRACE:

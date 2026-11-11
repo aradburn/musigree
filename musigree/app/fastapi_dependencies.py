@@ -23,14 +23,16 @@ The `rate_limiter` dependency interacts with the following components:
 
 import logging
 import time
-from collections.abc import Awaitable, Callable
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, Path, Query, Request, Response
 
 from musigree.exceptions import BadRequestError, RateLimitError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 log = logging.getLogger(__name__)
 """
@@ -99,11 +101,7 @@ def get_year_bounds(
 def get_roles(
     roles: Annotated[
         str | None,
-        Query(
-            description=(
-                "Comma-separated role names; commas in names can be escaped with a backslash"
-            )
-        ),
+        Query(description=("Comma-separated role names; commas in names can be escaped with a backslash")),
     ] = None,
 ) -> set[str]:
     from musigree.library.cache.role_cache import RoleCache
@@ -196,7 +194,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
                 current_requests = 0
 
             remaining = max_requests - current_requests
-        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+        except Exception as e:
             log.warning(f"Redis error in rate limiter: {e}")
             # Fallback: allow request but log the error
             remaining = max_requests
@@ -211,7 +209,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
             # If TTL is a valid positive number, use it
             if isinstance(ttl_raw, int) and ttl_raw > 0:
                 ttl_value = ttl_raw
-        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+        except Exception as e:
             log.warning(f"Redis TTL error in rate limiter: {e}")
             ttl_value = period
 
@@ -227,7 +225,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
                 # Set expiration if this is a new key
                 if current_requests == 0:
                     await cache.expire(cache_key, period)
-            except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+            except Exception as e:
                 log.warning(f"Redis incr/expire error in rate limiter: {e}")
                 # Continue without incrementing - graceful degradation
             log.debug(f"key: {cache_key}, remaining: {remaining}, ttl: {ttl_value}")

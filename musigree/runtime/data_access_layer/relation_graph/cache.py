@@ -2,18 +2,23 @@
 
 import json
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
 from musigree.library.cache.cache_manager import BaseCache, CacheManager
 from musigree.library.fields.entity_id import to_entity_internal_id
-from musigree.runtime.data_access_layer.relation_graph.sources import RelationQuery
+from musigree.runtime.data_access_layer.relation_graph.sources import (
+    RelationQuery,
+    as_probe_release_lookup,
+)
 from musigree.runtime.data_access_layer.runtime_entity_data_access import (
     RuntimeEntityDataAccess,
 )
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+
+if TYPE_CHECKING:
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 log = logging.getLogger(__name__)
 
@@ -188,3 +193,13 @@ class CachingRelationSource:
                     relations,
                 )
         return hits + fresh
+
+    async def release_years_for_probes(
+        self,
+        probes: dict[int, set[int]],
+    ) -> dict[tuple[int, int], dict[str, int | None]]:
+        """Delegate the pair lookup. Cached neighborhoods do not carry these years."""
+        lookup = as_probe_release_lookup(self._query)
+        if lookup is None:
+            return {}
+        return await lookup.release_years_for_probes(probes)

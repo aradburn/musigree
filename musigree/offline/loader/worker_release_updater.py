@@ -224,15 +224,11 @@ async def update_releases_worker_async(
                 """Log the database error."""
                 raise
 
-    log.info(
-        f"worker updated {updated_count} inserted {inserted_count} releases total processed {processed_count}"
-    )
+    log.info(f"worker updated {updated_count} inserted {inserted_count} releases total processed {processed_count}")
     """Log the number of updated and inserted releases."""
 
 
-def update_releases_worker(
-    bulk_updates: list[dict[str, Any]], current_total: int, total_count: int
-) -> None:
+def update_releases_worker(bulk_updates: list[dict[str, Any]], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()

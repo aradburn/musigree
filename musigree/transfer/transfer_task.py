@@ -34,14 +34,18 @@ interacts with `musigree.transfer` for the transfer logic.
 import asyncio
 import datetime
 import logging
-from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import luigi
 from luigi.contrib.simulate import RunAnywayTarget
 
 from musigree.loader.run_runtime_loader import get_load_runtime_table_stages
+from musigree.loader.typed_luigi import TypedLuigiInit
 from musigree.offline.loader.loader_target import LoaderTarget
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 log = logging.getLogger(__name__)
 """
@@ -49,7 +53,7 @@ The logger for the TransferTask module.
 """
 
 
-class RuntimeLoaderSetupTask(luigi.Task):
+class RuntimeLoaderSetupTask(TypedLuigiInit, luigi.Task):
     """
     Sets up the logging environment for the runtime data loading process.
 
@@ -99,7 +103,7 @@ class RuntimeLoaderSetupTask(luigi.Task):
         )
 
 
-class RuntimeLoaderTask(luigi.WrapperTask):
+class RuntimeLoaderTask(TypedLuigiInit, luigi.WrapperTask):
     """
     The main wrapper task for the data loading process.
 
@@ -130,11 +134,12 @@ class RuntimeLoaderTask(luigi.WrapperTask):
             start_date=self.start_date,
             end_date=self.end_date,
         )
-        # Only transfer the final offline data, date is the date of the most recent dump loaded into offline database.
+        # Only transfer the final offline data, date is the date of the most recent dump loaded into
+        # offline database.
         yield RuntimeLoaderTaskForDate(data_directory=self.data_directory, dump_date=self.end_date)
 
 
-class RuntimeLoaderTaskForDate(luigi.WrapperTask):
+class RuntimeLoaderTaskForDate(TypedLuigiInit, luigi.WrapperTask):
     """
     A wrapper task for loading data into the runtime database for a specific date.
 
@@ -158,11 +163,7 @@ class RuntimeLoaderTaskForDate(luigi.WrapperTask):
         Returns:
             int: The priority of this task.
         """
-        diff = int(
-            (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
-            ).total_seconds()
-        )
+        diff = int((datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))).total_seconds())
         log.debug(f"RuntimeLoaderTaskForDate priority: {diff}")
         return diff
 
@@ -188,7 +189,7 @@ class RuntimeLoaderTaskForDate(luigi.WrapperTask):
             )
 
 
-class RuntimeLoaderTaskForDateAndStage(luigi.Task):
+class RuntimeLoaderTaskForDateAndStage(TypedLuigiInit, luigi.Task):
     """
     A task that performs a specific stage of the runtime data loading process.
 
@@ -214,14 +215,10 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
         Returns:
             int: The priority of this task.
         """
-        diff = int(
-            (
-                datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))  # noqa: DTZ005
-            ).total_seconds()
-        ) + (100 - int(str(self.stage)))
-        log.debug(
-            f"RuntimeLoaderTaskForDateAndStage date: {self.dump_date} stage: {self.stage} priority: {diff}"
+        diff = int((datetime.datetime.now() - datetime.datetime.fromisoformat(str(self.dump_date))).total_seconds()) + (
+            100 - int(str(self.stage))
         )
+        log.debug(f"RuntimeLoaderTaskForDateAndStage date: {self.dump_date} stage: {self.stage} priority: {diff}")
         return diff
 
     def requires(self) -> Iterator[luigi.Task]:
@@ -235,7 +232,8 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
             luigi.Task: The dependency tasks.
         """
         if int(str(self.stage)) > 0:
-            # Require the previous stage (monthly subtasks defined in database_helper) to have been completed
+            # Require the previous stage (monthly subtasks defined in database_helper) to have been
+            # completed
             yield RuntimeLoaderTaskForDateAndStage(
                 data_directory=self.data_directory,
                 dump_date=self.dump_date,
@@ -265,9 +263,7 @@ class RuntimeLoaderTaskForDateAndStage(luigi.Task):
         and executes the current stage. It also handles potential
         `RuntimeError` exceptions.
         """
-        log.debug(
-            f"Run RuntimeLoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}"
-        )
+        log.debug(f"Run RuntimeLoaderTaskForDateAndStage tasks for stage: {self.stage} date: {self.dump_date}")
 
         from musigree.loader.run_runtime_loader import get_load_runtime_table_stages
 

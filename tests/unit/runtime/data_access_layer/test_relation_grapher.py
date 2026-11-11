@@ -1,5 +1,6 @@
 """Unit tests for RelationGrapher."""
 
+from typing import overload
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,6 +14,7 @@ from musigree.runtime.data_access_layer.relation_graph.roles import RolePartitio
 from musigree.runtime.data_access_layer.relation_grapher import RelationGrapher
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 from musigree.runtime.runtime_domain.runtime_relation import RuntimeRelationResult
+from tests.release_years import release_years
 
 ROLE_LOOKUP = {
     "Artist": 1,
@@ -24,6 +26,26 @@ ROLE_LOOKUP = {
 }
 
 
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    relation_counts: dict[str, int] = ...,
+    entities: dict[str, object] = ...,
+) -> RuntimeEntity: ...
+
+
+@overload
+def artist(
+    entity_id: int,
+    name: str,
+    *,
+    relation_counts: None = None,
+    entities: None = None,
+) -> RuntimeEntity: ...
+
+
 def artist(
     entity_id: int,
     name: str,
@@ -31,14 +53,16 @@ def artist(
     relation_counts: dict[str, int] | None = None,
     entities: dict[str, object] | None = None,
 ) -> RuntimeEntity:
+    # Callers that pass a dict match the overload above, so literal keys are
+    # widened. None is the runtime default and is not a shared mutable value.
     return RuntimeEntity(
         id=to_entity_internal_id(entity_id, EntityType.ARTIST),
         entity_id=entity_id,
         entity_type=EntityType.ARTIST,
         entity_name=name,
-        relation_counts=relation_counts or {},
+        relation_counts=dict(relation_counts or {}),
         entity_metadata={},
-        entities=entities or {},
+        entities=dict(entities or {}),
         countries=None,
         genres=None,
         styles=None,
@@ -183,7 +207,7 @@ async def test_assemble_network_walks_structural_and_relational_links() -> None:
         entity_one_type=EntityType.ARTIST,
         entity_two_id=30,
         entity_two_type=EntityType.LABEL,
-        releases={"9": 2001},
+        releases=release_years({"9": 2001}),
         role="Producer",
         distance=None,
     )
@@ -192,7 +216,7 @@ async def test_assemble_network_walks_structural_and_relational_links() -> None:
         entity_one_type=EntityType.ARTIST,
         entity_two_id=10,
         entity_two_type=EntityType.ARTIST,
-        releases={"4": 1994, "5": None},
+        releases=release_years({"4": 1994, "5": None}),
         role="Alias",
         distance=None,
     )
@@ -218,6 +242,185 @@ async def test_assemble_network_walks_structural_and_relational_links() -> None:
     assert links["Alias"]["years"] == [1994]
     assert links["Producer"]["years"] == [2001]
     assert relations.calls == [[center.id]]
+
+
+@pytest.mark.asyncio
+async def test_assemble_network_fills_structural_years_from_other_roles() -> None:
+    alias_internal_id = to_entity_internal_id(20, EntityType.ARTIST)
+    center = artist(
+        10,
+        "Center",
+        relation_counts={"Producer": 50},
+        entities={"aliases": {"stage": alias_internal_id}},
+    )
+    alias = artist(20, "Stage Name")
+    entities = MemoryEntitySource({center.id: center, alias.id: alias})
+
+    class YearLookup(MemoryRelationSource):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.probes: dict[int, set[int]] | None = None
+
+        async def release_years_for_probes(
+            self,
+            probes: dict[int, set[int]],
+        ) -> dict[tuple[int, int], dict[str, int | None]]:
+            self.probes = {probe: set(partners) for probe, partners in probes.items()}
+            years: dict[tuple[int, int], dict[str, int | None]] = {
+                (10, 20): {"4": 1994, "5": None},
+            }
+            return years
+
+    relations = YearLookup()
+    network = await assemble_network(
+        center_entity=center,
+        limits=GraphLimits(degree=1, max_nodes=100, link_ratio=10),
+        roles=RolePartition(("Alias",), ()),
+        entity_source=entities,
+        relation_source=relations,
+    )
+
+    links = {link["role"]: link for link in network["links"]}
+    assert links["Alias"]["years"] == [1994]
+    assert relations.probes == {alias.id: {center.id}}
+
+
+@pytest.mark.asyncio
+async def test_assemble_network_looks_up_years_only_for_links_touching_the_center() -> None:
+    alias_internal_id = to_entity_internal_id(20, EntityType.ARTIST)
+    group_internal_id = to_entity_internal_id(30, EntityType.ARTIST)
+    center = artist(
+        10,
+        "Center",
+        relation_counts={"Producer": 50},
+        entities={"aliases": {"stage": alias_internal_id}},
+    )
+    alias = artist(
+        20,
+        "Stage Name",
+        entities={"groups": {"band": group_internal_id}},
+    )
+    group = artist(30, "Band", relation_counts={"Producer": 10})
+    entities = MemoryEntitySource({center.id: center, alias.id: alias, group.id: group})
+
+    class YearLookup(MemoryRelationSource):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.probes: dict[int, set[int]] | None = None
+
+        async def release_years_for_probes(
+            self,
+            probes: dict[int, set[int]],
+        ) -> dict[tuple[int, int], dict[str, int | None]]:
+            self.probes = {probe: set(partners) for probe, partners in probes.items()}
+            available: dict[tuple[int, int], dict[str, int | None]] = {
+                (10, 20): {"4": 1994},
+                (20, 30): {"8": 2001},
+            }
+            found: dict[tuple[int, int], dict[str, int | None]] = {}
+            for probe, partners in probes.items():
+                for partner in partners:
+                    pair = (probe, partner) if probe < partner else (partner, probe)
+                    years = available.get(pair)
+                    if years is not None:
+                        found[pair] = years
+            return found
+
+    relations = YearLookup()
+    network = await assemble_network(
+        center_entity=center,
+        limits=GraphLimits(degree=2, max_nodes=100, link_ratio=10),
+        roles=RolePartition(("Alias", "Member Of"), ()),
+        entity_source=entities,
+        relation_source=relations,
+    )
+
+    links = {link["key"]: link for link in network["links"]}
+    assert links["artist-10-alias-artist-20"]["years"] == [1994]
+    assert links["artist-20-member-of-artist-30"]["years"] == []
+    assert relations.probes == {alias.id: {center.id}}
+
+
+@pytest.mark.asyncio
+async def test_assemble_network_drops_links_outside_the_year_bounds() -> None:
+    alias_internal_id = to_entity_internal_id(20, EntityType.ARTIST)
+    kept_internal_id = to_entity_internal_id(30, EntityType.ARTIST)
+    center = artist(
+        10,
+        "Center",
+        relation_counts={"Producer": 50},
+        entities={"aliases": {"early": alias_internal_id, "later": kept_internal_id}},
+    )
+    early = artist(20, "Early Alias")
+    later = artist(30, "Later Alias")
+    entities = MemoryEntitySource({center.id: center, early.id: early, later.id: later})
+
+    class YearLookup(MemoryRelationSource):
+        @staticmethod
+        async def release_years_for_probes(
+            probes: dict[int, set[int]],
+        ) -> dict[tuple[int, int], dict[str, int | None]]:
+            del probes
+            years: dict[tuple[int, int], dict[str, int | None]] = {
+                (10, 20): {"1": 1960},
+                (10, 30): {"2": 1975, "3": 2001},
+            }
+            return years
+
+    network = await assemble_network(
+        center_entity=center,
+        limits=GraphLimits(degree=1, max_nodes=100, link_ratio=10),
+        roles=RolePartition(("Alias",), ()),
+        entity_source=entities,
+        relation_source=YearLookup({}),
+        min_year=1970,
+        max_year=1979,
+    )
+
+    assert [node["name"] for node in network["nodes"]] == ["Center", "Later Alias"]
+    links = {link["role"]: link for link in network["links"]}
+    assert list(links) == ["Alias"]
+    assert links["Alias"]["years"] == [1975]
+    assert links["Alias"]["target"] == "artist-30"
+
+
+@pytest.mark.asyncio
+async def test_assemble_network_drops_undated_center_memberships_in_a_year_range() -> None:
+    alias_internal_id = to_entity_internal_id(20, EntityType.ARTIST)
+    group_internal_id = to_entity_internal_id(30, EntityType.ARTIST)
+    center = artist(
+        10,
+        "Center",
+        relation_counts={"Producer": 5},
+        entities={
+            "aliases": {"stage": alias_internal_id},
+            "groups": {"band": group_internal_id},
+        },
+    )
+    alias = artist(20, "Stage Name")
+    group = artist(30, "Band")
+    entities = MemoryEntitySource({center.id: center, alias.id: alias, group.id: group})
+
+    class YearLookup(MemoryRelationSource):
+        @staticmethod
+        async def release_years_for_probes(
+            probes: dict[int, set[int]],
+        ) -> dict[tuple[int, int], dict[str, int | None]]:
+            del probes
+            return {}
+
+    network = await assemble_network(
+        center_entity=center,
+        limits=GraphLimits(degree=1, max_nodes=100, link_ratio=10),
+        roles=RolePartition(("Alias", "Member Of"), ()),
+        entity_source=entities,
+        relation_source=YearLookup({}),
+        min_year=1970,
+        max_year=1979,
+    )
+
+    assert [node["name"] for node in network["nodes"]] == ["Center", "Stage Name"]
+    assert [link["role"] for link in network["links"]] == ["Alias"]
 
 
 @pytest.mark.asyncio

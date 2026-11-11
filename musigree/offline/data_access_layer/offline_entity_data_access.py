@@ -26,7 +26,7 @@ represent the different types of entities.
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import IntegrityError
 
@@ -43,12 +43,14 @@ from musigree.library.full_text_search.text_search_utils import (
 from musigree.offline.data_access_layer.offline_entity_search import OfflineEntitySearch
 from musigree.offline.data_access_layer.offline_master_data_access import OfflineMasterDataAccess
 from musigree.offline.data_access_layer.offline_release_data_access import OfflineReleaseDataAccess
-from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.offline.offline_domain.entity import Entity
-from musigree.offline.offline_domain.release import Release
-from musigree.offline.offline_domain.token import Token
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_database.entity_repository import EntityRepository
+    from musigree.offline.offline_domain.entity import Entity
+    from musigree.offline.offline_domain.release import Release
+    from musigree.offline.offline_domain.token import Token
 
 # TODO tidy up
 log = logging.getLogger(__name__)
@@ -94,14 +96,16 @@ class OfflineEntityDataAccess:
         if entity.entity_type == EntityType.ARTIST:
             is_resolved = False
             for section in ("aliases", "groups", "members"):
-                if not isinstance(entity.entities, dict):
-                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name, id_ in entity.entities[section].items():
                     if id_ is None or id_ == 0 or id_ == "":
-                        updated_entity_id = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
-                            entity_repository, token_repository, entity.entity_type, entity_name
+                        find_entity_id = OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name
+                        updated_entity_id = await find_entity_id(
+                            entity_repository,
+                            token_repository,
+                            entity.entity_type,
+                            entity_name,
                         )
                         if updated_entity_id:
                             entity.entities[section][entity_name] = to_entity_internal_id(
@@ -112,14 +116,16 @@ class OfflineEntityDataAccess:
         elif entity.entity_type == EntityType.LABEL:
             is_resolved = False
             for section in ("parent_label", "sublabels"):
-                if not isinstance(entity.entities, dict):
-                    continue
                 if section not in entity.entities:
                     continue
                 for entity_name, id_ in entity.entities[section].items():
                     if id_ is None or id_ == 0 or id_ == -1 or id_ == "":
-                        updated_entity_id = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
-                            entity_repository, token_repository, entity.entity_type, entity_name
+                        find_entity_id = OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name
+                        updated_entity_id = await find_entity_id(
+                            entity_repository,
+                            token_repository,
+                            entity.entity_type,
+                            entity_name,
                         )
                         if updated_entity_id:
                             entity.entities[section][entity_name] = to_entity_internal_id(
@@ -131,9 +137,7 @@ class OfflineEntityDataAccess:
             raise ValueError
 
     @staticmethod
-    async def resolve_release_references(
-        entity_repository: EntityRepository, release: Release
-    ) -> bool:
+    async def resolve_release_references(entity_repository: EntityRepository, release: Release) -> bool:
         """
         Resolves release references within a release's data structure.
 
@@ -213,9 +217,7 @@ class OfflineEntityDataAccess:
                     # Look up label name to get the id
                     entity_type = EntityType.LABEL
                     entity_name = entry["name"]
-                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                        entity_type, entity_name
-                    )
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(entity_type, entity_name)
                     entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
 
@@ -229,9 +231,7 @@ class OfflineEntityDataAccess:
                 else:
                     entity_type = EntityType.LABEL
                     entity_name = entry["name"]
-                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                        entity_type, entity_name
-                    )
+                    id_ = await entity_repository.get_entity_id_by_entity_type_and_entity_name(entity_type, entity_name)
                     entry["id"] = to_entity_label_internal_id(id_)
                     changed = True
 
@@ -275,9 +275,7 @@ class OfflineEntityDataAccess:
         if id_ is None:
             try:
                 # Get the internal id from the db.
-                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(
-                    entity_type, entity_name
-                )
+                internal_id = await entity_repository.get_id_by_entity_type_and_entity_name(entity_type, entity_name)
 
                 # Cache the internal id, not entity_id
                 if internal_id is not None:
@@ -287,20 +285,14 @@ class OfflineEntityDataAccess:
                 id_ = internal_id
             except IntegrityError:
                 # Handle potential database errors.
-                log.warning(
-                    f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}"
-                )
+                log.warning(f"get_id_by_entity_type_and_entity_name Integrity Error for id: {entity_key_str}")
                 await entity_repository.rollback()
             except DatabaseError:
                 # Handle potential database errors.
-                log.warning(
-                    f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}"
-                )
+                log.warning(f"get_id_by_entity_type_and_entity_name Database Error for id: {entity_key_str}")
                 await entity_repository.rollback()
             except NotFoundError:
-                log.error(
-                    f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}"
-                )
+                log.error(f"get_id_from_entity_type_and_entity_name key not found: {entity_key_str}")
                 id_ = None
                 # Mark the cache entry as null.
                 await cache.set(entity_key_str, CACHE_ENTRY_IS_NULL)
@@ -347,7 +339,8 @@ class OfflineEntityDataAccess:
         normalised_entity_name_lower_minus_stop_words = normalise_search_content(
             remove_stop_words(normalised_entity_name_lower)
         )
-        # log.debug(f"normalised_entity_name_lower_minus_stop_words: {normalised_entity_name_lower_minus_stop_words}")
+        # log.debug(f"normalised_entity_name_lower_minus_stop_words:
+        # {normalised_entity_name_lower_minus_stop_words}")
 
         cache = CacheManager.get_cache()
         cache_key_str = CacheManager.create_cache_hkey(
@@ -362,9 +355,7 @@ class OfflineEntityDataAccess:
         entity_id_str = CACHE_ENTRY_IS_NULL
 
         try:
-            direct_id = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
-                entity_type, entity_name
-            )
+            direct_id = await entity_repository.get_entity_id_by_entity_type_and_entity_name(entity_type, entity_name)
             if direct_id is not None:
                 entity_id_str = str(direct_id)
             else:
@@ -383,9 +374,7 @@ class OfflineEntityDataAccess:
                     candidate_id = key[len(key_prefix) :]
                     name = result_entry["name"]
                     name_lower = name.lower()
-                    name_lower_minus_stop_words = normalise_search_content(
-                        remove_stop_words(name_lower)
-                    )
+                    name_lower_minus_stop_words = normalise_search_content(remove_stop_words(name_lower))
                     # log.debug(f"name_lower_minus_stop_words: {name_lower_minus_stop_words}")
 
                     if entity_name == name:
@@ -402,29 +391,23 @@ class OfflineEntityDataAccess:
                         entity_id_str = candidate_id
                         match_priority = 3
                     elif match_priority > 4 and (
-                        (normalised_entity_name_lower in name_lower)
-                        or (name.lower() in normalised_entity_name_lower)
+                        (normalised_entity_name_lower in name_lower) or (name.lower() in normalised_entity_name_lower)
                     ):
                         entity_id_str = candidate_id
                         match_priority = 4
                     elif (
                         match_priority > 5
-                        and normalised_entity_name_lower_minus_stop_words
-                        == name_lower_minus_stop_words
+                        and normalised_entity_name_lower_minus_stop_words == name_lower_minus_stop_words
                     ):
                         entity_id_str = candidate_id
                         match_priority = 5
         except IntegrityError:
             # Handle potential database errors.
-            log.warning(
-                f"find_entity_id_by_entity_type_and_entity_name Integrity Error for id: {entity_id_str}"
-            )
+            log.warning(f"find_entity_id_by_entity_type_and_entity_name Integrity Error for id: {entity_id_str}")
             await entity_repository.rollback()
         except DatabaseError:
             # Handle potential database errors.
-            log.warning(
-                f"find_entity_id_by_entity_type_and_entity_name Database Error for id: {entity_id_str}"
-            )
+            log.warning(f"find_entity_id_by_entity_type_and_entity_name Database Error for id: {entity_id_str}")
             await entity_repository.rollback()
         except NotFoundError:
             entity_id_str = CACHE_ENTRY_IS_NULL
@@ -452,15 +435,19 @@ class OfflineEntityDataAccess:
         # [l7890=Label Name]
         # [m2775] -> [m2775=Master Record Title]
         # [r2775] -> [r2775=Release Title]
-        # e.g. "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n" ->
-        #      "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"
+        # e.g. "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a=Carl Craig].\r\n"
+        # ->
+        #      "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl
+        # Craig].\r\n"
         # e.g. # [m2775] -> [m2775=Warp10+3 Remixes]
         #
         # Uses:
         # id -> name = entity_repository.get_entity_name_by_id()
         # name -> id = entity_repository.get_entity_id_by_entity_type_and_entity_name()
-        # master_id -> master_title OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
-        # release_id -> release_title OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
+        # master_id -> master_title
+        # OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
+        # release_id -> release_title
+        # OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
 
         config = OfflineDatabaseManager.offline_config
         # Use identity check so a leftover Mock config (truthy TESTING attr) cannot
@@ -474,7 +461,8 @@ class OfflineEntityDataAccess:
         }
 
         # Pattern to ref_match: [prefixid], [prefix=Name], or [prefixid=Name]
-        # prefix is a single letter (a, l, m, or r), id is digits, Name can contain any characters except ]
+        # prefix is a single letter (a, l, m, or r), id is digits, Name can contain any characters
+        # except ]
         pattern = r"\[([alrm])(\d*)(?:=([^\]]+))?\]"
 
         async def process_match(ref_match: re.Match[str]) -> str:
@@ -493,15 +481,11 @@ class OfflineEntityDataAccess:
                 if entity_id_str and not entity_name:
                     try:
                         master_id = int(entity_id_str)
-                        master_title = (
-                            await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
-                        )
+                        master_title = await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
                         return f"[m{master_id}={master_title}]"
                     except NotFoundError:
                         if logging_required:
-                            log.error(
-                                f"process_profile_links: master not found for m{entity_id_str}"
-                            )
+                            log.error(f"process_profile_links: master not found for m{entity_id_str}")
                         # Return original if master not found
                         return ref_match.group(0)
 
@@ -512,9 +496,7 @@ class OfflineEntityDataAccess:
                         master_id = int(entity_name)
                         log.debug(f"master_id (from malformed ref): {master_id}")
 
-                        master_title = (
-                            await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
-                        )
+                        master_title = await OfflineMasterDataAccess.get_master_title_from_master_id(master_id)
                         return f"[m{master_id}={master_title}]"
                     except ValueError:
                         # Not numeric, name lookup not supported
@@ -542,17 +524,11 @@ class OfflineEntityDataAccess:
                 if entity_id_str and not entity_name:
                     try:
                         release_id = int(entity_id_str)
-                        release_title = (
-                            await OfflineReleaseDataAccess.get_release_title_from_release_id(
-                                release_id
-                            )
-                        )
+                        release_title = await OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
                         return f"[r{release_id}={release_title}]"
                     except NotFoundError:
                         if logging_required:
-                            log.error(
-                                f"process_profile_links: release not found for r{entity_id_str}"
-                            )
+                            log.error(f"process_profile_links: release not found for r{entity_id_str}")
                         # Return original if release not found
                         return ref_match.group(0)
 
@@ -564,11 +540,7 @@ class OfflineEntityDataAccess:
                         if logging_required:
                             log.debug(f"release_id (from malformed ref): {release_id}")
 
-                        release_title = (
-                            await OfflineReleaseDataAccess.get_release_title_from_release_id(
-                                release_id
-                            )
-                        )
+                        release_title = await OfflineReleaseDataAccess.get_release_title_from_release_id(release_id)
                         return f"[r{release_id}={release_title}]"
                     except ValueError:
                         # Not numeric, name lookup not supported
@@ -579,9 +551,7 @@ class OfflineEntityDataAccess:
                         return ref_match.group(0)
                     except NotFoundError:
                         if logging_required:
-                            log.error(
-                                f"process_profile_links: release not found for r{entity_name}"
-                            )
+                            log.error(f"process_profile_links: release not found for r{entity_name}")
                         # Transform malformed ref to correct format even if not found
                         return f"[r{int(entity_name)}]"
 
@@ -602,15 +572,11 @@ class OfflineEntityDataAccess:
             if entity_id_str and not entity_name:
                 try:
                     entity_id_int: int = int(entity_id_str)
-                    entity = await entity_repository.get_by_entity_id_and_entity_type(
-                        entity_id_int, entity_type
-                    )
+                    entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id_int, entity_type)
                     return f"[{prefix}{entity_id_int}={entity.entity_name}]"
                 except NotFoundError:
                     if logging_required:
-                        log.error(
-                            f"process_profile_links: entity not found for {prefix}{entity_id_str}"
-                        )
+                        log.error(f"process_profile_links: entity not found for {prefix}{entity_id_str}")
                     # Return original if entity not found
                     return ref_match.group(0)
 
@@ -618,13 +584,11 @@ class OfflineEntityDataAccess:
             if not entity_id_str and entity_name:
                 token_repository = TokenRepository()
 
-                candidate_entity_id = (
-                    await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
-                        entity_repository,
-                        token_repository,
-                        entity_type,
-                        entity_name,
-                    )
+                candidate_entity_id = await OfflineEntityDataAccess.find_entity_id_by_entity_type_and_entity_name(
+                    entity_repository,
+                    token_repository,
+                    entity_type,
+                    entity_name,
                 )
                 # entity_id = await entity_repository.get_entity_id_by_entity_type_and_entity_name(
                 #     entity_type, entity_name
@@ -633,9 +597,7 @@ class OfflineEntityDataAccess:
                     return f"[{prefix}{candidate_entity_id}={entity_name}]"
                 else:
                     if logging_required:
-                        log.error(
-                            f"process_profile_links: entity_id not found for {prefix}={entity_name}"
-                        )
+                        log.error(f"process_profile_links: entity_id not found for {prefix}={entity_name}")
                     # Return original if entity_id not found
                     return ref_match.group(0)
 
@@ -669,9 +631,7 @@ class OfflineEntityDataAccess:
         if entity is not None and entity.entity_metadata is not None:
             profile: str | None = entity.entity_metadata.get("profile", "")
             if profile is not None and profile:
-                updated_profile = await OfflineEntityDataAccess.process_profile_links(
-                    entity_repository, profile
-                )
+                updated_profile = await OfflineEntityDataAccess.process_profile_links(entity_repository, profile)
                 entity.entity_metadata["profile"] = updated_profile
         if entity is None:
             raise NotFoundError
