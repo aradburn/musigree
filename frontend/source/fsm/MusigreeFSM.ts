@@ -35,6 +35,7 @@ import {
     fetchAPIRelations,
 } from "../api";
 import { resetNetworkTransform } from "../network/init";
+import { removeInitialCanvasPath } from "../svg";
 import { FORCE, FSM, INIT, MESSAGE } from "../constants";
 import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
 import { showMessage } from "../messages";
@@ -492,6 +493,8 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             console.error("Invalid network data: missing center key");
             return;
         }
+
+        removeInitialCanvasPath();
 
         const roles = getSelectedRoles() || [];
         const yearBounds = getSelectedYearBounds();

@@ -50,6 +50,7 @@ describe("constants", () => {
             expect(SVG_IDS.RADIAL_GRADIENT).toBe("radial-gradient");
             expect(SVG_IDS.LOADING_LAYER).toBe("loading-layer");
             expect(SVG_IDS.RELATIONS_LAYER).toBe("relations-layer");
+            expect(SVG_IDS.INITIAL_CANVAS_PATH).toBe("initial-canvas-path");
         });
     });
 

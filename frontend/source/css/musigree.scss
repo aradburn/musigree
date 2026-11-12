@@ -636,6 +636,13 @@ input[type="range"]::-ms-slider-thumb {
     pointer-events: visible;
     background-color: $mg-svg-background-color;
 
+    path.initial-canvas-path {
+        fill: none;
+        stroke: #333;
+        stroke-linecap: round;
+        pointer-events: none;
+    }
+
     text {
         font-variant-ligatures: none;
         font-feature-settings: none;

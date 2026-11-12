@@ -26,6 +26,7 @@ import { RequestNetworkEvent } from "../../network/events";
 import { FSM, INIT } from "../../constants";
 import { rememberRelationships, updateSelectedRoleIds } from "../../roles";
 import * as analyticsModule from "../../analytics";
+import * as d3 from "d3";
 
 // Create a type for private methods we need to spy on
 type MusigreeFSMPrivate = {
@@ -585,8 +586,12 @@ describe("MusigreeFSM", () => {
                 const displayForceLayoutSpy = vi.mocked(displayForceLayout);
                 const restartForceLayoutSpy = vi.mocked(restartForceLayout);
 
+                vi.mocked(d3.select).mockClear();
                 fsm.showNetwork(networkData, true);
 
+                expect(d3.select).toHaveBeenCalledWith(
+                    "#initial-canvas-path",
+                );
                 expect(transitionSpy).toHaveBeenCalledWith(
                     "state-viewing-network",
                 );
@@ -802,8 +807,12 @@ describe("MusigreeFSM", () => {
                     maxDistance: 0,
                 } as any;
 
+                vi.mocked(d3.select).mockClear();
                 fsm.showNetwork(invalidNetworkData, false);
 
+                expect(d3.select).not.toHaveBeenCalledWith(
+                    "#initial-canvas-path",
+                );
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
                     "Invalid network data: missing center key",
                 );

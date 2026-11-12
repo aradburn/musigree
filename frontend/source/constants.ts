@@ -25,6 +25,7 @@ export const SVG_IDS = {
     RADIAL_GRADIENT: "radial-gradient",
     LOADING_LAYER: "loading-layer",
     RELATIONS_LAYER: "relations-layer",
+    INITIAL_CANVAS_PATH: "initial-canvas-path",
 };
 
 // Constants for viewport and SVG scaling

@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as d3 from "d3";
 import * as svgModule from "../svg";
-import { initSvg, setSvgSize, setupSvgDefs } from "../svg";
+import {
+    drawInitialCanvasPath,
+    initSvg,
+    removeInitialCanvasPath,
+    setSvgSize,
+    setupSvgDefs,
+} from "../svg";
 import { musigreeManager } from "../core/singletons";
 import { DOM_IDS, SVG_IDS, SVG } from "../constants";
 
@@ -17,6 +23,7 @@ interface MockD3Selection {
     empty?: MockFunction;
     select?: MockFunction;
     append?: MockFunction;
+    remove?: MockFunction;
 }
 
 // Create a properly typed mock selection
@@ -162,6 +169,84 @@ describe("SVG Utilities", () => {
 
             // Verify that d3.select was called with the container selector string
             expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_CONTAINER_ID);
+        });
+
+        it("centers the logo at one third of the viewport width", () => {
+            window.history.pushState({}, "", "/");
+            const viewportWidth = 2400;
+            const viewportHeight = 1800;
+            musigreeManager.svgDimensions = [viewportWidth, viewportHeight];
+
+            const svgSelection = createMockSelection();
+            svgSelection.empty?.mockReturnValue(false);
+            vi.spyOn(d3, "select").mockImplementation(
+                (selector: string | d3.BaseType) => {
+                    if (selector === DOM_IDS.SVG_ID) {
+                        return svgSelection as unknown as D3Selection;
+                    }
+                    return mockSelection as unknown as D3Selection;
+                },
+            );
+
+            drawInitialCanvasPath();
+
+            const logoWidth = 1048;
+            const logoHeight = 469;
+            const scale = viewportWidth / 3 / logoWidth;
+            const translateX = (viewportWidth - viewportWidth / 3) / 2;
+            const translateY =
+                (viewportHeight - logoHeight * scale) / 2;
+
+            expect(svgSelection.append).toHaveBeenCalledWith("path");
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "id",
+                SVG_IDS.INITIAL_CANVAS_PATH,
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "class",
+                "initial-canvas-path",
+            );
+            const pathData = svgSelection.attr.mock.calls.find(
+                (call) => call[0] === "d",
+            )?.[1] as string;
+            expect(pathData.startsWith("M 110.00,101.00")).toBe(true);
+            expect(svgSelection.attr).toHaveBeenCalledWith(
+                "transform",
+                `translate(${translateX}, ${translateY}) scale(${scale})`,
+            );
+            expect(svgSelection.attr).toHaveBeenCalledWith("fill", "none");
+            expect(svgSelection.attr).toHaveBeenCalledWith("stroke", "#333");
+        });
+
+        it("leaves the canvas without a startup path when the url has a query", () => {
+            window.history.pushState({}, "", "/?roles=Alias");
+            musigreeManager.svgDimensions = [2400, 1800];
+
+            const svgSelection = createMockSelection();
+            svgSelection.empty?.mockReturnValue(false);
+            vi.spyOn(d3, "select").mockReturnValue(
+                svgSelection as unknown as D3Selection,
+            );
+
+            drawInitialCanvasPath();
+
+            expect(svgSelection.append).not.toHaveBeenCalledWith("path");
+            window.history.pushState({}, "", "/");
+        });
+
+        it("removes the startup path", () => {
+            const pathSelection = createMockSelection();
+            pathSelection.remove = vi.fn().mockReturnThis();
+            vi.spyOn(d3, "select").mockReturnValue(
+                pathSelection as unknown as D3Selection,
+            );
+
+            removeInitialCanvasPath();
+
+            expect(d3.select).toHaveBeenCalledWith(
+                `#${SVG_IDS.INITIAL_CANVAS_PATH}`,
+            );
+            expect(pathSelection.remove).toHaveBeenCalled();
         });
     });
 
