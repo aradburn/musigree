@@ -40,6 +40,7 @@ const mockAPIResponse: APINetworkDataResponse = {
             source: "node1",
             target: "node2",
             role: "Released On",
+            years: [],
         },
     ],
     center: {
@@ -182,6 +183,7 @@ describe("Network Data Processing", () => {
                         source: "node1",
                         target: "node2",
                         role: "Alias",
+                        years: [],
                     },
                 ],
             };

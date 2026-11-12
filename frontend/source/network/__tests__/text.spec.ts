@@ -20,6 +20,7 @@ type MockNetworkLink = {
     source: SimNode | null;
     target: SimNode | null;
     role: string;
+    years: number[];
     distance: number;
     isSpline: boolean;
     intermediate: SimNode | null;
@@ -164,6 +165,7 @@ describe("Network Node Text Module", () => {
                     source: null,
                     target: null,
                     role: "test",
+                    years: [],
                     distance: 1,
                     isSpline: false,
                     intermediate: null,
@@ -173,6 +175,7 @@ describe("Network Node Text Module", () => {
                     source: null,
                     target: null,
                     role: "test",
+                    years: [],
                     distance: 1,
                     isSpline: false,
                     intermediate: null,

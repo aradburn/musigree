@@ -150,6 +150,7 @@ const createMockLink = (
     highlighted: false,
     selected: false,
     ...props,
+    years: props.years ?? [],
 });
 
 // Mock DOM elements
@@ -291,7 +292,10 @@ describe("Force Layout Display and Control", () => {
                             { source: "a", target: "b" },
                             { source: "b", target: "c" },
                         ])
-                        .id((node: { key: string }) => node.key),
+                        .id((node) => {
+                            const key = "key" in node ? node.key : undefined;
+                            return typeof key === "string" ? key : "";
+                        }),
                 )
                 .stop();
 

@@ -142,6 +142,7 @@ describe("Network Link Functions", () => {
             fy: null,
         },
         role: "Test Role",
+        years: [],
         distance: 1,
         isSpline: false,
         intermediate: null,
