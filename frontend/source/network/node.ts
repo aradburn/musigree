@@ -10,7 +10,7 @@ import {now, symbol, symbolCross} from "d3";
 
 import debounce from "debounce";
 import {getNodeColorClass} from "../color";
-import {networkManager} from "@/core";
+import {networkManager} from "@/core/singletons";
 import {
     onDrag,
     onDragEnd,

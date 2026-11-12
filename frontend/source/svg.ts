@@ -6,7 +6,7 @@
  */
 
 import * as d3 from "d3";
-import {musigreeManager} from "./core/singletons";
+import {musigreeManager} from "@/core/singletons";
 import {DOM_IDS, GRADIENT, MARKER, SVG, SVG_IDS} from "./constants";
 import {convertRemToPixels} from "./utils";
 
@@ -331,7 +331,7 @@ const INITIAL_CANVAS_LOGO_PATH = `M 110.00,101.00
 
 /**
  * Places the logo in the middle of the canvas.
- * Width is one third of the viewport; height follows the logo aspect ratio.
+ * Width is two thirds of the viewport; height follows the logo aspect ratio.
  * Scale is applied first, then the translation that centers the scaled viewBox.
  */
 const initialCanvasLogoTransform = (
@@ -370,15 +370,6 @@ export const initSvg = (): void => {
     const svgSelection = d3.select(DOM_IDS.SVG_CONTAINER_ID);
 
     // Create the SVG canvas
-    // Create the SVG element if it doesn't exist yet
-    //                 if (!document.getElementById(DOM_IDS.SVG)) {
-    //                     const svg = document.createElementNS(
-    //                         "http://www.w3.org/2000/svg",
-    //                         "svg",
-    //                     );
-    //                     svg.id = DOM_IDS.SVG;
-    //                     containerRef.current.appendChild(svg);
-    //                 }
     svgSelection.append("svg").attr("id", DOM_IDS.SVG);
 
     // Setup window dimensions on SVG element

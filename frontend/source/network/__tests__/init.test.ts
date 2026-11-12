@@ -40,7 +40,7 @@ const mockZoomBehavior = vi.hoisted(() => ({
 }));
 
 // Use hoisted objects in all mocks
-vi.mock("../../core", () => ({
+vi.mock("../../core/singletons", () => ({
     networkManager: {
         layers: mockLayers,
         zoom: mockZoomBehavior,
@@ -133,7 +133,7 @@ import { initNetwork, resetNetworkTransform } from "../init";
 import { initForceLayout } from "../forceLayout";
 import { hideAllTooltips } from "../tooltips";
 import * as d3 from "d3";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Test suite
 describe("Network Initialization Module", () => {

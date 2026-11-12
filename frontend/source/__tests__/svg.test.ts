@@ -171,7 +171,7 @@ describe("SVG Utilities", () => {
             expect(d3.select).toHaveBeenCalledWith(DOM_IDS.SVG_CONTAINER_ID);
         });
 
-        it("centers the logo at one third of the viewport width", () => {
+        it("centers the logo at two thirds of the viewport width", () => {
             window.history.pushState({}, "", "/");
             const viewportWidth = 2400;
             const viewportHeight = 1800;
@@ -192,8 +192,10 @@ describe("SVG Utilities", () => {
 
             const logoWidth = 1048;
             const logoHeight = 469;
-            const scale = viewportWidth / 3 / logoWidth;
-            const translateX = (viewportWidth - viewportWidth / 3) / 2;
+            const logoWidthRatio = 2 / 3;
+            const scale = (viewportWidth * logoWidthRatio) / logoWidth;
+            const translateX =
+                (viewportWidth - viewportWidth * logoWidthRatio) / 2;
             const translateY =
                 (viewportHeight - logoHeight * scale) / 2;
 

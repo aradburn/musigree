@@ -5,7 +5,7 @@
  */
 
 import {initForceLayout} from "./forceLayout";
-import {musigreeManager, networkManager} from "@/core";
+import {musigreeManager, networkManager} from "@/core/singletons";
 import * as d3 from "d3";
 import {hideAllTooltips} from "./tooltips";
 import {DOM_IDS, SVG} from "../constants";

@@ -6,8 +6,8 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager, relationsManager } from "./core/singletons";
-import { DOM_IDS, SVG_IDS, RELATIONS, TIMING } from "./constants";
+import {musigreeManager, relationsManager} from "@/core/singletons";
+import {DOM_IDS, RELATIONS, SVG_IDS, TIMING} from "./constants";
 
 /**
  * Data structure for individual relations
@@ -240,8 +240,8 @@ export function createRadialChart(): void {
  * @param {d3.ZoomTransform} param0.transform - D3 zoom transform object
  */
 export function handleZoom({
-    transform,
-}: {
+                               transform,
+                           }: {
     transform: d3.ZoomTransform;
 }): void {
     relationsManager.layers.root.attr("transform", transform.toString());

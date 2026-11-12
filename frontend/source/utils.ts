@@ -1,4 +1,4 @@
-import { networkManager } from "./core/singletons";
+import {networkManager} from "@/core/singletons";
 
 import DOMPurify from "dompurify";
 

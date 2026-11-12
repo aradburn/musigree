@@ -12,7 +12,7 @@ import {
 import { hideAllTooltips } from "../tooltips";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
-import { musigreeManager, networkManager } from "../../core";
+import { musigreeManager, networkManager } from "../../core/singletons";
 
 // Mock dependencies
 vi.mock("../tooltips", () => ({
@@ -20,7 +20,7 @@ vi.mock("../tooltips", () => ({
 }));
 
 // Mock core managers
-vi.mock("../../core", () => {
+vi.mock("../../core/singletons", () => {
     const mockNetworkManager = {
         tick: 0,
         data: {

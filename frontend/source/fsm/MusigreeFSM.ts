@@ -4,7 +4,7 @@
  */
 
 import * as d3 from "d3";
-import { musigreeManager, networkManager } from "../core/singletons";
+import {musigreeManager, networkManager} from "@/core/singletons";
 import {
     displayForceLayout,
     restartForceLayout,
@@ -24,32 +24,32 @@ import {
     processAPINetworkDataResponse,
     updateGlobalData,
 } from "../network/data";
-import { pruneSimData } from "../network/pruning";
-import type { RelationsData } from "../relations";
-import type { EntityData } from "../entities";
-import type { APINetworkDataResponse } from "../api";
+import {pruneSimData} from "../network/pruning";
+import type {RelationsData} from "../relations";
+import type {EntityData} from "../entities";
+import type {APINetworkDataResponse} from "../api";
 import {
     fetchAPIEntity,
     fetchAPINetwork,
     fetchAPIRandom,
     fetchAPIRelations,
 } from "../api";
-import { resetNetworkTransform } from "../network/init";
-import { removeInitialCanvasPath } from "../svg";
-import { FORCE, FSM, INIT, MESSAGE } from "../constants";
-import { RequestNetworkEvent, SelectEntityEvent } from "../network/events";
-import { showMessage } from "../messages";
-import type { Actions } from "./actions/Actions";
-import type { State, StateContext } from "./State";
-import { ViewingNetworkState } from "./states/ViewingNetworkState";
-import { ViewingRadialState } from "./states/ViewingRadialState";
-import { RequestingNetworkState } from "./states/RequestingNetworkState";
-import { RequestingRelationsState } from "./states/RequestingRelationsState";
-import { RequestingRandomState } from "./states/RequestingRandomState";
-import { UninitializedState } from "./states/UninitializedState";
+import {resetNetworkTransform} from "../network/init";
+import {removeInitialCanvasPath} from "../svg";
+import {FORCE, FSM, INIT, MESSAGE} from "../constants";
+import {RequestNetworkEvent, SelectEntityEvent} from "../network/events";
+import {showMessage} from "../messages";
+import type {Actions} from "./actions/Actions";
+import type {State, StateContext} from "./State";
+import {ViewingNetworkState} from "./states/ViewingNetworkState";
+import {ViewingRadialState} from "./states/ViewingRadialState";
+import {RequestingNetworkState} from "./states/RequestingNetworkState";
+import {RequestingRelationsState} from "./states/RequestingRelationsState";
+import {RequestingRandomState} from "./states/RequestingRandomState";
+import {UninitializedState} from "./states/UninitializedState";
 import debounce from "debounce";
-import { AbstractFSM, type TransitionFunction } from "./AbstractFSM";
-import { getSelectedRoles, resetFiltersForRandomArtist } from "../roles";
+import {AbstractFSM, type TransitionFunction} from "./AbstractFSM";
+import {getSelectedRoles, resetFiltersForRandomArtist} from "../roles";
 import {
     getSelectedYearBounds,
     getYearQuery,
@@ -76,7 +76,7 @@ declare global {
         dgNetwork?: APINetworkDataResponse;
         bootstrap?: {
             Offcanvas: {
-                new (
+                new(
                     element: Element,
                     options?: unknown,
                 ): {
@@ -227,7 +227,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         // Event handlers
         window.addEventListener(FSM.EVENTS.REQUEST_NETWORK, (event: Event) => {
             if (event instanceof RequestNetworkEvent) {
-                const { entityKey, pushHistory } = event.detail;
+                const {entityKey, pushHistory} = event.detail;
                 if (entityKey) {
                     this.requestNetwork(entityKey, pushHistory);
                 } else {
@@ -253,7 +253,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         window.addEventListener(FSM.EVENTS.SELECT_ENTITY, (event: Event) => {
             if (event instanceof SelectEntityEvent && event.detail) {
-                const { entityKey, fixed } = event.detail;
+                const {entityKey, fixed} = event.detail;
                 this.selectEntity(entityKey, fixed);
             }
         });
@@ -386,7 +386,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
             url += `?${decodeURIComponent(searchParams.toString())}`;
         }
 
-        const state = { key: entityKey, params };
+        const state = {key: entityKey, params};
         window.history.pushState(state, title, url);
     }
 
@@ -498,7 +498,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
         const roles = getSelectedRoles() || [];
         const yearBounds = getSelectedYearBounds();
-        const params: Record<string, unknown> = { roles };
+        const params: Record<string, unknown> = {roles};
         if (!isFullYearTrack(yearBounds)) {
             params.min_year = yearBounds.minYear;
             params.max_year = yearBounds.maxYear;
@@ -513,7 +513,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
 
             // Track the current page (deferred analytics load)
             void getTrack().then((track) =>
-                track("network", { key: networkData.center.key }),
+                track("network", {key: networkData.center.key}),
             );
         }
 
@@ -556,7 +556,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         console.log("FSM updateEntityDetails", data);
         const event = new CustomEvent<EntityData>(
             "musigree:entity-details-updated",
-            { detail: data },
+            {detail: data},
         );
         window.dispatchEvent(event);
     }
@@ -609,7 +609,7 @@ export class MusigreeFSM extends AbstractFSM implements Actions {
         if (reactAppMounted) {
             // Create and dispatch custom LoadingToggleEvent for React components to listen to
             const loadingEvent = new CustomEvent("loading:toggle", {
-                detail: { status },
+                detail: {status},
             });
             window.dispatchEvent(loadingEvent);
         }
