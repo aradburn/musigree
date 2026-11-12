@@ -101,7 +101,7 @@ def get_year_bounds(
 def get_roles(
     roles: Annotated[
         str | None,
-        Query(description=("Comma-separated role names; commas in names can be escaped with a backslash")),
+        Query(description="Comma-separated role names; commas in names can be escaped with a backslash"),
     ] = None,
 ) -> set[str]:
     from musigree.library.cache.role_cache import RoleCache

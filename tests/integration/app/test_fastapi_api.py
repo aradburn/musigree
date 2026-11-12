@@ -216,7 +216,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": ("Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"),
+                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -271,7 +271,7 @@ class TestFastAPIAPI:
             "type": "label",
             "name": "Planet E",
             "metadata": {
-                "profile": ("Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n"),
+                "profile": "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -396,16 +396,16 @@ class TestFastAPIAPI:
                     "D:Note",
                     "D_Note",
                 ],
-                "profile": ("D*Note's blend of Ambient, Nu-Jazz, Drum & Bass, House and rare groove springs from ")
-                + ("Matt Winn (Matt Wienevski) and musical friends consisting of keyboard player [a115515] ")
-                + "who records as [a2649], guitarist Keith Osbourne, and others. Vocalists have "
-                + "included [a14920], [a126446], [a19738] of "
-                + "[a14449=Sunship], [a242942] and more. Other "
-                + "collaborators include scratching from Charlie Lexton "
-                + "as [a760], rappers [a22278=Navigator] and "
-                + "[a276136].\r\n"
-                + "\r\n"
-                + "The debut album [r24317] had 4 singles, each of "
+                "profile": "D*Note's blend of Ambient, Nu-Jazz, Drum & Bass, House and rare groove springs from "
+                           + "Matt Winn (Matt Wienevski) and musical friends consisting of keyboard player [a115515] "
+                           + "who records as [a2649], guitarist Keith Osbourne, and others. Vocalists have "
+                           + "included [a14920], [a126446], [a19738] of "
+                           + "[a14449=Sunship], [a242942] and more. Other "
+                           + "collaborators include scratching from Charlie Lexton "
+                           + "as [a760], rappers [a22278=Navigator] and "
+                           + "[a276136].\r\n"
+                           + "\r\n"
+                           + "The debut album [r24317] had 4 singles, each of "
                 "which enjoyed good reviews in their day. [r44657] "
                 "built on the energy of the debut and included "
                 "highlights such as the title track, Iniquity Worker "
@@ -436,9 +436,9 @@ class TestFastAPIAPI:
                 "Matt Winn has also made several short films. "
                 "[r160144] is one of his soundtracks.  He also "
                 "directed "
-                + "[url=http://www.january2ndthemovie.com]January 2nd, "
-                + "the movie[/url].\r\n"
-                + "___________________________________________________\n",
+                           + "[url=http://www.january2ndthemovie.com]January 2nd, "
+                           + "the movie[/url].\r\n"
+                           + "___________________________________________________\n",
                 "real_name": "Matt Wienevski",
                 "urls": ["http://www.january2ndthemovie.com"],
             },

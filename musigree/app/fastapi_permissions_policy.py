@@ -142,7 +142,7 @@ class PermissionsPolicy:
             raise SyntaxError("Option cannot be empty for Permission-Policy to be applied")
         else:
             warn(
-                ("Permission-Policy header is still under working draft, browsers might give warnings and errors"),
+                "Permission-Policy header is still under working draft, browsers might give warnings and errors",
                 SyntaxWarning,
                 2,
             )

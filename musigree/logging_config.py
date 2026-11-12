@@ -12,7 +12,7 @@ LOGGING_CONFIG: dict[str, Any] = {
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
         "error": {
-            "format": ("%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s"),
+            "format": "%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
     },
@@ -108,7 +108,7 @@ TEST_LOGGING_CONFIG: dict[str, Any] = {
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
         "error": {
-            "format": ("%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s"),
+            "format": "%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
     },
