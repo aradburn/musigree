@@ -308,14 +308,16 @@ body {
         font-weight: 700;
     }
 
-    .roles-heading {
+    .roles-heading,
+    .filter-heading {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.5rem;
     }
 
-    .roles-reset {
+    .roles-reset,
+    .filter-reset {
         display: inline-flex;
         flex: 0 0 auto;
         align-items: center;

@@ -19,6 +19,8 @@ import "./css/musigree.scss";
 import * as bootstrap from "bootstrap";
 
 import { initApp } from "./init";
+import { selectRolesFromSearch } from "./roles";
+import { applyInitialYearBoundsFromSearch } from "./yearBounds";
 import { version } from "./version";
 
 // Initialize the application when the DOM is loaded.
@@ -29,6 +31,13 @@ const mountApplication = (): void => {
             if (typeof module.initReactApp === "function") {
                 try {
                     console.log("Musigree v" + version);
+                    applyInitialYearBoundsFromSearch(window.location.search);
+                    if (typeof window.dgRoles !== "undefined") {
+                        window.dgRoles = selectRolesFromSearch(
+                            window.dgRoles,
+                            window.location.search,
+                        );
+                    }
                     module.initReactApp();
                     console.log("React app initialized successfully");
 

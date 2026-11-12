@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { RelationshipsFilter } from "../RelationshipsFilter";
+import { musigreeManager } from "../../../core/singletons";
 import {
     getSelectedRoles,
     resetFiltersForRandomArtist,
@@ -19,6 +20,8 @@ const relationships: TreeNode[] = [
 describe("RelationshipsFilter", () => {
     afterEach(() => {
         updateSelectedRoleIds([]);
+        musigreeManager.selectedNodeKey = "";
+        window.history.pushState({}, "", "/");
     });
 
     it("lays the relationships out in two columns", () => {
@@ -92,5 +95,81 @@ describe("RelationshipsFilter", () => {
         ).not.toBeChecked();
         expect(onSelectionChange).not.toHaveBeenCalled();
         expect(getSelectedRoles()).toEqual(["Alias", "Member Of"]);
+    });
+
+    it("restores Alias and Member Of and keeps other roles", () => {
+        updateSelectedRoleIds(["producer"]);
+        const onSelectionChange = vi.fn();
+        render(
+            <RelationshipsFilter
+                relationships={relationships}
+                onSelectionChange={onSelectionChange}
+            />,
+        );
+
+        const heading = screen.getByText("Relationships");
+        const reset = screen.getByRole("button", {
+            name: "Reset relationships",
+        });
+        expect(heading).toHaveClass("h6");
+        expect(heading).toContainElement(reset);
+        expect(heading.lastElementChild).toBe(reset);
+        expect(
+            reset.querySelector("i.bi-arrow-counterclockwise"),
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("checkbox", { name: "Alias" }));
+        fireEvent.click(screen.getByRole("checkbox", { name: "Released On" }));
+        onSelectionChange.mockClear();
+
+        fireEvent.click(reset);
+
+        expect(screen.getByRole("checkbox", { name: "Alias" })).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Member Of" }),
+        ).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Released On" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Sublabel Of" }),
+        ).not.toBeChecked();
+        expect(getSelectedRoles()).toEqual([
+            "producer",
+            "Alias",
+            "Member Of",
+        ]);
+        expect(onSelectionChange).toHaveBeenCalledTimes(1);
+    });
+
+    it("restores Released On when the open entity is a label", () => {
+        musigreeManager.selectedNodeKey = "label-4";
+        const onSelectionChange = vi.fn();
+        render(
+            <RelationshipsFilter
+                relationships={relationships}
+                onSelectionChange={onSelectionChange}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole("checkbox", { name: "Alias" }));
+        onSelectionChange.mockClear();
+
+        fireEvent.click(
+            screen.getByRole("button", { name: "Reset relationships" }),
+        );
+
+        expect(screen.getByRole("checkbox", { name: "Alias" })).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Member Of" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Released On" }),
+        ).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Sublabel Of" }),
+        ).not.toBeChecked();
+        expect(getSelectedRoles()).toEqual(["Released On"]);
+        expect(onSelectionChange).toHaveBeenCalledTimes(1);
     });
 });

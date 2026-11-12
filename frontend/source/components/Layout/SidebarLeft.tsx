@@ -14,6 +14,7 @@ import { restartForceLayout, stopForceLayout } from "../../network/forceLayout";
 import {
     convertRolesToArboristFormat,
     rememberRelationships,
+    selectRolesFromSearch,
     splitRoleTree,
     updateSelectedRoleIds,
 } from "../../roles";
@@ -23,6 +24,14 @@ import RelationshipsFilter from "./RelationshipsFilter";
 import RolesFilter from "./RolesFilter";
 import YearRangeSlider from "./YearRangeSlider";
 
+/** Role tree for this page, with checkbox selection taken from the URL when roles is set. */
+const pageRoles = (): TreeConfig | undefined => {
+    if (typeof window.dgRoles === "undefined") {
+        return undefined;
+    }
+    return selectRolesFromSearch(window.dgRoles, window.location.search);
+};
+
 /**
  * Left sidebar: filter, layout, and print accordions.
  * Sections start closed. The column scrolls when the open content is taller
@@ -31,8 +40,7 @@ import YearRangeSlider from "./YearRangeSlider";
  */
 export const SidebarLeft: React.FC = () => {
     const [rolesConfig, setRolesConfig] = useState<TreeConfig | undefined>(
-        () =>
-            typeof window.dgRoles === "undefined" ? undefined : window.dgRoles,
+        pageRoles,
     );
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isLayoutOpen, setIsLayoutOpen] = useState(false);
@@ -40,8 +48,9 @@ export const SidebarLeft: React.FC = () => {
     const refreshTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (typeof window.dgRoles !== "undefined") {
-            setRolesConfig(window.dgRoles);
+        const roles = pageRoles();
+        if (roles) {
+            setRolesConfig(roles);
         }
         return (): void => {
             if (refreshTimerRef.current !== null) {
@@ -122,16 +131,9 @@ export const SidebarLeft: React.FC = () => {
                         hidden={!isFilterOpen}
                     >
                         <div className="accordion-body">
-                            <label
-                                className="h6 d-block mb-1"
-                                htmlFor="year-range-min"
-                            >
-                                Years
-                            </label>
                             <YearRangeSlider
                                 onChange={requestFilteredNetwork}
                             />
-                            <div className="h6 mt-3 mb-1">Relationships</div>
                             <RelationshipsFilter
                                 relationships={relationships}
                                 onSelectionChange={requestFilteredNetwork}

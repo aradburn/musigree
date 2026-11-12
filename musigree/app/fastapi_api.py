@@ -179,7 +179,6 @@ async def route__api__entity_type__details__entity_id(
     return result_entity_data
 
 
-# noinspection unused-parameter
 @router.get(
     "/{entity_type_str}/network/{entity_id}",
     summary="Get entity network graph",

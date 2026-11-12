@@ -2,11 +2,15 @@
 /**
  * Structural relationships shown as checkboxes above the roles tree.
  * Selection shares the role id set used by the network request.
+ * The heading reset restores the default relationships for the open entity
+ * and reloads the network the same way a checkbox change does.
  */
 import React, { useEffect, useState } from "react";
+import { musigreeManager } from "../../core/singletons";
 import {
     RANDOM_ARTIST_FILTER_RESET_EVENT,
     RANDOM_ARTIST_RELATIONSHIP_NAMES,
+    defaultRelationshipNames,
     rememberRelationships,
     replaceManagedRoleSelection,
 } from "../../roles";
@@ -77,6 +81,27 @@ export const RelationshipsFilter: React.FC<RelationshipsFilterProps> = ({
         onSelectionChange();
     };
 
+    /** Restores the default relationships for the entity on screen. */
+    const handleResetRelationships = (): void => {
+        const defaults = new Set<string>(
+            defaultRelationshipNames(
+                musigreeManager.selectedNodeKey,
+                window.location.pathname,
+            ),
+        );
+        const next = new Set(
+            relationships
+                .filter((role) => defaults.has(role.text))
+                .map((role) => role.id),
+        );
+        setSelectedIds(next);
+        replaceManagedRoleSelection(
+            relationships.map((role) => role.id),
+            Array.from(next),
+        );
+        onSelectionChange();
+    };
+
     const renderOption = (role: TreeNode): React.ReactElement => (
         <label className="relationships-option" key={role.id}>
             <input
@@ -91,13 +116,29 @@ export const RelationshipsFilter: React.FC<RelationshipsFilterProps> = ({
     );
 
     return (
-        <div
-            className="relationships-filter"
-            role="group"
-            aria-label="Relationships"
-        >
-            {relationships.map(renderOption)}
-        </div>
+        <>
+            <div className="filter-heading h6 mt-3 mb-1">
+                Relationships
+                <button
+                    type="button"
+                    className="filter-reset"
+                    aria-label="Reset relationships"
+                    onClick={handleResetRelationships}
+                >
+                    <i
+                        className="bi bi-arrow-counterclockwise"
+                        aria-hidden="true"
+                    ></i>
+                </button>
+            </div>
+            <div
+                className="relationships-filter"
+                role="group"
+                aria-label="Relationships"
+            >
+                {relationships.map(renderOption)}
+            </div>
+        </>
     );
 };
 

@@ -10,6 +10,9 @@ import {
     replaceManagedRoleSelection,
     resetFiltersForRandomArtist,
     initializeStructuralRelationships,
+    defaultRelationshipNames,
+    rolesFromSearch,
+    selectRolesFromSearch,
     splitRoleTree,
 } from "../roles";
 
@@ -441,6 +444,35 @@ describe("roles.ts", () => {
         });
     });
 
+    describe("defaultRelationshipNames", () => {
+        it("uses Alias and Member Of for home and artist pages", () => {
+            expect(defaultRelationshipNames(undefined, "/")).toEqual([
+                "Alias",
+                "Member Of",
+            ]);
+            expect(defaultRelationshipNames(null, "/artist/12")).toEqual([
+                "Alias",
+                "Member Of",
+            ]);
+            expect(defaultRelationshipNames("artist-12", "/label/4")).toEqual([
+                "Alias",
+                "Member Of",
+            ]);
+        });
+
+        it("uses Released On for a label page or a selected label", () => {
+            expect(defaultRelationshipNames(undefined, "/label/4")).toEqual([
+                "Released On",
+            ]);
+            expect(defaultRelationshipNames(null, "/label")).toEqual([
+                "Released On",
+            ]);
+            expect(defaultRelationshipNames("label-4", "/artist/12")).toEqual([
+                "Released On",
+            ]);
+        });
+    });
+
     describe("replaceManagedRoleSelection", () => {
         it("replaces one filter's ids and keeps the other filter selected", () => {
             const config: TreeConfig = {
@@ -459,6 +491,120 @@ describe("roles.ts", () => {
             const roles = getSelectedRoles();
             expect(roles).toContain("Alias");
             expect(roles).not.toContain("Producer");
+        });
+    });
+
+    describe("rolesFromSearch", () => {
+        it("reads relationship and role names from the roles parameter", () => {
+            expect(
+                rolesFromSearch(
+                    "?min_year=1970&roles=Alias,Member+Of,Released+On,Producer",
+                ),
+            ).toEqual(["Alias", "Member Of", "Released On", "Producer"]);
+        });
+
+        it("keeps a comma that was escaped inside a role name", () => {
+            expect(rolesFromSearch("?roles=Mix\\, Engineer,Alias")).toEqual([
+                "Mix, Engineer",
+                "Alias",
+            ]);
+        });
+
+        it("is undefined when the page does not define roles", () => {
+            expect(rolesFromSearch("")).toBeUndefined();
+            expect(rolesFromSearch("?min_year=1970")).toBeUndefined();
+            expect(rolesFromSearch("?roles=")).toBeUndefined();
+        });
+    });
+
+    describe("selectRolesFromSearch", () => {
+        const pageTree = (): TreeConfig => ({
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "5",
+                        text: "Producer",
+                        parent: "Production",
+                    },
+                    {
+                        id: "6",
+                        text: "Engineer",
+                        parent: "Production",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "839",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "840",
+                        text: "Member Of",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "842",
+                        text: "Released On",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "843",
+                        text: "Sublabel Of",
+                        parent: "Structural Relationships",
+                    },
+                ],
+            },
+        });
+
+        const selectedNames = (config: TreeConfig): string[] =>
+            config.core.data
+                .filter((node) => node.state?.selected)
+                .map((node) => node.text);
+
+        it("leaves the page tree alone when the URL has no roles", () => {
+            const config = pageTree();
+
+            expect(selectRolesFromSearch(config, "?min_year=1990")).toBe(
+                config,
+            );
+        });
+
+        it("checks named relationships and roles and clears the others", () => {
+            const config = pageTree();
+
+            const selected = selectRolesFromSearch(
+                config,
+                "?roles=Released On,Sublabel Of,Producer",
+            );
+
+            expect(selectedNames(selected)).toEqual([
+                "Producer",
+                "Released On",
+                "Sublabel Of",
+            ]);
+            expect(config.core.data[4].state?.selected).toBe(true);
+        });
+
+        it("checks every role under a category named in the URL", () => {
+            const selected = selectRolesFromSearch(
+                pageTree(),
+                "?roles=Production,Alias",
+            );
+
+            expect(selectedNames(selected)).toEqual([
+                "Production",
+                "Producer",
+                "Engineer",
+                "Alias",
+            ]);
         });
     });
 });

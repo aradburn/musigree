@@ -55,10 +55,52 @@ export const STANDALONE_RELATIONSHIP_NAMES = [
 ] as const;
 
 /**
+ * Home and artist pages start with these relationships checked.
+ * Matches the server `UI_DEFAULT_ARTIST_ROLES` list.
+ */
+export const DEFAULT_ARTIST_RELATIONSHIP_NAMES = [
+    "Alias",
+    "Member Of",
+] as const;
+
+/**
+ * Label pages start with this relationship checked.
+ * Matches the server `UI_DEFAULT_LABEL_ROLES` list.
+ */
+export const DEFAULT_LABEL_RELATIONSHIP_NAMES = ["Released On"] as const;
+
+/**
  * Relationships that still apply when Random loads an artist.
  * Released On and Sublabel Of describe labels, so they are turned off.
  */
-export const RANDOM_ARTIST_RELATIONSHIP_NAMES = ["Alias", "Member Of"] as const;
+export const RANDOM_ARTIST_RELATIONSHIP_NAMES =
+    DEFAULT_ARTIST_RELATIONSHIP_NAMES;
+
+const LABEL_ENTITY_TYPE = "label";
+const ARTIST_ENTITY_TYPE = "artist";
+
+/**
+ * Relationship names restored by the relationships reset button.
+ * The open entity wins over the address bar. A label uses Released On.
+ * Home, artist, and any other page use Alias and Member Of.
+ */
+export const defaultRelationshipNames = (
+    entityKey: string | null | undefined,
+    pathname: string,
+): readonly string[] => {
+    const entityType = entityKey?.split("-")[0];
+    if (entityType === ARTIST_ENTITY_TYPE) {
+        return DEFAULT_ARTIST_RELATIONSHIP_NAMES;
+    }
+    if (
+        entityType === LABEL_ENTITY_TYPE ||
+        pathname === `/${LABEL_ENTITY_TYPE}` ||
+        pathname.startsWith(`/${LABEL_ENTITY_TYPE}/`)
+    ) {
+        return DEFAULT_LABEL_RELATIONSHIP_NAMES;
+    }
+    return DEFAULT_ARTIST_RELATIONSHIP_NAMES;
+};
 
 /** Tells the open filters to match {@link resetFiltersForRandomArtist}. */
 export const RANDOM_ARTIST_FILTER_RESET_EVENT =
@@ -265,6 +307,108 @@ export const splitRoleTree = (config?: TreeConfig): SplitRoleTree => {
                 ...config.core,
                 data: roleNodes,
             },
+        },
+    };
+};
+
+/**
+ * Role names from the page's roles query.
+ * Undefined when that parameter is missing or empty, so the page tree keeps
+ * the selection the server already marked.
+ * A backslash escapes a comma inside a name, matching getSelectedRoles.
+ */
+export const rolesFromSearch = (search: string): string[] | undefined => {
+    const params = new URLSearchParams(search);
+    if (!params.has("roles")) {
+        return undefined;
+    }
+    const names = splitRoleQuery(params.get("roles") ?? "");
+    return names.length > 0 ? names : undefined;
+};
+
+const splitRoleQuery = (value: string): string[] => {
+    const names: string[] = [];
+    let current = "";
+    for (let index = 0; index < value.length; index += 1) {
+        const char = value[index];
+        if (char === "\\" && value[index + 1] === ",") {
+            current += ",";
+            index += 1;
+            continue;
+        }
+        if (char === ",") {
+            const name = current.trim();
+            if (name.length > 0) {
+                names.push(name);
+            }
+            current = "";
+            continue;
+        }
+        current += char;
+    }
+    const name = current.trim();
+    if (name.length > 0) {
+        names.push(name);
+    }
+    return names;
+};
+
+/**
+ * Checks the roles named in the page URL and clears every other checkbox.
+ * Alias, Member Of, Released On, and Sublabel Of are relationship
+ * checkboxes, and they are named in this same roles parameter.
+ * A category name checks that node and every role under it.
+ * The tree is returned unchanged when the URL does not define roles.
+ */
+export const selectRolesFromSearch = (
+    config: TreeConfig,
+    search: string,
+): TreeConfig => {
+    const names = rolesFromSearch(search);
+    if (names === undefined) {
+        return config;
+    }
+    const requested = new Set(names);
+    const childrenByParent = new Map<string | number, TreeNode[]>();
+    for (const node of config.core.data) {
+        if (node.parent === undefined || node.parent === "#") {
+            continue;
+        }
+        const siblings = childrenByParent.get(node.parent);
+        if (siblings) {
+            siblings.push(node);
+        } else {
+            childrenByParent.set(node.parent, [node]);
+        }
+    }
+
+    const selectedIds = new Set<string | number>();
+    const selectNode = (node: TreeNode): void => {
+        if (selectedIds.has(node.id)) {
+            return;
+        }
+        selectedIds.add(node.id);
+        for (const child of childrenByParent.get(node.id) ?? []) {
+            selectNode(child);
+        }
+    };
+    for (const node of config.core.data) {
+        if (requested.has(node.text)) {
+            selectNode(node);
+        }
+    }
+
+    return {
+        ...config,
+        core: {
+            ...config.core,
+            data: config.core.data.map((node) => ({
+                ...node,
+                state: {
+                    ...node.state,
+                    selected: selectedIds.has(node.id),
+                },
+            })),
         },
     };
 };

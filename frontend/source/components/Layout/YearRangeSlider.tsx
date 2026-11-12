@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import {
     YEAR_TRACK_MAX,
     YEAR_TRACK_MIN,
+    applyInitialYearBoundsFromSearch,
     getSelectedYearBounds,
     updateSelectedYearBounds,
 } from "../../yearBounds";
@@ -17,15 +18,21 @@ type ActiveThumb = "min" | "max";
 const TRACK_SPAN = YEAR_TRACK_MAX - YEAR_TRACK_MIN;
 
 /**
- * Dual-thumb year slider. Both thumbs start at the ends of the track.
+ * Dual-thumb year slider.
+ * Thumbs start at min_year and max_year from the page URL when those
+ * parameters are present, otherwise at the ends of the track.
  * Moving either thumb stores the inclusive range and notifies the parent.
+ * The heading reset returns both thumbs to the ends of the track.
  */
 export const YearRangeSlider: React.FC<YearRangeSliderProps> = ({
     onChange,
 }) => {
-    const [bounds, setBounds] = useState<YearBounds>(() =>
-        getSelectedYearBounds(),
-    );
+    const [bounds, setBounds] = useState<YearBounds>(() => {
+        // Seed the shared filter from the address bar before the first paint
+        // so the thumbs and later network requests use the same years.
+        applyInitialYearBoundsFromSearch(window.location.search);
+        return getSelectedYearBounds();
+    });
     const [activeThumb, setActiveThumb] = useState<ActiveThumb>("max");
 
     const commit = (next: YearBounds, thumb: ActiveThumb): void => {
@@ -33,6 +40,18 @@ export const YearRangeSlider: React.FC<YearRangeSliderProps> = ({
         setBounds(getSelectedYearBounds());
         setActiveThumb(thumb);
         onChange();
+    };
+
+    /** Returns both thumbs to the ends of the track and reloads the network. */
+    const handleResetYears = (
+        event: React.MouseEvent<HTMLButtonElement>,
+    ): void => {
+        event.preventDefault();
+        event.stopPropagation();
+        commit(
+            { minYear: YEAR_TRACK_MIN, maxYear: YEAR_TRACK_MAX },
+            "max",
+        );
     };
 
     const handleMinChange = (
@@ -68,6 +87,23 @@ export const YearRangeSlider: React.FC<YearRangeSliderProps> = ({
 
     return (
         <div className="year-range">
+            <label
+                className="filter-heading h6 mb-1"
+                htmlFor="year-range-min"
+            >
+                Years
+                <button
+                    type="button"
+                    className="filter-reset"
+                    aria-label="Reset years"
+                    onClick={handleResetYears}
+                >
+                    <i
+                        className="bi bi-arrow-counterclockwise"
+                        aria-hidden="true"
+                    ></i>
+                </button>
+            </label>
             <div className="year-range-labels">
                 <span>{bounds.minYear}</span>
                 <span>{bounds.maxYear}</span>

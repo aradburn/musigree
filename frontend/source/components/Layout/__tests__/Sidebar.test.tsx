@@ -131,8 +131,17 @@ describe("SidebarLeft Component", () => {
         const relationships = screen.getByText("Relationships");
         const roles = screen.getByText("Roles");
 
-        expect(screen.getByText("Years")).toHaveClass("h6");
+        const years = screen.getByText("Years");
+        const resetYears = screen.getByRole("button", { name: "Reset years" });
+        const resetRelationships = screen.getByRole("button", {
+            name: "Reset relationships",
+        });
+        expect(years).toHaveClass("h6");
+        expect(years).toContainElement(resetYears);
+        expect(years.lastElementChild).toBe(resetYears);
         expect(relationships).toHaveClass("h6");
+        expect(relationships).toContainElement(resetRelationships);
+        expect(relationships.lastElementChild).toBe(resetRelationships);
         expect(roles).toHaveClass("h6");
         expect(
             relationships.compareDocumentPosition(roles) &
@@ -381,6 +390,231 @@ describe("SidebarLeft Component", () => {
         const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
             .calls[0][0];
         expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
+    });
+
+    it("restores the default year range and requests a new network", () => {
+        render(<SidebarLeft />);
+        fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+        fireEvent.change(screen.getByLabelText("Minimum year"), {
+            target: { value: "1970" },
+        });
+        fireEvent.change(screen.getByLabelText("Maximum year"), {
+            target: { value: "1980" },
+        });
+        vi.advanceTimersByTime(INIT.DEBOUNCE_DELAY);
+        vi.mocked(window.dispatchEvent).mockClear();
+
+        fireEvent.click(screen.getByRole("button", { name: "Reset years" }));
+
+        expect(screen.getByLabelText("Minimum year")).toHaveValue(
+            String(YEAR_TRACK_MIN),
+        );
+        expect(screen.getByLabelText("Maximum year")).toHaveValue(
+            String(YEAR_TRACK_MAX),
+        );
+        expect(window.dispatchEvent).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(INIT.DEBOUNCE_DELAY);
+
+        expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+        const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
+            .calls[0][0];
+        expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
+    });
+
+    it("restores default relationships and requests a new network", () => {
+        window.dgRoles = {
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "producer",
+                        text: "Producer",
+                        parent: "Production",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "alias",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "member",
+                        text: "Member Of",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "released",
+                        text: "Released On",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "sublabel",
+                        text: "Sublabel Of",
+                        parent: "Structural Relationships",
+                    },
+                ],
+            },
+        };
+
+        render(<SidebarLeft />);
+        fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+        expect(
+            screen.getByRole("checkbox", { name: "Released On" }),
+        ).toBeChecked();
+        fireEvent.click(screen.getByText("Production"));
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+
+        fireEvent.click(
+            screen.getByRole("button", { name: "Reset relationships" }),
+        );
+
+        expect(screen.getByRole("checkbox", { name: "Alias" })).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Member Of" }),
+        ).toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Released On" }),
+        ).not.toBeChecked();
+        expect(
+            screen.getByRole("checkbox", { name: "Producer" }),
+        ).toBeChecked();
+        expect(window.dispatchEvent).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(INIT.DEBOUNCE_DELAY);
+
+        expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+        const dispatchedEvent = vi.mocked(window.dispatchEvent).mock
+            .calls[0][0];
+        expect(dispatchedEvent).toBeInstanceOf(RequestNetworkEvent);
+    });
+
+    it("checks the relationships and roles named in the initial URL", () => {
+        const originalUrl = window.location.href;
+        window.history.pushState(
+            {},
+            "",
+            "/?roles=Released%20On,Sublabel%20Of,Producer",
+        );
+        window.dgRoles = {
+            core: {
+                data: [
+                    { id: "Production", text: "Production", parent: "#" },
+                    {
+                        id: "5",
+                        text: "Producer",
+                        parent: "Production",
+                    },
+                    {
+                        id: "6",
+                        text: "Engineer",
+                        parent: "Production",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "Structural Relationships",
+                        text: "Structural Relationships",
+                        parent: "#",
+                    },
+                    {
+                        id: "839",
+                        text: "Alias",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "840",
+                        text: "Member Of",
+                        parent: "Structural Relationships",
+                        state: { selected: true },
+                    },
+                    {
+                        id: "842",
+                        text: "Released On",
+                        parent: "Structural Relationships",
+                    },
+                    {
+                        id: "843",
+                        text: "Sublabel Of",
+                        parent: "Structural Relationships",
+                    },
+                ],
+            },
+        };
+
+        try {
+            render(<SidebarLeft />);
+            fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+            expect(
+                screen.getByRole("checkbox", { name: "Alias" }),
+            ).not.toBeChecked();
+            expect(
+                screen.getByRole("checkbox", { name: "Member Of" }),
+            ).not.toBeChecked();
+            expect(
+                screen.getByRole("checkbox", { name: "Released On" }),
+            ).toBeChecked();
+            expect(
+                screen.getByRole("checkbox", { name: "Sublabel Of" }),
+            ).toBeChecked();
+
+            fireEvent.click(screen.getByText("Production"));
+            expect(
+                screen.getByRole("checkbox", { name: "Producer" }),
+            ).toBeChecked();
+            expect(
+                screen.getByRole("checkbox", { name: "Engineer" }),
+            ).not.toBeChecked();
+        } finally {
+            window.history.pushState({}, "", originalUrl);
+        }
+    });
+
+    it("starts the year slider at min_year and max_year from the initial URL", () => {
+        const originalUrl = window.location.href;
+        window.history.pushState(
+            {},
+            "",
+            "/artist/1?roles=Producer&min_year=1970&max_year=1979",
+        );
+
+        try {
+            render(<SidebarLeft />);
+            fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+            expect(screen.getByLabelText("Minimum year")).toHaveValue("1970");
+            expect(screen.getByLabelText("Maximum year")).toHaveValue("1979");
+        } finally {
+            window.history.pushState({}, "", originalUrl);
+        }
+    });
+
+    it("starts the unset year thumb at the track end when the URL sets one year", () => {
+        const originalUrl = window.location.href;
+        window.history.pushState({}, "", "/?min_year=1990");
+
+        try {
+            render(<SidebarLeft />);
+            fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+
+            expect(screen.getByLabelText("Minimum year")).toHaveValue("1990");
+            expect(screen.getByLabelText("Maximum year")).toHaveValue(
+                String(YEAR_TRACK_MAX),
+            );
+        } finally {
+            window.history.pushState({}, "", originalUrl);
+        }
     });
 
     it("requests a new network after the year range changes", () => {
