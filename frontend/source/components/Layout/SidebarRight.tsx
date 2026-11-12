@@ -4,8 +4,9 @@ import { useEntity } from "@/contexts/useEntity.ts";
 import Details from "@/components/Layout/Details.tsx";
 
 /** Shown in the right column until the network delivers entity details. */
-const SIDEBAR_INTRO_TEXT =
-    "Musigree is an interactive visualization of the relationships between musicians, bands and labels.";
+const SIDEBAR_INTRO_TITLE = "MUSIGREE";
+const SIDEBAR_INTRO_BODY =
+    "is an interactive visualization of the relationships between musicians, bands and labels.";
 
 interface SidebarRightProps {
     isCollapsed: boolean;
@@ -74,12 +75,24 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
                     </div>
                 ) : null}
 
-                <div className="flex-fill overflow-x-hidden overflow-y-auto">
+                <div
+                    className={
+                        detailsVisible
+                            ? "flex-fill overflow-x-hidden overflow-y-auto"
+                            : "flex-fill overflow-x-hidden overflow-y-auto d-flex flex-column"
+                    }
+                >
                     {detailsVisible ? (
                         <Details entity={state.entity} isMobile={isMobile} />
                     ) : (
-                        <div className="mx-auto text-light">
-                            <p className="h4">{SIDEBAR_INTRO_TEXT}</p>
+                        <div className="flex-fill d-flex flex-column justify-content-center text-light">
+                            <p className="mb-0 text-center">
+                                <span className="h3 mb-0">
+                                    {`${SIDEBAR_INTRO_TITLE} `}
+                                </span>
+                                <br />
+                                <span className="h4">{SIDEBAR_INTRO_BODY}</span>
+                            </p>
                         </div>
                     )}
                 </div>

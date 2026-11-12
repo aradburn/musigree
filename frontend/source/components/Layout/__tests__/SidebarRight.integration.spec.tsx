@@ -7,8 +7,9 @@ import { SidebarRight } from "../../Layout/SidebarRight";
 import { EntityProvider } from "../../../contexts/EntityContext";
 import type { EntityData } from "../../../entities";
 
-const INTRO_TEXT =
-    "Musigree is an interactive visualization of the relationships between musicians, bands and labels.";
+const INTRO_TITLE = "MUSIGREE";
+const INTRO_BODY =
+    "is an interactive visualization of the relationships between musicians, bands and labels.";
 
 const sampleEntity: EntityData = {
     id: 42,
@@ -55,7 +56,18 @@ describe("SidebarRight + EntityProvider integration", () => {
     it("shows the intro instead of Details when the URL has no query", () => {
         renderSidebar();
 
-        expect(screen.getByText(INTRO_TEXT)).toBeInTheDocument();
+        const title = screen.getByText(INTRO_TITLE);
+        expect(title).toBeInTheDocument();
+        expect(title).toHaveClass("h3");
+        const intro = title.closest("p");
+        expect(intro).toHaveClass("text-center");
+        expect(intro?.querySelector("br")).toBeInTheDocument();
+        expect(title.nextElementSibling?.tagName).toBe("BR");
+        expect(screen.getByText(INTRO_BODY)).toHaveClass("h4");
+        expect(intro?.parentElement).toHaveClass(
+            "justify-content-center",
+            "flex-fill",
+        );
         expect(screen.queryByText("Details")).not.toBeInTheDocument();
         expect(
             screen.queryByRole("button", { name: "Close sidebar" }),
@@ -67,7 +79,7 @@ describe("SidebarRight + EntityProvider integration", () => {
         renderSidebar();
 
         expect(screen.getByText("Details")).toBeInTheDocument();
-        expect(screen.queryByText(INTRO_TEXT)).not.toBeInTheDocument();
+        expect(screen.queryByText(INTRO_TITLE)).not.toBeInTheDocument();
         expect(
             screen.getByRole("button", { name: "Close sidebar" }),
         ).toBeInTheDocument();
@@ -76,7 +88,7 @@ describe("SidebarRight + EntityProvider integration", () => {
     it("shows updated details after the network receives them", async () => {
         renderSidebar();
 
-        expect(screen.getByText(INTRO_TEXT)).toBeInTheDocument();
+        expect(screen.getByText(INTRO_TITLE)).toBeInTheDocument();
         expect(
             screen.queryByRole("button", { name: "Close sidebar" }),
         ).not.toBeInTheDocument();
@@ -86,7 +98,7 @@ describe("SidebarRight + EntityProvider integration", () => {
         expect(
             await screen.findByText("Integration Artist"),
         ).toBeInTheDocument();
-        expect(screen.queryByText(INTRO_TEXT)).not.toBeInTheDocument();
+        expect(screen.queryByText(INTRO_TITLE)).not.toBeInTheDocument();
         expect(screen.getByText("Artist")).toBeInTheDocument();
         expect(screen.getByText("UK")).toBeInTheDocument();
         expect(screen.getByText("Electronic")).toBeInTheDocument();
@@ -107,7 +119,7 @@ describe("SidebarRight + EntityProvider integration", () => {
         await dispatchEntity(null);
 
         expect(screen.getByText("Details")).toBeInTheDocument();
-        expect(screen.queryByText(INTRO_TEXT)).not.toBeInTheDocument();
+        expect(screen.queryByText(INTRO_TITLE)).not.toBeInTheDocument();
         expect(
             screen.getByRole("button", { name: "Close sidebar" }),
         ).toBeInTheDocument();
@@ -127,6 +139,6 @@ describe("SidebarRight + EntityProvider integration", () => {
         expect(
             screen.getByRole("button", { name: "Open sidebar" }),
         ).toBeInTheDocument();
-        expect(screen.queryByText(INTRO_TEXT)).not.toBeInTheDocument();
+        expect(screen.queryByText(INTRO_TITLE)).not.toBeInTheDocument();
     });
 });
