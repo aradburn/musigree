@@ -1,9 +1,40 @@
 import path from "node:path";
+import fs from "node:fs";
 import {fileURLToPath} from "node:url";
 import {defineConfig} from "vitest/config";
 import react from "@vitejs/plugin-react";
+import type {Plugin} from "vite";
+
+import {stripRolldownPreloadMarker} from "./fixRolldownPreloadMarker.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function fixRolldownPreloadMarker(): Plugin {
+    return {
+        name: "fix-rolldown-preload-marker",
+        apply: "build",
+        enforce: "post",
+        // Vite rewrites the preload marker in its own generateBundle hook, after
+        // earlier generateBundle hooks. writeBundle sees the finished chunks.
+        writeBundle(options, bundle): void {
+            const dir = options.dir;
+            if (!dir) {
+                return;
+            }
+            for (const item of Object.values(bundle)) {
+                if (item.type !== "chunk") {
+                    continue;
+                }
+                const fixed = stripRolldownPreloadMarker(item.code);
+                if (fixed === item.code) {
+                    continue;
+                }
+                item.code = fixed;
+                fs.writeFileSync(path.join(dir, item.fileName), fixed);
+            }
+        },
+    };
+}
 
 export default defineConfig(({command}) => ({
     root: path.join(__dirname, "./source/"),
@@ -19,7 +50,7 @@ export default defineConfig(({command}) => ({
         },
         extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
     },
-    plugins: [react()],
+    plugins: [react(), fixRolldownPreloadMarker()],
     build: {
         cssCodeSplit: false,
         sourcemap: false,
@@ -32,7 +63,7 @@ export default defineConfig(({command}) => ({
             input: path.join(__dirname, "./source/index.ts"),
             output: {
                 // Vite's css-post plugin calls this with `names` only (no `name`); Rolldown may omit `name` too.
-                assetFileNames: (assetInfo) => {
+                assetFileNames: (assetInfo): string => {
                     const primary =
                         assetInfo.name ??
                         (Array.isArray(assetInfo.names)

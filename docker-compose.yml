@@ -2,17 +2,15 @@
 # https://coolify.io/docs/applications/builds/docker-compose
 #
 # Coolify generates SERVICE_URL_MUSIGREE_5000 and routes public HTTPS to
-# port 5000. It generates SERVICE_PASSWORD_REDIS once and reuses that value
-# for the Redis service and the application. REDIS_USERNAME defaults to
-# Coolify's Redis username, "default".
+# port 5000. REDIS_HOST, REDIS_PORT, REDIS_USERNAME, and REDIS_PASSWORD
+# come from the values already set in the Coolify environment variables.
+# Connect this resource to the predefined network so it can reach the
+# standalone Redis database.
 #
-# To use a standalone Coolify Redis database instead of the redis service,
-# connect this resource to the predefined network, set REDIS_HOST to that
-# database's UUID, and set REDIS_PASSWORD to its REDIS_PASSWORD.
-#
-# The runtime SQLite file must exist in the musigree-runtime volume as
-# /data/musigree_runtime_prod.db and be world-readable. The app opens it
-# read-only.
+# The runtime SQLite file is /data/musigree_runtime_prod.db inside the
+# container. That path is the host directory /home/musigree/data, mounted
+# read-only. The database file must be world-readable; the process runs as
+# uid 65532.
 
 services:
   musigree:
@@ -33,43 +31,9 @@ services:
     user: "65532:65532"
     environment:
       SERVICE_URL_MUSIGREE_5000: /
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_USERNAME: ${REDIS_USERNAME:-default}
-      REDIS_PASSWORD: ${SERVICE_PASSWORD_REDIS}
+      REDIS_HOST: ${REDIS_HOST:?}
+      REDIS_PORT: ${REDIS_PORT:?}
+      REDIS_USERNAME: ${REDIS_USERNAME:?}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     volumes:
-      - type: volume
-        source: musigree-runtime
-        target: /data
-        read_only: true
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  redis:
-    image: redis:8-alpine
-    restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${SERVICE_PASSWORD_REDIS}
-    command:
-      - redis-server
-      - --requirepass
-      - ${SERVICE_PASSWORD_REDIS}
-      - --appendonly
-      - "yes"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-volumes:
-  musigree-runtime:
-  redis-data:
+      - /home/musigree/data:/data:ro
