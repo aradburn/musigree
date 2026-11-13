@@ -129,7 +129,7 @@ def test_missing_redis_port_uses_field_default(monkeypatch: MonkeyPatch) -> None
 
 
 def test_empty_redis_port_uses_field_default(monkeypatch: MonkeyPatch) -> None:
-    """An empty REDIS_PORT from an omitted Docker ARG is not a value."""
+    """An empty REDIS_PORT environment variable is not a value."""
     monkeypatch.setenv("REDIS_PORT", "")
 
     config = SqliteReadOnlyProductionConfiguration()
@@ -138,7 +138,7 @@ def test_empty_redis_port_uses_field_default(monkeypatch: MonkeyPatch) -> None:
 
 
 def test_redis_port_environment_overrides_default(monkeypatch: MonkeyPatch) -> None:
-    """A build-arg or runtime REDIS_PORT replaces the default."""
+    """A runtime REDIS_PORT replaces the default."""
     monkeypatch.setenv("REDIS_PORT", "6380")
 
     config = SqliteReadOnlyProductionConfiguration()

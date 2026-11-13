@@ -5,8 +5,10 @@ frontend/static
 frontend/tests
 Dockerfile
 musigree/data/discogs
+musigree/data/entity_details
 musigree/data/instruments
 musigree/data/roles
+musigree/data/text_search
 .dockerignore
 .venv
 *.md
@@ -14,6 +16,11 @@ musigree/data/roles
 .git*
 .vscode
 .idea
+.cursor
+.agents
+.mypy_cache
+.ruff_cache
+.pdm-build
 *.log
 *.tmp
 .env
@@ -26,3 +33,9 @@ htmlcov
 *.swo
 *~
 .DS_Store
+# Offline data and local databases are mounted at runtime, not copied into the image.
+offline_database
+runtime_database
+tests
+docs
+**/*.db

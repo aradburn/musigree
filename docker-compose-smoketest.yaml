@@ -2,13 +2,29 @@
 # SqliteProductionConfiguration resolves the runtime database to
 # ROOT_DIR/../data/musigree_runtime_prod.db, which is /data/musigree_runtime_prod.db
 # when the app lives in /app.
+#
+# The root filesystem is read-only. Writable scratch is a noexec tmpfs on
+# /tmp and /var/tmp. Gunicorn heartbeats use the default /dev/shm tmpfs
+# (--worker-tmp-dir in the image). Pass Redis settings at runtime; they
+# are not baked into the image.
 services:
   musigree:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m
+      - /var/tmp:rw,noexec,nosuid,nodev,mode=1777,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    init: true
+    user: "65532:65532"
     volumes:
       - type: bind
         source: ./runtime_database/musigree_runtime_dev.db

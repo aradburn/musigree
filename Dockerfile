@@ -6,9 +6,10 @@ WORKDIR /app/frontend
 # Copy dependency files first for better layer caching
 COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies with cache mount
+# Install dependencies with cache mount. Ignore lifecycle scripts so a
+# dependency cannot run code during the image build.
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+    npm ci --ignore-scripts
 
 # Copy frontend source code
 COPY frontend .
@@ -50,23 +51,26 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Stage 3: ----- Build the final image -----
 # Runtime image has no uv binary. The venv was built against this same interpreter.
+# Redis and database settings are runtime environment variables. Do not pass
+# them as build args: build args and ENV are stored in the image config.
 FROM python:3.14.7-slim-trixie AS final
 
-# Optional build args. An omitted REDIS_PORT is empty here; the app treats that as unset.
-ARG REDIS_HOST
-ARG REDIS_PORT
-ARG REDIS_USERNAME
-ARG REDIS_PASSWORD
 # Image metadata. Filled in by release.sh
 ARG IMAGE_VERSION="1.0.90"
 ARG IMAGE_CREATED="2026-10-06T11:09:54Z"
+# Keep interpreter scratch off the application tree so a read-only root
+# filesystem only needs a tmpfs on /tmp. Gunicorn heartbeats use /dev/shm.
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app" \
-    PYTHONUNBUFFERED=1
-ENV REDIS_HOST=${REDIS_HOST}
-ENV REDIS_PORT=${REDIS_PORT}
-ENV REDIS_USERNAME=${REDIS_USERNAME}
-ENV REDIS_PASSWORD=${REDIS_PASSWORD}
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONSAFEPATH=1 \
+    HOME=/tmp \
+    TMPDIR=/tmp \
+    XDG_CACHE_HOME=/tmp \
+    XDG_CONFIG_HOME=/tmp \
+    MALLOC_ARENA_MAX=2
 
 # Add metadata labels
 LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
@@ -78,45 +82,52 @@ LABEL maintainer="Andy Radburn <andy.radburn@outlook.com>" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       security.scan.enabled="true"
 
-# Install packages needed for deployment
-# Combine commands and clean up in single layer to reduce image size
+# Refresh CA certificates and apply base-image security updates in one layer.
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && \
+    apt-get upgrade -y --no-install-recommends \
+        -o Dpkg::Options::=--force-confdef \
+        -o Dpkg::Options::=--force-confold && \
     apt-get install --no-install-recommends -y ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
 
-# Setup a non-root user
-RUN groupadd --system --gid 1000 nonroot && \
-    useradd --system --gid 1000 --uid 1000 --create-home nonroot
+# Fixed uid/gid that does not collide with a typical host user (uid 1000).
+# No home directory and no login shell. HOME is the tmpfs mounted at /tmp.
+RUN groupadd --system --gid 65532 nonroot && \
+    useradd --system --uid 65532 --gid nonroot \
+        --no-create-home --home-dir /tmp --shell /usr/sbin/nologin \
+        --no-log-init nonroot
 
 WORKDIR /app
 
-# Create app directory with proper ownership
-# Note: chown happens during COPY with --chown flag, but we ensure directory exists
-RUN mkdir -p /app && chown -R nonroot:nonroot /app
+# Copy the virtual environment first (largest layer, better caching).
+# mode 0555: root-owned, readable and executable, not writable by the runtime user.
+COPY --from=backend-builder --chmod=555 /app/.venv /app/.venv
 
-# Copy the virtual environment first (largest layer, better caching)
-COPY --from=backend-builder --chown=nonroot:nonroot /app/.venv /app/.venv
-
-# Copy source code and lock files
-COPY --from=backend-builder --chown=nonroot:nonroot /app/pyproject.toml /app/pyproject.toml
-COPY --from=backend-builder --chown=nonroot:nonroot /app/uv.lock /app/uv.lock
-COPY --from=backend-builder --chown=nonroot:nonroot /app/README.md /app/README.md
-COPY --from=backend-builder --chown=nonroot:nonroot /app/health.py /app/health.py
-COPY --from=backend-builder --chown=nonroot:nonroot /app/musigree /app/musigree
+# Runtime source. Lockfiles and the README are not needed once the venv exists.
+COPY --from=backend-builder --chmod=555 /app/health.py /app/health.py
+COPY --from=backend-builder --chmod=555 /app/musigree /app/musigree
 
 # Copy the frontend static files
-COPY --from=frontend-builder --chown=nonroot:nonroot /app/frontend/public /app/frontend/public
-COPY --from=frontend-builder --chown=nonroot:nonroot /app/frontend/templates /app/frontend/templates
+COPY --from=frontend-builder --chmod=555 /app/frontend/public /app/frontend/public
+COPY --from=frontend-builder --chmod=555 /app/frontend/templates /app/frontend/templates
 # Copy the production built react app frontend
-COPY --from=frontend-builder --chown=nonroot:nonroot /app/frontend/dist /app/frontend/dist
+COPY --from=frontend-builder --chmod=555 /app/frontend/dist /app/frontend/dist
 
-ENV MALLOC_ARENA_MAX=2
-
-# RUN chmod 555 / && chmod 555 /bin /usr/bin /usr/sbin 2>/dev/null || true
+# Drop setuid/setgid from privileged binaries in the base image.
+# /tmp and /var/tmp stay available as mount points; run the container with a
+# read-only root and tmpfs on those paths (see docker-compose.yml and
+# docker-compose-smoketest.yaml).
+RUN set -eu; \
+    for dir in /bin /usr/bin /usr/sbin /usr/lib /usr/libexec; do \
+        if [ -d "$dir" ]; then \
+            find "$dir" -xdev -type f -perm /6000 -exec chmod a-s {} +; \
+        fi; \
+    done
 
 # Use the non-root user to run our application
-USER nonroot
+USER 65532:65532
 
 # Expose the application port
 EXPOSE 5000

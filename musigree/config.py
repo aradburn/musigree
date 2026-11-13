@@ -26,7 +26,7 @@ class Configuration(BaseSettings):
     model_config = SettingsConfigDict(
         extra="ignore",
         strict=True,
-        # An empty env var (omitted Docker ARG) is unset, so field defaults apply.
+        # An empty environment variable is treated as unset, so field defaults apply.
         env_ignore_empty=True,
         # frozen=True,
     )
