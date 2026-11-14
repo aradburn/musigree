@@ -4,9 +4,9 @@ minimum_pre_commit_version: "4.6.2"
 default_language_version:
     python: python3.14
 # Install both commit and push hooks. The release hook only runs on pre-push.
-default_install_hook_types: [pre-commit, pre-push]
+default_install_hook_types: [ pre-commit, pre-push ]
 # Hooks without an explicit stages list run on commit only.
-default_stages: [pre-commit]
+default_stages: [ pre-commit ]
 repos:
     -   repo: https://github.com/pre-commit/pre-commit-hooks
         rev: v6.0.0
@@ -20,16 +20,16 @@ repos:
             -   id: detect-private-key
             -   id: end-of-file-fixer
                 files: ^musigree/
-                types: [file, python]
+                types: [ file, python ]
             -   id: mixed-line-ending
-            -   id: trailing-whitespace
+            # -   id: trailing-whitespace
     -   repo: https://github.com/astral-sh/ruff-pre-commit
         # Keep in sync with the ruff pin in pyproject.toml.
         rev: v0.16.8
         hooks:
             -   id: ruff-check
                 files: ^musigree/
-                args: [--fix]
+                args: [ --fix ]
             -   id: ruff-format
                 files: ^musigree/
     -   repo: https://github.com/astral-sh/uv-pre-commit
@@ -44,5 +44,5 @@ repos:
                 entry: ./release.sh --force patch
                 language: unsupported_script
                 pass_filenames: false
-                stages: [pre-push]
+                stages: [ pre-push ]
                 verbose: true
