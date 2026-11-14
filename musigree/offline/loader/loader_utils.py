@@ -49,11 +49,14 @@ import glob
 import gzip
 import logging
 import os
-from collections.abc import Iterator
-from pathlib import Path
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING
 
 from musigree.offline.loader.parser_utils import ParserUtils
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from pathlib import Path
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 """

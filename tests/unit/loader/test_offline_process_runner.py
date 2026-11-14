@@ -28,6 +28,7 @@ class TestShutdownProcessRunner:
         mock_shutdown_logging: MagicMock,
     ) -> None:
         """Test shutdown_process_runner calls database and cache shutdown."""
+
         async def noop() -> None:
             pass
 

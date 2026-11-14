@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.orm import class_mapper
 
 from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
@@ -26,7 +28,7 @@ class TestRuntimeCountryTable:
     def test_init_with_empty_entries(self) -> None:
         """Test initialization with empty entries dictionary."""
         # GIVEN
-        entries: dict = {}
+        entries: dict[str, Any] = {}
 
         # WHEN
         country_table = RuntimeCountryTable(**entries)

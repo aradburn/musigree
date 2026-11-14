@@ -1,9 +1,7 @@
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import asc, delete, desc, func, select, update
-from sqlalchemy.engine import Result
 
 __all__ = ("RuntimeBaseRepository",)
 
@@ -12,6 +10,11 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.runtime.runtime_database.runtime_base_table import RuntimeBase
 from musigree.runtime.runtime_database.runtime_session import RuntimeSession
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from sqlalchemy.engine import Result
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
                 .values(payload)
                 .returning(self.schema_class)
             )
-            result: Result = await self.execute(query)
+            result: Result[Any] = await self.execute(query)
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
@@ -112,7 +115,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
         """
         # noinspection PyTypeChecker
         query = select(self.schema_class).where(getattr(self.schema_class, key) == value)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
@@ -130,7 +133,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
             UnprocessableError: If the runtime_database query returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -154,7 +157,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = await self.execute(select(self.schema_class).order_by(asc(by)).limit(1))
+        result: Result[Any] = await self.execute(select(self.schema_class).order_by(asc(by)).limit(1))
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
@@ -175,7 +178,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
         Raises:
             NotFoundError: If no records are found in the table.
         """
-        result: Result = await self.execute(select(self.schema_class).order_by(desc(by)).limit(1))
+        result: Result[Any] = await self.execute(select(self.schema_class).order_by(desc(by)).limit(1))
 
         if not (_result := result.scalar_one_or_none()):
             raise NotFoundError
@@ -230,7 +233,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
             AsyncGenerator[RuntimeConcreteTable]: An async iterator that yields each
                 runtime_database row as an object.
         """
-        result: Result = await self.execute(select(self.schema_class))
+        result: Result[Any] = await self.execute(select(self.schema_class))
         schemas = result.scalars().all()
 
         for schema in schemas:
@@ -244,7 +247,7 @@ class RuntimeBaseRepository[RuntimeConcreteTable: RuntimeBase](RuntimeSession):
             id_ (int): The ID of the record to delete.
         """
         # noinspection PyTypeChecker,Mypy
-        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
+        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         await self._session.flush()
 
     async def commit(self) -> None:

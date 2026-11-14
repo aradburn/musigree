@@ -1,14 +1,65 @@
-# Smoke-test the production image against the local SQLite runtime database.
+# Smoke-test the production image against the local SQLite runtime database
+# and the Redis server on this machine.
 # SqliteProductionConfiguration resolves the runtime database to
 # ROOT_DIR/../data/musigree_runtime_prod.db, which is /data/musigree_runtime_prod.db
 # when the app lives in /app.
+#
+# Host networking makes localhost inside the container the host's localhost,
+# where Redis is listening. Published ports are not used in this mode, so
+# gunicorn binds 127.0.0.1:5000 directly.
+#
+# The root filesystem is read-only. Writable scratch is a noexec tmpfs on
+# /tmp and /var/tmp. Gunicorn heartbeats use the default /dev/shm tmpfs
+# (--worker-tmp-dir in the image).
 services:
   musigree:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
+    network_mode: host
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m
+      - /var/tmp:rw,noexec,nosuid,nodev,mode=1777,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    init: true
+    user: "65532:65532"
+    environment:
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      REDIS_USERNAME: default
+      REDIS_PASSWORD: redis_dev
+    command:
+      - gunicorn
+      - --workers
+      - "1"
+      - --worker-class
+      - uvicorn.workers.UvicornWorker
+      - --bind
+      - 127.0.0.1:5000
+      - --timeout
+      - "60"
+      - --keep-alive
+      - "5"
+      - --max-requests
+      - "100000"
+      - --max-requests-jitter
+      - "100"
+      - --graceful-timeout
+      - "30"
+      - --access-logfile
+      - "-"
+      - --error-logfile
+      - "-"
+      - --log-level
+      - info
+      - --worker-tmp-dir
+      - /dev/shm
+      - musigree.app.fastapi_prod_app:app
     volumes:
       - type: bind
         source: ./runtime_database/musigree_runtime_dev.db

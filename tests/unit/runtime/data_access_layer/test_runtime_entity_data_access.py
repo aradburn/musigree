@@ -7,6 +7,7 @@ relation counting, and structural role processing.
 """
 
 import logging
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -27,8 +28,8 @@ class TestRolesToRelationCount:
     @staticmethod
     def create_test_entity(
         entity_type: EntityType,
-        entities: dict | None = None,
-        relation_counts: dict | None = None,
+        entities: dict[str, Any] | None = None,
+        relation_counts: dict[str, int] | None = None,
     ) -> RuntimeEntity:
         """Helper method to create a test entity."""
         return RuntimeEntity(
@@ -172,7 +173,7 @@ class TestStructuralRolesToRelations:
 
     @staticmethod
     def create_test_entity(
-        entity_type: EntityType, entity_id: int = 1, entities: dict | None = None
+        entity_type: EntityType, entity_id: int = 1, entities: dict[str, Any] | None = None
     ) -> RuntimeEntity:
         """Helper method to create a test entity."""
         return RuntimeEntity(
@@ -479,7 +480,8 @@ class TestGetIdByEntityTypeAndEntityName:
             # Assertions
             assert result is None
             mock_log.debug.assert_called_once_with(
-                "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
+                "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent "
+                "Artist:id"
             )
 
     def test_cache_key_format(self) -> None:

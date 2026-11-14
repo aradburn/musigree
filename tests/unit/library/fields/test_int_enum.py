@@ -5,6 +5,7 @@ This module contains unit tests for the IntEnum SQLAlchemy type decorator.
 """
 
 import enum
+from typing import cast
 from unittest.mock import Mock
 
 import pytest
@@ -207,7 +208,7 @@ class TestIntEnumIntegration:
         # Different instance should have different enum type
         string_enum = IntEnum(StringEnum)
         assert string_enum._enumtype is StringEnum
-        assert string_enum._enumtype is not MockTestEnum
+        assert cast("type[object]", string_enum._enumtype) is not MockTestEnum
 
     def test_none_handling_consistency(self) -> None:
         """Test that None is handled consistently in both directions."""

@@ -2,12 +2,14 @@ import datetime
 import io
 import logging
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
 
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +101,7 @@ class TestParserBase:
 
         # noinspection PyUnusedLocal,unused-parameter,unused-parameter
         def mock_open(*args: Any, **kwargs: Any) -> io.BytesIO:
-            return mock_file  # type: ignore
+            return mock_file
 
         monkeypatch.setattr(
             "musigree.offline.loader.loader_utils.LoaderUtils.get_xml_path",
@@ -127,12 +129,12 @@ class TestParserBase:
         assert len(records) == 5
         assert records[0].name == "RECORD ONE"
         assert records[0].value == 10
-        assert records[0].date == datetime.datetime(2023, 10, 27)  # noqa: DTZ001
+        assert records[0].date == datetime.datetime(2023, 10, 27)
         assert records[0].id == "1"
         assert records[0].ignore is None
         assert records[1].name == "RECORD TWO"
         assert records[1].value == 20
-        assert records[1].date == datetime.datetime(2023, 11, 27)  # noqa: DTZ001
+        assert records[1].date == datetime.datetime(2023, 11, 27)
         assert records[1].id == "2"
         assert records[2].name == "RECORD THREE"
         assert records[2].value == 30
@@ -140,11 +142,11 @@ class TestParserBase:
         assert records[2].id == "3"
         assert records[3].name == "RECORD FOUR"
         assert records[3].value == 40
-        assert records[3].date == datetime.datetime(2024, 11, 10)  # noqa: DTZ001
+        assert records[3].date == datetime.datetime(2024, 11, 10)
         assert records[3].id == "4"
         assert not hasattr(records[4], "name") or records[4].name is None
         assert records[4].value == 50
-        assert records[4].date == datetime.datetime(2024, 11, 10)  # noqa: DTZ001
+        assert records[4].date == datetime.datetime(2024, 11, 10)
         assert records[4].id == "5"
 
         assert len(records_skip) == 4
@@ -197,7 +199,7 @@ class TestParserBase:
         # THEN
         assert result["name"] == "RECORD ONE"
         assert result["value"] == 10
-        assert result["date"] == datetime.datetime(2023, 10, 27)  # noqa: DTZ001
+        assert result["date"] == datetime.datetime(2023, 10, 27)
 
     def test_tags_to_fields_ignore_none(self) -> None:
         """Test tags to fields with ignore_none option."""

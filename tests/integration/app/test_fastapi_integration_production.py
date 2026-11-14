@@ -2,14 +2,18 @@
 Integration tests for the FastAPI application.
 """
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
-from httpx import AsyncClient
 
 from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import CacheType
 from musigree.logging_config import setup_logging
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from httpx import AsyncClient
 
 
 @pytest.fixture(scope="class")

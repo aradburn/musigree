@@ -18,14 +18,17 @@ The module uses the following components:
 import json
 import logging
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
 
 from musigree.app.fastapi_app import templates
-from musigree.config import Configuration
 from musigree.constants import FRONTEND_DIR
+
+if TYPE_CHECKING:
+    from fastapi.templating import Jinja2Templates
+
+    from musigree.config import Configuration
 
 log = logging.getLogger(__name__)
 """The logger for the assets module."""
@@ -65,12 +68,10 @@ def create_assets_router(config: Configuration) -> tuple[APIRouter, Jinja2Templa
     if is_production:
         manifest_path = FRONTEND_DIR / "dist" / "manifest.json"
         try:
-            with open(manifest_path, "r") as content:
+            with open(manifest_path) as content:
                 manifest = json.load(content)
         except OSError as exception:
-            raise OSError(
-                f"Manifest file not found at {manifest_path}. Run `npm run build`."
-            ) from exception
+            raise OSError(f"Manifest file not found at {manifest_path}. Run `npm run build`.") from exception
 
     # Set up templates and add context functions
     # templates = Jinja2Templates(directory=TEMPLATES_DIR)

@@ -8,14 +8,16 @@ concurrent environments.
 """
 
 from contextvars import ContextVar
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import CursorResult, Executable
-from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
+
+if TYPE_CHECKING:
+    from sqlalchemy import CursorResult, Executable
+    from sqlalchemy.engine import Result
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 CTX_OFFLINE_SESSION: ContextVar[AsyncSession] = ContextVar("offline_session")
 """
@@ -43,19 +45,17 @@ async def get_offline_session() -> AsyncSession:
     assert OfflineDatabaseManager.offline_database_helper is not None, (
         "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_offline_session()"
     )
-    assert (
-        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory is not None
-    ), (
-        "OfflineDatabaseManager.offline_database_helper.offline_async_session_factory must be initialized before calling get_offline_session()"
+    assert OfflineDatabaseManager.offline_database_helper.offline_async_session_factory is not None, (
+        "OfflineDatabaseManager.offline_database_helper.offline_async_session_factory must be "
+        "initialized before calling get_offline_session()"
     )
     assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
-        "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_offline_session()"
+        "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized "
+        "before calling get_offline_session()"
     )
 
-    async_session_factory = (
-        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
-    )
-    return async_session_factory()  # type: ignore
+    async_session_factory = OfflineDatabaseManager.offline_database_helper.offline_async_session_factory
+    return async_session_factory()
 
 
 class OfflineSession:
@@ -82,7 +82,7 @@ class OfflineSession:
         """
         try:
             result = await self._session.execute(query)
-            return result  # type: ignore
+            return result
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 

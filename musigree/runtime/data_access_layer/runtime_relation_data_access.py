@@ -1,16 +1,18 @@
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.cache.role_cache import RoleCache
-from musigree.offline.offline_domain.relation import RelationDB
-from musigree.runtime.runtime_database.runtime_relation_repository import (
-    RuntimeRelationRepository,
-)
 from musigree.runtime.runtime_domain.runtime_relation import (
-    RuntimeRelation,
     RuntimeRelationInternal,
+    RuntimeRelationResult,
     to_runtime_relation_db_dict,
 )
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.relation import RelationDB
+    from musigree.runtime.runtime_database.runtime_relation_repository import (
+        RuntimeRelationRepository,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -24,33 +26,40 @@ class RuntimeRelationDataAccess:
         ids: list[int],
         role_names: list[str],
         limit: int,
-    ) -> list[RuntimeRelation]:
+        min_year: int | None = None,
+        max_year: int | None = None,
+    ) -> list[RuntimeRelationResult]:
         """
         Searches for relations involving multiple entities and specific roles.
 
         This method takes a list of entity keys and role names, and returns
         all relations that involve any of the specified entities in any of
-        the specified roles.
+        the specified roles. Each result keeps the release year for every
+        matching release.
 
         Args:
             relation_repository: The repository to use for runtime_database operations.
             ids: List of ids to search for.
             role_names: List of role names to filter by.
             limit: Maximum number of relation rows to retrieve.
+            min_year: Inclusive lower bound for release year.
+            max_year: Inclusive upper bound for release year.
 
         Returns:
-            list[RuntimeRelation]: List of relations matching the criteria.
+            list[RuntimeRelationResult]: List of relations matching the criteria.
         """
         assert ids
         assert role_names
 
-        role_ids: list[int] = [
-            RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names
-        ]
+        role_ids: list[int] = [RoleCache.role_name_to_role_id_lookup[role_name] for role_name in role_names]
 
-        relation_internals: list[
-            RuntimeRelationInternal
-        ] = await relation_repository.find_by_entities_and_roles(ids, role_ids, limit)
+        relation_internals: list[RuntimeRelationInternal] = await relation_repository.find_by_entities_and_roles(
+            ids,
+            role_ids,
+            limit,
+            min_year=min_year,
+            max_year=max_year,
+        )
 
         # Group relation_internals by link_key
         relations_map: dict[str, list[RuntimeRelationInternal]] = {}
@@ -60,9 +69,9 @@ class RuntimeRelationDataAccess:
             relation_internal_list.append(relation_internal)
             relations_map.update({key: relation_internal_list})
 
-        relations: list[RuntimeRelation] = []
+        relations: list[RuntimeRelationResult] = []
         for grouped_relation_internals in relations_map.values():
-            relation = RuntimeRelation.from_relation_internals(grouped_relation_internals)
+            relation = RuntimeRelationResult.from_relation_internals(grouped_relation_internals)
             relations.append(relation)
 
         # log.debug(f"    -> relations: {relations}")

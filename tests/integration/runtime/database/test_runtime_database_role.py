@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -8,6 +8,9 @@ from musigree.runtime.runtime_database.runtime_role_repository import (
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -19,7 +22,7 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
         offline_database_setup: AsyncGenerator[None],
         runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
     ) -> None:
         name = "Acoustic Bass"
         async with runtime_transaction():
@@ -43,7 +46,7 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
         offline_database_setup: AsyncGenerator[None],
         runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
     ) -> None:
         name = "Acoustic Bass"
         async with runtime_transaction():
@@ -67,7 +70,7 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
         offline_database_setup: AsyncGenerator[None],
         runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
     ) -> None:
         name = "Mezzo-Soprano Vocals"
         async with runtime_transaction():
@@ -91,7 +94,7 @@ class TestRuntimeDatabaseRole(AbstractDatabaseTest):
         offline_database_setup: AsyncGenerator[None],
         runtime_database_setup: AsyncGenerator[None],
         is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        is_load_runtime_data_required: bool,
     ) -> None:
         name = "Mezzo-Soprano Vocals"
         async with runtime_transaction():

@@ -2,7 +2,8 @@
 Unit tests for the offline_transaction module.
 
 This module contains comprehensive unit tests for the offline_transaction context manager,
-which provides transaction management functionality for offline_database operations in the offline system.
+which provides transaction management functionality for offline_database operations in the offline
+system.
 It tests successful transactions, error handling, rollback scenarios, and session management.
 """
 

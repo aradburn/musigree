@@ -39,12 +39,14 @@ It uses `musigree` library for musigree specific operations.
 
 import logging
 from types import MappingProxyType
-from typing import Any
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING, Any
 
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
 from musigree.offline.offline_domain.master import Master
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 log = logging.getLogger(__name__)
 """

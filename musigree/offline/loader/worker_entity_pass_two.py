@@ -56,6 +56,7 @@ concurrency.
 import asyncio
 import logging
 import multiprocessing
+from typing import TYPE_CHECKING
 
 from musigree.constants import BULK_REPORTING_SIZE
 from musigree.exceptions import DatabaseError, NotFoundError
@@ -66,7 +67,9 @@ from musigree.offline.offline_database.entity_table import EntityTable
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
-from musigree.offline.offline_domain.entity import Entity
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 """
@@ -74,9 +77,7 @@ The logger for the worker entity pass two module.
 """
 
 
-async def process_entity_pass_two_worker_async(
-    ids: list[int], current_total: int, total_count: int
-) -> None:
+async def process_entity_pass_two_worker_async(ids: list[int], current_total: int, total_count: int) -> None:
     """
     Worker function for processing entity records in the second pass.
 
@@ -155,9 +156,7 @@ async def worker_pass_two_single(
     # if LOGGING_TRACE:
     # log.debug(f"id: {entity.entity_id}-{entity.entity_type}")
 
-    changed = await OfflineEntityDataAccess.resolve_entity_references(
-        entity_repository, token_repository, entity
-    )
+    changed = await OfflineEntityDataAccess.resolve_entity_references(entity_repository, token_repository, entity)
     """Resolve entity references."""
     if changed:
         """If any changes were made to the entity."""
@@ -197,15 +196,11 @@ def process_entity_pass_two_worker(ids: list[int], current_total: int, total_cou
     # Prevents "Future attached to a different loop" when using ProcessPoolExecutor.
     config = OfflineDatabaseManager.offline_config
     if config is None:
-        raise RuntimeError(
-            "OfflineDatabaseManager.offline_config not set; run setup_database first"
-        )
+        raise RuntimeError("OfflineDatabaseManager.offline_config not set; run setup_database first")
     loop.run_until_complete(CacheManager.setup_cache(config))
 
     try:
-        loop.run_until_complete(
-            process_entity_pass_two_worker_async(ids, current_total, total_count)
-        )
+        loop.run_until_complete(process_entity_pass_two_worker_async(ids, current_total, total_count))
     finally:
         loop.run_until_complete(CacheManager.shutdown_cache())
 

@@ -27,17 +27,20 @@ for generic XML parsing.
 
 import gzip
 import logging
-from collections.abc import Callable, Generator, Mapping
-from pathlib import Path
 from types import MappingProxyType
-from typing import Any
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING, Any
 
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_utils import ParserUtils
-from musigree.offline.offline_domain.entity import Entity
-from musigree.offline.offline_domain.master import Master
-from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Mapping
+    from pathlib import Path
+    from xml.etree.ElementTree import Element
+
+    from musigree.offline.offline_domain.entity import Entity
+    from musigree.offline.offline_domain.master import Master
+    from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
@@ -60,9 +63,7 @@ class ParserBase:
             extracted from XML elements and processed.
     """
 
-    _tags_to_fields_mapping: MappingProxyType[str, tuple[str, Callable[[Any], Any]]] = (
-        MappingProxyType({})
-    )
+    _tags_to_fields_mapping: MappingProxyType[str, tuple[str, Callable[[Any], Any]]] = MappingProxyType({})
     """
     A mapping from XML tags to database fields and procedures.
 
@@ -134,7 +135,7 @@ class ParserBase:
                 yield new_instance
 
     @classmethod
-    def from_element(cls, element: Element) -> Any:  # type: ignore[empty-body]
+    def from_element(cls, element: Element) -> Any:
         """
         Creates an instance from an XML element.
 
@@ -147,7 +148,7 @@ class ParserBase:
         """
 
     @classmethod
-    def preprocess_data(cls, data: dict, element: Any) -> dict[str, Any]:
+    def preprocess_data(cls, data: dict[str, Any], element: Any) -> dict[str, Any]:
         """
         Preprocesses data before creating a domain object.
 

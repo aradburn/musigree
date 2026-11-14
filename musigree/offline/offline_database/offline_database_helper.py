@@ -1,15 +1,20 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Table
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.sql.ddl import DropTable
-from sqlalchemy.sql.dml import Insert
 
-from musigree.config import Configuration
 from musigree.offline.offline_database.base_table import ConcreteTable, OfflineBase
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy import Table
+    from sqlalchemy.engine import Connection
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+    from sqlalchemy.sql.dml import Insert
+
+    from musigree.config import Configuration
 
 log = logging.getLogger(__name__)
 
@@ -42,13 +47,15 @@ class OfflineDatabaseHelper(ABC):
     and managing vacuum operations. It also defines constants for graph query limitations.
 
     Attributes:
-        offline_async_engine (Engine | None): The SQLAlchemy engine for the offline runtime_database.
-        offline_async_session_factory (async_sessionmaker | None): The session factory for the offline runtime_database.
+        offline_async_engine (Engine | None): The SQLAlchemy engine for the offline
+        runtime_database.
+        offline_async_session_factory (async_sessionmaker | None): The session factory for the
+        offline runtime_database.
     """
 
     offline_async_engine: AsyncEngine | None = None
     """The SQLAlchemy engine for the offline runtime_database."""
-    offline_async_session_factory: async_sessionmaker | None = None
+    offline_async_session_factory: async_sessionmaker[AsyncSession] | None = None
     """The session factory for the offline runtime_database."""
 
     @staticmethod
@@ -97,21 +104,18 @@ class OfflineDatabaseHelper(ABC):
             "OfflineDatabaseManager.offline_database_helper must be initialized before calling create_tables()"
         )
         assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
-            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling create_tables()"
+            "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be "
+            "initialized before calling create_tables()"
         )
 
         for table in OfflineBase.metadata.tables:
             log.debug(f"table in metadata: {table}")
 
-        table_definitions: list[Table] = [
-            OfflineBase.metadata.tables[table_name] for table_name in tables
-        ]
+        table_definitions: list[Table] = [OfflineBase.metadata.tables[table_name] for table_name in tables]
         for table_def in table_definitions:
             log.debug(f"creating table: {table_def.name}")
 
-        async with (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
-        ):
+        async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
             await conn.run_sync(
                 _create_all_tables,
                 tables=table_definitions,
@@ -130,29 +134,22 @@ class OfflineDatabaseHelper(ABC):
         from musigree.offline.offline_database_manager import OfflineDatabaseManager
 
         assert OfflineDatabaseManager.offline_database_helper is not None, (
-            "OfflineDatabaseManager.offline_database_helper must be initialized "
-            "before calling drop_tables()"
+            "OfflineDatabaseManager.offline_database_helper must be initialized before calling drop_tables()"
         )
         assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
             "OfflineDatabaseManager.offline_database_helper.offline_async_engine "
             "must be initialized before calling drop_tables()"
         )
 
-        table_definitions: list[Table] = [
-            OfflineBase.metadata.tables[table_name] for table_name in tables
-        ]
-        async with (
-            OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn
-        ):
+        table_definitions: list[Table] = [OfflineBase.metadata.tables[table_name] for table_name in tables]
+        async with OfflineDatabaseManager.offline_database_helper.offline_async_engine.begin() as conn:
             for table in table_definitions:
                 log.debug(f"deleting table: {table.name}")
                 await conn.execute(DropTable(table, if_exists=True))
 
     @classmethod
     @abstractmethod
-    async def vacuum(
-        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Abstract method to initate a vacuum on a table.
         Args:
@@ -186,7 +183,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_query(
         schema_class: type[ConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """
@@ -205,7 +202,7 @@ class OfflineDatabaseHelper(ABC):
     @abstractmethod
     def generate_insert_bulk_query(
         schema_class: type[ConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

@@ -2,13 +2,10 @@ import csv
 import json
 import logging
 from abc import abstractmethod
-from collections.abc import Callable
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.constants import HS_INSTRUMENTS_FILENAME, INSTRUMENTS_DATA_FILENAMES
 from musigree.exceptions import DatabaseError
-from musigree.library.fields.entity_type import EntityType
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
@@ -21,6 +18,12 @@ from musigree.offline.offline_domain.role import (
     RoleUncommitted,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+
+    from musigree.library.fields.entity_type import EntityType
+
 log = logging.getLogger(__name__)
 
 
@@ -28,9 +31,7 @@ class LoaderRole(LoaderBase):
     # CLASS METHODS
 
     @classmethod
-    async def load_roles_into_database(
-        cls, roles_directory: Path, instruments_directory: Path
-    ) -> None:
+    async def load_roles_into_database(cls, roles_directory: Path, instruments_directory: Path) -> None:
         log.info("Loading initial roles ")
 
         # Read from each source of roles and save into database, deduplicating role names as we go
@@ -88,9 +89,7 @@ class LoaderRole(LoaderBase):
         return roles
 
     @classmethod
-    def load_hornbostel_sachs_instruments(
-        cls, instruments_directory: Path
-    ) -> list[RoleUncommitted]:
+    def load_hornbostel_sachs_instruments(cls, instruments_directory: Path) -> list[RoleUncommitted]:
         # Load Hornbostel Sachs instrument data
         log.info("Load Hornbostel Sachs instrument data")
 
@@ -105,10 +104,7 @@ class LoaderRole(LoaderBase):
             for key, instrument_entry in instruments_data.root.items():
                 instrument_class_key = key[0]
                 value = instruments_data.root.get(instrument_class_key)
-                if value is not None:
-                    instrument_class = value.label
-                else:
-                    instrument_class = "Unknown"
+                instrument_class = value.label if value is not None else "Unknown"
                 category_id = RoleType.Category.INSTRUMENTS
                 category_name = RoleType.category_names[category_id]
                 subcategory_id = RoleType.hornbostel_sachs_to_subcategory(instrument_class)
@@ -245,5 +241,5 @@ class LoaderRole(LoaderBase):
     # noinspection Mypy
     @classmethod
     @abstractmethod
-    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:  # type: ignore
+    async def get_set_of_ids(cls, entity_type: EntityType | None) -> set[int]:
         pass

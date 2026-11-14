@@ -20,12 +20,15 @@ database with initial data.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 import uvicorn
-from fastapi import FastAPI
 
 from musigree.app.fastapi_app import create_app
 from musigree.config import SqliteReadOnlyDevelopmentConfiguration
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 def create_development_app() -> FastAPI:

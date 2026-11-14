@@ -1,10 +1,9 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
-from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient, Request, Response
 
 from musigree.app.fastapi_app import create_app
@@ -15,6 +14,11 @@ from musigree.config import (
     SqliteTestConfiguration,
 )
 from musigree.logging_config import setup_logging
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from fastapi import FastAPI
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +44,8 @@ async def test_app(runtime_config: Configuration) -> FastAPI:
     """Create a test FastAPI application."""
     print("Creating test_app fixture")
     readonly_config = SqliteReadOnlyTestConfiguration()
-    # Make sure we are using the same test sqlite runtime database, we open it in read-0only mode for the FastAPI app.
+    # Make sure we are using the same test sqlite runtime database, we open it in read-0only mode
+    # for the FastAPI app.
     readonly_config.SQLITE_RUNTIME_DATABASE_NAME = runtime_config.SQLITE_RUNTIME_DATABASE_NAME
     # Use the value from the runtime_config
     readonly_config.PRODUCTION = runtime_config.PRODUCTION
@@ -53,7 +58,8 @@ async def test_app(runtime_config: Configuration) -> FastAPI:
     #     RuntimeDatabaseManager.runtime_database_helper is not None
     #     and RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None
     # ):
-    #     await RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=True)
+    #     await
+    # RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine.dispose(close=True)
 
     return create_app(readonly_config)
 

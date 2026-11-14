@@ -16,6 +16,11 @@ from musigree.exceptions import DatabaseError
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 
 
+def _raise_for_transaction(error: Exception) -> None:
+    """Raise an error for the transaction context manager to handle."""
+    raise error
+
+
 class TestRuntimeTransaction:
     """Test class for runtime_transaction context manager."""
 
@@ -106,7 +111,7 @@ class TestRuntimeTransaction:
             # Execute
             async with runtime_transaction() as session:
                 assert session is mock_session
-                raise test_error
+                _raise_for_transaction(test_error)
 
             # Verify
             mock_get_session.assert_called_once()
@@ -138,7 +143,7 @@ class TestRuntimeTransaction:
             # Execute
             async with runtime_transaction() as session:
                 assert session is mock_session
-                raise test_error
+                _raise_for_transaction(test_error)
 
             # Verify
             mock_get_session.assert_called_once()

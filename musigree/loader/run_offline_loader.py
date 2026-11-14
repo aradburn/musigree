@@ -18,13 +18,10 @@ import asyncio
 import datetime
 import logging
 import sys
-from collections.abc import Coroutine
 from functools import partial
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any
 
 import luigi
-from luigi.execution_summary import LuigiRunResult
 from sqlalchemy.exc import OperationalError
 
 from musigree.config import (
@@ -50,6 +47,10 @@ from musigree.offline.offline_database import EntityTable, RelationTable, Releas
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
 
+if TYPE_CHECKING:
+    from collections.abc import Coroutine
+    from pathlib import Path
+
 log = logging.getLogger(__name__)
 
 
@@ -71,9 +72,7 @@ async def load_offline_tables(data_directory: Path, date: str, is_bulk_inserts: 
     log.info("Load offline tables done.")
 
 
-async def load_offline_table_stage(
-    data_directory: Path, date: str, is_bulk_inserts: bool, stage: int
-) -> None:
+async def load_offline_table_stage(data_directory: Path, date: str, is_bulk_inserts: bool, stage: int) -> None:
     """
     Loads a specific stage of the data loading process.
 
@@ -107,10 +106,12 @@ def get_load_offline_table_stages(
     from musigree.offline.loader.loader_release import LoaderRelease
 
     assert OfflineDatabaseManager.offline_database_helper is not None, (
-        "OfflineDatabaseManager.offline_database_helper must be initialized before calling get_load_offline_table_stages()"
+        "OfflineDatabaseManager.offline_database_helper must be initialized before calling "
+        "get_load_offline_table_stages()"
     )
     assert OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None, (
-        "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized before calling get_load_offline_table_stages()"
+        "OfflineDatabaseManager.offline_database_helper.offline_async_engine must be initialized "
+        "before calling get_load_offline_table_stages()"
     )
 
     is_full = OfflineDatabaseManager.offline_database_helper.is_vacuum_full()
@@ -221,7 +222,8 @@ async def shutdown_offline_loader() -> None:
     performs cleanup tasks such as closing database connections, shutting
     down the cache, and shutting down logging.
     """
-    # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
+    # Logging may have been shutdown automatically before this point, so we need to reinitialize it
+    # again
     setup_logging()
     log.info("######## OFFLINE LOADER SHUTDOWN START ########")
     try:
@@ -297,16 +299,12 @@ def offline_loader_main() -> None:
             assert OfflineDatabaseManager.offline_database_helper is not None, (
                 "offline_database_helper must be initialized before calling initialize()"
             )
-            runner.run(
-                OfflineDatabaseManager.offline_database_helper.create_tables(
-                    ALL_OFFLINE_DATABASE_TABLE_NAMES
-                )
-            )
+            runner.run(OfflineDatabaseManager.offline_database_helper.create_tables(ALL_OFFLINE_DATABASE_TABLE_NAMES))
             # Load roles, may be empty if no roles in offline_database yet
             runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
             # Get the current date
-            now_date = datetime.datetime.now()  # noqa: DTZ005
+            now_date = datetime.datetime.now()
 
             # Run the loader process between these dates
             start_date = datetime.date(2026, 3, 1)
@@ -314,27 +312,20 @@ def offline_loader_main() -> None:
 
             offline_data_directory: str = str(offline_config.DATA_DIR)
             tasks = [
-                LoaderSetupTask(
-                    data_directory=offline_data_directory, start_date=start_date, end_date=end_date
-                ),
+                LoaderSetupTask(data_directory=offline_data_directory, start_date=start_date, end_date=end_date),
             ]
-            luigi_run_result = cast(
-                LuigiRunResult,
-                luigi.build(
-                    tasks,
-                    detailed_summary=True,
-                    local_scheduler=True,
-                    log_level="WARNING",
-                ),
+            luigi_run_result = luigi.build(
+                tasks,
+                detailed_summary=True,
+                local_scheduler=True,
+                log_level="WARNING",
             )
             log.info(luigi_run_result.summary_text)
         finally:
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:
-                log.warning(
-                    "Offline loader finalize interrupted; proceeding with event loop shutdown"
-                )
+                log.warning("Offline loader finalize interrupted; proceeding with event loop shutdown")
 
 
 if __name__ == "__main__":

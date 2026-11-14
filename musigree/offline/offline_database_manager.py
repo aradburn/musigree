@@ -1,16 +1,20 @@
 import logging
 import multiprocessing
 import os
-from asyncio import AbstractEventLoop
+from typing import TYPE_CHECKING
 
 from sqlalchemy import exc
 from sqlalchemy.event import listen
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from musigree.config import Configuration
 from musigree.constants import DatabaseType, ThreadingModel
 from musigree.logging_config import LOGGING_TRACE
-from musigree.offline.offline_database.offline_database_helper import OfflineDatabaseHelper
+
+if TYPE_CHECKING:
+    from asyncio import AbstractEventLoop
+
+    from musigree.config import Configuration
+    from musigree.offline.offline_database.offline_database_helper import OfflineDatabaseHelper
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +64,8 @@ class OfflineDatabaseManager:
         async_engine = await OfflineDatabaseManager.offline_database_helper.setup_database(config)
         OfflineDatabaseManager.offline_database_helper.offline_async_engine = async_engine
 
-        # log.debug(f"engine: {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
+        # log.debug(f"engine:
+        # {OfflineDatabaseManager.offline_database_helper.offline_async_engine}")
 
         def engine_on_connect(dbapi_con, connection_record) -> None:  # type: ignore
             if LOGGING_TRACE:
@@ -81,12 +86,12 @@ class OfflineDatabaseManager:
                     )
                 )
 
-        # noinspection PyUnusedLocal,unused-function
+        # noinspection unused-function
         def engine_on_checkin(dbapi_con, connection_record) -> None:  # type: ignore
             log.debug(f"Checkin engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
 
-        # noinspection PyUnusedLocal,unused-function
+        # noinspection unused-function
         def engine_on_close(dbapi_con, connection_record) -> None:  # type: ignore
             log.debug(f"Close engine connection: {dbapi_con}")
             connection_record.info["pid"] = os.getpid()
@@ -98,11 +103,9 @@ class OfflineDatabaseManager:
             # listen(async_engine.sync_engine, "close", engine_on_close)
 
         # a async_sessionmaker(), also in the same scope as the engine
-        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = (
-            async_sessionmaker(
-                bind=OfflineDatabaseManager.offline_database_helper.offline_async_engine,
-                expire_on_commit=False,
-            )
+        OfflineDatabaseManager.offline_database_helper.offline_async_session_factory = async_sessionmaker(
+            bind=async_engine,
+            expire_on_commit=False,
         )
 
         # Logging level for SqlAlchemy set in logging_config
@@ -152,9 +155,7 @@ class OfflineDatabaseManager:
                 and OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
             ):
                 loop.run_until_complete(
-                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
-                        close=False
-                    )
+                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(close=False)
                 )
 
     @classmethod
@@ -173,7 +174,5 @@ class OfflineDatabaseManager:
                 and OfflineDatabaseManager.offline_database_helper.offline_async_engine is not None
             ):
                 loop.run_until_complete(
-                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(
-                        close=True
-                    )
+                    OfflineDatabaseManager.offline_database_helper.offline_async_engine.dispose(close=True)
                 )

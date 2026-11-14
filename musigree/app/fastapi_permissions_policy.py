@@ -4,11 +4,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 Copyright 2021-2026, Motagamwala Taha Arif Ali"""
 
-from typing import Literal, TypedDict, cast
+from typing import TYPE_CHECKING, Literal, TypedDict, cast
 from warnings import warn
 
 from starlette.datastructures import MutableHeaders
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 OptionValues = list[Literal["self", "*"] | str]
 
@@ -85,7 +87,8 @@ class PermissionsPolicy:
             SyntaxError: If the `Option` parameter is empty.
 
         Warning:
-            The `Permission-Policy` header is still under working draft, browsers might give warnings and errors.
+            The `Permission-Policy` header is still under working draft, browsers might give
+            warnings and errors.
 
         Returns:
             None
@@ -168,7 +171,7 @@ class PermissionsPolicy:
 
             self.PolicyString += key
             # noinspection PyUnnecessaryCast,PyTypedDict
-            values: OptionValues = cast(OptionValues, Option.get(key, []))
+            values: OptionValues = cast("OptionValues", Option.get(key, []))
 
             if len(values) != 1:
                 if "*" in values:
@@ -192,7 +195,12 @@ class PermissionsPolicy:
             for j, value in enumerate(values):
                 if value != "self" and value[0] != '"':
                     raise SyntaxError(
-                        f'Invalid allowlist item({value}) for feature {key}. Allowlist item must be *, self or a quoted URL "https://example.com"'
+                        "Invalid allowlist item("
+                        f"{value}"
+                        ") for feature "
+                        f"{key}"
+                        '. Allowlist item must be *, self or a quoted URL "https://example.com'
+                        '"'
                     )
 
                 self.PolicyString += value
@@ -207,11 +215,13 @@ class PermissionsPolicy:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        Asynchronously handles HTTP requests by routing them to the appropriate handler based on the request path.
+        Asynchronously handles HTTP requests by routing them to the appropriate handler based on the
+        request path.
 
         Parameters:
             scope (Scope): The scope of the request.
-            receive (Receive): A function that returns a coroutine that reads messages from the server.
+            receive (Receive): A function that returns a coroutine that reads messages from the
+            server.
             send (Send): A function that sends messages to the server.
 
         Returns:

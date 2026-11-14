@@ -1,3 +1,4 @@
+import contextlib
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -157,10 +158,8 @@ class TestRuntimeEntityRepository:
             mock_session.flush.assert_called_once()
         finally:
             # Clean up context
-            try:
+            with contextlib.suppress(LookupError):
                 CTX_RUNTIME_SESSION.get()
-            except LookupError:
-                pass
 
     @pytest.mark.asyncio
     async def test_delete_by_id_success(self) -> None:

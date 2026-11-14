@@ -24,17 +24,15 @@ The module uses the following components:
 """
 
 import logging
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from Secweb import SecWeb
+from Secweb.index import SecWeb
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_cors import CustomCORSPreflightMiddleware, PreflightLoggerMiddleware
@@ -42,7 +40,6 @@ from musigree.app.fastapi_csp import setup_csp_middleware
 from musigree.app.fastapi_image_embedding import OpenGraphImageEmbeddingMiddleware
 from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
-from musigree.config import Configuration
 from musigree.constants import (
     ALLOWED_ORIGINS,
     FRONTEND_DIR,
@@ -62,8 +59,29 @@ from musigree.runtime.data_access_layer.runtime_role_data_access import (
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.utils import log_banner
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from starlette.responses import Response
+
+    from musigree.config import Configuration
+
 log = logging.getLogger(__name__)
 """The logger for the application module."""
+
+# SecWeb's referrer option is list[policy-name], and list is invariant.
+# A bare ["strict-origin-when-cross-origin"] is inferred as list[str].
+ReferrerPolicyName = Literal[
+    "no-referrer",
+    "no-referrer-when-downgrade",
+    "origin",
+    "origin-when-cross-origin",
+    "same-origin",
+    "strict-origin",
+    "strict-origin-when-cross-origin",
+    "unsafe-url",
+]
+REFERRER_POLICIES: list[ReferrerPolicyName] = ["strict-origin-when-cross-origin"]
 
 # Create a global templates variable
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -149,13 +167,6 @@ def create_app(config: Configuration) -> FastAPI:
     # Configure CORS based on environment
     if config.PRODUCTION:
         # Production: specific origins only
-        # allowed_origins = [
-        #     "https://www.musigree.com",
-        #     "https://musigree.com",
-        #     "https://umami.musigree.com",
-        #     "https://swetrix.org/swetrix.js",
-        #     "https://cdn.jsdelivr.net/gh/Swetrix/",
-        # ]
         log.info("Configuring CORS for production")
         log.debug(f"Allowed origins: {ALLOWED_ORIGINS}")
 
@@ -163,7 +174,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CORSMiddleware,
             allow_origins=ALLOWED_ORIGINS,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
@@ -171,7 +182,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CustomCORSPreflightMiddleware,
             allow_origins=ALLOWED_ORIGINS,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
             allow_credentials=False,
         )
@@ -186,8 +197,6 @@ def create_app(config: Configuration) -> FastAPI:
             "http://127.0.0.1:5000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8080",
-            # "https://swetrix.org/swetrix.js",
-            # "https://cdn.jsdelivr.net/gh/Swetrix/",
         ]
         log.info("Configuring CORS for development")
         log.debug(f"Allowed origins: {allowed_origins}")
@@ -195,7 +204,7 @@ def create_app(config: Configuration) -> FastAPI:
             app,
             CORSMiddleware,
             allow_origins=allowed_origins,
-            allow_methods=["GET,HEAD,OPTIONS"],
+            allow_methods=["GET", "HEAD", "OPTIONS"],
             allow_headers=["Content-Type"],
         )
 
@@ -212,7 +221,7 @@ def create_app(config: Configuration) -> FastAPI:
             "coep": {"unsafe-none": True},
             "coop": "same-origin",
             "corp": "same-site",
-            "referrer": ["strict-origin-when-cross-origin"],
+            "referrer": REFERRER_POLICIES,
             "hsts": {"max-age": 2592000, "includeSubDomains": True, "preload": True},
             "xdns": "on",
             "xframe": "DENY",
@@ -376,7 +385,8 @@ async def shutdown_application() -> None:
     """
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 
-    # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
+    # Logging may have been shutdown automatically before this point, so we need to reinitialize it
+    # again
     setup_logging()
     log.info("######## APPLICATION SHUTDOWN BEGIN ########")
     await RuntimeDatabaseManager.shutdown_database()

@@ -1,14 +1,10 @@
 import asyncio
 import logging
 import sys
-from collections.abc import Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import OperationalError
 
-from musigree.config import (
-    Configuration,
-)
 from musigree.constants import ENTITY_DETAILS_DATA, ENTITY_DETAILS_FILENAME
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
@@ -17,6 +13,13 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.transfer.transfer_manager import TransferManager
 from musigree.utils import log_banner
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine
+
+    from musigree.config import (
+        Configuration,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +32,8 @@ async def shutdown_process_runner() -> None:
     performs cleanup tasks such as closing database connections, shutting
     down the cache, and shutting down logging.
     """
-    # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
+    # Logging may have been shutdown automatically before this point, so we need to reinitialize it
+    # again
     setup_logging()
     log.info("######## RUNTIME LOADER SHUTDOWN START ########")
     try:
@@ -108,15 +112,11 @@ def run_runtime_loading_process(
             )
 
             if table_names:
-                runner.run(
-                    RuntimeDatabaseManager.runtime_database_helper.create_tables(table_names)
-                )
+                runner.run(RuntimeDatabaseManager.runtime_database_helper.create_tables(table_names))
 
             runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
-            entity_details_path = (
-                runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
-            )
+            entity_details_path = runtime_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
             runner.run(TransferManager.transfer_load_entity_details_index(entity_details_path))
 
             # Run the process
@@ -128,6 +128,4 @@ def run_runtime_loading_process(
             try:
                 runner.run(_finalize_runtime_loader_before_loop_close())
             except KeyboardInterrupt:
-                log.warning(
-                    "Runtime loader finalize interrupted; proceeding with event loop shutdown"
-                )
+                log.warning("Runtime loader finalize interrupted; proceeding with event loop shutdown")

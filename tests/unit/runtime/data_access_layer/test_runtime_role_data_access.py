@@ -7,8 +7,7 @@ It tests role loading, tree building, and cache management functionality.
 """
 
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from musigree.library.fields.role_type import RoleType
@@ -20,6 +19,9 @@ from musigree.runtime.runtime_domain.runtime_role import (
     RuntimeRoleJSTreeEntry,
     RuntimeRoleJSTreeState,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class TestBuildRoleTree:
@@ -45,14 +47,6 @@ class TestBuildRoleTree:
         )
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_empty_roles(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with empty roles list."""
         # Setup
@@ -66,16 +60,8 @@ class TestBuildRoleTree:
         assert len(mock_role_cache.role_jstree.data) >= 2  # At least categories
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        ["Vocals"],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
-    async def test_build_role_tree_with_default_role(self, mock_role_cache: Mock) -> None:
-        """Test build_role_tree with a role that should be selected by default."""
+    async def test_build_role_tree_leaves_roles_unselected(self, mock_role_cache: Mock) -> None:
+        """The cached tree does not preselect roles. Pages select them per request."""
         # Setup
 
         mock_role_cache.role_jstree.data = []
@@ -95,17 +81,9 @@ class TestBuildRoleTree:
 
         # Assertions
         assert role_entry is not None
-        assert role_entry.state.selected is True
+        assert role_entry.state.selected is False
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_with_non_default_role(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that should not be selected by default."""
         # Setup
@@ -130,14 +108,6 @@ class TestBuildRoleTree:
         assert role_entry.state.selected is False
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_with_subcategory(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that has a subcategory."""
         # Setup
@@ -167,14 +137,6 @@ class TestBuildRoleTree:
         assert role_entry.parent == "String Instruments"  # Should use subcategory as parent
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_with_no_subcategory(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with a role that has no subcategory."""
         # Setup
@@ -204,14 +166,6 @@ class TestBuildRoleTree:
         assert role_entry.parent == "Vocal"  # Should use category as parent
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_multiple_roles_sorted(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree with multiple roles to verify sorting."""
         # Setup
@@ -245,14 +199,6 @@ class TestBuildRoleTree:
         assert "Guitar" in instruments_names
 
     @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        [],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
     async def test_build_role_tree_category_structure(self, mock_role_cache: Mock) -> None:
         """Test build_role_tree creates proper category structure."""
         # Setup
@@ -506,12 +452,12 @@ class TestLoadAllRolesIntoCache:
         mock_repository_class.return_value = mock_repository
 
         # Setup cache mocks with existing data - create custom mock dicts
-        class MockDict(dict):
+        class MockDict(dict[Any, Any]):
             def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.clear = MagicMock(return_value=None)  # type: ignore
 
-        class MockSet(set):
+        class MockSet(set[Any]):
             def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.clear = MagicMock(return_value=None)  # type: ignore
@@ -600,24 +546,3 @@ class TestCacheIntegration:
         # Verify consistency
         assert mock_role_cache.role_name_to_role_id_lookup["Vocals"] == 1
         assert mock_role_cache.role_name_to_role_id_lookup["Guitar"] == 2
-
-    # noinspection PyUnusedLocal
-    @patch("musigree.runtime.data_access_layer.runtime_role_data_access.RoleCache")
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_ARTIST_ROLES",
-        ["Vocals", "Guitar"],
-    )
-    @patch(
-        "musigree.runtime.data_access_layer.runtime_role_data_access.UI_DEFAULT_LABEL_ROLES",
-        [],
-    )
-    async def test_ui_default_roles_integration(self, mock_role_cache: Mock) -> None:
-        """Test integration with UI default role settings."""
-        from musigree.runtime.data_access_layer.runtime_role_data_access import (
-            UI_DEFAULT_ARTIST_ROLES,
-            UI_DEFAULT_LABEL_ROLES,
-        )
-
-        assert "Vocals" in UI_DEFAULT_ARTIST_ROLES
-        assert "Guitar" in UI_DEFAULT_ARTIST_ROLES
-        assert UI_DEFAULT_LABEL_ROLES == []

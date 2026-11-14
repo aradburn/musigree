@@ -8,8 +8,7 @@ and text search index initialization.
 """
 
 import logging
-from collections.abc import AsyncGenerator, Generator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -23,13 +22,16 @@ from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
 from musigree.offline.offline_domain.release import Release
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Generator
+
 
 class TestResolveEntityReferences:
     """Test class for resolve_entity_references method."""
 
     @staticmethod
     def create_test_entity(
-        entity_type: EntityType, entity_id: int = 1, entities: dict | None = None
+        entity_type: EntityType, entity_id: int = 1, entities: dict[str, Any] | None = None
     ) -> Entity:
         """Helper method to create a test entity."""
         return Entity(
@@ -236,7 +238,9 @@ class TestResolveReleaseReferences:
 
     @staticmethod
     def create_test_release(
-        release_id: int = 1, labels: list | None = None, companies: list | None = None
+        release_id: int = 1,
+        labels: list[dict[str, Any]] | None = None,
+        companies: list[dict[str, Any]] | None = None,
     ) -> Release:
         """Helper method to create a test release."""
         return Release(
@@ -522,7 +526,8 @@ class TestGetIdByEntityTypeAndEntityName:
             # Assertions
             assert result is None
             mock_log.error.assert_called_once_with(
-                "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent Artist:id"
+                "get_id_from_entity_type_and_entity_name key not found: entity:artist:Nonexistent "
+                "Artist:id"
             )
 
 
@@ -1046,7 +1051,8 @@ class TestProcessProfileLinks:
 
             assert result == "Label owner: [a871=Carl Craig]."
             mock_find_entity_id.assert_called_once()
-            # Verify it was called with correct parameters (entity_repository, token_repository, entity_type, entity_name)
+            # Verify it was called with correct parameters (entity_repository, token_repository,
+            # entity_type, entity_name)
             call_args = mock_find_entity_id.call_args[0]
             assert call_args[0] == mock_entity_repository
             assert call_args[2] == EntityType.ARTIST
@@ -1068,12 +1074,12 @@ class TestProcessProfileLinks:
                 mock_entity_repository, profile
             )
 
-            assert (
-                result
-                == "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [l7890=Planet E]."
+            assert result == (
+                "Classic Techno label from Detroit, USA.\r\n[b]Label owner:[/b] [l7890=Planet E]."
             )
             mock_find_entity_id.assert_called_once()
-            # Verify it was called with correct parameters (entity_repository, token_repository, entity_type, entity_name)
+            # Verify it was called with correct parameters (entity_repository, token_repository,
+            # entity_type, entity_name)
             call_args = mock_find_entity_id.call_args[0]
             assert call_args[0] == mock_entity_repository
             assert call_args[2] == EntityType.LABEL
@@ -1141,9 +1147,9 @@ class TestProcessProfileLinks:
                 mock_entity_repository, profile
             )
 
-            assert (
-                result
-                == "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]. Also check [a12345=Jeff Mills]."
+            assert result == (
+                "Label owner: [a871=Carl Craig]. Released on [l7890=Planet E]. Also check "
+                "[a12345=Jeff Mills]."
             )
             assert mock_find_entity_id.call_count == 1
             assert mock_entity_repository.get_by_entity_id_and_entity_type.call_count == 2
@@ -1252,9 +1258,11 @@ class TestProcessProfileLinks:
                 entities={},
             )
 
-            # First call: find_entity_id_by_entity_type_and_entity_name for [a=Carl Craig] -> returns 871
+            # First call: find_entity_id_by_entity_type_and_entity_name for [a=Carl Craig] ->
+            # returns 871
             # Second call: get_by_entity_id_and_entity_type for [l7890] -> returns mock_label1
-            # Third call: find_entity_id_by_entity_type_and_entity_name for [l=Planet E] -> returns 7890
+            # Third call: find_entity_id_by_entity_type_and_entity_name for [l=Planet E] -> returns
+            # 7890
             mock_find_entity_id.side_effect = [871, 7890]
             mock_entity_repository.get_by_entity_id_and_entity_type.return_value = mock_label1
 
@@ -1409,7 +1417,8 @@ class TestProcessProfileLinks:
 
             assert result == profile  # Should return original since name lookup not supported
             mock_log.error.assert_any_call(
-                "process_profile_links: release id lookup from name not supported for r=Release Name"
+                "process_profile_links: release id lookup from name not supported for r=Release"
+                " Name"
             )
 
     @pytest.mark.asyncio
@@ -1490,7 +1499,10 @@ class TestProcessProfileLinks:
     async def test_process_profile_links_master_malformed_not_found(
         self, mock_entity_repository: AsyncMock
     ) -> None:
-        """Test process_profile_links when malformed master [m=99999] is not found - should still transform."""
+        """
+        Test process_profile_links when malformed master [m=99999] is not found - should still
+        transform.
+        """
         with patch(
             "musigree.offline.data_access_layer.offline_entity_data_access.OfflineMasterDataAccess.get_master_title_from_master_id"
         ) as mock_get_master_title:
@@ -1510,7 +1522,10 @@ class TestProcessProfileLinks:
     async def test_process_profile_links_release_malformed_not_found(
         self, mock_entity_repository: AsyncMock
     ) -> None:
-        """Test process_profile_links when malformed release [r=99999] is not found - should still transform."""
+        """
+        Test process_profile_links when malformed release [r=99999] is not found - should still
+        transform.
+        """
         with patch(
             "musigree.offline.data_access_layer.offline_entity_data_access.OfflineReleaseDataAccess.get_release_title_from_release_id"
         ) as mock_get_release_title:

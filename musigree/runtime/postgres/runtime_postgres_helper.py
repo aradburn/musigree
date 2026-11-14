@@ -64,7 +64,7 @@ and runtime operation.
 import logging
 import os
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
@@ -72,16 +72,21 @@ from sqlalchemy import URL, AsyncAdaptedQueuePool, SingletonThreadPool, exc, tex
 from sqlalchemy.dialects.postgresql import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.sql.dml import ReturningInsert
 
-from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
 from musigree.logging_config import LOGGING_TRACE
-from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 from musigree.runtime.runtime_database.runtime_database_helper import (
     RuntimeDatabaseHelper,
 )
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from sqlalchemy.sql.dml import ReturningInsert
+
+    from musigree.config import Configuration
+    from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 
 log = logging.getLogger(__name__)
 """
@@ -140,7 +145,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
             log.info(f"DATABASE_PORT: {port}")
             log.info(f"DATABASE_NAME: {name}")
 
-            # Create a runtime_database engine and pool that will manage connections and execute queries
+            # Create a runtime_database engine and pool that will manage connections and execute
+            # queries
             url_object = URL.create(
                 POSTGRESQL_DRIVER_NAME,
                 username=config.POSTGRES_DATABASE_USERNAME,
@@ -150,9 +156,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 database=name,
             )
             """Create the url to connect to the runtime_database."""
-            engine = create_async_engine(
-                url_object, pool_size=40, pool_timeout=300, pool_recycle=300
-            )
+            engine = create_async_engine(url_object, pool_size=40, pool_timeout=300, pool_recycle=300)
             """Create the engine."""
 
         else:
@@ -196,18 +200,10 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 RuntimePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_RUNTIME_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    psql=config.POSTGRES_ROOT + "/bin/psql"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
                     dirname=pg_runtime_dirname,
                     options=options,
                 )
@@ -218,7 +214,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 if RuntimePostgresHelper.postgres_test_db is None:
                     raise ValueError("Configuration Error: Cannot set test database")
 
-                # Create a temporary test runtime_database engine and pool that will manage connections and execute queries
+                # Create a temporary test runtime_database engine and pool that will manage
+                # connections and execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,
                     username=RuntimePostgresHelper.postgres_test_db.current_user,
@@ -241,7 +238,8 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
                 """Handle the development configuration."""
                 log.info("Using Development Postgres Runtime Database")
 
-                # Create a runtime_database engine and pool that will manage connections and execute queries
+                # Create a runtime_database engine and pool that will manage connections and execute
+                # queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,
                     username=config.POSTGRES_DATABASE_USERNAME,
@@ -384,9 +382,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """Drop the tables."""
 
     @staticmethod
-    async def vacuum(
-        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -440,10 +436,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """
         log.debug(f"ANALYZE {table_name}")
 
-        if table_name is not None:
-            query = f"ANALYZE {table_name};"
-        else:
-            query = "ANALYZE;"
+        query = f"ANALYZE {table_name};" if table_name is not None else "ANALYZE;"
 
         async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as connection:
             await connection.execute(text(query))
@@ -456,7 +449,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: type[RuntimeConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
@@ -477,9 +470,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
         """
         if on_conflict_do_nothing:
             """If the `on_conflict_do_nothing` flag is enable."""
-            return (
-                insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
-            )
+            return insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
         else:
             """If the `on_conflict_do_nothing` flag is disable."""
             return insert(schema_class).values(values).returning(schema_class)
@@ -487,7 +478,7 @@ class RuntimePostgresHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: type[RuntimeConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

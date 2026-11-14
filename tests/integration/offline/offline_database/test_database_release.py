@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -6,6 +6,9 @@ from musigree import utils
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")

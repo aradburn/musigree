@@ -7,12 +7,15 @@ It tests role name lookup, fuzzy matching, role finding algorithms, and cache ma
 """
 
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class TestRoleNameLookup:

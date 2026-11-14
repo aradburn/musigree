@@ -91,6 +91,7 @@ const mockSimulation = (): any => ({
     velocityDecay: vi.fn().mockReturnThis(),
     restart: vi.fn().mockReturnThis(),
     stop: vi.fn().mockReturnThis(),
+    randomSource: vi.fn().mockReturnThis(),
     tick: vi.fn().mockReturnThis(),
     on: vi.fn().mockReturnThis(),
     find: vi.fn().mockReturnValue(null),

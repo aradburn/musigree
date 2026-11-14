@@ -1,8 +1,7 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
-from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.data_access_layer.offline_entity_data_access import OfflineEntityDataAccess
 from musigree.offline.data_access_layer.offline_relation_data_access import (
@@ -13,6 +12,11 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_domain.relation import RelationUncommitted
 from tests import id_utils
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -29,12 +33,14 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
 
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        assert release.master_id is not None
+        master = id_utils.get_test_master_by_id(discogs_data_directory, release.master_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
             await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = OfflineRelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release, master)
 
         # THEN
         expected = [
@@ -290,12 +296,14 @@ class TestRelationDataAccess(AbstractDatabaseTest):
         release_id = 1700
         discogs_data_directory = offline_config.DATA_DIR / DISCOGS_DATA
         release = id_utils.get_test_release_by_id(discogs_data_directory, release_id)
+        assert release.master_id is not None
+        master = id_utils.get_test_master_by_id(discogs_data_directory, release.master_id)
         async with offline_transaction():
             entity_repository = EntityRepository()
             await OfflineEntityDataAccess().resolve_release_references(entity_repository, release)
 
         # WHEN
-        actual = OfflineRelationDataAccess.from_release(release)
+        actual = OfflineRelationDataAccess.from_release(release, master)
 
         # THEN
         expected = [

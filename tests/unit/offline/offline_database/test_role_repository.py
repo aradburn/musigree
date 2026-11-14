@@ -5,8 +5,7 @@ This module tests the RoleRepository class which manages Role objects
 in the offline runtime_database.
 """
 
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
@@ -21,6 +20,9 @@ from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.role_repository import RoleRepository
 from musigree.offline.offline_database.role_table import RoleTable
 from musigree.offline.offline_domain.role import Role, RoleUncommitted
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker
@@ -78,6 +80,7 @@ class TestRoleRepository:
         """Test successful all() method execution."""
         # Arrange
         with patch.object(BaseRepository, "_all") as mock_all:
+
             async def mock_async_iterator() -> AsyncGenerator[Mock, Any]:
                 yield mock_role_table
 

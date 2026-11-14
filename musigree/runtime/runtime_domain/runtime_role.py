@@ -30,6 +30,7 @@ __all__ = [
 ]
 
 from dataclasses import field
+from typing import Any
 
 from pydantic import StrictInt
 
@@ -118,9 +119,9 @@ class RuntimeRoleJSTreeEntry(InternalDomainObject):
     """The custom icon for the node."""
     state: RuntimeRoleJSTreeState
     """The state of the node."""
-    li_attr: dict
+    li_attr: dict[str, Any]
     """The attributes for the generated LI node."""
-    a_attr: dict
+    a_attr: dict[str, Any]
     """The attributes for the generated A node."""
 
 
@@ -154,7 +155,7 @@ class RuntimeRoleJSTreeWrapper(InternalDomainObject):
 
     core: RuntimeRoleJSTree
     """The core JSTree structure."""
-    checkbox: dict
+    checkbox: dict[str, Any]
     """The configuration for checkboxes."""
     plugins: list[str]
     """A list of plugins for the JSTree."""

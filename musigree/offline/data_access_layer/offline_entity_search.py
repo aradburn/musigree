@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import rapidfuzz
 
@@ -13,10 +13,12 @@ from musigree.library.full_text_search.text_search_index import TextSearchIndex
 from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
-from musigree.offline.offline_database.entity_repository import EntityRepository
-from musigree.offline.offline_database.token_repository import TokenRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.offline.offline_domain.entity import Entity
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_database.entity_repository import EntityRepository
+    from musigree.offline.offline_database.token_repository import TokenRepository
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +33,7 @@ class OfflineEntitySearch:
         assert OfflineDatabaseManager.offline_database_helper is not None, (
             "OfflineDatabaseManager.offline_database_helper is not set."
         )
-        documents = await OfflineEntitySearch.search_text_index(
-            entity_repository, token_repository, search_string
-        )
+        documents = await OfflineEntitySearch.search_text_index(entity_repository, token_repository, search_string)
 
         sorted_documents = OfflineEntitySearch.sort_search_results(search_string, documents)
 
@@ -59,9 +59,7 @@ class OfflineEntitySearch:
         for document in documents:
             candidate_id = document[0]
             candidate_name = document[1]
-            score = rapidfuzz.distance.JaroWinkler.normalized_distance(
-                search_string, candidate_name
-            )
+            score = rapidfuzz.distance.JaroWinkler.normalized_distance(search_string, candidate_name)
 
             matched_digits = re.match(r"(.*) \((\d+)\)", candidate_name)
 
@@ -127,18 +125,14 @@ class OfflineEntitySearch:
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(search_text)
         # log.debug(f"normalized_query: {normalized_query}")
-        analyzed_query = [
-            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
-        ]
+        analyzed_query = [token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS]
         # log.debug(f"analyzed_query: {analyzed_query}")
 
         # Handle empty query after filtering stop words
         if not analyzed_query:
             return []
 
-        result_sets = await OfflineEntitySearch.get_lists_of_ids_from_token_db(
-            token_repository, analyzed_query
-        )
+        result_sets = await OfflineEntitySearch.get_lists_of_ids_from_token_db(token_repository, analyzed_query)
         # log.debug(f"result_sets: {result_sets}")
 
         # all tokens must be in the document

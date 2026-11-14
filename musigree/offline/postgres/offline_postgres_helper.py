@@ -1,7 +1,6 @@
 import logging
-import multiprocessing
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 # noinspection Mypy
 from pg_temp import TempDB  # type: ignore
@@ -10,13 +9,15 @@ from sqlalchemy.dialects.postgresql import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from musigree.config import Configuration
 from musigree.constants import POSTGRESQL_DRIVER_NAME
-from musigree.offline.offline_database.offline_database_helper import (
-    ConcreteTable,
-    OfflineDatabaseHelper,
-)
+from musigree.offline.offline_database.offline_database_helper import OfflineDatabaseHelper
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from musigree.config import Configuration
+    from musigree.offline.offline_database.base_table import ConcreteTable
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +44,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 port=config.POSTGRES_DATABASE_PORT,
                 database=config.POSTGRES_OFFLINE_DATABASE_NAME,
             )
-            engine = create_async_engine(
-                url_object, pool_size=40, pool_timeout=300, pool_recycle=300
-            )
+            engine = create_async_engine(url_object, pool_size=40, pool_timeout=300, pool_recycle=300)
 
             # with database.connection_context():
             # database.execute_sql("SET auto_explain.log_analyze TO on;")
@@ -93,18 +92,10 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 OfflinePostgresHelper.postgres_test_db = TempDB(
                     verbosity=0,
                     databases=[config.POSTGRES_OFFLINE_DATABASE_NAME],
-                    initdb=config.POSTGRES_ROOT + "/bin/initdb"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    postgres=config.POSTGRES_ROOT + "/bin/postgres"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    psql=config.POSTGRES_ROOT + "/bin/psql"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
-                    createuser=config.POSTGRES_ROOT + "/bin/createuser"
-                    if config.POSTGRES_ROOT is not None
-                    else None,
+                    initdb=config.POSTGRES_ROOT + "/bin/initdb" if config.POSTGRES_ROOT is not None else None,
+                    postgres=config.POSTGRES_ROOT + "/bin/postgres" if config.POSTGRES_ROOT is not None else None,
+                    psql=config.POSTGRES_ROOT + "/bin/psql" if config.POSTGRES_ROOT is not None else None,
+                    createuser=config.POSTGRES_ROOT + "/bin/createuser" if config.POSTGRES_ROOT is not None else None,
                     dirname=pg_offline_dirname,
                     options=options,
                 )
@@ -113,7 +104,8 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                 if OfflinePostgresHelper.postgres_test_db is None:
                     raise ValueError("Configuration Error: Cannot set test database")
 
-                # Create a temporary test database engine and pool that will manage connections and execute queries
+                # Create a temporary test database engine and pool that will manage connections and
+                # execute queries
                 url_object = URL.create(
                     POSTGRESQL_DRIVER_NAME,
                     username=OfflinePostgresHelper.postgres_test_db.current_user,
@@ -132,14 +124,6 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     pool_recycle=30,
                     # connect_args={
                     #     "connect_timeout": 10,
-                    # },
-                    # isolation_level="REPEATABLE READ",
-                    # isolation_level="SERIALIZABLE",
-                    # execution_options={
-                    #     # "isolation_level": "REPEATABLE READ",
-                    #     "statement_timeout": 20000,
-                    #     "lock_timeout": 10000,
-                    #     "idle_in_transaction_session_timeout": 30000,
                     # },
                     # poolclass=NullPool,
                     # echo = True,
@@ -166,25 +150,15 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
                     # poolclass=NullPool,
                     # poolclass=StaticPool,
                     poolclass=AsyncAdaptedQueuePool,
-                    # pool_size=OfflineDatabaseManager.get_concurrency_count() * 2,
                     pool_timeout=30,
                     pool_recycle=1,
                     pool_pre_ping=True,
-                    pool_size=multiprocessing.cpu_count(),
-                    # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+                    pool_size=OfflineDatabaseManager.get_concurrency_count(),
                     max_overflow=0,
                     # echo_pool=True,
                     connect_args={
                         "connect_timeout": 100000,
                     },
-                    # isolation_level="REPEATABLE READ",
-                    # isolation_level="SERIALIZABLE",
-                    # execution_options={
-                    #     # "isolation_level": "REPEATABLE READ",
-                    #     "statement_timeout": 20000,
-                    #     "lock_timeout": 10000,
-                    #     "idle_in_transaction_session_timeout": 30000,
-                    # },
                 )
 
         return engine
@@ -234,9 +208,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
         await super().drop_tables(tables=tables)
 
     @classmethod
-    async def vacuum(
-        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Initate a vacuum on a table.
         Args:
@@ -271,7 +243,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: type[ConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
@@ -282,7 +254,7 @@ class OfflinePostgresHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: type[ConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:

@@ -4,7 +4,7 @@ Unit tests for musigree.app.fastapi_image_embedding module.
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from Secweb import SecWeb
+from Secweb.index import SecWeb
 from starlette.responses import Response
 
 from musigree.app.fastapi_image_embedding import OpenGraphImageEmbeddingMiddleware

@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, select
 
@@ -8,6 +8,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.role_table import RoleTable
 from musigree.offline.offline_domain.role import Role, RoleUncommitted
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +59,7 @@ class RoleRepository(BaseRepository["RoleTable"]):
         """
         query = select(mapped_entity(RoleTable)).where(RoleTable.id == role_id)
 
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -95,9 +98,7 @@ class RoleRepository(BaseRepository["RoleTable"]):
         instance: RoleTable = await self._save(role.model_dump())
         return Role.model_validate(instance)
 
-    async def create_bulk(
-        self, roles: list[RoleUncommitted], on_conflict_do_nothing: bool = False
-    ) -> None:
+    async def create_bulk(self, roles: list[RoleUncommitted], on_conflict_do_nothing: bool = False) -> None:
         """
         Creates multiple relations in the runtime_database in bulk.
 

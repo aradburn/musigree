@@ -97,6 +97,7 @@ const mockLink: SimLink = {
     source: mockSourceNode,
     target: mockTargetNode,
     role: "Test Role",
+    years: [],
     key: "test-link",
     isSpline: false,
     distance: 1,

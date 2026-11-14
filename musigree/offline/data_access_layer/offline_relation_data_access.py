@@ -30,14 +30,17 @@ The module utilizes logging for debugging and error reporting.
 
 import itertools
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
-from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_domain.relation import Relation, RelationUncommitted
-from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_database.relation_repository import RelationRepository
+    from musigree.offline.offline_domain.master import Master
+    from musigree.offline.offline_domain.release import Release
 
 log = logging.getLogger(__name__)
 """
@@ -55,7 +58,7 @@ class OfflineRelationDataAccess:
     """
 
     @classmethod
-    def from_release(cls, release: Release) -> list[RelationUncommitted]:
+    def from_release(cls, release: Release, master: Master | None) -> list[RelationUncommitted]:
         """
         Extracts relations from a `Release` object.
 
@@ -67,6 +70,7 @@ class OfflineRelationDataAccess:
 
         Args:
             release (Release): The release object to extract relations from.
+            master (Master): The release's master record.
 
         Returns:
             list[RelationUncommitted]: A list of uncommitted relations.
@@ -88,10 +92,13 @@ class OfflineRelationDataAccess:
         aggregate_roles: dict[str, Any] = {}
         """Dictionary to store aggregate roles and their associated artist IDs."""
 
+        # An untyped [] makes product treat both sides as int, so "roles" in credit
+        # is then a membership test against an integer.
+        extra_artists: list[dict[str, Any]] = release.extra_artists or []
         if is_compilation:
-            iterator = itertools.product(label_ids, release.extra_artists or [])
+            iterator = itertools.product(label_ids, extra_artists)
         else:
-            iterator = itertools.product(artist_ids, release.extra_artists or [])
+            iterator = itertools.product(artist_ids, extra_artists)
         """Determine the iterator based on whether the release is a compilation."""
         for object_id, credit in iterator:
             if object_id is not None and credit is not None and "roles" in credit:
@@ -114,10 +121,11 @@ class OfflineRelationDataAccess:
                                     if "id" in credit:
                                         triples.add((credit["id"], role_name, object_id))
 
+        companies: list[dict[str, Any]] = release.companies or []
         if is_compilation:
-            iterator = itertools.product(label_ids, release.companies or [])
+            iterator = itertools.product(label_ids, companies)
         else:
-            iterator = itertools.product(artist_ids, release.companies or [])
+            iterator = itertools.product(artist_ids, companies)
         """Determine the iterator based on whether the release is a compilation."""
         for subject_id, company in iterator:
             if subject_id is not None and company is not None and "entity_type_name" in company:
@@ -133,14 +141,13 @@ class OfflineRelationDataAccess:
         all_track_artist_ids: set[int] = set()
         """Set to store all unique artist IDs from tracks."""
         for track in release.tracklist or []:
-            track_artist_ids: set[int] = {
-                artist["id"] for artist in track.get("artists", ()) if "id" in artist
-            }
+            track_artist_ids: set[int] = {artist["id"] for artist in track.get("artists", ()) if "id" in artist}
             all_track_artist_ids.update(track_artist_ids)
-            if not track.get("extra_artists"):
+            track_extra_artists: list[dict[str, Any]] = track.get("extra_artists") or []
+            if not track_extra_artists:
                 continue
             track_artist_ids = track_artist_ids or artist_ids or label_ids
-            iterator = itertools.product(track_artist_ids, track["extra_artists"] or [])
+            iterator = itertools.product(track_artist_ids, track_extra_artists)
             for object_id, credit in iterator:
                 for roles in credit.get("roles", ()):
                     track_role_str: str = roles["name"]
@@ -163,7 +170,7 @@ class OfflineRelationDataAccess:
         triples_list = list(triples)
         """Sort the triples for consistency."""
         # log.debug(f"      triples: {triples}")
-        relation_dicts = cls.from_triples(triples_list, release=release)
+        relation_dicts = cls.from_triples(triples_list, release=release, master=master)
         """Convert the triples to a list of relations."""
         # log.debug(f"      relations: {relations}")
         relations = RelationUncommitted.from_dicts(relation_dicts)
@@ -196,10 +203,7 @@ class OfflineRelationDataAccess:
         """Set to store unique triples of (artist_id, role, label_id)."""
         iterator = itertools.product(artist_ids, label_ids)
         """Create an iterator for all combinations of artists and labels."""
-        if is_compilation:
-            role = "Compiled On"
-        else:
-            role = "Released On"
+        role = "Compiled On" if is_compilation else "Released On"
         """Determine the role based on compilation status."""
         for artist_id, label_id in iterator:
             triples.add((artist_id, role, label_id))
@@ -223,9 +227,7 @@ class OfflineRelationDataAccess:
         is_compilation = False
         """Boolean to indicate if a release is a compilation."""
         # log.debug(f"get_release_setup release: {release}")
-        artist_ids: set[int] = {
-            artist["id"] for artist in (release.artists or []) if "id" in artist
-        }
+        artist_ids: set[int] = {artist["id"] for artist in (release.artists or []) if "id" in artist}
         """Set to store unique artist IDs."""
         # log.debug(f"get_release_setup artists: {artist_ids}")
         label_ids: set[int] = {label["id"] for label in (release.labels or []) if "id" in label}
@@ -233,23 +235,20 @@ class OfflineRelationDataAccess:
         # log.debug(f"get_release_setup labels: {label_ids}")
 
         # noinspection PyTypeHints
-        if (
-            len(artist_ids) == 1
-            and release.artists
-            and release.artists[0]["name"] in ["Various", "Various Artists"]
-        ):
+        if len(artist_ids) == 1 and release.artists and release.artists[0]["name"] in ["Various", "Various Artists"]:
             is_compilation = True
             artist_ids.clear()
             for track in release.tracklist or []:
-                artist_ids.update(
-                    artist["id"] for artist in track.get("artists", ()) if "id" in artist
-                )
+                artist_ids.update(artist["id"] for artist in track.get("artists", ()) if "id" in artist)
             # log.debug(f"get_release_setup various artists: {artist_ids}")
         return artist_ids, label_ids, is_compilation
 
     @classmethod
     def from_triples(
-        cls, triples: list[tuple[int, str, int]], release: Release | None = None
+        cls,
+        triples: list[tuple[int, str, int]],
+        release: Release | None = None,
+        master: Master | None = None,
     ) -> list[dict[str, Any]]:
         """
         Converts a list of triples to a list of relations.
@@ -260,6 +259,7 @@ class OfflineRelationDataAccess:
         Args:
             triples: A set of triples.
             release: The release object (optional).
+            master: The master object (optional).
 
         Returns:
             list[dict[str, Any]]: A list of relation dictionaries.
@@ -278,7 +278,11 @@ class OfflineRelationDataAccess:
                 if release.release_date is not None:
                     relation["year"] = release.release_date.year
                 else:
-                    relation["year"] = None
+                    if master is not None:
+                        # Use the year from the master record
+                        relation["year"] = master.year
+                    else:
+                        relation["year"] = None
             relations.append(relation)
         return relations
 

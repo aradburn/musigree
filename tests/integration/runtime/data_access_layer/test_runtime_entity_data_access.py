@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,6 +12,9 @@ from musigree.runtime.runtime_database.runtime_entity_repository import (
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
 @pytest.mark.parametrize("is_load_runtime_data_required", [True], scope="class")
@@ -20,7 +23,8 @@ class TestRuntimeEntityDataAccess(AbstractDatabaseTest):
     async def test_get_id_by_entity_type_and_entity_name(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
         is_load_runtime_data_required: bool,
     ) -> None:
         """Test getting entity ID by type and name."""

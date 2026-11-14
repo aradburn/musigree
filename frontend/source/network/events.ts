@@ -4,12 +4,12 @@
  * implemented using D3.js. It manages node dragging behavior and layout controls.
  */
 
-import { nodeTooltip } from "./tooltips";
-import { onTick } from "./tick";
-import { restartForceLayout, stopForceLayout } from "./forceLayout";
+import {nodeTooltip} from "./tooltips";
+import {onTick} from "./tick";
+import {restartForceLayout, stopForceLayout} from "./forceLayout";
 import type * as d3 from "d3";
-import type { SimNode } from "./data";
-import { networkManager } from "../core/singletons";
+import type {SimNode} from "./data";
+import {networkManager} from "@/core/singletons";
 
 interface D3DragEventWithSource<
     GElement extends Element,

@@ -8,7 +8,6 @@ import {
     afterEach,
     beforeAll,
 } from "vitest";
-import { JSDOM } from "jsdom";
 import { musigreeManager, networkManager } from "../core/singletons";
 import type * as initModule from "../init";
 import { initApp } from "../init";
@@ -86,6 +85,7 @@ vi.mock("../roles", () => ({
     convertRolesToArboristFormat: vi.fn(),
     updateSelectedRoleIds: vi.fn(),
     getSelectedRoles: vi.fn(),
+    initializeStructuralRelationships: vi.fn(),
 }));
 
 vi.mock("../svg", () => ({
@@ -149,6 +149,7 @@ interface MockedRoles {
     convertRolesToArboristFormat: typeof roles.convertRolesToArboristFormat;
     updateSelectedRoleIds: typeof roles.updateSelectedRoleIds;
     getSelectedRoles: typeof roles.getSelectedRoles;
+    initializeStructuralRelationships: typeof roles.initializeStructuralRelationships;
 }
 
 interface MockedFsm {
@@ -163,9 +164,6 @@ interface MockedForceLayout {
 }
 
 describe("Init Module", () => {
-    let originalWindow: Window & typeof globalThis;
-    let dom: JSDOM;
-
     beforeAll(() => {
         // Setup localStorage mock
         const localStorageMock = {
@@ -182,9 +180,6 @@ describe("Init Module", () => {
     });
 
     beforeEach(() => {
-        // Save original window
-        originalWindow = { ...window };
-
         // Define a better type for the document.getElementById mock return
         interface MockElement {
             clientWidth?: number;
@@ -226,42 +221,35 @@ describe("Init Module", () => {
                 }
             });
 
-        // Create a new DOM instance
-        dom = new JSDOM(`
-            <!DOCTYPE html>
-            <html>
-                <body>
-                    <div id="${DOM_IDS.SVG_CONTAINER}" style="width: 1000px; height: 800px;"></div>
-                    <div id="react-app-root" data-mounted="true" style="display: none;"></div>
-                    <button id="request-random">Random</button>
-                    <button id="start-layout">Start Layout</button>
-                    <button id="stop-layout">Stop Layout</button>
-                    <button id="print">Print</button>
-                    <div id="nav-top" style="opacity: 0;"></div>
-                    <div id="modal-help" style="opacity: 0;"></div>
-                    <div id="${DOM_IDS.ROLES_PANEL}" style="opacity: 0;"></div>
-                    <div id="${DOM_IDS.ROLES_CONTAINER}" style="opacity: 0;"></div>
-                    <div data-bs-toggle="tooltip" title="Test tooltip"></div>
-                </body>
-            </html>
-        `);
+        // jsdom exposes `document` as a getter-only property on Window, so it
+        // cannot be replaced. Populate the environment document instead.
+        document.body.innerHTML = `
+            <div id="${DOM_IDS.SVG_CONTAINER}" style="width: 1000px; height: 800px;"></div>
+            <div id="react-app-root" data-mounted="true" style="display: none;"></div>
+            <button id="request-random">Random</button>
+            <button id="start-layout">Start Layout</button>
+            <button id="stop-layout">Stop Layout</button>
+            <button id="print">Print</button>
+            <div id="nav-top" style="opacity: 0;"></div>
+            <div id="modal-help" style="opacity: 0;"></div>
+            <div id="${DOM_IDS.ROLES_PANEL}" style="opacity: 0;"></div>
+            <div id="${DOM_IDS.ROLES_CONTAINER}" style="opacity: 0;"></div>
+            <div data-bs-toggle="tooltip" title="Test tooltip"></div>
+        `;
 
-        // Set up global window with required properties
-        global.window = Object.assign(dom.window, {
-            devicePixelRatio: 2,
-            dgRoles: {
-                core: { data: [] },
-                plugins: [],
-            } as TreeConfig,
-            // We'll mock addEventListener to capture and track handlers
-            addEventListener: vi.fn(),
-            dispatchEvent: vi.fn(),
-        }) as unknown as Window & typeof globalThis;
-
-        global.document = dom.window.document;
+        Object.defineProperty(window, "devicePixelRatio", {
+            configurable: true,
+            value: 2,
+        });
+        window.dgRoles = {
+            core: { data: [] },
+            plugins: [],
+        } as TreeConfig;
 
         // Override document.getElementById to return elements with proper dimensions
-        global.document.getElementById = mockGetElementById;
+        vi.spyOn(document, "getElementById").mockImplementation(
+            mockGetElementById,
+        );
 
         // Reset dg object
         musigreeManager.dpr = 1;
@@ -296,8 +284,7 @@ describe("Init Module", () => {
     });
 
     afterEach(() => {
-        // Restore original window
-        global.window = originalWindow;
+        document.body.innerHTML = "";
         vi.restoreAllMocks();
     });
 
@@ -353,6 +340,9 @@ describe("Init Module", () => {
             expect(spyInitRelations).toHaveBeenCalled();
             expect(spyInitFSM).toHaveBeenCalled();
             expect(spyResetNetworkForces).toHaveBeenCalled();
+            expect(roles.initializeStructuralRelationships).toHaveBeenCalledWith(
+                window.dgRoles,
+            );
 
             // Restore all spies
             vi.restoreAllMocks();
@@ -414,17 +404,12 @@ describe("Init Module", () => {
         });
 
         it("should not call initRoles if window.dgRoles is not defined", () => {
-            // Remove window.dgRoles
             delete global.window.dgRoles;
 
-            // Act
             initApp();
 
-            // Based on init.ts, the initRoles function is no longer called directly
-            // The test is kept for backwards compatibility
-            // No assertions needed here since we're verifying absence of behavior
+            expect(roles.initializeStructuralRelationships).not.toHaveBeenCalled();
 
-            // Re-initialize dgRoles for other tests
             window.dgRoles = {
                 core: { data: [] },
                 plugins: [],

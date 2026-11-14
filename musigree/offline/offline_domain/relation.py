@@ -1,5 +1,6 @@
 """
-This module defines the offline_domain objects for representing relationships between entities in the Musigree system.
+This module defines the offline_domain objects for representing relationships between entities in
+the Musigree system.
 
 It provides classes for handling relations, including their representation in
 various stages, such as before runtime_database persistence (`RelationUncommitted`),

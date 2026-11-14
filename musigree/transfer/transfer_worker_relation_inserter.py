@@ -1,10 +1,9 @@
 import asyncio
 import logging
 import multiprocessing
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.offline_domain.relation import RelationDB
 from musigree.runtime.data_access_layer.runtime_relation_data_access import (
     RuntimeRelationDataAccess,
 )
@@ -13,6 +12,9 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -52,9 +54,7 @@ async def transfer_worker_relation_inserter_async(
     """Log the number of entities inserted."""
 
 
-def transfer_worker_relation_inserter(
-    relation_list: list[RelationDB], current_total: int, total_count: int
-) -> None:
+def transfer_worker_relation_inserter(relation_list: list[RelationDB], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -67,14 +67,10 @@ def transfer_worker_relation_inserter(
     RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
     """Initialize the database engine."""
 
-    runtime_relation_dicts_list = (
-        RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(relation_list)
-    )
+    runtime_relation_dicts_list = RuntimeRelationDataAccess.get_runtime_relation_dicts_from_relations(relation_list)
 
     loop.run_until_complete(
-        transfer_worker_relation_inserter_async(
-            runtime_relation_dicts_list, current_total, total_count
-        )
+        transfer_worker_relation_inserter_async(runtime_relation_dicts_list, current_total, total_count)
     )
 
     RuntimeDatabaseManager.dispose_runtime_database_async_engine(loop)

@@ -1,6 +1,7 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from fastapi import FastAPI
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 def add_app_middleware(app: FastAPI, middleware_class: type[Any], /, **kwargs: Any) -> None:

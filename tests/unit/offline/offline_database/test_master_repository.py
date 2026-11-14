@@ -5,7 +5,7 @@ This module tests the MasterRepository class which manages Master objects
 in the offline database.
 """
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
@@ -19,6 +19,9 @@ from musigree.offline.offline_database.master_repository import MasterRepository
 from musigree.offline.offline_database.master_table import MasterTable
 from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_domain.master import Master
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker
@@ -66,7 +69,7 @@ class TestMasterRepository:
     ) -> None:
         """Test successful all() method execution."""
 
-        async def mock_partitions() -> AsyncGenerator[list]:
+        async def mock_partitions() -> AsyncGenerator[list[tuple[Mock]]]:
             yield [(mock_master_table,)]
 
         mock_result = Mock()

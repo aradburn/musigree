@@ -1,5 +1,6 @@
 """
-This module provides data access functionality for master data records within the Musigree offline system.
+This module provides data access functionality for master data records within the Musigree offline
+system.
 
 It defines the `OfflineMasterDataAccess` class, which offers methods for resolving
 master record references. It is designed to be used during the offline data loading process.

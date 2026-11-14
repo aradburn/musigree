@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -9,6 +9,9 @@ from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from tests.conftest import AbstractDatabaseTest
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 
 # noinspection HttpUrlsUsage
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -17,7 +20,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_artist_record_updated(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 20702
@@ -51,11 +55,11 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
                     "LKJ",
                 ],
                 "profile": "(Test Updated) Linton Kwesi Johnson (aka LKJ) (born 24 August 1952, "
-                           + "Chapelton, Jamaica) is a British-based author and dub poet. Johnson's "
-                           + "poetry makes clever use of the unstandardised transcription of Jamaican "
-                           + 'Patois and, allied to the Jamaican "toasting" tradition, is regarded as a '
-                           + "precursor of rap. He became the second living poet, and the only black poet, "
-                           + "to be published in the Penguin Classics series.",
+                + "Chapelton, Jamaica) is a British-based author and dub poet. Johnson's "
+                + "poetry makes clever use of the unstandardised transcription of Jamaican "
+                + 'Patois and, allied to the Jamaican "toasting" tradition, is regarded as a '
+                + "precursor of rap. He became the second living poet, and the only black poet, "
+                + "to be published in the Penguin Classics series.",
                 "urls": [
                     "http://www.lkjrecords.com/",
                     "http://lister.ultrakohl.com/homepage/Lkj/lkj.htm",
@@ -72,7 +76,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_artist_record_not_updated(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 2239
@@ -101,7 +106,7 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_type": "EntityType.ARTIST",
             "entity_metadata": {
                 "profile": "British electronic/rock group formed in the early 1990s. "
-                           + "They are currently signed to Warp Records.",
+                + "They are currently signed to Warp Records.",
                 "real_name": "Sarah Peacock, Mark Clifford, Darren Seymour & Justin Fletcher",
                 "urls": [
                     "http://www.myspace.com/seefeelmyspace",
@@ -136,7 +141,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_artist_record_inserted(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 9999999
@@ -171,7 +177,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_artist_record_deleted(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 12589
@@ -194,7 +201,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_label_record_updated(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 1
@@ -215,7 +223,7 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_type": "EntityType.LABEL",
             "entity_metadata": {
                 "profile": "(Test Update) Classic Techno label from Detroit, USA.\r\n"
-                           + "[b]Label owner:[/b] [a871=Carl Craig].\r\n",
+                + "[b]Label owner:[/b] [a871=Carl Craig].\r\n",
                 "urls": [
                     "http://www.planet-e.net/",
                     "http://www.myspace.com/planetecom",
@@ -234,7 +242,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_label_record_not_updated(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 264170
@@ -255,9 +264,9 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
             "entity_type": "EntityType.LABEL",
             "entity_metadata": {
                 "profile": "American mastering studio located in New Windsor, NY. \r\n\r\n"
-                           + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
-                           + "operations were moved to New Windsor in 2005. "
-                           + "Operated by Chief Engineer [a275139=Alan Douches].\n",
+                + "Formally located at 2 Engle Street, Tenafly, New Jersey, "
+                + "operations were moved to New Windsor in 2005. "
+                + "Operated by Chief Engineer [a275139=Alan Douches].\n",
                 "urls": ["http://www.westwestsidemusic.com/"],
             },
             "entity_name": "West West Side Music",
@@ -270,7 +279,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_label_record_inserted(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 99999999
@@ -303,7 +313,8 @@ class TestLoaderEntityUpdater(AbstractDatabaseTest):
     async def test_label_record_deleted(
         self,
         offline_database_setup: AsyncGenerator[None],
-        offline_database_update: AsyncGenerator[None], is_load_offline_data_required: bool
+        offline_database_update: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
     ) -> None:
         # GIVEN
         entity_id = 2529

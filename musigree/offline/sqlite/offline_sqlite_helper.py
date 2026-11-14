@@ -1,15 +1,16 @@
 import logging
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import StaticPool, text
 from sqlalchemy.dialects.sqlite import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from musigree.config import Configuration
-from musigree.offline.offline_database.offline_database_helper import (
-    ConcreteTable,
-    OfflineDatabaseHelper,
-)
+from musigree.offline.offline_database.offline_database_helper import OfflineDatabaseHelper
+
+if TYPE_CHECKING:
+    from musigree.config import Configuration
+    from musigree.offline.offline_database.base_table import ConcreteTable
 
 log = logging.getLogger(__name__)
 
@@ -95,9 +96,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
         await super().drop_tables(tables=tables)
 
     @classmethod
-    async def vacuum(
-        cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(cls, table_name: str, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the database.
 
@@ -143,7 +142,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: type[ConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:
@@ -154,7 +153,7 @@ class OfflineSqliteHelper(OfflineDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: type[ConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         if on_conflict_do_nothing:

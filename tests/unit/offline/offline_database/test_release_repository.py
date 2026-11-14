@@ -5,7 +5,7 @@ This module tests the ReleaseRepository class which manages Release objects
 in the offline database.
 """
 
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
@@ -19,6 +19,9 @@ from musigree.offline.offline_database.offline_session import OfflineSession
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker
@@ -60,7 +63,7 @@ class TestReleaseRepository:
     ) -> None:
         """Test successful all() method execution."""
 
-        async def mock_partitions() -> AsyncGenerator[list]:
+        async def mock_partitions() -> AsyncGenerator[list[tuple[Mock]]]:
             yield [(mock_release_table,)]
 
         mock_result = Mock()

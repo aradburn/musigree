@@ -1,5 +1,5 @@
 import json
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,7 +11,11 @@ from musigree.library.cache.cache_manager import (
     FakeRedisCache,
     RedisCache,
     SimpleCache,
+    _await_redis,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class TestBaseCache:
@@ -159,6 +163,18 @@ class TestSimpleCache:
         await self.cache.close()
         assert await self.cache.get("key1") is None
         assert await self.cache.hgetall("hash_key") is None
+
+
+class TestAwaitRedis:
+    """Redis commands are typed as a value or an awaitable of that value."""
+
+    @pytest.mark.asyncio
+    async def test_awaits_a_command_and_returns_a_plain_value(self) -> None:
+        async def ready() -> bool:
+            return True
+
+        assert await _await_redis(ready()) is True
+        assert await _await_redis(True) is True
 
 
 class TestRedisCache:

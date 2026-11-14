@@ -16,17 +16,22 @@ from fastapi import Request, Response
 from musigree.app.fastapi_dependencies import (
     EntityIdDep,
     EntityTypeDep,
+    MaxYearDep,
+    MinYearDep,
     OnMobileQuery,
     RolesDep,
-    YearDep,
+    YearBoundsDep,
     get_entity_id,
     get_entity_type,
+    get_max_year,
+    get_min_year,
     get_roles,
-    get_year,
+    get_year_bounds,
     rate_limiter,
 )
 from musigree.exceptions import BadRequestError, RateLimitError
 from musigree.library.fields.entity_type import EntityType
+from tests.type_helpers import as_object
 
 
 class TestGetEntityType:
@@ -86,51 +91,31 @@ class TestGetEntityId:
         assert exc_info.value.message == "Bad Entity Id"
 
 
-class TestGetYear:
-    """Test cases for the get_year function."""
+class TestGetYearBounds:
+    """Test cases for min_year and max_year dependencies."""
 
-    def test_get_year_none_returns_none(self) -> None:
-        """Test that None input returns None."""
-        result = get_year(None)
-        assert result is None
+    def test_missing_bounds_return_none(self) -> None:
+        """Missing query values leave both bounds unset."""
+        assert get_min_year(None) is None
+        assert get_max_year(None) is None
+        assert get_year_bounds(None, None) == (None, None)
 
-    def test_get_year_single_year(self) -> None:
-        """Test that single year string returns integer."""
-        result = get_year("2023")
-        assert result == 2023
+    def test_valid_integers(self) -> None:
+        """Inclusive bounds are returned unchanged."""
+        assert get_min_year(1970) == 1970
+        assert get_max_year(1979) == 1979
+        assert get_year_bounds(1970, 1979) == (1970, 1979)
 
-    def test_get_year_range_ascending(self) -> None:
-        """Test that year range returns tuple with start <= stop."""
-        result = get_year("2020-2023")
-        assert result == (2020, 2023)
+    def test_only_one_bound(self) -> None:
+        """Either bound may be omitted."""
+        assert get_year_bounds(1970, None) == (1970, None)
+        assert get_year_bounds(None, 1979) == (None, 1979)
 
-    def test_get_year_range_descending_swapped(self) -> None:
-        """Test that descending year range gets swapped to ascending order."""
-        result = get_year("2023-2020")
-        assert result == (2020, 2023)
-
-    def test_get_year_same_year_range(self) -> None:
-        """Test that same year range returns tuple."""
-        result = get_year("2022-2022")
-        assert result == (2022, 2022)
-
-    def test_get_year_invalid_format_raises_bad_request(self) -> None:
-        """Test that invalid year format raises BadRequestError."""
+    def test_min_year_greater_than_max_year_raises_bad_request(self) -> None:
+        """An inverted range is rejected."""
         with pytest.raises(BadRequestError) as exc_info:
-            get_year("invalid")
-        assert exc_info.value.message == "Invalid year input"
-
-    def test_get_year_invalid_range_format_raises_bad_request(self) -> None:
-        """Test that invalid year range format raises BadRequestError."""
-        with pytest.raises(BadRequestError) as exc_info:
-            get_year("2020-invalid")
-        assert exc_info.value.message == "Invalid year input"
-
-    def test_get_year_multiple_dashes_raises_bad_request(self) -> None:
-        """Test that multiple dashes raises BadRequestError due to invalid second part."""
-        with pytest.raises(BadRequestError) as exc_info:
-            get_year("2020-2021-2022")
-        assert exc_info.value.message == "Invalid year input"
+            get_year_bounds(1980, 1970)
+        assert exc_info.value.message == "min_year must be less than or equal to max_year"
 
 
 class TestGetRoles:
@@ -166,9 +151,7 @@ class TestGetRoles:
     @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_valid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup works with valid role entries."""
-        mock_role_cache.role_category_to_role_name_lookup = {
-            "Production": ["Producer", "Co-Producer"]
-        }
+        mock_role_cache.role_category_to_role_name_lookup = {"Production": ["Producer", "Co-Producer"]}
         mock_role_cache.role_name_to_role_id_lookup = {"Producer": 1, "Co-Producer": 2}
 
         result = get_roles("Production")
@@ -177,9 +160,7 @@ class TestGetRoles:
     @patch("musigree.library.cache.role_cache.RoleCache")
     def test_get_roles_category_lookup_with_invalid_entries(self, mock_role_cache: Mock) -> None:
         """Test that role category lookup skips invalid role entries."""
-        mock_role_cache.role_category_to_role_name_lookup = {
-            "Production": ["Producer", "InvalidRole"]
-        }
+        mock_role_cache.role_category_to_role_name_lookup = {"Production": ["Producer", "InvalidRole"]}
         mock_role_cache.role_name_to_role_id_lookup = {
             "Producer": 1
             # InvalidRole is not in role_name_to_role_id_lookup
@@ -236,9 +217,7 @@ class TestRateLimiter:
         return response
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_allows_request_within_limit(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_allows_request_within_limit(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter allows request within limit."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -265,9 +244,7 @@ class TestRateLimiter:
             assert "X-RateLimit-Reset" in mock_response.headers
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_raises_error_when_limit_exceeded(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_raises_error_when_limit_exceeded(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter raises RateLimitError when limit exceeded."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -286,9 +263,7 @@ class TestRateLimiter:
             mock_cache.incr.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_none_redis_value(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_none_redis_value(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles None value from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -308,15 +283,11 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_bytes_redis_value(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_bytes_redis_value(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles bytes value from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
-            mock_cache.get = AsyncMock(
-                return_value=b"3"
-            )  # Bytes value (defensive check in implementation)
+            mock_cache.get = AsyncMock(return_value=b"3")  # Bytes value (defensive check in implementation)
             mock_cache.ttl = AsyncMock(return_value=45)
             mock_cache.incr = AsyncMock()
             mock_cache.expire = AsyncMock()
@@ -350,9 +321,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # 10 - 0 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_get_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_get_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache get exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -370,9 +339,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "9"  # Fallback values
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_ttl_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_ttl_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache TTL exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -392,9 +359,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_redis_incr_exception(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_redis_incr_exception(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles cache incr exception gracefully."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -462,9 +427,7 @@ class TestRateLimiter:
             mock_cache.get.assert_called_with(expected_key)
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_uses_valid_ttl_from_redis(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_uses_valid_ttl_from_redis(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter uses valid TTL from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -484,9 +447,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_uses_period_for_invalid_ttl(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_uses_period_for_invalid_ttl(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter uses period for invalid TTL values."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -506,9 +467,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_handles_none_ttl(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_handles_none_ttl(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter handles None TTL from cache."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -528,9 +487,7 @@ class TestRateLimiter:
             assert abs(reset_time - expected_reset) <= 1  # Allow 1 second tolerance
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_increments_request_count(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_increments_request_count(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter increments request count correctly."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -549,9 +506,7 @@ class TestRateLimiter:
             assert mock_response.headers["X-RateLimit-Remaining"] == "6"  # 10 - 3 - 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_sets_expire_for_new_key(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_sets_expire_for_new_key(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter sets expiration for new cache keys."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -570,9 +525,7 @@ class TestRateLimiter:
             mock_cache.expire.assert_called_once_with(cache_key, 60)
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_enforces_limit_at_boundary(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_enforces_limit_at_boundary(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter enforces limit exactly at the boundary."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -591,9 +544,7 @@ class TestRateLimiter:
             mock_cache.incr.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_enforces_limit_when_exceeded(
-        self, mock_request: Mock, mock_response: Mock
-    ) -> None:
+    async def test_rate_limiter_enforces_limit_when_exceeded(self, mock_request: Mock, mock_response: Mock) -> None:
         """Test that rate limiter raises error when limit is exceeded."""
         with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
@@ -623,9 +574,19 @@ class TestAnnotatedDependencies:
         assert get_origin(EntityIdDep) is Annotated
         assert get_args(EntityIdDep)[1].dependency is get_entity_id
 
-    def test_year_dep_wraps_get_year(self) -> None:
-        assert get_origin(YearDep) is Annotated
-        assert get_args(YearDep)[1].dependency is get_year
+    def test_year_bounds_dep_wraps_get_year_bounds(self) -> None:
+        assert get_origin(YearBoundsDep) is Annotated
+        assert get_args(YearBoundsDep)[1].dependency is get_year_bounds
+
+    def test_min_year_dep_wraps_get_min_year(self) -> None:
+        min_year_dep = as_object(MinYearDep)
+        assert get_origin(min_year_dep) is Annotated
+        assert get_args(min_year_dep)[1].dependency is get_min_year
+
+    def test_max_year_dep_wraps_get_max_year(self) -> None:
+        max_year_dep = as_object(MaxYearDep)
+        assert get_origin(max_year_dep) is Annotated
+        assert get_args(max_year_dep)[1].dependency is get_max_year
 
     def test_roles_dep_wraps_get_roles(self) -> None:
         assert get_origin(RolesDep) is Annotated

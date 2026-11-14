@@ -101,17 +101,15 @@ class _EntityBase(InternalDomainObject):
         Returns:
             int: The size of the entity.
         """
-        members: list[str] = []
+        # model_construct can bypass validation, so entities may not be a dict.
+        entities: object = self.entities
+        if not isinstance(entities, dict):
+            return 0
+        members: list[Any] = []
         if self.entity_type == EntityType.ARTIST:
-            if isinstance(self.entities, dict):
-                members = self.entities.get("members", [])
-            else:
-                members = []
+            members = entities.get("members", [])
         elif self.entity_type == EntityType.LABEL:
-            if isinstance(self.entities, dict):
-                members = self.entities.get("sublabels", [])
-            else:
-                members = []
+            members = entities.get("sublabels", [])
         return len(members)
 
     @staticmethod

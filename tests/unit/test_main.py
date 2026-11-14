@@ -1,7 +1,10 @@
-from collections.abc import Generator
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 @patch("musigree.app.fastapi_dev_app.create_development_app")

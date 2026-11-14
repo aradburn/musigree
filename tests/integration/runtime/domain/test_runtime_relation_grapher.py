@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -18,6 +18,9 @@ from musigree.runtime.runtime_database.runtime_relation_repository import (
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from tests.conftest import AbstractDatabaseTest
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 log = logging.getLogger(__name__)
 
 
@@ -28,8 +31,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_01(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """
         Test RelationGrapher with Seefeel artist.
@@ -71,30 +75,35 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Member Of",
                     "source": "artist-115880",
                     "target": "artist-2239",
+                    "years": [1994, 1999, 2003, 2008, 2009],
                 },
                 {
                     "key": "artist-41103-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-41103",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-489350-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-489350",
                     "target": "artist-2239",
+                    "years": [1994, 1995, 1999, 2008, 2009],
                 },
                 {
                     "key": "artist-51674-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-2239",
+                    "years": [1994, 1995, 1999, 2003, 2008, 2009],
                 },
                 {
                     "key": "artist-66803-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-66803",
                     "target": "artist-2239",
+                    "years": [1994, 1999, 2008, 2009],
                 },
             ],
             "nodes": [
@@ -175,8 +184,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_02(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """Test RelationGrapher with Justin Fletcher artist."""
         # GIVEN
@@ -209,30 +219,35 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Member Of",
                     "source": "artist-115880",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-41103-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-41103",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-489350-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-489350",
                     "target": "artist-2239",
+                    "years": [1994, 1995, 1999, 2008, 2009],
                 },
                 {
                     "key": "artist-51674-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-66803-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-66803",
                     "target": "artist-2239",
+                    "years": [],
                 },
             ],
             "nodes": [
@@ -313,8 +328,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_03(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         # GIVEN
         entity_type = EntityType.ARTIST
@@ -345,30 +361,35 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Member Of",
                     "source": "artist-115880",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-41103-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-41103",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-489350-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-489350",
                     "target": "artist-2239",
+                    "years": [1994, 1995, 1999, 2008, 2009],
                 },
                 {
                     "key": "artist-51674-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-66803-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-66803",
                     "target": "artist-2239",
+                    "years": [],
                 },
             ],
             "nodes": [
@@ -449,8 +470,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_04(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """
         Missing count takes into account structural roles: members,
@@ -464,9 +486,7 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            artist = await entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
-            )
+            artist = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
             roles = ["Alias", "Member Of"]
             grapher = RelationGrapher(
                 center_entity=artist,
@@ -486,12 +506,14 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Member Of",
                     "source": "artist-115880",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-1920-alias-artist-51674",
                     "role": "Alias",
                     "source": "artist-1920",
                     "target": "artist-51674",
+                    "years": [],
                 },
                 # {
                 #     "key": "artist-231-alias-artist-1920",
@@ -504,42 +526,49 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Alias",
                     "source": "artist-231",
                     "target": "artist-51674",
+                    "years": [],
                 },
                 {
                     "key": "artist-3490-alias-artist-41103",
                     "role": "Alias",
                     "source": "artist-3490",
                     "target": "artist-41103",
+                    "years": [],
                 },
                 {
                     "key": "artist-41103-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-41103",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-489350-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-489350",
                     "target": "artist-2239",
+                    "years": [1994, 1995, 1999, 2008, 2009],
                 },
                 {
                     "key": "artist-51674-member-of-artist-1656080",
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-1656080",
+                    "years": [],
                 },
                 {
                     "key": "artist-51674-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-51674",
                     "target": "artist-2239",
+                    "years": [],
                 },
                 {
                     "key": "artist-66803-member-of-artist-2239",
                     "role": "Member Of",
                     "source": "artist-66803",
                     "target": "artist-2239",
+                    "years": [],
                 },
             ],
             "nodes": [
@@ -679,8 +708,9 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
     async def test_05(
         self,
         offline_database_setup: AsyncGenerator[None],
-        runtime_database_setup: AsyncGenerator[None], is_load_offline_data_required: bool,
-        is_load_runtime_data_required: bool
+        runtime_database_setup: AsyncGenerator[None],
+        is_load_offline_data_required: bool,
+        is_load_runtime_data_required: bool,
     ) -> None:
         """Test RelationGrapher with Lab Studio, Berlin label."""
         # GIVEN
@@ -713,18 +743,21 @@ class TestRuntimeRelationGrapher(AbstractDatabaseTest):
                     "role": "Recorded At",
                     "source": "artist-1193",
                     "target": "label-271251",
+                    "years": [1994],
                 },
                 {
                     "key": "artist-1193-recorded-at-label-307743",
                     "role": "Recorded At",
                     "source": "artist-1193",
                     "target": "label-307743",
+                    "years": [1994],
                 },
                 {
                     "key": "artist-2718-recorded-at-label-271251",
                     "role": "Recorded At",
                     "source": "artist-2718",
                     "target": "label-271251",
+                    "years": [1994],
                 },
             ],
             "nodes": [

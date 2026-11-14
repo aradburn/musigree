@@ -122,7 +122,10 @@ class TestRunRuntimeLoadingProcess:
         mock_transfer_manager: MagicMock,
         mock_runner: MagicMock,
     ) -> None:
-        """Test run_runtime_loading_process preloads entity details via transfer_load_entity_details_index."""
+        """
+        Test run_runtime_loading_process preloads entity details via
+        transfer_load_entity_details_index.
+        """
         offline_config = MagicMock()
         runtime_config = MagicMock()
         runtime_config.DATA_DIR = Path("/test/runtime")

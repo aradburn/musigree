@@ -6,8 +6,8 @@ which provides the foundation for data loading operations in the offline system.
 """
 
 import gzip
-from collections.abc import Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -19,6 +19,9 @@ from musigree.offline.loader.loader_base import LoaderBase
 from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 class ConcreteLoaderBase(LoaderBase):
@@ -156,7 +159,7 @@ class TestProcessXml:
             mock_gzip.return_value.__enter__.return_value = mock_file
             mock_parser.tags_to_fields.side_effect = DataError(
                 "statement", "params", Exception("orig")
-            )  # type: ignore
+            )
 
             # Execute & Verify
             with pytest.raises(DataError):
@@ -393,7 +396,8 @@ class TestLoaderPassOneManager:
                         # Verify
                         assert result == 0
                         mock_delete_worker.assert_called_once()
-                        # Should call queue_worker_functions twice: once for updates, once for deletes
+                        # Should call queue_worker_functions twice: once for updates, once for
+                        # deletes
                         assert mock_queue_worker.await_count == 2
                         for call in mock_queue_worker.await_args_list:
                             assert call.args[2] == ThreadingModel.THREAD

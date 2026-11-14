@@ -99,7 +99,8 @@ class TestLoaderRole:
         mock_file_obj.seek = Mock()
         mock_file_open.return_value.__enter__.return_value = mock_file_obj
 
-        # Mock role name normalization - return single item lists as that's what the real function does
+        # Mock role name normalization - return single item lists as that's what the real function
+        # does
         mock_normalise.return_value = ["normalized_instrument"]
 
         # Mock RoleType methods

@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, Select, String, cast, delete, func, literal, or_, select
 
@@ -14,6 +14,9 @@ from musigree.offline.offline_domain.relation import (
     RelationInternal,
     RelationUncommitted,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         Raises:
             NotFoundError: If no relation is found matching the query.
         """
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -60,9 +63,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         relation_db = RelationDB.model_validate(instance)
         return relation_db.to_domain()
 
-    async def _get_all_by_query(
-        self, query: Select[tuple[RelationTable]]
-    ) -> list[RelationInternal]:
+    async def _get_all_by_query(self, query: Select[tuple[RelationTable]]) -> list[RelationInternal]:
         """
         Executes a query that should return multiple Relations.
 
@@ -72,7 +73,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         Returns:
             List[RelationInternal]: A list of retrieved relations.
         """
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         instances = result.scalars().all()
         relation_dbs = [RelationDB.model_validate(instance) for instance in instances]
@@ -109,7 +110,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
             NotFoundError: If no relation is found with the given ID.
         """
         query = select(mapped_entity(RelationTable)).where(RelationTable.id == relation_id)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -160,7 +161,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         )
         return await self._get_one_by_query(query)
 
-    async def find_by_key(self, key: dict) -> list[RelationInternal]:
+    async def find_by_key(self, key: dict[str, Any]) -> list[RelationInternal]:
         """
         Retrieves a relation by its key components (subject, role, object).
 
@@ -235,11 +236,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
             Mapping of role name to count of distinct (subject, object) pairs.
         """
         # Delimiter must not appear in stringified integer ids (avoids "1"+"23"=="12"+"3").
-        _pair_key = (
-            cast(RelationTable.subject, String)
-            + literal("\x1f")
-            + cast(RelationTable.object, String)
-        )
+        _pair_key = cast(RelationTable.subject, String) + literal("\x1f") + cast(RelationTable.object, String)
         stmt = (
             select(RelationTable.predicate, func.count(func.distinct(_pair_key)))
             .where(
@@ -250,7 +247,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
             )
             .group_by(RelationTable.predicate)
         )
-        result: Result = await self._session.execute(stmt)
+        result = await self._session.execute(stmt)
         rows = result.all()
         out: dict[str, int] = {}
         lookup = RoleCache.role_id_to_role_name_lookup
@@ -266,9 +263,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
             out[role_name] = int(cnt)
         return out
 
-    async def find_by_entity_and_roles(
-        self, id_: int, role_ids: list[int]
-    ) -> list[RelationInternal]:
+    async def find_by_entity_and_roles(self, id_: int, role_ids: list[int]) -> list[RelationInternal]:
         """
         Retrieves all relations associated with a given entity ID and specific roles.
 
@@ -307,9 +302,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         )
         return await self._get_all_by_query(query)
 
-    async def create(
-        self, relation: RelationUncommitted, on_conflict_do_nothing: bool = False
-    ) -> None:
+    async def create(self, relation: RelationUncommitted, on_conflict_do_nothing: bool = False) -> None:
         """
         Creates a new relation in the runtime_database.
 
@@ -341,9 +334,7 @@ class RelationRepository(BaseRepository["RelationTable"]):
         # relation_db = RelationDB.model_validate(instance)
         # return relation_db.to_domain()
 
-    async def create_bulk(
-        self, relations: list[RelationUncommitted], on_conflict_do_nothing: bool = False
-    ) -> None:
+    async def create_bulk(self, relations: list[RelationUncommitted], on_conflict_do_nothing: bool = False) -> None:
         """
         Creates multiple relations in the runtime_database in bulk.
 

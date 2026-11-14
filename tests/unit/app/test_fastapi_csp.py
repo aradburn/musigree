@@ -4,12 +4,12 @@ Unit tests for musigree.app.fastapi_csp module.
 
 import re
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from starlette.middleware import Middleware
 from starlette.responses import HTMLResponse
 
 from musigree.app.fastapi_csp import (
@@ -20,17 +20,32 @@ from musigree.app.fastapi_csp import (
 )
 from musigree.config import Configuration, SqliteTestConfiguration
 from musigree.constants import TEMPLATES_DIR, AnalyticsType
+from tests.type_helpers import as_object
+
+if TYPE_CHECKING:
+    # noinspection protected-member
+    from Secweb._types import Content_Security_Policy_Options
+    from starlette.middleware import Middleware
 
 
 def _csp_middleware(app: FastAPI) -> Middleware:
     """Return the CSP middleware registered on the application."""
     matches = [
-        middleware
-        for middleware in app.user_middleware
-        if middleware.cls is ContentSecurityPolicyMiddleware
+        middleware for middleware in app.user_middleware if as_object(middleware.cls) is ContentSecurityPolicyMiddleware
     ]
     assert len(matches) == 1
     return matches[0]
+
+
+def _csp_options(middleware: Middleware) -> Content_Security_Policy_Options:
+    """Return the CSP directive map stored on the registered middleware.
+
+    Starlette types middleware kwargs as ``object``, so the value is checked
+    and cast before tests index it.
+    """
+    options = middleware.kwargs["options"]
+    assert isinstance(options, dict)
+    return cast("Content_Security_Policy_Options", options)
 
 
 def _directive_sources(policy: str, directive: str) -> list[str]:
@@ -64,9 +79,10 @@ class TestCSPMiddleware:
 
         # Assert
         middleware = _csp_middleware(app)
+        options = _csp_options(middleware)
         assert middleware.kwargs["report_only"] is False
-        assert "default-src" in middleware.kwargs["options"]
-        assert "'unsafe-inline'" not in middleware.kwargs["options"]["script-src-elem"]
+        assert "default-src" in options
+        assert "'unsafe-inline'" not in options["script-src-elem"]
 
     def test_setup_csp_middleware_development(
         self,
@@ -82,9 +98,10 @@ class TestCSPMiddleware:
 
         # Assert
         middleware = _csp_middleware(app)
+        options = _csp_options(middleware)
         assert middleware.kwargs["report_only"] is False
-        assert "http://localhost:5173" in middleware.kwargs["options"]["script-src"]
-        assert "'unsafe-inline'" not in middleware.kwargs["options"]["script-src-elem"]
+        assert "http://localhost:5173" in options["script-src"]
+        assert "'unsafe-inline'" not in options["script-src-elem"]
 
     def test_setup_csp_middleware_analytics_umami(
         self,
@@ -100,7 +117,7 @@ class TestCSPMiddleware:
         setup_csp_middleware(app, test_config)
 
         # Assert
-        csp_options = _csp_middleware(app).kwargs["options"]
+        csp_options = _csp_options(_csp_middleware(app))
         assert "https://umami.musigree.com " in csp_options["script-src"]
         assert "https://umami.musigree.com " in csp_options["connect-src"]
 
@@ -118,11 +135,8 @@ class TestCSPMiddleware:
         setup_csp_middleware(app, test_config)
 
         # Assert
-        csp_options = _csp_middleware(app).kwargs["options"]
-        assert (
-            "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
-            in csp_options["script-src"]
-        )
+        csp_options = _csp_options(_csp_middleware(app))
+        assert "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ " in csp_options["script-src"]
         assert "https://swetrix-api.musigree.com/ " in csp_options["connect-src"]
 
     def test_rendered_policy_adds_nonce_to_script_elements(
@@ -134,7 +148,7 @@ class TestCSPMiddleware:
         app = FastAPI()
         test_config.PRODUCTION = False
         setup_csp_middleware(app, test_config)
-        options = _csp_middleware(app).kwargs["options"]
+        options = _csp_options(_csp_middleware(app))
 
         # Act
         policy = render_content_security_policy(options, "abc123")
@@ -183,6 +197,7 @@ def _nonce_from_policy(policy: str) -> str:
 class TestIndexTemplateCsp:
     """Inline scripts in the index template must carry the request nonce."""
 
+    # noinspection method-may-be-static
     def _render(self, *, is_production: bool, nonce: str) -> str:
         environment = Environment(
             loader=FileSystemLoader(TEMPLATES_DIR),

@@ -20,7 +20,8 @@ class RuntimeCountryTable(RuntimeBase):
         __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the runtime country.
-        country_name (Mapped[str]): The name of the country (e.g., 'UK', 'England'). This column is indexed for faster lookups.
+        country_name (Mapped[str]): The name of the country (e.g., 'UK', 'England'). This column is
+        indexed for faster lookups.
     """
 
     __tablename__ = "country"

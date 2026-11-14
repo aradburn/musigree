@@ -21,6 +21,7 @@ from musigree.transfer.transfer_task import (
     RuntimeLoaderTaskForDate,
     RuntimeLoaderTaskForDateAndStage,
 )
+from tests.type_helpers import as_object
 
 
 class TestRuntimeLoaderSetupTask:
@@ -32,13 +33,11 @@ class TestRuntimeLoaderSetupTask:
         start_date = datetime.date(2023, 1, 1)
         end_date = datetime.date(2023, 1, 31)
 
-        task = RuntimeLoaderSetupTask(
-            data_directory=data_directory, start_date=start_date, end_date=end_date
-        )
+        task = RuntimeLoaderSetupTask(data_directory=data_directory, start_date=start_date, end_date=end_date)
 
-        assert task.data_directory == data_directory
-        assert task.start_date == start_date
-        assert task.end_date == end_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.start_date) == start_date
+        assert as_object(task.end_date) == end_date
         assert isinstance(task, luigi.Task)
 
     def test_output_returns_run_anyway_target(self) -> None:
@@ -120,13 +119,11 @@ class TestRuntimeLoaderTask:
         start_date = datetime.date(2023, 1, 1)
         end_date = datetime.date(2023, 1, 31)
 
-        task = RuntimeLoaderTask(
-            data_directory=data_directory, start_date=start_date, end_date=end_date
-        )
+        task = RuntimeLoaderTask(data_directory=data_directory, start_date=start_date, end_date=end_date)
 
-        assert task.data_directory == data_directory
-        assert task.start_date == start_date
-        assert task.end_date == end_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.start_date) == start_date
+        assert as_object(task.end_date) == end_date
         assert isinstance(task, luigi.WrapperTask)
 
     def test_requires_yields_correct_dependencies(self) -> None:
@@ -180,8 +177,8 @@ class TestRuntimeLoaderTaskForDate:
 
         task = RuntimeLoaderTaskForDate(data_directory=data_directory, dump_date=dump_date)
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
         assert isinstance(task, luigi.WrapperTask)
 
     def test_priority_calculation(self) -> None:
@@ -202,9 +199,7 @@ class TestRuntimeLoaderTaskForDate:
         # Mock stages
         mock_get_stages.return_value = [Mock(), Mock(), Mock()]  # 3 stages
 
-        task = RuntimeLoaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = RuntimeLoaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
 
         dependencies = list(task.requires())
 
@@ -213,13 +208,11 @@ class TestRuntimeLoaderTaskForDate:
             assert isinstance(dep, RuntimeLoaderTaskForDateAndStage)
             assert dep.data_directory == task.data_directory
             assert dep.dump_date == task.dump_date
-            assert dep.stage == i
+            assert as_object(dep.stage) == i
 
     def test_task_family(self) -> None:
         """Test that RuntimeLoaderTaskForDate has correct task family."""
-        task = RuntimeLoaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = RuntimeLoaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
 
         assert task.task_family == "RuntimeLoaderTaskForDate"
 
@@ -238,21 +231,17 @@ class TestRuntimeLoaderTaskForDateAndStage:
         dump_date = datetime.date(2023, 1, 15)
         stage = 2
 
-        task = RuntimeLoaderTaskForDateAndStage(
-            data_directory=data_directory, dump_date=dump_date, stage=stage
-        )
+        task = RuntimeLoaderTaskForDateAndStage(data_directory=data_directory, dump_date=dump_date, stage=stage)
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
-        assert task.stage == stage
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
+        assert as_object(task.stage) == stage
         assert isinstance(task, luigi.Task)
 
     def test_priority_calculation_with_stage(self) -> None:
         """Test that priority is calculated including stage number."""
         past_date = datetime.date(2020, 1, 1)
-        task = RuntimeLoaderTaskForDateAndStage(
-            data_directory="/test/data", dump_date=past_date, stage=5
-        )
+        task = RuntimeLoaderTaskForDateAndStage(data_directory="/test/data", dump_date=past_date, stage=5)
 
         priority = task.priority
 
@@ -273,7 +262,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
         assert isinstance(dep, RuntimeLoaderTaskForDateAndStage)
         assert dep.data_directory == task.data_directory
         assert dep.dump_date == task.dump_date
-        assert dep.stage == 2  # Previous stage
+        assert as_object(dep.stage) == 2  # Previous stage
 
     def test_requires_returns_empty_for_stage_zero(self) -> None:
         """Test that requires() returns empty for stage 0."""
@@ -451,9 +440,7 @@ class TestRuntimeLoaderTaskForDateAndStage:
 
     @patch("musigree.transfer.transfer_task.get_load_runtime_table_stages")
     @patch("musigree.transfer.transfer_task.log")
-    def test_run_handles_runtime_error_during_execution(
-        self, mock_log: Mock, mock_get_stages: Mock
-    ) -> None:
+    def test_run_handles_runtime_error_during_execution(self, mock_log: Mock, mock_get_stages: Mock) -> None:
         """Test that run() handles RuntimeError during task execution."""
         mock_stage = AsyncMock()
         mock_get_stages.return_value = [mock_stage]

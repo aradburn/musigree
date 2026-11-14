@@ -24,7 +24,9 @@ import {
 import { musigreeManager, networkManager } from "../../core/singletons";
 import { RequestNetworkEvent } from "../../network/events";
 import { FSM, INIT } from "../../constants";
+import { rememberRelationships, updateSelectedRoleIds } from "../../roles";
 import * as analyticsModule from "../../analytics";
+import * as d3 from "d3";
 
 // Create a type for private methods we need to spy on
 type MusigreeFSMPrivate = {
@@ -480,6 +482,7 @@ describe("MusigreeFSM", () => {
                 expect(fetchAPINetworkSpy).toHaveBeenCalledWith(
                     "artist-123",
                     [],
+                    undefined,
                 );
             });
         });
@@ -515,6 +518,30 @@ describe("MusigreeFSM", () => {
                     "state-requesting-network",
                 );
                 expect(fetchAPIRandomSpy).toHaveBeenCalled();
+            });
+
+            it("fetches a random artist with only Alias and Member Of", () => {
+                rememberRelationships([
+                    { id: "alias", text: "Alias" },
+                    { id: "member", text: "Member Of" },
+                    { id: "released", text: "Released On" },
+                    { id: "sublabel", text: "Sublabel Of" },
+                ]);
+                updateSelectedRoleIds([
+                    "alias",
+                    "released",
+                    "sublabel",
+                    "producer",
+                ]);
+
+                fsm.requestRandom();
+
+                expect(vi.mocked(fetchAPIRandom).mock.calls[0]?.[0]).toEqual([
+                    "Alias",
+                    "Member Of",
+                ]);
+                rememberRelationships([]);
+                updateSelectedRoleIds([]);
             });
         });
 
@@ -559,8 +586,12 @@ describe("MusigreeFSM", () => {
                 const displayForceLayoutSpy = vi.mocked(displayForceLayout);
                 const restartForceLayoutSpy = vi.mocked(restartForceLayout);
 
+                vi.mocked(d3.select).mockClear();
                 fsm.showNetwork(networkData, true);
 
+                expect(d3.select).toHaveBeenCalledWith(
+                    "#initial-canvas-path",
+                );
                 expect(transitionSpy).toHaveBeenCalledWith(
                     "state-viewing-network",
                 );
@@ -776,8 +807,12 @@ describe("MusigreeFSM", () => {
                     maxDistance: 0,
                 } as any;
 
+                vi.mocked(d3.select).mockClear();
                 fsm.showNetwork(invalidNetworkData, false);
 
+                expect(d3.select).not.toHaveBeenCalledWith(
+                    "#initial-canvas-path",
+                );
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
                     "Invalid network data: missing center key",
                 );

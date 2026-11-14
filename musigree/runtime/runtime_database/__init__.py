@@ -17,3 +17,14 @@ ALL_RUNTIME_DATABASE_TABLES = [
     RuntimeGenreTable,
     RuntimeTokenTable,
 ]
+
+__all__ = [
+    "ALL_RUNTIME_DATABASE_TABLES",
+    "RuntimeCountryTable",
+    "RuntimeEntityTable",
+    "RuntimeGenreTable",
+    "RuntimeRelationTable",
+    "RuntimeRoleTable",
+    "RuntimeStyleTable",
+    "RuntimeTokenTable",
+]

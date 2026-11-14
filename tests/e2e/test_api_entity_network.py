@@ -1,7 +1,8 @@
 """End-to-end tests for the entity network API endpoint."""
 
+from typing import TYPE_CHECKING
+
 import pytest
-from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import (
     TEST_ARTIST_ID,
@@ -12,6 +13,9 @@ from tests.e2e.end_to_end_utils import (
     TEST_NOT_FOUND_ENTITY_ID,
     APIHelper,
 )
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 
 @pytest.mark.asyncio
@@ -66,7 +70,7 @@ class TestAPIEntityNetwork:
         """Test getting network graph with year filtering."""
         api_helper = APIHelper(page, base_url)
         response, json_data = await api_helper.get_entity_network(
-            TEST_ENTITY_TYPE_ARTIST, TEST_ARTIST_ID, year=1990
+            TEST_ENTITY_TYPE_ARTIST, TEST_ARTIST_ID, min_year=1990, max_year=1990
         )
         assert response.status == 200
         assert json_data is not None

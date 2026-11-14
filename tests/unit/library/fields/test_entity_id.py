@@ -17,12 +17,12 @@ class TestEntityId:
         """Test converting artist external ID to internal ID."""
         # Artist IDs should remain unchanged
         result = to_entity_internal_id(12345, EntityType.ARTIST)
-        assert 12345 == result
+        assert result == 12345
 
     def test_to_entity_internal_id_artist_zero(self) -> None:
         """Test converting artist ID of zero."""
         result = to_entity_internal_id(0, EntityType.ARTIST)
-        assert 0 == result
+        assert result == 0
 
     def test_to_entity_internal_id_label_small(self) -> None:
         """Test converting small label external ID to internal ID."""
@@ -41,7 +41,7 @@ class TestEntityId:
     def test_to_entity_internal_id_label_missing(self) -> None:
         """Test converting missing label entity ID."""
         result = to_entity_internal_id(MISSING_LABEL_ENTITY, EntityType.LABEL)
-        assert MISSING_LABEL_ENTITY == result
+        assert result == MISSING_LABEL_ENTITY
 
     def test_to_entity_internal_id_artist_invalid_missing_label(self) -> None:
         """Test that artist cannot have missing label entity ID."""
@@ -99,7 +99,7 @@ class TestEntityId:
     def test_to_entity_label_internal_id_none(self) -> None:
         """Test converting None label ID (missing label)."""
         result = to_entity_label_internal_id(None)
-        assert MISSING_LABEL_ENTITY == result
+        assert result == MISSING_LABEL_ENTITY
 
     def test_round_trip_artist(self) -> None:
         """Test round trip conversion for artist IDs."""
@@ -131,8 +131,8 @@ class TestEntityId:
         internal_id = to_entity_internal_id(MISSING_LABEL_ENTITY, EntityType.LABEL)
         external_id, result_type = to_entity_external_id(internal_id)
 
-        assert -1 == external_id
-        assert EntityType.LABEL == result_type
+        assert external_id == -1
+        assert result_type == EntityType.LABEL
 
     def test_round_trip_label_none(self) -> None:
         """Test round trip conversion for None label ID."""
@@ -140,13 +140,13 @@ class TestEntityId:
         internal_id = to_entity_label_internal_id(None)
         external_id, result_type = to_entity_external_id(internal_id)
 
-        assert -1 == external_id
-        assert EntityType.LABEL == result_type
+        assert external_id == -1
+        assert result_type == EntityType.LABEL
 
     def test_constants_values(self) -> None:
         """Test that constants have expected values."""
-        assert 1000000000 == LABEL_ENTITY_ID_OFFSET
-        assert -2000000000 == MISSING_LABEL_ENTITY
+        assert LABEL_ENTITY_ID_OFFSET == 1000000000
+        assert MISSING_LABEL_ENTITY == -2000000000
 
     def test_id_ranges_do_not_overlap(self) -> None:
         """Test that artist and label ID ranges don't overlap."""
@@ -158,8 +158,8 @@ class TestEntityId:
         # Labels should be >= LABEL_ENTITY_ID_OFFSET
         min_label_internal = LABEL_ENTITY_ID_OFFSET
         label_external, label_type = to_entity_external_id(min_label_internal)
-        assert 0 == label_external
-        assert EntityType.LABEL == label_type
+        assert label_external == 0
+        assert label_type == EntityType.LABEL
 
     def test_edge_cases_boundary_values(self) -> None:
         """Test edge cases with boundary values."""

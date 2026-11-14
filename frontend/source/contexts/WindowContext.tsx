@@ -58,7 +58,12 @@ export const WindowProvider: React.FC<WindowProviderProps> = ({ children }) => {
         }
 
         const width = svgContainer.clientWidth;
-        const height = svgContainer.clientHeight;
+        const isDesktop = window.innerWidth >= 576;
+        const navTop = document.getElementById(DOM_IDS.NAV_TOP);
+        const navHeight = navTop?.clientHeight ?? 0;
+        const height = isDesktop
+            ? Math.max(0, window.innerHeight - navHeight)
+            : svgContainer.clientHeight;
         const dimensions: [number, number] = [width, height];
         const svgDimensions: [number, number] = [
             dimensions[0] * SVG.VIEWPORT_SIZE_MULTIPLIER * dpr,

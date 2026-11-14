@@ -5,11 +5,11 @@
  */
 
 import type * as d3 from "d3";
-import { getOuterRadius } from "./node";
-import { getNodeColorClass } from "../color";
-import { musigreeManager } from "../core/singletons";
-import type { SimNode } from "./data";
-import { NodeType } from "./data";
+import {getOuterRadius} from "./node";
+import {getNodeColorClass} from "../color";
+import {musigreeManager} from "@/core/singletons";
+import type {SimNode} from "./data";
+import {NodeType} from "./data";
 
 type TextEnterSelection = d3.Selection<
     d3.EnterElement,

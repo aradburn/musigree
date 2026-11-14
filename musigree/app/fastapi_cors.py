@@ -1,10 +1,14 @@
-from collections.abc import Awaitable, Callable
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import PlainTextResponse, Response
-from starlette.types import ASGIApp
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from fastapi import Request
+    from starlette.types import ASGIApp
 
 
 class CustomCORSPreflightMiddleware(BaseHTTPMiddleware):
@@ -27,9 +31,7 @@ class CustomCORSPreflightMiddleware(BaseHTTPMiddleware):
     def _is_origin_allowed(self, origin: str) -> bool:
         return origin in self.allowed_origins
 
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         origin = request.headers.get("origin")
         method = request.method
 
@@ -65,11 +67,9 @@ class CustomCORSPreflightMiddleware(BaseHTTPMiddleware):
 class PreflightLoggerMiddleware(BaseHTTPMiddleware):
     """Middleware to log preflight requests for debugging purposes"""
 
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         if request.method == "OPTIONS":
-            print(f"[PREFLIGHT] {datetime.now().isoformat()} - {request.method} {request.url.path}")  # noqa: DTZ005
+            print(f"[PREFLIGHT] {datetime.now().isoformat()} - {request.method} {request.url.path}")
             print(f"  Origin: {request.headers.get('origin')}")
             print(f"  Requested Method: {request.headers.get('access-control-request-method')}")
             print(f"  Requested Headers: {request.headers.get('access-control-request-headers')}")
@@ -79,15 +79,9 @@ class PreflightLoggerMiddleware(BaseHTTPMiddleware):
 
             # Log response headers
             print("  Responding with CORS headers:")
-            print(
-                f"    Access-Control-Allow-Origin: {response.headers.get('Access-Control-Allow-Origin')}"
-            )
-            print(
-                f"    Access-Control-Allow-Methods: {response.headers.get('Access-Control-Allow-Methods')}"
-            )
-            print(
-                f"    Access-Control-Allow-Headers: {response.headers.get('Access-Control-Allow-Headers')}"
-            )
+            print(f"    Access-Control-Allow-Origin: {response.headers.get('Access-Control-Allow-Origin')}")
+            print(f"    Access-Control-Allow-Methods: {response.headers.get('Access-Control-Allow-Methods')}")
+            print(f"    Access-Control-Allow-Headers: {response.headers.get('Access-Control-Allow-Headers')}")
             print(f"    Access-Control-Max-Age: {response.headers.get('Access-Control-Max-Age')}")
             return response
 

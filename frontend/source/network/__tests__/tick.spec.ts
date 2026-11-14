@@ -20,7 +20,7 @@ vi.mock("../tooltips", () => ({
 }));
 
 // Mock core managers
-vi.mock("../../core", () => {
+vi.mock("../../core/singletons", () => {
     const mockNetworkManager = {
         tick: 0,
         data: {

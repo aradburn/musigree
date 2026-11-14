@@ -1,7 +1,8 @@
 """End-to-end tests for the entity details API endpoint."""
 
+from typing import TYPE_CHECKING
+
 import pytest
-from playwright.async_api import Page
 
 from tests.e2e.end_to_end_utils import (
     TEST_ARTIST_ID,
@@ -12,6 +13,9 @@ from tests.e2e.end_to_end_utils import (
     TEST_NOT_FOUND_ENTITY_ID,
     APIHelper,
 )
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 
 @pytest.mark.asyncio

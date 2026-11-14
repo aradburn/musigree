@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, delete, select, update
 
@@ -10,6 +9,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.release_table import ReleaseTable
 from musigree.offline.offline_domain.release import Release
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +80,7 @@ class ReleaseRepository(BaseRepository["ReleaseTable"]):
             List[Release]: A list of releases associated with the master ID.
         """
         query = select(mapped_entity(ReleaseTable)).where(ReleaseTable.master_id == master_id)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         instances = result.scalars().all()
         return [Release.model_validate(instance) for instance in instances]
@@ -104,7 +106,7 @@ class ReleaseRepository(BaseRepository["ReleaseTable"]):
             Sequence[int]: A sequence of all release IDs.
         """
         query = select(ReleaseTable.release_id)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
         return result.scalars().all()
 
     async def update(
@@ -125,9 +127,7 @@ class ReleaseRepository(BaseRepository["ReleaseTable"]):
         Raises:
             DatabaseError: If there is an error updating the release.
         """
-        query = (
-            update(self.schema_class).where(ReleaseTable.release_id == release_id).values(payload)
-        )
+        query = update(self.schema_class).where(ReleaseTable.release_id == release_id).values(payload)
         await self._session.execute(query)
         await self._session.flush()
 

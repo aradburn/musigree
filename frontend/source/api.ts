@@ -1,8 +1,8 @@
-import type { NodeKey, LinkKey } from "./network/data";
-import type { NetworkCenter } from "./network/data";
-import type { EntityData } from "./entities";
-import type { RelationsData } from "./relations";
-import { API } from "./constants";
+import type {LinkKey, NetworkCenter, NodeKey} from "./network/data";
+import type {EntityData} from "./entities";
+import type {RelationsData} from "./relations";
+import type {YearQuery} from "./yearBounds";
+import {API} from "./constants";
 
 interface APINetworkNode {
     cluster?: number;
@@ -19,6 +19,7 @@ interface APINetworkNode {
 interface APINetworkLink {
     key: LinkKey;
     role: string;
+    years: number[];
     source: NodeKey;
     target: NodeKey;
 }
@@ -32,22 +33,38 @@ export interface APINetworkDataResponse {
     links: APINetworkLink[];
 }
 
-const getNetworkURL = (entityKey: NodeKey, roles: string[]): string => {
-    const [entityType, entityId] = entityKey.split("-");
-    let url = API.ENDPOINTS.NETWORK(entityType, entityId);
-    if (roles.length) {
-        url += `?${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
+const appendFilters = (
+    params: URLSearchParams,
+    roles: string[],
+    years?: YearQuery,
+): void => {
+    if (roles.length > 0) {
+        params.set("roles", roles.join(","));
     }
-    return url;
+    if (years) {
+        params.set("min_year", String(years.minYear));
+        params.set("max_year", String(years.maxYear));
+    }
 };
 
-const getRandomURL = (roles: string[]): string => {
-    const baseUrl = API.ENDPOINTS.RANDOM();
-    let url = `${baseUrl}?r=${Math.floor(Math.random() * API.RANDOM_MAX)}`;
-    if (roles.length) {
-        url += `&${new URLSearchParams({ roles: roles.join(",") }).toString()}`;
-    }
-    return url;
+const getNetworkURL = (
+    entityKey: NodeKey,
+    roles: string[],
+    years?: YearQuery,
+): string => {
+    const [entityType, entityId] = entityKey.split("-");
+    const url = API.ENDPOINTS.NETWORK(entityType, entityId);
+    const params = new URLSearchParams();
+    appendFilters(params, roles, years);
+    const query = params.toString();
+    return query ? `${url}?${query}` : url;
+};
+
+const getRandomURL = (roles: string[], years?: YearQuery): string => {
+    const params = new URLSearchParams();
+    params.set("r", String(Math.floor(Math.random() * API.RANDOM_MAX)));
+    appendFilters(params, roles, years);
+    return `${API.ENDPOINTS.RANDOM()}?${params.toString()}`;
 };
 
 const getRelationsURL = (entityKey: NodeKey): string => {
@@ -63,8 +80,9 @@ const getEntityURL = (entityKey: NodeKey): string => {
 export const fetchAPINetwork = async (
     entityKey: NodeKey,
     roles: string[],
+    years?: YearQuery,
 ): Promise<APINetworkDataResponse> => {
-    const url = getNetworkURL(entityKey, roles);
+    const url = getNetworkURL(entityKey, roles, years);
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(response.statusText);
@@ -73,8 +91,9 @@ export const fetchAPINetwork = async (
 
 export const fetchAPIRandom = async (
     roles: string[],
+    years?: YearQuery,
 ): Promise<NetworkCenter> => {
-    const url = getRandomURL(roles);
+    const url = getRandomURL(roles, years);
 
     const response = await fetch(url);
     if (!response.ok) throw new Error(response.statusText);

@@ -24,10 +24,13 @@ Musigree application in a production environment. It sets up the necessary
 components and returns a ready-to-use FastAPI application.
 """
 
-from fastapi import FastAPI
+from typing import TYPE_CHECKING
 
 from musigree.app.fastapi_app import create_app
 from musigree.config import SqliteReadOnlyProductionConfiguration
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 def create_production_app() -> FastAPI:

@@ -25,6 +25,7 @@ export const SVG_IDS = {
     RADIAL_GRADIENT: "radial-gradient",
     LOADING_LAYER: "loading-layer",
     RELATIONS_LAYER: "relations-layer",
+    INITIAL_CANVAS_PATH: "initial-canvas-path",
 };
 
 // Constants for viewport and SVG scaling
@@ -222,9 +223,9 @@ export const FORCE = {
     },
     DISTANCE: {
         MAX: 2000, // Maximum distance for force calculations
-        LINK: 60, // Default link distance
+        LINK: 50, // Default link distance
         LINK_ALIAS: -100, // Distance for alias relationships
-        LINK_RELEASED_ON: 80, // Distance for "Released On" relationships, a bit more than LINK_DISTANCE
+        LINK_RELEASED_ON: 70, // Distance for "Released On" relationships, a bit more than LINK_DISTANCE
     },
     COLLIDE: {
         ITERATIONS: 2, // Number of collision detection iterations
@@ -232,9 +233,12 @@ export const FORCE = {
     },
     SIMULATION: {
         THETA: 0.9, // Barnes-Hut approximation criterion
-        ALPHA: 1.0, // Initial simulation temperature
+        ALPHA: 1.2, // Initial simulation temperature
         ALPHA_DECAY: 0.03, // Rate at which simulation cools down
         VELOCITY_DECAY: 0.24, // Friction coefficient for node movement
+        // Milliseconds between steps. 0 runs one step per animation frame.
+        // A positive value slows playback and draws every step.
+        TICK_INTERVAL_MS: 0,
     },
     LINK: {
         ITERATIONS: 3, // Number of iterations for link force calculation
@@ -247,6 +251,6 @@ export const FORCE = {
         NODE_STRENGTH_BASE: 0.4,
         NODE_STRENGTH_SCALE: 20.0,
         LINK_STRENGTH_SCALE: 20.0,
-        GRAVITY_STRENGTH_SCALE: 20.0,
+        GRAVITY_STRENGTH_SCALE: 30.0,
     },
 };

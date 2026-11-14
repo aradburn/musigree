@@ -1,5 +1,6 @@
 """
-This module defines the `RuntimeSession` class and related utilities for managing runtime_database sessions
+This module defines the `RuntimeSession` class and related utilities for managing runtime_database
+sessions
 in the runtime environment.
 
 It provides a centralized way to handle async runtime_database sessions, including creating,
@@ -8,20 +9,23 @@ to manage sessions within asynchronous contexts.
 
 Key functionalities include:
     - Creating new async runtime_database sessions using `get_runtime_session`.
-    - Providing a base class `RuntimeSession` for runtime_database operations within an async session.
+    - Providing a base class `RuntimeSession` for runtime_database operations within an async
+    session.
     - Executing SQL queries and handling common runtime_database errors.
     - Managing the runtime_database session through a context variable (`CTX_RUNTIME_SESSION`).
 """
 
 from contextvars import ContextVar
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Executable
-from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
+
+if TYPE_CHECKING:
+    from sqlalchemy import Executable
+    from sqlalchemy.engine import Result
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_runtime_session() -> AsyncSession:
@@ -41,16 +45,13 @@ async def get_runtime_session() -> AsyncSession:
     assert RuntimeDatabaseManager.runtime_database_helper is not None, (
         "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling get_offline_session()"
     )
-    assert (
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory is not None
-    ), (
-        "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling get_offline_session()"
+    assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory is not None, (
+        "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized "
+        "before calling get_offline_session()"
     )
 
-    async_session_factory = (
-        RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
-    )
-    return async_session_factory()  # type: ignore
+    async_session_factory = RuntimeDatabaseManager.runtime_database_helper.runtime_async_session_factory
+    return async_session_factory()
 
 
 CTX_RUNTIME_SESSION: ContextVar[AsyncSession] = ContextVar("runtime_session")

@@ -5,21 +5,45 @@
  */
 
 import * as d3 from "d3";
-import type { SimNode, SimLink } from "./data";
-import { onHullEnter, onHullUpdate, onHullExit } from "./hull";
-import { onHaloEnter, onHaloUpdate, onHaloExit } from "./halo";
-import { onNodeEnter, onNodeUpdate, onNodeExit } from "./node";
-import { onTextEnter, onTextUpdate, onTextExit } from "./text";
-import { onLinkEnter, onLinkUpdate, onLinkExit } from "./link";
-import { onTick } from "./tick";
+import type {SimLink, SimNode} from "./data";
+import {onHullEnter, onHullExit, onHullUpdate} from "./hull";
+import {onHaloEnter, onHaloExit, onHaloUpdate} from "./halo";
+import {onNodeEnter, onNodeExit, onNodeUpdate} from "./node";
+import {onTextEnter, onTextExit, onTextUpdate} from "./text";
+import {onLinkEnter, onLinkExit, onLinkUpdate} from "./link";
+import {onTick} from "./tick";
 import {
-    onNetworkStart,
     onNetworkEnd,
+    onNetworkStart,
     ResetForcesEvent,
     SetForcesEvent,
 } from "./events";
-import { musigreeManager, networkManager } from "../core/singletons";
-import { FORCE } from "../constants";
+import {musigreeManager, networkManager} from "@/core/singletons";
+import {FORCE} from "../constants";
+
+/**
+ * Numerical Recipes LCG parameters, the same generator d3-force uses by default.
+ * The simulation stores one generator for its lifetime, so each layout run
+ * installs a fresh copy and coincident nodes are jiggled identically.
+ */
+const FORCE_LAYOUT_RANDOM_MULTIPLIER = 1664525;
+const FORCE_LAYOUT_RANDOM_INCREMENT = 1013904223;
+const FORCE_LAYOUT_RANDOM_MODULUS = 4294967296;
+const FORCE_LAYOUT_RANDOM_SEED = 1;
+
+/**
+ * Returns a random source in [0, 1) that always starts at the same seed.
+ */
+export const createForceLayoutRandom = (): (() => number) => {
+    let state = FORCE_LAYOUT_RANDOM_SEED;
+    return (): number => {
+        state =
+            (FORCE_LAYOUT_RANDOM_MULTIPLIER * state +
+                FORCE_LAYOUT_RANDOM_INCREMENT) %
+            FORCE_LAYOUT_RANDOM_MODULUS;
+        return state / FORCE_LAYOUT_RANDOM_MODULUS;
+    };
+};
 
 /**
  * Sets up the initial force simulation with basic forces
@@ -48,6 +72,26 @@ export const initForceLayout = (): void => {
             onNetworkEnd(this);
         })
         .stop();
+};
+
+/** Places a node group at the coordinates assigned before the simulation runs. */
+const translateNode = (d: SimNode): string => `translate(${d.x},${d.y})`;
+
+/**
+ * Draws node groups at their starting coordinates.
+ * Groups with no transform sit at the network-layer origin, which the zoom
+ * transform places above the viewport.
+ */
+const applyInitialNodeTransform = (): void => {
+    networkManager.layers.halo
+        ?.selectAll<SVGGElement, SimNode>(".node")
+        .attr("transform", translateNode);
+    networkManager.layers.node
+        ?.selectAll<SVGGElement, SimNode>(".node")
+        .attr("transform", translateNode);
+    networkManager.layers.text
+        ?.selectAll<SVGGElement, SimNode>(".node")
+        .attr("transform", translateNode);
 };
 
 /**
@@ -153,6 +197,8 @@ export const displayForceLayout = (): void => {
             },
         );
 
+    applyInitialNodeTransform();
+
     Array.from(networkManager.data.nodeMap.values()).forEach(
         (n) => (n.fixed = false),
     );
@@ -168,6 +214,32 @@ export const setForceLayoutNodes = (nodes: SimNode[]): void => {
     networkManager.forceLayout.nodes(nodes);
 };
 
+/** Timer used when simulation steps are spaced out for slower playback. */
+let simulationTimer: d3.Timer | null = null;
+
+const stopSimulationTimer = (): void => {
+    simulationTimer?.stop();
+    simulationTimer = null;
+};
+
+/**
+ * Advances the simulation on a fixed interval and draws every step.
+ * The built-in timer runs once per frame, which hides the opening movement.
+ */
+const startSlowedSimulation = (
+    simulation: d3.Simulation<SimNode, SimLink>,
+): void => {
+    simulationTimer = d3.interval(() => {
+        simulation.tick();
+        onTick(simulation, true);
+        if (simulation.alpha() < simulation.alphaMin()) {
+            stopSimulationTimer();
+            simulation.stop();
+            onNetworkEnd(simulation);
+        }
+    }, FORCE.SIMULATION.TICK_INTERVAL_MS);
+};
+
 /**
  * Restarts the force layout simulation with a new alpha value
  * @param {number} alpha - The new alpha value for the simulation
@@ -177,7 +249,16 @@ export const restartForceLayout = (alpha: number): void => {
 
     if (networkManager.forceLayout) {
         onNetworkStart();
-        networkManager.forceLayout.alpha(alpha).restart();
+        const simulation = networkManager.forceLayout
+            .randomSource(createForceLayoutRandom())
+            .alpha(alpha)
+            .stop();
+        stopSimulationTimer();
+        if (FORCE.SIMULATION.TICK_INTERVAL_MS <= 0) {
+            simulation.restart();
+            return;
+        }
+        startSlowedSimulation(simulation);
     } else {
         console.error("Force layout is not initialized");
     }
@@ -188,6 +269,7 @@ export const restartForceLayout = (alpha: number): void => {
  */
 export const stopForceLayout = (): void => {
     console.log("stopForceLayout");
+    stopSimulationTimer();
     if (networkManager.forceLayout) {
         networkManager.forceLayout.stop();
     }

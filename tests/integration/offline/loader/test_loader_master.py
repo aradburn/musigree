@@ -37,7 +37,9 @@ class TestLoaderMaster:
                     <video src="https://www.youtube.com/watch?v=H1g5RgjvXfk" duration="422"
                      embed="true">
                         <title>Bill Youngman - Hammerhead (0.7)</title>
-                        <description>A side on Null Records 7 (Bill Youngman - Kleingeld EP), released 2003, Germany, http://www.discogs.com/Bill-Youngman-Kleingeld-EP/release/129407</description>
+                        <description>A side on Null Records 7 (Bill Youngman - Kleingeld EP), \
+released 2003, Germany, http://www.discogs.com/Bill-Youngman-Kleingeld-EP/release/129407</descripti\
+on>
                     </video>
                 </videos>
             </master>
@@ -51,32 +53,24 @@ class TestLoaderMaster:
 
         # THEN
         expected_master = {
-            "artists": [
-                {
-                    "id": 24161,
-                    "name": "Bill Youngman"
-                }
-            ],
+            "artists": [{"id": 24161, "name": "Bill Youngman"}],
             "data_quality": "Correct",
-            "genres": [
-                "Electronic"
-            ],
+            "genres": ["Electronic"],
             "images": None,
             "main_release": "129407",
             "master_id": 292,
-            "styles": [
-                "Breaks",
-                "Techno",
-                "Electro"
-            ],
+            "styles": ["Breaks", "Techno", "Electro"],
             "title": "Kleingeld E.P.",
             "videos": [
                 {
-                    "description": "A side on Null Records 7 (Bill Youngman - Kleingeld EP), released 2003, Germany, http://www.discogs.com/Bill-Youngman-Kleingeld-EP/release/129407",
+                    "description": (
+                        "A side on Null Records 7 (Bill Youngman - Kleingeld EP), released 2003, "
+                        "Germany, http://www.discogs.com/Bill-Youngman-Kleingeld-EP/release/129407"
+                    ),
                     "duration": 422,
                     "embed": True,
                     "src": "https://www.youtube.com/watch?v=H1g5RgjvXfk",
-                    "title": "Bill Youngman - Hammerhead (0.7)"
+                    "title": "Bill Youngman - Hammerhead (0.7)",
                 }
             ],
             "year": 2003,
@@ -98,22 +92,13 @@ class TestLoaderMaster:
 
         # THEN
         expected_master = {
-            "artists": [
-                {
-                    "id": 5783,
-                    "name": "David Morley"
-                }
-            ],
+            "artists": [{"id": 5783, "name": "David Morley"}],
             "data_quality": "Correct",
-            "genres": [
-                "Electronic"
-            ],
+            "genres": ["Electronic"],
             "images": None,
             "main_release": "18489",
             "master_id": 19671,
-            "styles": [
-                "Ambient"
-            ],
+            "styles": ["Ambient"],
             "title": "Stardancer EP",
             "videos": None,
             "year": 1996,
@@ -141,22 +126,13 @@ class TestLoaderMaster:
 
         # THEN
         expected_master = {
-            "artists": [
-                {
-                    "id": 26019,
-                    "name": "Rich Lee"
-                }
-            ],
+            "artists": [{"id": 26019, "name": "Rich Lee"}],
             "data_quality": "Correct",
-            "genres": [
-                "Electronic"
-            ],
+            "genres": ["Electronic"],
             "images": None,
             "main_release": "32946",
             "master_id": 18041,
-            "styles": [
-                "Techno"
-            ],
+            "styles": ["Techno"],
             "title": "Rock So Hard",
             "videos": None,
             "year": 1993,

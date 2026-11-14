@@ -35,7 +35,8 @@ class RoleTable(OfflineBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     """
-    The primary key of the table, an auto-incrementing integer representing the unique identifier for the role.
+    The primary key of the table, an auto-incrementing integer representing the unique identifier \
+for the role.
     """
     role_name: Mapped[str] = mapped_column(String, index=True, nullable=False, unique=True)
     """
@@ -43,7 +44,8 @@ class RoleTable(OfflineBase):
     """
     role_category: Mapped[RoleType.Category] = mapped_column(Enum(RoleType.Category))
     """
-    The main category to which the role belongs (e.g., 'Production', 'Management'). Stored as an Enum.
+    The main category to which the role belongs (e.g., 'Production', 'Management'). Stored as an \
+Enum.
     """
     role_subcategory: Mapped[RoleType.Subcategory] = mapped_column(Enum(RoleType.Subcategory))
     """

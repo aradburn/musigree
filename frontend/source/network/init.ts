@@ -4,11 +4,11 @@
  * Creates a hierarchical structure of SVG groups for different visualization elements.
  */
 
-import { initForceLayout } from "./forceLayout";
-import { musigreeManager, networkManager } from "../core/singletons";
+import {initForceLayout} from "./forceLayout";
+import {musigreeManager, networkManager} from "@/core/singletons";
 import * as d3 from "d3";
-import { hideAllTooltips } from "./tooltips";
-import { SVG, DOM_IDS } from "../constants";
+import {hideAllTooltips} from "./tooltips";
+import {DOM_IDS, SVG} from "../constants";
 
 type TransformFunction = (
     selection:
@@ -31,10 +31,10 @@ function getInitialTransform(): d3.ZoomTransform {
         .translate(
             (musigreeManager.dimensions[0] / SVG.SCALING_MULTIPLIER -
                 musigreeManager.svgDimensions[0]) /
-                2.0,
+            2.0,
             (musigreeManager.dimensions[1] / SVG.SCALING_MULTIPLIER -
                 musigreeManager.svgDimensions[1]) /
-                2.0,
+            2.0,
         );
     console.log("initialTransform: ", initialTransform);
     return initialTransform;

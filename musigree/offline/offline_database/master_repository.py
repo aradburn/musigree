@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, delete, select, update
 
@@ -10,6 +9,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.master_table import MasterTable
 from musigree.offline.offline_domain.master import Master
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +90,7 @@ class MasterRepository(BaseRepository["MasterTable"]):
             Sequence[int]: A sequence of all master IDs.
         """
         query = select(MasterTable.master_id)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
         return result.scalars().all()
 
     async def update(

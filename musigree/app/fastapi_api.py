@@ -25,7 +25,8 @@ role information.
 """
 
 import logging
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Path, status
 
@@ -34,7 +35,7 @@ from musigree.app.fastapi_dependencies import (
     EntityTypeDep,
     OnMobileQuery,
     RolesDep,
-    YearDep,
+    YearBoundsDep,
     rate_limiter,
 )
 from musigree.app.fastapi_ui import get_roles_with_defaults
@@ -42,6 +43,9 @@ from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.full_text_search.text_search_utils import normalise_search_content
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
+
+if TYPE_CHECKING:
+    from musigree.library.fields.entity_type import EntityType
 
 log = logging.getLogger(__name__)
 """
@@ -65,15 +69,44 @@ SEARCH_RATE_LIMIT = Depends(
     )
 )
 
+
+def network_cache_id(
+    entity_type: EntityType,
+    entity_id: int,
+    roles: list[str],
+    on_mobile: bool,
+    min_year: int | None = None,
+    max_year: int | None = None,
+) -> str:
+    """Identify one cached network by entity, roles, layout, and year bounds.
+
+    Role order does not change the key. Names are encoded so a comma inside
+    a role cannot be read as a separator. Empty year tokens mean that bound
+    was not sent.
+    """
+    encoded_roles = ",".join(quote(role, safe="") for role in sorted(roles))
+    mobile = "1" if on_mobile else "0"
+    lower = "" if min_year is None else str(min_year)
+    upper = "" if max_year is None else str(max_year)
+    return (
+        f"{entity_type.name.lower()}/network/{entity_id}"
+        f"/mobile={mobile}/roles={encoded_roles}/min_year={lower}/max_year={upper}"
+    )
+
+
+# Declared as FastAPI's responses type. A bare literal is inferred with Literal
+# keys, and dict is invariant, so that narrower type is not accepted.
+API_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_400_BAD_REQUEST: {"description": "Bad Request"},
+    status.HTTP_404_NOT_FOUND: {"description": "Not Found"},
+    status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate Limit Exceeded"},
+    status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Server Error"},
+}
+
 router = APIRouter(
     prefix="/api",
     tags=["api"],
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"description": "Bad Request"},
-        status.HTTP_404_NOT_FOUND: {"description": "Not Found"},
-        status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate Limit Exceeded"},
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Server Error"},
-    },
+    responses=API_ERROR_RESPONSES,
 )
 """
 The FastAPI router for the API endpoints.
@@ -114,18 +147,14 @@ async def route__api__entity_type__details__entity_id(
 
     # Try to get from cache first
     cache = CacheManager.get_cache()
-    cache_key_str = CacheManager.create_cache_hkey(
-        "api", f"{entity_type.name.lower()}/details/{entity_id}"
-    )
+    cache_key_str = CacheManager.create_cache_hkey("api", f"{entity_type.name.lower()}/details/{entity_id}")
     entity_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if entity_data is not None:
         return entity_data
     try:
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
-            entity = await entity_repository.get_by_entity_id_and_entity_type(
-                entity_id, entity_type
-            )
+            entity = await entity_repository.get_by_entity_id_and_entity_type(entity_id, entity_type)
     except NotFoundError:
         raise NotFoundError(message="Entity details not found") from None
     except ValueError:
@@ -150,7 +179,6 @@ async def route__api__entity_type__details__entity_id(
     return result_entity_data
 
 
-# noinspection unused-parameter
 @router.get(
     "/{entity_type_str}/network/{entity_id}",
     summary="Get entity network graph",
@@ -160,7 +188,7 @@ async def route__api__entity_type__network__entity_id(
     entity_type: EntityTypeDep,
     entity_id: EntityIdDep,
     roles: RolesDep,
-    year: YearDep = None,
+    year_bounds: YearBoundsDep,
     on_mobile: OnMobileQuery = False,
 ) -> dict[str, Any]:
     """
@@ -173,7 +201,7 @@ async def route__api__entity_type__network__entity_id(
         entity_type: The type of the entity (e.g., "artist", "label").
         entity_id: The ID of the entity.
         roles: Optional set of roles to filter the network by.
-        year: Optional year to filter the network by.
+        year_bounds: Optional inclusive minimum and maximum release years.
         on_mobile: Optional flag indicating if the request is from a mobile device.
 
     Returns:
@@ -197,12 +225,21 @@ async def route__api__entity_type__network__entity_id(
 
     log.debug("route__api__entity_type__network__entity_id")
 
+    min_year, max_year = year_bounds
     roles_with_defaults = get_roles_with_defaults(roles, entity_type)
 
     # Try to get from cache first
     cache = CacheManager.get_cache()
     cache_key_str = CacheManager.create_cache_hkey(
-        "api", f"{entity_type.name.lower()}/network/{entity_id}"
+        "api",
+        network_cache_id(
+            entity_type,
+            entity_id,
+            roles_with_defaults,
+            on_mobile,
+            min_year,
+            max_year,
+        ),
     )
     network_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if network_data is not None:
@@ -219,6 +256,8 @@ async def route__api__entity_type__network__entity_id(
                 entity_type,
                 on_mobile=on_mobile,
                 roles=roles_with_defaults,
+                min_year=min_year,
+                max_year=max_year,
             )
     except NotFoundError:
         raise NotFoundError(message="Entity network not found") from None
@@ -272,9 +311,7 @@ async def route__api__entity_type__relations__entity_id(
 
     # Try to get from cache first
     cache = CacheManager.get_cache()
-    cache_key_str = CacheManager.create_cache_hkey(
-        "api", f"{entity_type.name.lower()}/relations/{entity_id}"
-    )
+    cache_key_str = CacheManager.create_cache_hkey("api", f"{entity_type.name.lower()}/relations/{entity_id}")
     relations_data: dict[str, Any] | None = await cache.hgetall(cache_key_str)
     if relations_data is not None:
         return relations_data
@@ -282,7 +319,8 @@ async def route__api__entity_type__relations__entity_id(
         async with runtime_transaction():
             entity_repository = RuntimeEntityRepository()
             relation_repository = RuntimeRelationRepository()
-            relations_data = await RuntimeDatabaseManager.runtime_database_helper.get_relations_by_entity_id_and_entity_type(
+            database_helper = RuntimeDatabaseManager.runtime_database_helper
+            relations_data = await database_helper.get_relations_by_entity_id_and_entity_type(
                 entity_repository,
                 relation_repository,
                 entity_id,
@@ -398,9 +436,7 @@ async def route__api__random() -> dict[str, str]:
             (
                 entity_id,
                 entity_type,
-            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(
-                entity_repository
-            )
+            ) = await RuntimeDatabaseManager.runtime_database_helper.get_random_entity(entity_repository)
             log.debug(f"    Found random entity: {entity_type}-{entity_id}")
         except Exception:
             log.exception("Error in API for /random")

@@ -41,10 +41,11 @@ The module utilizes
   and `frozenset`, `set`, `dict`, `hash`, `int` for data structure.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from musigree.library.fields.entity_type import EntityType
-from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+if TYPE_CHECKING:
+    from musigree.library.fields.entity_type import EntityType
+    from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
 
 
 class TrellisNode:
@@ -93,7 +94,7 @@ class TrellisNode:
         """Set of links (relationships) associated with the node."""
         self._missing: int = 0
         """Number of missing links for the node."""
-        self._missing_by_page: dict = {}
+        self._missing_by_page: dict[str, int] = {}
         """Missing links by page."""
         self._entity: RuntimeEntity = entity
         """The entity associated with this node."""
@@ -172,6 +173,15 @@ class TrellisNode:
         neighbors.update(self.children)
         """Add the children."""
         return neighbors
+
+    def clear_connections(self) -> None:
+        """Forget links and tree edges so this node can be placed again."""
+        self._children.clear()
+        self._links.clear()
+        self._parents.clear()
+        self._siblings.clear()
+        self._subgraph_size = None
+        self._parentage = None
 
     def get_parentage(self) -> frozenset[TrellisNode]:
         """
@@ -299,7 +309,7 @@ class TrellisNode:
         self._missing = int(expr)
 
     @property
-    def missing_by_page(self) -> dict:
+    def missing_by_page(self) -> dict[str, int]:
         """
         Gets the missing links by page for this node.
 

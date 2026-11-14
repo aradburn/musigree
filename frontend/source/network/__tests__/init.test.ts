@@ -40,7 +40,7 @@ const mockZoomBehavior = vi.hoisted(() => ({
 }));
 
 // Use hoisted objects in all mocks
-vi.mock("../../core", () => ({
+vi.mock("../../core/singletons", () => ({
     networkManager: {
         layers: mockLayers,
         zoom: mockZoomBehavior,
@@ -199,6 +199,14 @@ describe("Network Initialization Module", () => {
 
         // Update mock d3.select return value with our configured mock
         mockD3SelectResult.append = mockAppend;
+
+        // resetNetworkTransform animates whatever root layer already exists.
+        // initNetwork replaces these when it runs.
+        mockLayers.root = mockRoot;
+        mockLayers.halo = mockHalo;
+        mockLayers.link = mockLink;
+        mockLayers.node = mockNode;
+        mockLayers.text = mockText;
 
         // Mock console methods
         vi.spyOn(console, "log").mockImplementation(() => {});

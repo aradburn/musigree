@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import enum
 import itertools
 import json
@@ -24,17 +25,19 @@ from collections.abc import (
 )
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import date, datetime
-from functools import partial
-from io import BufferedWriter
-from typing import Any, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 import requests
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.orm import DeclarativeBase
 from toolz import count  # type: ignore
 from unidecode import unidecode
 
 from musigree.constants import VERSION, ThreadingModel
+
+if TYPE_CHECKING:
+    from io import BufferedWriter
+
+    from sqlalchemy.orm import DeclarativeBase
 
 T_read_co = TypeVar("T_read_co", covariant=True)
 T_write_contra = TypeVar("T_write_contra", contravariant=True)
@@ -84,10 +87,8 @@ class SkipFilter:
             for k, v in data.items():
                 if k in self.keys or isinstance(v, self.types):  # skip key/type
                     continue
-                try:
+                with contextlib.suppress(ValueError):
                     result[k] = self.filter(v)
-                except ValueError:
-                    pass
             if result or self.allow_empty:
                 return result
         # elif isinstance(data, Sequence):
@@ -159,7 +160,9 @@ def normalize(argument: str, indent: int | str | None = None) -> str:
 
 
 def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
-    """Normalize a dictionary into a formatted string representation, skipping specified keys and types."""
+    # Normalize a dictionary into a formatted string representation,
+    # skipping specified keys and types.
+
     skip_keys = skip_keys or []
     preprocessor = SkipFilter(keys=skip_keys)
 
@@ -172,7 +175,7 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
 
     def default(o: Any) -> dict[str, Any] | str:
         def as_dict(self: DeclarativeBase) -> dict[str, Any]:
-            return {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
+            return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
         from musigree.library.domain.base import InternalDomainObject
         from musigree.offline.offline_database.base_table import OfflineBase
@@ -183,7 +186,6 @@ def normalize_dict(obj: Any, skip_keys: list[str] | None = None) -> str:
         elif isinstance(o, InternalDomainObject):
             return list_public_attributes(preprocessor.filter(o.model_dump()))
         elif isinstance(o, (enum.Enum, date, datetime)):
-            # noinspection PyStringConversionWithoutDunderMethod
             return str(o)
         else:
             return f"<<non-serializable: {type(o).__qualname__}>>"
@@ -221,9 +223,7 @@ def normalize_dict_list(list_obj: list[dict[str, Any]]) -> str:
         "[\n"
         + ",\n".join(
             textwrap.indent(
-                strip_trailing_newline(
-                    normalize(json.dumps(_, indent=4, sort_keys=True, default=str))
-                ),
+                strip_trailing_newline(normalize(json.dumps(_, indent=4, sort_keys=True, default=str))),
                 "    ",
             )
             for _ in sorted_list_obj
@@ -256,7 +256,7 @@ def table2dict(table: DeclarativeBase) -> dict[str, Any]:
     Returns:
         dict[str, Any]: A dictionary representation of the table object.
     """
-    return {c.name: getattr(table, c.name) for c in table.__table__.columns}  # type: ignore
+    return {c.name: getattr(table, c.name) for c in table.__table__.columns}
 
 
 def is_latin(_string: str) -> bool:
@@ -311,7 +311,8 @@ def download_file(input_url: str, output_file: BufferedWriter) -> None:
     """Download a file from a URL and write it to the provided output file-like object.
     Args:
         input_url (str): The URL of the file to download.
-        output_file (SupportsWrite | BufferedWriter): A file-like object to write the downloaded content to.
+        output_file (SupportsWrite | BufferedWriter): A file-like object to write the downloaded \
+content to.
     """
     with requests.get(input_url, stream=True) as response:
         response.raise_for_status()
@@ -337,7 +338,8 @@ def get_discogs_url(dump_date: date, dump_type: str) -> str:
 
 
 def get_discogs_dump_dates(start_date: date, end_date: date) -> list[date]:
-    """Generate a list of dates representing the first day of each month between start_date and end_date.
+    """Generate a list of dates representing the first day of each month between start_date and \
+end_date.
     Args:
         start_date (date): The start date of the range.
         end_date (date): The end date of the range.
@@ -393,22 +395,41 @@ def get_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
+class WorkerPartial:
+    """One batch of work with its function and arguments already bound.
+
+    The queue submits ``func`` and ``args`` separately so a process pool can
+    pickle them. This is a normal callable, which keeps the call signature
+    distinct from ``functools.partial``.
+    """
+
+    def __init__(self, func: Callable[..., None], args: tuple[Any, ...]) -> None:
+        self.func = func
+        self.args = args
+
+    def __call__(self) -> None:
+        self.func(*self.args)
+
+
 def worker_generator[T](
     worker_function: Callable[[list[T], int, int], None],
     records: Iterable[list[T]],
     total_count: int,
-) -> Generator[partial]:
-    """A generator that yields worker functions for processing records.
+) -> Generator[WorkerPartial]:
+    """Yield one fully bound worker for each batch of records.
+
     Args:
-        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
-        records (Iterable[list[T]]): An iterable of lists of records to be processed.
-        total_count (int): The total number of records to be processed.
+        worker_function: Called as ``worker(batch, processed_count, total_count)``.
+        records: Batches to process.
+        total_count: Total number of records across all batches.
+
     Yields:
-        Callable[..., None]: A partial that processes a batch of records.
+        A fully bound worker that runs one batch when called with no arguments.
     """
     processed_count: int = 0
     for record in records:
-        yield partial(worker_function, record, processed_count, total_count)
+        worker = WorkerPartial(worker_function, (record, processed_count, total_count))
+        yield worker
         processed_count += len(record)
 
 
@@ -416,21 +437,24 @@ async def async_worker_generator[T](
     worker_function: Callable[[list[T], int, int], None],
     records: AsyncIterable[list[T]],
     total_count: int,
-) -> list[partial]:
-    """A generator that yields worker functions for processing records.
+) -> list[WorkerPartial]:
+    """Build one fully bound worker for each batch of records.
+
     Args:
-        worker_function (Callable[[list[T], int, int], None]): The worker function to be called for each batch of records.
-        records (Iterable[list[T]]): An iterable of lists of records to be processed.
-        total_count (int): The total number of records to be processed.
-    Yields:
-        Callable[..., None]: A partial that processes a batch of records.
+        worker_function: Called as ``worker(batch, processed_count, total_count)``.
+        records: Batches to process.
+        total_count: Total number of records across all batches.
+
+    Returns:
+        Fully bound workers, one per batch, in input order.
     """
-    partials: list[partial] = []
+    workers: list[WorkerPartial] = []
     processed_count: int = 0
     async for record in records:
-        partials.append(partial(worker_function, record, processed_count, total_count))
+        worker = WorkerPartial(worker_function, (record, processed_count, total_count))
+        workers.append(worker)
         processed_count += len(record)
-    return partials
+    return workers
 
 
 def _process_pool_mp_context() -> multiprocessing.context.BaseContext:
@@ -448,14 +472,16 @@ def _process_pool_mp_context() -> multiprocessing.context.BaseContext:
 
 async def queue_worker_functions(
     max_concurrent: int,
-    worker_partials: Generator[partial] | list[partial],
+    worker_partials: Iterable[WorkerPartial],
     threading_model: ThreadingModel = ThreadingModel.THREAD,
 ) -> None:
-    """Run sync worker callables with a bounded concurrency pool.
+    """Run sync worker partials with a bounded concurrency pool.
 
     Args:
         max_concurrent: Maximum concurrent workers (clamped to 1..8).
-        worker_partials: Sync worker callables (typically ``functools.partial``).
+        worker_partials: Fully bound workers from ``worker_generator``. Each
+            worker's function and arguments are submitted separately so a
+            process pool can pickle them.
         threading_model: ``THREAD`` uses ``ThreadPoolExecutor``;
             ``PROCESS`` uses ``ProcessPoolExecutor`` with a fork-compatible context.
     """

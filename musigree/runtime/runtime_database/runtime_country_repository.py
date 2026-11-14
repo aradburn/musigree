@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Result, select
 
@@ -10,6 +10,9 @@ from musigree.runtime.runtime_database.runtime_base_repository import (
 from musigree.runtime.runtime_database.runtime_base_table import mapped_entity
 from musigree.runtime.runtime_database.runtime_country_table import RuntimeCountryTable
 from musigree.runtime.runtime_domain.runtime_country import RuntimeCountry
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -79,9 +82,7 @@ class RuntimeCountryRepository(RuntimeBaseRepository["RuntimeCountryTable"]):
         Raises:
             NotFoundError: If no country is found with the given name.
         """
-        query = select(mapped_entity(RuntimeCountryTable)).where(
-            RuntimeCountryTable.country_name == name
-        )
+        query = select(mapped_entity(RuntimeCountryTable)).where(RuntimeCountryTable.country_name == name)
         result: Result[tuple[RuntimeCountry]] = await self.execute(query)
 
         if not (instance := result.scalars().one_or_none()):

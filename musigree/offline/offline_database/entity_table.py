@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import JSON, Index, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, class_mapper, mapped_column
 
 from musigree import utils
 from musigree.library.fields.entity_type import EntityType
@@ -50,15 +50,15 @@ class EntityTable(OfflineBase):
     """
      The name of the entity.
     """
-    relation_counts: Mapped[dict | None] = mapped_column(type_=JSON, nullable=True)
+    relation_counts: Mapped[dict[str, Any] | None] = mapped_column(type_=JSON, nullable=True)
     """
       Counts of relations to other entities.
     """
-    entity_metadata: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
+    entity_metadata: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
     """
      Additional metadata about the entity.
     """
-    entities: Mapped[dict] = mapped_column(type_=JSON, nullable=False)
+    entities: Mapped[dict[str, Any]] = mapped_column(type_=JSON, nullable=False)
     """
      Information about related entities.
     """
@@ -81,8 +81,25 @@ class EntityTable(OfflineBase):
     """
     Additional table arguments, including:
         - idx_entity_id_and_entity_type: A unique index on the entity_id and entity_type columns.
-        - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type columns.
+        - idx_entity_name_and_entity_type: A non-unique index on the entity_name and entity_type \
+columns.
     """
+
+    def __init__(self, **entries: Any) -> None:
+        """
+        Initializes an EntityTable instance.
+
+        This constructor allows for the initialization of an `EntityTable`
+        object with keyword arguments that match the table's columns. It
+        ensures that only valid column names are used during initialization.
+
+        Args:
+            entries (dict): Keyword arguments corresponding to the table's
+                columns and their values.
+        """
+        column_names = {column.name for column in class_mapper(EntityTable).columns}
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
+        super().__init__(**superentries)
 
     def __repr__(self) -> str:
         """

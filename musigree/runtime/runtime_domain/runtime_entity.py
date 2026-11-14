@@ -1,5 +1,6 @@
 """
-This module defines the offline_domain objects for representing entities in the Musigree runtime system.
+This module defines the offline_domain objects for representing entities in the Musigree runtime
+system.
 
 It provides the `RuntimeEntity` and `RuntimeEntityDB` classes for handling
 entities, their attributes, and their representation in different stages, such
@@ -25,14 +26,16 @@ __all__ = [
 ]
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, StrictInt, field_serializer
 
 from musigree.library.domain.base import InternalDomainObject
 from musigree.library.fields.entity_type import EntityType
-from musigree.offline.offline_domain.entity import Entity
-from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.entity import Entity
+    from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 
 log = logging.getLogger(__name__)
 
@@ -164,19 +167,14 @@ class RuntimeEntity(InternalDomainObject):
         Returns:
             RuntimeEntityDB: The runtime_database representation of the runtime entity.
         """
-        entity_dict: dict = self.model_dump()
-        entity_metadata: dict | None = entity_dict.get("entity_metadata", {})
-        entities: dict = entity_dict.get("entities", {})
-        # noinspection PyUnreachableCode
-        aliases: dict | None = entities.get("aliases", None) if isinstance(entities, dict) else None
-        # noinspection PyUnreachableCode
-        groups: dict | None = entities.get("groups", None) if isinstance(entities, dict) else None
-        # noinspection PyUnreachableCode
-        members: dict | None = entities.get("members", None) if isinstance(entities, dict) else None
-        # noinspection PyUnreachableCode
-        parent_label: dict | None = (
-            entities.get("parent_label", None) if isinstance(entities, dict) else None
-        )
+        entity_dict: dict[str, Any] = self.model_dump()
+        entity_metadata: dict[str, Any] | None = entity_dict.get("entity_metadata", {})
+        entities_value = entity_dict.get("entities", {})
+        entities: dict[str, Any] = entities_value if isinstance(entities_value, dict) else {}
+        aliases: dict[str, Any] | None = entities.get("aliases")
+        groups: dict[str, Any] | None = entities.get("groups")
+        members: dict[str, Any] | None = entities.get("members")
+        parent_label: dict[str, Any] | None = entities.get("parent_label")
         if entity_metadata is not None and len(entity_metadata) == 0:
             entity_metadata = None
         if aliases is not None and len(aliases) == 0:
@@ -227,17 +225,17 @@ class RuntimeEntityDB(InternalDomainObject):
     """The type of the entity."""
     entity_name: str
     """The name of the entity."""
-    relation_counts: dict
+    relation_counts: dict[str, Any]
     """The relation counts of the entity."""
-    entity_metadata: dict | None
+    entity_metadata: dict[str, Any] | None
     """The metadata of the entity."""
-    aliases: dict | None
+    aliases: dict[str, Any] | None
     """The aliases of the entity."""
-    groups: dict | None
+    groups: dict[str, Any] | None
     """The groups associated with the entity."""
-    members: dict | None
+    members: dict[str, Any] | None
     """The members associated with the entity."""
-    parent_label: dict | None
+    parent_label: dict[str, Any] | None
     """The parent label associated with the entity if it is a label."""
     countries: str | None
     """The countries associated with the entity."""
@@ -253,7 +251,8 @@ class RuntimeEntityDB(InternalDomainObject):
 
     def to_domain(self) -> RuntimeEntity:
         """
-        Converts the runtime entity from its runtime_database representation to its offline_domain representation.
+        Converts the runtime entity from its runtime_database representation to its offline_domain
+        representation.
 
         This method transforms the `RuntimeEntityDB` instance into a
         `RuntimeEntity` instance, making it suitable for use within the
@@ -262,14 +261,14 @@ class RuntimeEntityDB(InternalDomainObject):
         Returns:
             RuntimeEntity: The offline_domain representation of the runtime entity.
         """
-        entity_dict: dict = self.model_dump()
-        entity_metadata: dict | None = entity_dict.pop("entity_metadata", {})
+        entity_dict: dict[str, Any] = self.model_dump()
+        entity_metadata: dict[str, Any] | None = entity_dict.pop("entity_metadata", {})
         if entity_metadata is None:
             entity_metadata = {}
-        aliases: dict = entity_dict.pop("aliases", {})
-        groups: dict = entity_dict.pop("groups", {})
-        members: dict = entity_dict.pop("members", {})
-        parent_label: dict = entity_dict.pop("parent_label", {})
+        aliases: dict[str, Any] | None = entity_dict.pop("aliases", {})
+        groups: dict[str, Any] | None = entity_dict.pop("groups", {})
+        members: dict[str, Any] | None = entity_dict.pop("members", {})
+        parent_label: dict[str, Any] | None = entity_dict.pop("parent_label", {})
         entities: dict[str, Any] = {}
         if aliases is not None and len(aliases) > 0:
             entities.update(aliases=aliases)
@@ -283,9 +282,7 @@ class RuntimeEntityDB(InternalDomainObject):
         return RuntimeEntity.model_validate(entity_dict)
 
 
-def to_runtime_entity_dict(
-    entity_details_index: EntityDetailsIndex, entity: Entity
-) -> dict[str, Any]:
+def to_runtime_entity_dict(entity_details_index: EntityDetailsIndex, entity: Entity) -> dict[str, Any]:
     # TODO get from runtime countries table
     countries = entity_details_index.get_countries_for_id(entity.id)
     # TODO get from runtime genres table

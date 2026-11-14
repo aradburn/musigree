@@ -31,6 +31,7 @@ from musigree.offline.loader.loader_tasks import (
     LoaderTaskForDate,
     LoaderTaskForDateAndStage,
 )
+from tests.type_helpers import as_object
 
 
 class TestLoaderSetupTask:
@@ -42,13 +43,11 @@ class TestLoaderSetupTask:
         start_date = datetime.date(2023, 1, 1)
         end_date = datetime.date(2023, 1, 31)
 
-        task = LoaderSetupTask(
-            data_directory=data_directory, start_date=start_date, end_date=end_date
-        )
+        task = LoaderSetupTask(data_directory=data_directory, start_date=start_date, end_date=end_date)
 
-        assert task.data_directory == data_directory
-        assert task.start_date == start_date
-        assert task.end_date == end_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.start_date) == start_date
+        assert as_object(task.end_date) == end_date
         assert isinstance(task, luigi.Task)
 
     def test_output_returns_run_anyway_target(self) -> None:
@@ -126,16 +125,14 @@ class TestLoaderTask:
 
         task = LoaderTask(data_directory=data_directory, start_date=start_date, end_date=end_date)
 
-        assert task.data_directory == data_directory
-        assert task.start_date == start_date
-        assert task.end_date == end_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.start_date) == start_date
+        assert as_object(task.end_date) == end_date
         assert isinstance(task, luigi.Task)
 
     # noinspection PyUnresolvedReferences
     @patch("musigree.offline.loader.loader_tasks.get_discogs_dump_dates")
-    def test_requires_yields_setup_then_download_and_load_per_date(
-        self, mock_get_dates: MagicMock
-    ) -> None:
+    def test_requires_yields_setup_then_download_and_load_per_date(self, mock_get_dates: MagicMock) -> None:
         """Test that requires() yields LoaderSetupTask then per-date tasks."""
         mock_get_dates.return_value = [
             datetime.date(2023, 1, 1),
@@ -157,9 +154,7 @@ class TestLoaderTask:
         assert dependencies[0].start_date == task.start_date
         assert dependencies[0].end_date == task.end_date
 
-        mock_get_dates.assert_called_once_with(
-            datetime.date(2023, 1, 1), datetime.date(2023, 2, 28)
-        )
+        mock_get_dates.assert_called_once_with(datetime.date(2023, 1, 1), datetime.date(2023, 2, 28))
 
         # First date: download then load
         assert isinstance(dependencies[1], DiscogsDownloaderTaskForDate)
@@ -232,8 +227,8 @@ class TestDiscogsDownloaderTaskForDate:
 
         task = DiscogsDownloaderTaskForDate(data_directory=data_directory, dump_date=dump_date)
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
         assert isinstance(task, luigi.Task)
 
     def test_priority_is_int(self) -> None:
@@ -248,9 +243,7 @@ class TestDiscogsDownloaderTaskForDate:
 
     def test_requires_yields_four_discogs_downloader_tasks(self) -> None:
         """Test that requires() yields DiscogsDownloaderTask for each dump type."""
-        task = DiscogsDownloaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = DiscogsDownloaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
 
         dependencies = list(task.requires())
 
@@ -268,9 +261,7 @@ class TestDiscogsDownloaderTaskForDate:
 
     def test_task_family(self) -> None:
         """Test that DiscogsDownloaderTaskForDate has correct task family."""
-        task = DiscogsDownloaderTaskForDate(
-            data_directory="/test/data", dump_date=datetime.date(2023, 1, 15)
-        )
+        task = DiscogsDownloaderTaskForDate(data_directory="/test/data", dump_date=datetime.date(2023, 1, 15))
         assert task.task_family == "musigree.DiscogsDownloaderTaskForDate"
 
 
@@ -284,8 +275,8 @@ class TestLoaderTaskForDate:
 
         task = LoaderTaskForDate(data_directory=data_directory, dump_date=dump_date)
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
         assert isinstance(task, luigi.Task)
 
     def test_priority_is_int(self) -> None:
@@ -317,7 +308,7 @@ class TestLoaderTaskForDate:
             assert isinstance(dep, LoaderTaskForDateAndStage)
             assert dep.data_directory == task.data_directory
             assert dep.dump_date == task.dump_date
-            assert dep.stage == i
+            assert as_object(dep.stage) == i
 
         mock_get_stages.assert_called_once_with(
             Path("/test/data"),
@@ -340,13 +331,11 @@ class TestLoaderTaskForDateAndStage:
         dump_date = datetime.date(2023, 1, 15)
         stage = 2
 
-        task = LoaderTaskForDateAndStage(
-            data_directory=data_directory, dump_date=dump_date, stage=stage
-        )
+        task = LoaderTaskForDateAndStage(data_directory=data_directory, dump_date=dump_date, stage=stage)
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
-        assert task.stage == stage
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
+        assert as_object(task.stage) == stage
         assert isinstance(task, luigi.Task)
 
     def test_priority_includes_stage_adjustment(self) -> None:
@@ -361,7 +350,8 @@ class TestLoaderTaskForDateAndStage:
 
     # noinspection PyUnresolvedReferences
     def test_requires_returns_previous_stage_when_stage_gt_zero(self) -> None:
-        """Test that requires() yields DiscogsDownloaderTaskForDate and previous stage when stage > 0."""
+        """Test that requires() yields DiscogsDownloaderTaskForDate and previous stage when stage >
+        0."""
         task = LoaderTaskForDateAndStage(
             data_directory="/test/data",
             dump_date=datetime.date(2023, 1, 15),
@@ -378,7 +368,7 @@ class TestLoaderTaskForDateAndStage:
         assert isinstance(dep, LoaderTaskForDateAndStage)
         assert dep.data_directory == task.data_directory
         assert dep.dump_date == task.dump_date
-        assert dep.stage == 2
+        assert as_object(dep.stage) == 2
 
     # noinspection PyUnresolvedReferences
     def test_requires_returns_discogs_downloader_for_stage_zero(self) -> None:
@@ -533,9 +523,9 @@ class TestDiscogsDownloaderTask:
             dump_type=dump_type,
         )
 
-        assert task.data_directory == data_directory
-        assert task.dump_date == dump_date
-        assert task.dump_type == dump_type
+        assert as_object(task.data_directory) == data_directory
+        assert as_object(task.dump_date) == dump_date
+        assert as_object(task.dump_type) == dump_type
         assert isinstance(task, luigi.Task)
 
     @patch("musigree.offline.loader.loader_tasks.get_discogs_url")
@@ -552,9 +542,7 @@ class TestDiscogsDownloaderTask:
         result = task.url
 
         assert result == "https://example.com/dump.xml.gz"
-        mock_get_discogs_url.assert_called_once_with(
-            datetime.date(2023, 1, 15), DISCOGS_ARTISTS_TYPE
-        )
+        mock_get_discogs_url.assert_called_once_with(datetime.date(2023, 1, 15), DISCOGS_ARTISTS_TYPE)
 
     def test_requires_returns_none(self) -> None:
         """Test that requires() returns None."""
@@ -602,9 +590,7 @@ class TestDiscogsDownloaderTask:
 
         mock_output = MagicMock()
         mock_output.exists.return_value = False  # so run() enters the download block
-        mock_output.temporary_path.return_value.__enter__ = MagicMock(
-            return_value="/tmp/out.xml.gz"
-        )
+        mock_output.temporary_path.return_value.__enter__ = MagicMock(return_value="/tmp/out.xml.gz")
         mock_output.temporary_path.return_value.__exit__ = MagicMock(return_value=None)
 
         with patch.object(task, "output", return_value=mock_output):  # noqa: SIM117

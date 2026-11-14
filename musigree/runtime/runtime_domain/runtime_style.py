@@ -1,7 +1,9 @@
 """
-This module defines the offline_domain objects for representing styles in the Musigree runtime system.
+This module defines the offline_domain objects for representing styles in the Musigree runtime
+system.
 
-It provides the `RuntimeStyle` class for handling unique style names. These names are not official names and can be whatever the entry in the Discogs runtime_database is.
+It provides the `RuntimeStyle` class for handling unique style names. These names are not official
+names and can be whatever the entry in the Discogs runtime_database is.
 
 """
 

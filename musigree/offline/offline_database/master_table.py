@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import JSON, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, class_mapper, mapped_column
 
 from musigree import utils
 from musigree.offline.offline_database.base_table import OfflineBase
@@ -92,6 +92,22 @@ class MasterTable(OfflineBase):
         - width (int): Image width in pixels
         - height (int): Image height in pixels
     """
+
+    def __init__(self, **entries: Any) -> None:
+        """
+        Initializes a MasterTable instance.
+
+        This constructor allows for the initialization of a `MasterTable`
+        object with keyword arguments that match the table's columns. It
+        ensures that only valid column names are used during initialization.
+
+        Args:
+            entries (dict): Keyword arguments corresponding to the table's
+                columns and their values.
+        """
+        column_names = {column.name for column in class_mapper(MasterTable).columns}
+        superentries = {k: entries[k] for k in column_names.intersection(entries.keys())}
+        super().__init__(**superentries)
 
     def __repr__(self) -> str:
         """

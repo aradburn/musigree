@@ -27,7 +27,7 @@ class TestWorkerEntityUpdater:
     @pytest.fixture(autouse=True)
     def setup_config(self) -> None:
         """Set up test configuration."""
-        self.config: SqliteTestConfiguration = SqliteTestConfiguration()  # type: ignore[no-untyped-call]
+        self.config: SqliteTestConfiguration = SqliteTestConfiguration()
 
     @pytest.fixture
     def sample_entity_data(self) -> dict[str, Any]:

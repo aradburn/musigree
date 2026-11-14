@@ -19,7 +19,11 @@ def test_converts_runtime_entity_to_db_representation() -> None:
         entity_name="Test Artist",
         relation_counts={},
         entity_metadata={},
-        entities={"aliases": {"Alias1": 123}, "groups": {"Group1": 456}, "members": {"Member1": 789}},
+        entities={
+            "aliases": {"Alias1": 123},
+            "groups": {"Group1": 456},
+            "members": {"Member1": 789},
+        },
         countries="Country1",
         genres="Genre1",
         styles="Style1",

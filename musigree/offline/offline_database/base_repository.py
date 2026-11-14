@@ -1,9 +1,7 @@
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import delete, func, insert, select, update
-from sqlalchemy.engine import Result
 
 __all__ = ("BaseRepository",)
 
@@ -13,13 +11,19 @@ from musigree.exceptions import DatabaseError, NotFoundError
 from musigree.offline.offline_database.base_table import OfflineBase
 from musigree.offline.offline_database.offline_session import OfflineSession
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from sqlalchemy.engine import Result
+
 log = logging.getLogger(__name__)
 
 
 class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
     """
     This class implements the base interface for working with a runtime_database and provides
-    a set of common async runtime_database operations. It's designed to be subclassed by more specific
+    a set of common async runtime_database operations. It's designed to be subclassed by more \
+specific
     repository classes, allowing for type-safe interactions with the runtime_database.
 
     The Session class implements the async runtime_database interaction layer.
@@ -72,7 +76,7 @@ class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
                 .values(payload)
                 .returning(self.schema_class)
             )
-            result: Result = await self.execute(query)
+            result: Result[Any] = await self.execute(query)
         except (IntegrityError, InvalidRequestError) as err:
             raise DatabaseError from err
 
@@ -98,7 +102,7 @@ class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
 
         # noinspection PyTypeChecker
         query = select(self.schema_class).where(getattr(self.schema_class, key) == value)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
 
         if not (_result := result.scalars().one_or_none()):
             raise NotFoundError
@@ -116,7 +120,7 @@ class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
             UnprocessableError: If the count function returns a non-integer value.
         """
         query = select(func.count()).select_from(self.schema_class)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         value = result.scalar()
 
         if not isinstance(value, int):
@@ -176,7 +180,7 @@ class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
                 runtime_database row as an object.
         """
         query = select(self.schema_class)
-        result: Result = await self.execute(query)
+        result: Result[Any] = await self.execute(query)
         schemas = result.scalars().all()
 
         for schema in schemas:
@@ -189,8 +193,7 @@ class BaseRepository[ConcreteTable: OfflineBase](OfflineSession):
         Args:
             id_: The ID of the record to delete.
         """
-        # noinspection PyTypeChecker,Mypy
-        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))  # type: ignore
+        await self.execute(delete(self.schema_class).where(self.schema_class.id == id_))
         await self._session.flush()
 
     async def commit(self) -> None:

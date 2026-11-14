@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Result, select, update
 
@@ -9,6 +8,9 @@ from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.base_table import mapped_entity
 from musigree.offline.offline_database.metadata_table import MetadataTable
 from musigree.offline.offline_domain.metadata import Metadata, MetadataUncommitted
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ class MetadataRepository(BaseRepository["MetadataTable"]):
             NotFoundError: If no metadata is found with the given key.
         """
         query = select(mapped_entity(MetadataTable)).where(MetadataTable.metadata_key == key)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         if not (instance := result.scalars().one_or_none()):
             raise NotFoundError
@@ -129,7 +131,7 @@ class MetadataRepository(BaseRepository["MetadataTable"]):
             DatabaseError: If there is an error updating the metadata.
         """
         query = update(self.schema_class).values(payload).returning(self.schema_class)
-        result: Result = await self._session.execute(query)
+        result: Result[Any] = await self._session.execute(query)
 
         if not (instance := result.scalar_one_or_none()):
             raise DatabaseError

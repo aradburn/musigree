@@ -1,7 +1,9 @@
 """
-This module defines the offline_domain objects for representing countries in the Musigree offline system.
+This module defines the offline_domain objects for representing countries in the Musigree offline
+system.
 
-It provides the `Token` class for handling unique country names. These names are not official names and can be whatever the entry in the Discogs offline_database is.
+It provides the `Token` class for handling unique country names. These names are not official names
+and can be whatever the entry in the Discogs offline_database is.
 
 """
 

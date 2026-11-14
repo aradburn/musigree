@@ -32,9 +32,7 @@ for loader-specific utilities, and `musigree.logging_config` for logging.
 import gzip
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator, Iterator
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sortedcontainers import SortedSet
 from sqlalchemy.exc import DataError
@@ -43,11 +41,17 @@ from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE
 from musigree.library.fields.entity_type import EntityType
 from musigree.offline.loader.loader_utils import LoaderUtils
-from musigree.offline.loader.parser_base import ParserBase
 from musigree.offline.loader.parser_utils import ParserUtils
-from musigree.offline.offline_database.base_repository import BaseRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterator
+    from pathlib import Path
+
+    from musigree.offline.loader.parser_base import ParserBase
+    from musigree.offline.offline_database.base_repository import BaseRepository
+    from musigree.offline.offline_database.base_table import OfflineBase
 
 log = logging.getLogger(__name__)
 """
@@ -97,7 +101,7 @@ class LoaderBase(ABC):
     @classmethod
     async def loader_pass_one_manager(
         cls,
-        repository: BaseRepository,
+        repository: BaseRepository[OfflineBase],
         parser: ParserBase,
         discogs_data_directory: Path,
         date: str,
@@ -145,17 +149,11 @@ class LoaderBase(ABC):
         xml_path = LoaderUtils.get_xml_path(discogs_data_directory, xml_tag, date)
         log.info(f"Loading data from {xml_path}")
 
-        worker = (
-            cls.get_insert_worker_function()
-            if is_bulk_inserts
-            else cls.get_update_worker_function()
-        )
+        worker = cls.get_insert_worker_function() if is_bulk_inserts else cls.get_update_worker_function()
 
         records = cls.process_xml(parser, xml_path, xml_tag, skip_without)
 
-        records_with_accumulated_ids = utils.generator_with_id_accumulator(
-            records, id_accumulator, id_attr
-        )
+        records_with_accumulated_ids = utils.generator_with_id_accumulator(records, id_accumulator, id_attr)
 
         batch_records = utils.batched(records_with_accumulated_ids, BULK_INSERT_BATCH_SIZE)
 
@@ -203,9 +201,7 @@ class LoaderBase(ABC):
                 list(ids_to_be_deleted), BULK_INSERT_BATCH_SIZE
             )
 
-            worker_coroutines = utils.worker_generator(
-                delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted)
-            )
+            worker_coroutines = utils.worker_generator(delete_worker, batched_ids_to_be_deleted, len(ids_to_be_deleted))
 
             assert OfflineDatabaseManager.offline_config is not None
 

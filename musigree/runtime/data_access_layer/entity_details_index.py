@@ -1,10 +1,12 @@
 import logging
 import pickle
 import re
-from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from musigree.utils import calculate_size
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -144,9 +146,7 @@ class EntityDetailsIndex:
         entity_countries = self.entity_countries.get(id_)
         if entity_countries is None:
             return None
-        entity_countries_strs = [
-            self.countries_list[country_index] for country_index in entity_countries
-        ]
+        entity_countries_strs = [self.countries_list[country_index] for country_index in entity_countries]
         sorted_entity_countries_strs = sorted(entity_countries_strs)
         return ",".join(sorted_entity_countries_strs)
 

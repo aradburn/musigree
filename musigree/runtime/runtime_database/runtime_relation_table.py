@@ -56,7 +56,7 @@ class RuntimeRelationTable(RuntimeBase):
     year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """The year of the release."""
 
-    __table_args__: tuple[Index, Index, dict] = (
+    __table_args__: tuple[Index, Index, dict[str, Any]] = (
         Index(
             "idx_runtime_relation_subject",
             subject,

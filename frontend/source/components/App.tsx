@@ -17,7 +17,6 @@ import { LoadingProvider } from "../contexts/LoadingContext";
 import { EntityProvider } from "../contexts/EntityContext";
 import { DOM_IDS, FSM } from "../constants";
 import { setSvgSize } from "../svg";
-import type { TreeConfig } from "../roles";
 import { resetNetworkTransform } from "@/network/init.ts";
 import { musigreeManager } from "@/core/singletons";
 import { MusigreeTourProvider } from "./Tour";
@@ -25,11 +24,6 @@ import { MusigreeTourProvider } from "./Tour";
 /** Lazy-load heavy conditional UI (bundle-dynamic-imports) */
 const HelpModal = lazy(() =>
     import("./Modals/HelpModal").then((m) => ({ default: m.HelpModal })),
-);
-const RolesOverlay = lazy(() =>
-    import("./Overlays/RolesOverlay").then((m) => ({
-        default: m.RolesOverlay,
-    })),
 );
 
 /** Versioned localStorage key for return-visitor flag (client-localstorage-schema) */
@@ -41,16 +35,14 @@ const HAS_VISITED_BEFORE_KEY = "hasVisitedBefore:v1";
  */
 const AppContent: React.FC = (): React.ReactElement => {
     const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
-    const [showRolesOverlay, setShowRolesOverlay] = useState<boolean>(false);
     const [_isReturnVisitor, setIsReturnVisitor] = useState<boolean>(false);
-    const [rolesConfig, setRolesConfig] = useState<TreeConfig>();
     const [isSidebarRightCollapsed, setIsSidebarRightCollapsed] =
         useState<boolean>(false);
     const { state: windowState } = useWindow();
     const { setIsOpen, setCurrentStep } = useTour();
     const startTourFrameRef = useRef<number | null>(null);
 
-    // Check if this is a return visitor and load roles data
+    // Check if this is a return visitor
     useEffect(() => {
         let hasVisitedBefore: string | null = null;
         try {
@@ -68,27 +60,7 @@ const AppContent: React.FC = (): React.ReactElement => {
             setIsReturnVisitor(true);
         }
 
-        // Get roles data from global variable
-        if (window.dgRoles) {
-            setRolesConfig(window.dgRoles);
-        }
-
-        // Event listeners for showing/hiding overlays
-        const handleShowRoles = (): void => setShowRolesOverlay(true);
-        const handleHideRoles = (): void => setShowRolesOverlay(false);
-
-        window.addEventListener("musigree:show-roles-overlay", handleShowRoles);
-        window.addEventListener("musigree:hide-roles-overlay", handleHideRoles);
-
         return (): void => {
-            window.removeEventListener(
-                "musigree:show-roles-overlay",
-                handleShowRoles,
-            );
-            window.removeEventListener(
-                "musigree:hide-roles-overlay",
-                handleHideRoles,
-            );
             if (startTourFrameRef.current !== null) {
                 cancelAnimationFrame(startTourFrameRef.current);
             }
@@ -142,14 +114,12 @@ const AppContent: React.FC = (): React.ReactElement => {
                         </Row>
 
                         <Row className="flex-sm-nowrap d-flex flex-column flex-sm-row h-sm-100">
-                            <div className="sidebar-left-container p-0 order-sm-1 d-none d-sm-block">
-                                <div className="flex-sm-column flex-row h-sm-100">
-                                    {/* sidebar left panel */}
-                                    <SidebarLeft />
-                                </div>
+                            {/* Mobile stacks main, right, then left. From sm up the row is left, main, right. */}
+                            <div className="sidebar-left-container p-0 order-3 order-sm-1">
+                                <SidebarLeft />
                             </div>
 
-                            <div className="main-container flex-sm-fill p-0 order-sm-2 order-1">
+                            <div className="main-container p-0 order-1 order-sm-2">
                                 <div className="flex-sm-column flex-row h-sm-100">
                                     <NetworkView />
                                     <LoadingAnimation />
@@ -174,18 +144,6 @@ const AppContent: React.FC = (): React.ReactElement => {
                                     />
                                 </div>
                             </div>
-
-                            {showRolesOverlay ? (
-                                <Suspense fallback={null}>
-                                    <RolesOverlay
-                                        roles={rolesConfig}
-                                        show={showRolesOverlay}
-                                        onHide={(): void =>
-                                            setShowRolesOverlay(false)
-                                        }
-                                    />
-                                </Suspense>
-                            ) : null}
                         </Row>
 
                         {showHelpModal ? (

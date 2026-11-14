@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import rapidfuzz
 
@@ -14,10 +14,12 @@ from musigree.library.full_text_search.text_search_utils import (
     normalise_search_content,
 )
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
-from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
-from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
 from musigree.runtime.runtime_domain.runtime_entity import RuntimeEntity
+
+if TYPE_CHECKING:
+    from musigree.runtime.runtime_database.runtime_entity_repository import RuntimeEntityRepository
+    from musigree.runtime.runtime_database.runtime_token_repository import RuntimeTokenRepository
 
 log = logging.getLogger(__name__)
 
@@ -32,9 +34,7 @@ class RuntimeEntitySearch:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "RuntimeDatabaseManager.runtime_database_helper is not set."
         )
-        documents = await RuntimeEntitySearch.search_text_index(
-            entity_repository, token_repository, search_string
-        )
+        documents = await RuntimeEntitySearch.search_text_index(entity_repository, token_repository, search_string)
 
         sorted_documents = RuntimeEntitySearch.sort_search_results(search_string, documents)
 
@@ -60,9 +60,7 @@ class RuntimeEntitySearch:
         for document in documents:
             candidate_id = document[0]
             candidate_name = document[1]
-            score = rapidfuzz.distance.JaroWinkler.normalized_distance(
-                search_string, candidate_name
-            )
+            score = rapidfuzz.distance.JaroWinkler.normalized_distance(search_string, candidate_name)
 
             matched_digits = re.match(r"(.*) \((\d+)\)", candidate_name)
 
@@ -123,17 +121,13 @@ class RuntimeEntitySearch:
         """
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(search_text)
-        analyzed_query = [
-            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
-        ]
+        analyzed_query = [token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS]
 
         # Handle empty query after filtering stop words
         if not analyzed_query:
             return []
 
-        result_sets = await RuntimeEntitySearch.get_lists_of_ids_from_token_db(
-            token_repository, analyzed_query
-        )
+        result_sets = await RuntimeEntitySearch.get_lists_of_ids_from_token_db(token_repository, analyzed_query)
 
         # all tokens must be in the document
         search_results: list[tuple[int, str]] = []
@@ -167,9 +161,7 @@ class RuntimeEntitySearch:
         return result_ids_list
 
     @staticmethod
-    async def get_ids_from_token_db(
-        token_repository: RuntimeTokenRepository, token: str
-    ) -> set[int]:
+    async def get_ids_from_token_db(token_repository: RuntimeTokenRepository, token: str) -> set[int]:
         result_set: set[int] = set[int]()
         try:
             """Attempt to get the entity ids for the token."""

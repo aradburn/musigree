@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -9,6 +9,9 @@ from musigree.offline.offline_database.offline_transaction import offline_transa
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_domain.relation import Relation
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [True], scope="class")
@@ -47,10 +50,10 @@ class TestDatabaseRelation(AbstractDatabaseTest):
             "entity_two_type": "EntityType.ARTIST",
             "releases": {
                 "1000619": 2003,
-                "1054046": None,
+                "1054046": 1998,
                 "1099482": 2001,
                 "11216": 1998,
-                "1141130": None,
+                "1141130": 1993,
                 "1169229": 2007,
                 "1195788": 2005,
                 "1203976": 1997,
@@ -64,7 +67,7 @@ class TestDatabaseRelation(AbstractDatabaseTest):
                 "1530086": 2006,
                 "157": 1994,
                 "168639": 2003,
-                "1741441": None,
+                "1741441": 1992,
                 "1774969": 1999,
                 "197416": 2003,
                 "2009213": 1998,
@@ -210,7 +213,7 @@ class TestDatabaseRelation(AbstractDatabaseTest):
                 "156930": 2003,
                 "2191313": 2010,
                 "2192053": 2010,
-                "2316777": None,
+                "2316777": 2010,
                 "2346144": 2010,
                 "2348913": 2010,
                 "2351842": 2010,

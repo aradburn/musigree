@@ -64,7 +64,7 @@ class Instrument(InternalDomainObject):
     """
 
 
-class HornbostelSachs(RootModel):
+class HornbostelSachs(RootModel[dict[str, Instrument]]):
     """
     Represents the Hornbostel-Sachs classification system for musical instruments.
 

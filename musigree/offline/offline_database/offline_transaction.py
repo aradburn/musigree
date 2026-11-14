@@ -1,5 +1,6 @@
 """
-This module provides a context manager for managing runtime_database transactions in the offline environment.
+This module provides a context manager for managing runtime_database transactions in the offline
+environment.
 
 It ensures that runtime_database operations are performed within a transaction,
 and that transactions are committed or rolled back appropriately based on the
@@ -7,17 +8,21 @@ success or failure of the operations.
 """
 
 import logging
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError, MultipleResultsFound
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from musigree.exceptions import DatabaseError
 from musigree.offline.offline_database.offline_session import (
     CTX_OFFLINE_SESSION,
     get_offline_session,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
 

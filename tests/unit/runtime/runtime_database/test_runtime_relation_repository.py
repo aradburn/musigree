@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -8,6 +8,7 @@ from sqlalchemy import Result
 from musigree.exceptions import NotFoundError
 from musigree.runtime.runtime_database.runtime_base_repository import RuntimeBaseRepository
 from musigree.runtime.runtime_database.runtime_relation_repository import (
+    RELEASE_YEAR_PROBE_CHUNK_SIZE,
     RuntimeRelationRepository,
 )
 from musigree.runtime.runtime_database.runtime_relation_table import (
@@ -24,6 +25,9 @@ from musigree.runtime.runtime_domain.runtime_relation import (
 
 # Import the test utility
 from .test_utils import RoleCacheMockHelper
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 # noinspection PyTypeChecker
@@ -314,6 +318,113 @@ class TestRuntimeRelationRepository:
             assert "67890" in compiled_sql
 
     @pytest.mark.asyncio
+    async def test_find_by_entities_and_roles_year_bounds(self) -> None:
+        """Year bounds keep the null-year clause and the inclusive range in SQL."""
+        entity_ids = [12345]
+        role_ids = [3]
+
+        with patch.object(RuntimeRelationRepository, "_get_all_by_query") as mock_get_all:
+            mock_get_all.return_value = []
+
+            await self.repository.find_by_entities_and_roles(
+                entity_ids, role_ids, limit=10, min_year=1970, max_year=1979
+            )
+
+            query = mock_get_all.call_args[0][0]
+            compiled_sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+            compiled_sql_upper = compiled_sql.upper()
+            assert "1970" in compiled_sql
+            assert "1979" in compiled_sql
+            assert "IS NULL" in compiled_sql_upper or "ISNULL" in compiled_sql_upper
+
+    @pytest.mark.asyncio
+    async def test_find_release_years_for_probes_keeps_dated_partner_rows(self) -> None:
+        """A probe returns years for its partners and drops every other row."""
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+        subject_result = Mock()
+        subject_result.all.return_value = [
+            (10, 20, 100, 1999),
+            (10, 99, 101, 2000),
+        ]
+        object_result = Mock()
+        object_result.all.return_value = [
+            (20, 10, 102, 1991),
+            (20, 10, 103, None),
+        ]
+        mock_session.execute = AsyncMock(side_effect=[subject_result, object_result])
+        try:
+            found = await self.repository.find_release_years_for_probes({10: {20}})
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
+
+        assert found == {(10, 20): {"100": 1999, "102": 1991}}
+        assert mock_session.execute.await_count == 2
+        compiled = " ".join(
+            str(call.args[0].compile(compile_kwargs={"literal_binds": True})).upper()
+            for call in mock_session.execute.await_args_list
+        )
+        assert "IS NOT NULL" in compiled
+        assert "IS NULL" not in compiled
+        assert "10" in compiled
+        assert "20" in compiled
+        assert "99" not in compiled
+
+    @pytest.mark.asyncio
+    async def test_find_release_years_for_probes_applies_inclusive_year_bounds(self) -> None:
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+        empty = Mock()
+        empty.all.return_value = []
+        mock_session.execute = AsyncMock(return_value=empty)
+        try:
+            await self.repository.find_release_years_for_probes(
+                {10: {20}},
+                min_year=1970,
+                max_year=1979,
+            )
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
+
+        compiled = str(
+            mock_session.execute.await_args_list[0]
+            .args[0]
+            .compile(compile_kwargs={"literal_binds": True})
+        ).upper()
+        assert "1970" in compiled
+        assert "1979" in compiled
+        assert "IS NOT NULL" in compiled
+        assert "IS NULL" not in compiled
+
+    @pytest.mark.asyncio
+    async def test_find_release_years_for_probes_chunks_the_index_lookups(self) -> None:
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+        empty = Mock()
+        empty.all.return_value = []
+        mock_session.execute = AsyncMock(return_value=empty)
+        probes = {probe: {probe + 1000} for probe in range(RELEASE_YEAR_PROBE_CHUNK_SIZE + 1)}
+        try:
+            found = await self.repository.find_release_years_for_probes(probes)
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
+
+        assert found == {}
+        assert mock_session.execute.await_count == 4
+
+    @pytest.mark.asyncio
+    async def test_find_release_years_for_probes_skips_an_empty_request(self) -> None:
+        mock_session = AsyncMock()
+        token = CTX_RUNTIME_SESSION.set(mock_session)
+        try:
+            found = await self.repository.find_release_years_for_probes({})
+        finally:
+            CTX_RUNTIME_SESSION.reset(token)
+
+        assert found == {}
+        mock_session.execute.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_find_by_entities_and_roles_empty_roles(self) -> None:
         """Test find_by_entities_and_roles with empty role list returns no results."""
         # GIVEN
@@ -418,7 +529,7 @@ class TestRuntimeRelationRepository:
                     mock_validate.assert_called_once_with(mock_instance)
         finally:
             CTX_RUNTIME_SESSION.reset(token)
-            RuntimeDatabaseManager.runtime_database_helper = None  # type: ignore
+            RuntimeDatabaseManager.runtime_database_helper = None
 
     @pytest.mark.asyncio
     async def test_delete_by_entitys_success(self) -> None:

@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import sys
 
@@ -17,6 +18,12 @@ from musigree.utils import log_banner
 
 log = logging.getLogger(__name__)
 
+__all__ = [
+    "PostgresReadOnlyDevelopmentConfiguration",
+    "create_entity_details_index",
+    "shutdown_loader",
+]
+
 
 async def shutdown_loader() -> None:
     """
@@ -26,13 +33,12 @@ async def shutdown_loader() -> None:
     performs cleanup tasks such as closing database connections, shutting
     down the cache, and shutting down logging.
     """
-    # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
+    # Logging may have been shutdown automatically before this point, so we need to reinitialize it
+    # again
     setup_logging()
     log.info("######## LOADER SHUTDOWN START ########")
-    try:
+    with contextlib.suppress(OperationalError):
         await OfflineDatabaseManager.shutdown_database()
-    except OperationalError:
-        pass
 
     await CacheManager.shutdown_cache()
 
@@ -86,17 +92,13 @@ def create_entity_details_index(offline_config: Configuration) -> None:
                 "offline_database_helper must be initialized"
             )
 
-            entity_details_path = (
-                offline_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
-            )
+            entity_details_path = offline_config.DATA_DIR / ENTITY_DETAILS_DATA / ENTITY_DETAILS_FILENAME
             runner.run(LoaderEntity().loader_create_entity_details_index(entity_details_path))
         finally:
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:
-                log.warning(
-                    "Offline loader finalize interrupted; proceeding with event loop shutdown"
-                )
+                log.warning("Offline loader finalize interrupted; proceeding with event loop shutdown")
 
 
 if __name__ == "__main__":

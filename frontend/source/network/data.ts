@@ -1,4 +1,4 @@
-import {networkManager} from "../core/singletons";
+import {networkManager} from "@/core/singletons";
 import {getOuterRadius} from "./node";
 import type {APINetworkDataResponse} from "../api";
 
@@ -56,6 +56,7 @@ export interface SimLink extends Omit<
     source: SimNode;
     target: SimNode;
     role: string;
+    years: number[];
     isSpline: boolean;
     distance: number;
     intermediate: SimNode;
@@ -98,6 +99,7 @@ export interface NetworkLink {
     source: NetworkNode;
     target: NetworkNode;
     role: string;
+    years: number[],
     distance: number;
     isSpline: boolean;
     intermediate: NetworkNode;
@@ -149,7 +151,7 @@ export const processAPINetworkDataResponse = (
             links: [] as NetworkLink[],
             cluster: node.cluster,
             missing: node.missing,
-            hasMissing: node.missing > 0 ? true : false,
+            hasMissing: node.missing > 0,
             lastClickTime: 0,
             lastTouchTime: 0,
             isIntermediate: false,
@@ -178,6 +180,7 @@ export const processAPINetworkDataResponse = (
         const processedLink: NetworkLink = {
             key: link.key,
             role: link.role,
+            years: link.years,
             source,
             target,
             distance: Math.min(source.distance, target.distance),
@@ -231,6 +234,33 @@ export const processAPINetworkDataResponse = (
     return networkData;
 };
 
+/** Half-width of the box around the insertion point where new nodes start. */
+const INITIAL_NODE_POSITION_SPREAD = 200;
+
+/** Numerical Recipes LCG parameters, the same family as the force-layout generator. */
+const POSITION_RANDOM_MULTIPLIER = 1664525;
+const POSITION_RANDOM_INCREMENT = 1013904223;
+const POSITION_RANDOM_MODULUS = 4294967296;
+
+/**
+ * Returns a [0, 1) generator seeded by the center node key.
+ * The same key always yields the same sequence, so a network opens
+ * with the same node arrangement each time.
+ */
+const createSeededPositionRandom = (centerKey: string): (() => number) => {
+    let state = 0;
+    for (let index = 0; index < centerKey.length; index += 1) {
+        state = (Math.imul(state, 31) + centerKey.charCodeAt(index)) >>> 0;
+    }
+
+    return (): number => {
+        state =
+            (POSITION_RANDOM_MULTIPLIER * state + POSITION_RANDOM_INCREMENT) %
+            POSITION_RANDOM_MODULUS;
+        return state / POSITION_RANDOM_MODULUS;
+    };
+};
+
 /**
  * Processes the NetworkData data to create nodes and links for the force layout
  * @param {NetworkData} networkData - The network data object containing nodes and links
@@ -249,6 +279,8 @@ export const convertNetworkDataToSimData = (
         maxDistance: 0,
     };
 
+    const seededPRNG = createSeededPositionRandom(networkData.center.key);
+
     // Setup node size
     networkData.nodeMap.forEach((node) => {
         const simNode: SimNode = {
@@ -257,8 +289,12 @@ export const convertNetworkDataToSimData = (
             size: node.size,
             name: node.name,
             type: node.type,
-            x: networkManager.newNodeCoords[0],
-            y: networkManager.newNodeCoords[1],
+            x:
+                networkManager.newNodeCoords[0] +
+                (seededPRNG() * 2.0 - 1.0) * INITIAL_NODE_POSITION_SPREAD,
+            y:
+                networkManager.newNodeCoords[1] +
+                (seededPRNG() * 2.0 - 1.0) * INITIAL_NODE_POSITION_SPREAD,
             distance: node.distance,
             radius: 0,
             missing: node.missing,
@@ -323,6 +359,7 @@ export const convertNetworkDataToSimData = (
                 source: sourceNode,
                 target: intermediateNode,
                 role: role,
+                years: link.years,
                 distance: 0,
                 intermediate: undefined,
                 highlighted: false,
@@ -335,6 +372,7 @@ export const convertNetworkDataToSimData = (
                 source: intermediateNode,
                 target: targetNode,
                 role: role,
+                years: link.years,
                 distance: 0,
                 intermediate: undefined,
                 highlighted: false,
@@ -352,6 +390,7 @@ export const convertNetworkDataToSimData = (
                 target: targetNode,
                 intermediate: intermediateNode,
                 role: link.role,
+                years: link.years,
                 distance: link.distance,
                 highlighted: false,
                 selected: false,
@@ -365,6 +404,7 @@ export const convertNetworkDataToSimData = (
                 target: targetNode,
                 intermediate: undefined,
                 role: link.role,
+                years: link.years,
                 distance: link.distance,
                 highlighted: false,
                 selected: false,

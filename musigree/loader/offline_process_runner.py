@@ -1,19 +1,22 @@
 import asyncio
 import logging
 import sys
-from collections.abc import Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import OperationalError
 
-from musigree.config import (
-    Configuration,
-)
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
 from musigree.offline.data_access_layer.offline_role_data_access import OfflineRoleDataAccess
 from musigree.offline.offline_database_manager import OfflineDatabaseManager
 from musigree.utils import log_banner
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine
+
+    from musigree.config import (
+        Configuration,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +30,8 @@ async def shutdown_process_runner() -> None:
     down the cache, and shutting down logging.
     """
 
-    # Logging may have been shutdown automatically before this point, so we need to reinitialize it again
+    # Logging may have been shutdown automatically before this point, so we need to reinitialize it
+    # again
     setup_logging()
     log.info("######## OFFLINE LOADER SHUTDOWN START ########")
     try:
@@ -94,9 +98,7 @@ def run_offline_loading_process(
             )
 
             if table_names:
-                runner.run(
-                    OfflineDatabaseManager.offline_database_helper.create_tables(table_names)
-                )
+                runner.run(OfflineDatabaseManager.offline_database_helper.create_tables(table_names))
 
             runner.run(OfflineRoleDataAccess.load_all_roles_into_cache())
 
@@ -109,6 +111,4 @@ def run_offline_loading_process(
             try:
                 runner.run(_finalize_offline_loader_before_loop_close())
             except KeyboardInterrupt:
-                log.warning(
-                    "Offline loader finalize interrupted; proceeding with event loop shutdown"
-                )
+                log.warning("Offline loader finalize interrupted; proceeding with event loop shutdown")

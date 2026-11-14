@@ -10,7 +10,11 @@ from pydantic import BaseModel
 
 from musigree.library.cache.role_cache import RoleCache
 from musigree.library.fields.role_type import RoleType
-from musigree.runtime.runtime_domain.runtime_role import RuntimeRoleJSTree
+from musigree.runtime.runtime_domain.runtime_role import (
+    RuntimeRoleJSTree,
+    RuntimeRoleJSTreeEntry,
+    RuntimeRoleJSTreeState,
+)
 
 
 class TestRoleCache:
@@ -139,6 +143,80 @@ class TestRoleCache:
         # Assert
         # The wrapper should be created with specific parameters
         mock_model_dump_json.assert_called_once()
+
+    def test_get_roles_json_selects_requested_roles_without_mutating_cache(self) -> None:
+        """Selected flags are applied to the response JSON, not the shared cache."""
+        unselected = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=False)
+        selected = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=True)
+        RoleCache.role_jstree.data = [
+            RuntimeRoleJSTreeEntry(
+                id="Structural Relationships",
+                parent="#",
+                text="Alias",
+                state=unselected,
+                li_attr={},
+                a_attr={},
+            ),
+            RuntimeRoleJSTreeEntry(
+                id="1",
+                parent="Structural Relationships",
+                text="Alias",
+                state=unselected,
+                li_attr={},
+                a_attr={},
+            ),
+            RuntimeRoleJSTreeEntry(
+                id="2",
+                parent="Structural Relationships",
+                text="Released On",
+                state=selected,
+                li_attr={},
+                a_attr={},
+            ),
+        ]
+
+        parsed = json.loads(RoleCache.get_roles_json({"Alias", "Missing"}))
+        by_id = {entry["id"]: entry for entry in parsed["core"]["data"]}
+
+        assert by_id["1"]["state"]["selected"] is True
+        assert by_id["2"]["state"]["selected"] is False
+        assert by_id["Structural Relationships"]["state"]["selected"] is False
+        assert RoleCache.role_jstree.data[1].state.selected is False
+        assert RoleCache.role_jstree.data[2].state.selected is True
+
+    def test_get_roles_json_clears_stale_relationship_selection(self) -> None:
+        """A cached union of defaults must not tick every relationship checkbox."""
+        selected = RuntimeRoleJSTreeState(opened=False, disabled=False, selected=True)
+        entries = [
+            ("Structural Relationships", "#", "Structural Relationships"),
+            ("839", "Structural Relationships", "Alias"),
+            ("840", "Structural Relationships", "Member Of"),
+            ("842", "Structural Relationships", "Released On"),
+            ("843", "Structural Relationships", "Sublabel Of"),
+        ]
+        RoleCache.role_jstree.data = [
+            RuntimeRoleJSTreeEntry(
+                id=entry_id,
+                parent=parent,
+                text=text,
+                state=selected,
+                li_attr={},
+                a_attr={},
+            )
+            for entry_id, parent, text in entries
+        ]
+
+        def selected_names(roles: set[str]) -> set[str]:
+            parsed = json.loads(RoleCache.get_roles_json(roles))
+            return {
+                entry["text"]
+                for entry in parsed["core"]["data"]
+                if entry["state"]["selected"] is True
+            }
+
+        assert selected_names({"Alias", "Member Of"}) == {"Alias", "Member Of"}
+        assert selected_names({"Released On"}) == {"Released On"}
+        assert all(entry.state.selected is True for entry in RoleCache.role_jstree.data)
 
     def test_get_roles_json_integration(self) -> None:
         """Test get_roles_json integration without mocking."""

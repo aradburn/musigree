@@ -55,21 +55,24 @@ import multiprocessing
 import os
 import sys
 from sqlite3 import OperationalError
+from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 from sqlalchemy import URL, AsyncAdaptedQueuePool, Pool, exc, text
 from sqlalchemy.dialects.sqlite import Insert, insert
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.sql.dml import ReturningInsert
 
-from musigree.config import Configuration
 from musigree.constants import SQLITE_DRIVER_NAME
 from musigree.logging_config import LOGGING_TRACE
-from musigree.runtime.runtime_database.runtime_database_helper import (
-    RuntimeConcreteTable,
-    RuntimeDatabaseHelper,
-)
+from musigree.runtime.runtime_database.runtime_database_helper import RuntimeDatabaseHelper
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.dml import ReturningInsert
+
+    from musigree.config import Configuration
+    from musigree.runtime.runtime_database.runtime_base_table import RuntimeConcreteTable
 
 log = logging.getLogger(__name__)
 """
@@ -109,22 +112,27 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         target_path = config.SQLITE_RUNTIME_DATABASE_NAME
         log.info(f"Sqlite runtime_database path: {target_path}")
 
-        # target_parent = target_path.parent
-        """Get the parent folder of the runtime_database file."""
-        # target_parent.mkdir(parents=True, exist_ok=True)
-        """Create the parent folder if it does not exist."""
+        database = "file:" + quote(os.path.abspath(target_path), safe="/")
 
         if config.IS_READ_ONLY:
+            # mode and immutable are SQLite URI options. SQLAlchemy only forwards
+            # them when uri=true is also in the query string, and the database
+            # name must be a file: URI.
             query = {
                 "mode": "ro",
                 "immutable": "1",
+                "uri": "true",
             }
+            pool_size = multiprocessing.cpu_count()
         else:
-            query = {}
+            query = {
+                "uri": "true",
+            }
+            pool_size = RuntimeDatabaseManager.get_concurrency_count()
 
-        target_url = URL.create(SQLITE_DRIVER_NAME, database=str(target_path), query=query)
+        target_url = URL.create(SQLITE_DRIVER_NAME, database=database, query=query)
 
-        log.info(f"Sqlite Database URL: {target_url}")
+        log.info(f"Sqlite Database URL: {target_url} pool_size: {pool_size}")
 
         poolclass: type[Pool]
         engine: AsyncEngine
@@ -136,33 +144,9 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
                 "timeout": 60,
             },
             poolclass=poolclass,
-            pool_size=multiprocessing.cpu_count(),
-            # pool_size=RuntimeDatabaseManager.get_concurrency_count(),
+            pool_size=pool_size,
             max_overflow=0,
         )
-        # if config.IS_READ_ONLY:
-        #     poolclass = AsyncAdaptedQueuePool
-        #     engine = create_async_engine(
-        #         target_url,
-        #         connect_args={
-        #             "check_same_thread": False,
-        #             "timeout": 60,
-        #         },
-        #         poolclass=poolclass,
-        #         pool_size=4,
-        #         max_overflow=0,
-        #     )
-        # else:
-        #     # During loading we have a single thread, so we can use a static pool
-        #     poolclass = StaticPool
-        #     engine = create_async_engine(
-        #         target_url,
-        #         connect_args={
-        #             "check_same_thread": False,
-        #             "timeout": 600,
-        #         },
-        #         poolclass=poolclass,
-        #     )
 
         """Create the engine."""
         return engine
@@ -316,9 +300,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """Drop the table."""
 
     @staticmethod
-    async def vacuum(
-        table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine
-    ) -> None:
+    async def vacuum(table_name: str | None, is_full: bool, is_analyze: bool, engine: AsyncEngine) -> None:
         """
         Performs a VACUUM operation on the runtime_database.
 
@@ -369,10 +351,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """
         log.debug(f"ANALYZE {table_name}")
 
-        if table_name is not None:
-            query = f"ANALYZE {table_name};"
-        else:
-            query = "ANALYZE;"
+        query = f"ANALYZE {table_name};" if table_name is not None else "ANALYZE;"
 
         async with engine.connect() as connection:
             await connection.execute(text(query))
@@ -396,7 +375,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_query(
         schema_class: type[RuntimeConcreteTable],
-        values: dict,
+        values: dict[str, Any],
         on_conflict_do_nothing: bool = False,
     ) -> ReturningInsert[tuple[RuntimeConcreteTable]]:
         """
@@ -417,9 +396,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
         """
         if on_conflict_do_nothing:
             """If `on_conflict_do_nothing` is enabled."""
-            return (
-                insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
-            )
+            return insert(schema_class).on_conflict_do_nothing().values(values).returning(schema_class)
         else:
             """If `on_conflict_do_nothing` is disabled."""
             return insert(schema_class).values(values).returning(schema_class)
@@ -427,7 +404,7 @@ class RuntimeSqliteHelper(RuntimeDatabaseHelper):
     @staticmethod
     def generate_insert_bulk_query(
         schema_class: type[RuntimeConcreteTable],
-        values_list: list[dict],
+        values_list: list[dict[str, Any]],
         on_conflict_do_nothing: bool = False,
     ) -> Insert:
         """

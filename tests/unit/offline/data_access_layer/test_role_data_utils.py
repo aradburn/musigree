@@ -1,4 +1,3 @@
-
 from musigree.constants import ROOT_DIR
 from musigree.offline.data_access_layer.role_data_utils import RoleDataUtils
 

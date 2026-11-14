@@ -1,5 +1,6 @@
 """
-This module defines the offline_domain object for representing a music release in the Musigree system.
+This module defines the offline_domain object for representing a music release in the Musigree
+system.
 
 It provides the `Release` class, which encapsulates all the information related
 to a particular music release, such as its unique identifier, artists,

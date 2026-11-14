@@ -3,14 +3,16 @@ import math
 import pickle
 import random
 from collections import Counter
-from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from musigree.library.full_text_search.text_search_utils import (
     SEARCH_STOP_WORDS,
     normalise_search_content,
 )
 from musigree.utils import calculate_size
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +27,8 @@ class TextSearchIndex:
 
     Attributes:
         STOP_WORDS (set[str]): A set of common words to ignore during indexing and searching.
-        token_index (dict[str, set[int]]): The inverted index mapping tokens to sets of document IDs.
+        token_index (dict[str, set[int]]): The inverted index mapping tokens to sets of document
+        IDs.
         documents (dict[int, str]): A mapping of document IDs to their original text content.
         keys (list[int]): A list of all document IDs in the index, used for random access.
     """
@@ -151,9 +154,7 @@ class TextSearchIndex:
         """
         # Normalize the query and filter out stop words
         normalized_query = normalise_search_content(query)
-        analyzed_query = [
-            token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS
-        ]
+        analyzed_query = [token for token in normalized_query.split() if token not in TextSearchIndex.STOP_WORDS]
 
         # Handle empty query after filtering stop words
         if not analyzed_query:
@@ -177,9 +178,7 @@ class TextSearchIndex:
     def save_document_text(self, id_: int, text: str) -> None:
         self.documents[id_] = text
 
-    def rank(
-        self, analyzed_query: list[str], search_results: list[tuple[int, str]]
-    ) -> list[tuple[int, str]]:
+    def rank(self, analyzed_query: list[str], search_results: list[tuple[int, str]]) -> list[tuple[int, str]]:
         """
         Ranks documents based on their relevance to the query.
 

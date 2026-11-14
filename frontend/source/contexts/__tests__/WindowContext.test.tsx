@@ -290,7 +290,11 @@ describe("WindowContext", () => {
             </WindowProvider>,
         );
 
-        // Change container dimensions
+        // Change container dimensions. Desktop height follows the viewport.
+        Object.defineProperty(window, "innerHeight", {
+            value: 600,
+            configurable: true,
+        });
         Object.defineProperty(mockSvgContainer, "clientWidth", {
             value: 800,
             configurable: true,

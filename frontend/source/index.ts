@@ -19,16 +19,25 @@ import "./css/musigree.scss";
 import * as bootstrap from "bootstrap";
 
 import { initApp } from "./init";
+import { selectRolesFromSearch } from "./roles";
+import { applyInitialYearBoundsFromSearch } from "./yearBounds";
 import { version } from "./version";
 
-// Initialize the application when the DOM is loaded
-document.addEventListener("DOMContentLoaded", (): void => {
-    // Initialize React app using dynamic import
+// Initialize the application when the DOM is loaded.
+// Module scripts can finish after DOMContentLoaded, so start immediately then.
+const mountApplication = (): void => {
     import("./components/index.tsx")
         .then((module) => {
             if (typeof module.initReactApp === "function") {
                 try {
                     console.log("Musigree v" + version);
+                    applyInitialYearBoundsFromSearch(window.location.search);
+                    if (typeof window.dgRoles !== "undefined") {
+                        window.dgRoles = selectRolesFromSearch(
+                            window.dgRoles,
+                            window.location.search,
+                        );
+                    }
                     module.initReactApp();
                     console.log("React app initialized successfully");
 
@@ -48,4 +57,10 @@ document.addEventListener("DOMContentLoaded", (): void => {
         .catch((error) => {
             console.error("Failed to load React initialization module:", error);
         });
-});
+};
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mountApplication);
+} else {
+    mountApplication();
+}

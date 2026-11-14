@@ -1,14 +1,18 @@
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import pytest
 
-from musigree.config import Configuration
 from musigree.constants import DISCOGS_DATA
 from musigree.offline.loader.loader_utils import LoaderUtils
 from musigree.offline.loader.parser_release import ParserRelease
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.release_repository import ReleaseRepository
 from tests.conftest import AbstractDatabaseTest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from musigree.config import Configuration
 
 
 @pytest.mark.parametrize("is_load_offline_data_required", [False], scope="class")

@@ -1,5 +1,6 @@
 """
-This module defines the offline_domain object for representing a master record of releases in the Musigree system.
+This module defines the offline_domain object for representing a master record of releases in the
+Musigree system.
 
 It provides the `Master` class, which encapsulates all the information related
 to multiple music releases, such as its unique identifier, artists, genres,

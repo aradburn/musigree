@@ -23,14 +23,16 @@ The `rate_limiter` dependency interacts with the following components:
 
 import logging
 import time
-from collections.abc import Awaitable, Callable
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, Path, Query, Request, Response
 
 from musigree.exceptions import BadRequestError, RateLimitError
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.library.fields.entity_type import EntityType
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 log = logging.getLogger(__name__)
 """
@@ -65,41 +67,41 @@ def get_entity_id(
     return entity_id_int
 
 
-def get_year(
-    year: Annotated[
-        str | None,
-        Query(description="Year or inclusive year range, for example 1990 or 1990-2000"),
+def get_min_year(
+    min_year: Annotated[
+        int | None,
+        Query(description="Inclusive lower bound for release year"),
     ] = None,
-) -> tuple[int, int] | int | None:
-    if year is None:
-        return None
-    year_result: tuple[int, int] | int | None
+) -> int | None:
+    """Return the requested minimum release year, if one was sent."""
+    return min_year
 
-    try:
-        if "-" in year:
-            start, _, stop = year.partition("-")
-            start_year = int(start)
-            stop_year = int(stop)
-            if start_year <= stop_year:
-                year_result = (start_year, stop_year)
-            else:
-                year_result = (stop_year, start_year)
-        else:
-            year_result = int(year)
-    except ValueError:
-        raise BadRequestError(message="Invalid year input") from None
-    log.debug(f"Requested year: {year_result}")
-    return year_result
+
+def get_max_year(
+    max_year: Annotated[
+        int | None,
+        Query(description="Inclusive upper bound for release year"),
+    ] = None,
+) -> int | None:
+    """Return the requested maximum release year, if one was sent."""
+    return max_year
+
+
+def get_year_bounds(
+    min_year: Annotated[int | None, Depends(get_min_year)],
+    max_year: Annotated[int | None, Depends(get_max_year)],
+) -> tuple[int | None, int | None]:
+    """Return inclusive year bounds, rejecting an inverted range."""
+    if min_year is not None and max_year is not None and min_year > max_year:
+        raise BadRequestError(message="min_year must be less than or equal to max_year")
+    log.debug(f"Requested year bounds: {min_year}, {max_year}")
+    return min_year, max_year
 
 
 def get_roles(
     roles: Annotated[
         str | None,
-        Query(
-            description=(
-                "Comma-separated role names; commas in names can be escaped with a backslash"
-            )
-        ),
+        Query(description="Comma-separated role names; commas in names can be escaped with a backslash"),
     ] = None,
 ) -> set[str]:
     from musigree.library.cache.role_cache import RoleCache
@@ -126,7 +128,9 @@ def get_roles(
 
 EntityTypeDep = Annotated[EntityType, Depends(get_entity_type)]
 EntityIdDep = Annotated[int, Depends(get_entity_id)]
-YearDep = Annotated[tuple[int, int] | int | None, Depends(get_year)]
+MinYearDep = Annotated[int | None, Depends(get_min_year)]
+MaxYearDep = Annotated[int | None, Depends(get_max_year)]
+YearBoundsDep = Annotated[tuple[int | None, int | None], Depends(get_year_bounds)]
 RolesDep = Annotated[set[str], Depends(get_roles)]
 OnMobileQuery = Annotated[
     bool,
@@ -184,13 +188,13 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
                 # Convert to int
                 try:
                     current_requests = int(redis_value)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     current_requests = 0
             else:
                 current_requests = 0
 
             remaining = max_requests - current_requests
-        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+        except Exception as e:
             log.warning(f"Redis error in rate limiter: {e}")
             # Fallback: allow request but log the error
             remaining = max_requests
@@ -205,7 +209,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
             # If TTL is a valid positive number, use it
             if isinstance(ttl_raw, int) and ttl_raw > 0:
                 ttl_value = ttl_raw
-        except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+        except Exception as e:
             log.warning(f"Redis TTL error in rate limiter: {e}")
             ttl_value = period
 
@@ -221,7 +225,7 @@ def rate_limiter(max_requests: int = 10, period: int = 60) -> Callable[..., Awai
                 # Set expiration if this is a new key
                 if current_requests == 0:
                     await cache.expire(cache_key, period)
-            except Exception as e:  # noqa: BLE001 - cache backends raise unrelated errors
+            except Exception as e:
                 log.warning(f"Redis incr/expire error in rate limiter: {e}")
                 # Continue without incrementing - graceful degradation
             log.debug(f"key: {cache_key}, remaining: {remaining}, ttl: {ttl_value}")

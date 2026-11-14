@@ -3,8 +3,8 @@
  * Manages dynamic Bootstrap tooltips for D3.js network visualization elements
  */
 
-import { Tooltip } from "bootstrap";
-import type { SimNode, SimLink } from "./data";
+import {Tooltip} from "bootstrap";
+import type {SimLink, SimNode} from "./data";
 
 interface TooltipOptions {
     placement?: "top" | "bottom" | "left" | "right";
@@ -93,7 +93,7 @@ export const nodeTooltip = new TooltipManager<SimNode>(
         customClass: "d3-node-tooltip",
         html: true,
         offset: [0, -16],
-        delay: { show: 100, hide: 100 },
+        delay: {show: 100, hide: 100},
         trigger: "manual",
     },
 );
@@ -109,7 +109,7 @@ export const linkTooltip = new TooltipManager<SimLink>(
         customClass: "d3-link-tooltip",
         html: true,
         offset: [0, 0],
-        delay: { show: 100, hide: 100 },
+        delay: {show: 100, hide: 100},
         trigger: "manual",
     },
 );

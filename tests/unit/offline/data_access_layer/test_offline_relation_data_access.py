@@ -2,6 +2,7 @@
 Unit tests for musigree.offline.data_access_layer.relation_data_access module.
 """
 
+from datetime import date
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -11,6 +12,7 @@ from musigree.library.fields.role_type import RoleType
 from musigree.offline.data_access_layer.offline_relation_data_access import (
     OfflineRelationDataAccess,
 )
+from musigree.offline.offline_domain.master import Master
 from musigree.offline.offline_domain.relation import Relation
 from musigree.offline.offline_domain.release import Release
 
@@ -43,6 +45,17 @@ class TestOfflineRelationDataAccess:
         )
 
     @pytest.fixture
+    def sample_master(self) -> Master:
+        """Provide a master record used when a release has no year."""
+        return Master(
+            master_id=10,
+            title="Test Master",
+            year=1998,
+            main_release="123",
+            data_quality="Correct",
+        )
+
+    @pytest.fixture
     def compilation_release(self) -> Release:
         """Provide a compilation release for testing."""
         return Release(
@@ -72,7 +85,7 @@ class TestOfflineRelationDataAccess:
             mock_find_role.return_value = "producer"
 
             # Act
-            result = OfflineRelationDataAccess.from_release(sample_release)
+            result = OfflineRelationDataAccess.from_release(sample_release, None)
 
             # Assert
             assert isinstance(result, list)
@@ -98,7 +111,7 @@ class TestOfflineRelationDataAccess:
             mock_find_role.return_value = "producer"
 
             # Act
-            result = OfflineRelationDataAccess.from_release(compilation_release)
+            result = OfflineRelationDataAccess.from_release(compilation_release, None)
 
             # Assert
             assert isinstance(result, list)
@@ -131,7 +144,8 @@ class TestOfflineRelationDataAccess:
         assert isinstance(artist_ids, set)
         assert isinstance(label_ids, set)
         assert isinstance(is_compilation, bool)
-        # For compilations, artist_ids should include track artists, not the "Various Artists" placeholder
+        # For compilations, artist_ids should include track artists, not the "Various Artists"
+        # placeholder
         assert artist_ids == {5, 6}  # Track artists
         assert label_ids == {2}
         assert is_compilation is True
@@ -210,6 +224,58 @@ class TestOfflineRelationDataAccess:
         assert relation["object"] == 2
         assert "release_id" in relation
         assert relation["release_id"] == 123
+        assert relation["year"] is None
+
+    def test_from_triples_uses_release_year(self, sample_release: Release) -> None:
+        """Test that a release date supplies the relation year."""
+        # Arrange
+        triples = [(1, "producer", 2)]
+        sample_release.release_date = date(2001, 6, 1)
+
+        # Act
+        result = OfflineRelationDataAccess.from_triples(triples, release=sample_release)
+
+        # Assert
+        assert result[0]["year"] == 2001
+
+    def test_from_triples_uses_master_year_when_release_has_no_date(
+        self,
+        sample_release: Release,
+        sample_master: Master,
+    ) -> None:
+        """Test that the master year is used when the release has no date."""
+        # Arrange
+        triples = [(1, "producer", 2)]
+
+        # Act
+        result = OfflineRelationDataAccess.from_triples(
+            triples,
+            release=sample_release,
+            master=sample_master,
+        )
+
+        # Assert
+        assert result[0]["year"] == 1998
+
+    def test_from_triples_prefers_release_year_over_master_year(
+        self,
+        sample_release: Release,
+        sample_master: Master,
+    ) -> None:
+        """Test that a release date takes precedence over the master year."""
+        # Arrange
+        triples = [(1, "producer", 2)]
+        sample_release.release_date = date(2001, 6, 1)
+
+        # Act
+        result = OfflineRelationDataAccess.from_triples(
+            triples,
+            release=sample_release,
+            master=sample_master,
+        )
+
+        # Assert
+        assert result[0]["year"] == 2001
 
     @pytest.mark.asyncio
     async def test_get_relation_by_key(self) -> None:
@@ -254,7 +320,8 @@ class TestOfflineRelationDataAccess:
     #     }
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(internal_dict)
     #
     #     # Assert
     #     assert result is not None
@@ -268,7 +335,8 @@ class TestOfflineRelationDataAccess:
     #     invalid_dict = {"incomplete": "data"}
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dict_to_relation_external_dict(invalid_dict)
     #
     #     # Assert
     #     assert result is None
@@ -293,7 +361,8 @@ class TestOfflineRelationDataAccess:
     #     ]
     #
     #     # Act
-    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(internal_dicts)
     #
     #     # Assert
     #     assert isinstance(result, list)
@@ -318,7 +387,7 @@ class TestOfflineRelationDataAccess:
             # Mock RoleType.aggregate_roles to include "producer"
             with patch.object(RoleType, "aggregate_roles", {"producer"}):
                 # Act
-                result = OfflineRelationDataAccess.from_release(sample_release)
+                result = OfflineRelationDataAccess.from_release(sample_release, None)
 
                 # Assert
                 assert isinstance(result, list)
@@ -340,7 +409,7 @@ class TestOfflineRelationDataAccess:
             mock_find_role.return_value = "vocals"
 
             # Act
-            result = OfflineRelationDataAccess.from_release(sample_release)
+            result = OfflineRelationDataAccess.from_release(sample_release, None)
 
             # Assert
             assert isinstance(result, list)
@@ -362,7 +431,7 @@ class TestOfflineRelationDataAccess:
         )
 
         # Act
-        result = OfflineRelationDataAccess.from_release(empty_release)
+        result = OfflineRelationDataAccess.from_release(empty_release, None)
 
         # Assert
         assert isinstance(result, list)
@@ -382,11 +451,73 @@ class TestOfflineRelationDataAccess:
         )
 
         # Act
-        result = OfflineRelationDataAccess.from_release(release_with_nones)
+        result = OfflineRelationDataAccess.from_release(release_with_nones, None)
 
         # Assert
         assert isinstance(result, list)
         # Should handle None values gracefully without crashing
+
+    def test_from_release_uses_release_year(self) -> None:
+        """Test that relations take their year from the release date."""
+        # Arrange
+        release = Release(
+            release_id=123,
+            title="Dated Release",
+            artists=[{"id": 1, "name": "Test Artist"}],
+            labels=[{"id": 2, "name": "Test Label"}],
+            release_date=date(2001, 6, 1),
+        )
+        master = Master(
+            master_id=10,
+            title="Test Master",
+            year=1998,
+            main_release="123",
+            data_quality="Correct",
+        )
+
+        # Act
+        result = OfflineRelationDataAccess.from_release(release, master)
+
+        # Assert
+        assert result
+        assert all(relation.year == 2001 for relation in result)
+
+    def test_from_release_uses_master_year_when_release_has_no_date(
+        self,
+        sample_master: Master,
+    ) -> None:
+        """Test that relations fall back to the master year."""
+        # Arrange
+        release = Release(
+            release_id=123,
+            title="Undated Release",
+            artists=[{"id": 1, "name": "Test Artist"}],
+            labels=[{"id": 2, "name": "Test Label"}],
+        )
+
+        # Act
+        result = OfflineRelationDataAccess.from_release(release, sample_master)
+
+        # Assert
+        assert result
+        assert all(relation.year == sample_master.year for relation in result)
+
+    def test_from_release_year_is_none_without_release_date_or_master(self) -> None:
+        """Test that the relation year is absent when neither source has one."""
+        # Arrange
+        release = Release(
+            release_id=123,
+            title="Undated Release",
+            artists=[{"id": 1, "name": "Test Artist"}],
+            labels=[{"id": 2, "name": "Test Label"}],
+        )
+
+        # Act
+        result = OfflineRelationDataAccess.from_release(release, None)
+
+        # Assert
+        assert result
+        assert all(relation.year is None for relation in result)
 
     def test_from_release_no_role_found(self, sample_release: Release) -> None:
         """Test relation extraction when no role is found."""
@@ -403,7 +534,7 @@ class TestOfflineRelationDataAccess:
             mock_find_role.return_value = None  # No role found
 
             # Act
-            result = OfflineRelationDataAccess.from_release(sample_release)
+            result = OfflineRelationDataAccess.from_release(sample_release, None)
 
             # Assert
             assert isinstance(result, list)
@@ -443,6 +574,7 @@ class TestRelationDataAccessEdgeCases:
     #         {"invalid": "data"},
     #         {"also": "invalid"},
     #     ]
-    #     result = OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
+    #     result =
+    # OfflineRelationDataAccess.relation_internal_dicts_to_relation_external_dicts(invalid_dicts)
     #     assert isinstance(result, list)
     #     assert len(result) == 0

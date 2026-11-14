@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from musigree import utils
 from musigree.constants import BULK_INSERT_BATCH_SIZE, BULK_LOAD_CHUNK_SIZE, ThreadingModel
@@ -8,8 +8,6 @@ from musigree.offline.offline_database.entity_repository import EntityRepository
 from musigree.offline.offline_database.offline_transaction import offline_transaction
 from musigree.offline.offline_database.relation_repository import RelationRepository
 from musigree.offline.offline_database.role_repository import RoleRepository
-from musigree.offline.offline_domain.entity import Entity
-from musigree.offline.offline_domain.relation import RelationDB
 from musigree.runtime.data_access_layer.entity_details_index import EntityDetailsIndex
 from musigree.runtime.runtime_database.runtime_country_repository import RuntimeCountryRepository
 from musigree.runtime.runtime_database.runtime_entity_repository import (
@@ -38,6 +36,12 @@ from musigree.transfer.transfer_worker_relation_inserter import (
     transfer_worker_relation_inserter,
 )
 from musigree.transfer.transfer_worker_token_inserter import transfer_worker_token_inserter
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from musigree.offline.offline_domain.entity import Entity
+    from musigree.offline.offline_domain.relation import RelationDB
 
 log = logging.getLogger(__name__)
 
@@ -256,9 +260,7 @@ class TransferManager:
             log.debug(f"Runtime genre repository count: {initial_count}")
         else:
             log.debug("Running transfer_entity_details: genres")
-            sorted_genres = sorted(
-                RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list
-            )
+            sorted_genres = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.genres_list)
 
             async with runtime_transaction():
                 runtime_genre_repository = RuntimeGenreRepository()
@@ -276,9 +278,7 @@ class TransferManager:
             log.debug(f"Runtime style repository count: {initial_count}")
         else:
             log.debug("Running transfer_entity_details: styles")
-            sorted_styles = sorted(
-                RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list
-            )
+            sorted_styles = sorted(RuntimeDatabaseManager.runtime_database_helper.entity_details_index.styles_list)
 
             async with runtime_transaction():
                 runtime_style_repository = RuntimeStyleRepository()
@@ -350,9 +350,7 @@ class TransferManager:
         assert RuntimeDatabaseManager.runtime_database_helper is not None, (
             "runtime_database_helper must be initialized before calling initialize()"
         )
-        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(
-            entity_details_path
-        )
+        entity_details_index = EntityDetailsIndex.load_entity_details_index_from_file(entity_details_path)
         RuntimeDatabaseManager.runtime_database_helper.entity_details_index = entity_details_index
 
     @staticmethod
@@ -361,7 +359,8 @@ class TransferManager:
             "RuntimeDatabaseManager.runtime_database_helper must be initialized before calling transfer_optimize()"
         )
         assert RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine is not None, (
-            "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be initialized before calling transfer_optimize()"
+            "RuntimeDatabaseManager.runtime_database_helper.runtime_async_engine must be "
+            "initialized before calling transfer_optimize()"
         )
 
         return await RuntimeDatabaseManager.runtime_database_helper.optimize(

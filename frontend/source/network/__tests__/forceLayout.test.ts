@@ -8,6 +8,7 @@ import {
     stopForceLayout,
     setNetworkForces,
     resetNetworkForces,
+    createForceLayoutRandom,
 } from "../forceLayout";
 import type { SimNode, SimLink } from "../data";
 import { NodeType } from "../data";
@@ -23,6 +24,7 @@ vi.mock("d3", () => ({
         nodes: vi.fn().mockReturnThis(),
         alpha: vi.fn().mockReturnThis(),
         restart: vi.fn().mockReturnThis(),
+        randomSource: vi.fn().mockReturnThis(),
     })),
     forceCollide: vi.fn(() => ({
         radius: vi.fn().mockReturnThis(),
@@ -48,6 +50,7 @@ vi.mock("d3", () => ({
     forceRadial: vi.fn(() => ({
         strength: vi.fn().mockReturnThis(),
     })),
+    interval: vi.fn(() => ({ stop: vi.fn() })),
     group: vi.fn(() => new Map()),
     arc: vi.fn(() => ({
         innerRadius: vi.fn().mockReturnThis(),
@@ -67,6 +70,7 @@ vi.mock("../../core/singletons", () => {
         data: vi.fn().mockReturnValue({
             join: vi.fn(),
         }),
+        attr: vi.fn().mockReturnThis(),
         classed: vi.fn().mockReturnThis(),
     });
 
@@ -146,6 +150,7 @@ const createMockLink = (
     highlighted: false,
     selected: false,
     ...props,
+    years: props.years ?? [],
 });
 
 // Mock DOM elements
@@ -184,6 +189,22 @@ describe("Force Layout Display and Control", () => {
         expect(networkManager.layers.link.selectAll).toHaveBeenCalled();
     });
 
+    it("should place nodes at their starting coordinates before the simulation ticks", () => {
+        const node = createMockNode("center", { x: 400, y: 300 });
+        networkManager.data.nodeMap = new Map([[node.key, node]]);
+
+        displayForceLayout();
+
+        const selection = vi.mocked(networkManager.layers.node.selectAll).mock
+            .results[0]?.value as { attr: ReturnType<typeof vi.fn> };
+        const transformCalls = selection.attr.mock.calls.filter(
+            (call: unknown[]) => call[0] === "transform",
+        );
+        expect(transformCalls).toHaveLength(3);
+        const translate = transformCalls[0][1] as (d: SimNode) => string;
+        expect(translate(node)).toBe("translate(400,300)");
+    });
+
     it("should start force layout with provided nodes", () => {
         const mockNodes: SimNode[] = [
             createMockNode("1", { x: 0, y: 0 }),
@@ -200,10 +221,92 @@ describe("Force Layout Display and Control", () => {
     it("should restart force layout with new alpha value", () => {
         networkManager.forceLayout = d3.forceSimulation();
         restartForceLayout(FORCE.SIMULATION.ALPHA);
+        expect(networkManager.forceLayout.randomSource).toHaveBeenCalledWith(
+            expect.any(Function),
+        );
         expect(networkManager.forceLayout.alpha).toHaveBeenCalledWith(
             FORCE.SIMULATION.ALPHA,
         );
+        expect(networkManager.forceLayout.stop).toHaveBeenCalled();
         expect(networkManager.forceLayout.restart).toHaveBeenCalled();
+        expect(d3.interval).not.toHaveBeenCalled();
+    });
+
+    it("stops the slowed simulation timer", () => {
+        const originalInterval = FORCE.SIMULATION.TICK_INTERVAL_MS;
+        FORCE.SIMULATION.TICK_INTERVAL_MS = 100;
+        const stopTimer = vi.fn();
+        vi.mocked(d3.interval).mockReturnValueOnce({
+            stop: stopTimer,
+        } as never);
+        networkManager.forceLayout = d3.forceSimulation();
+
+        try {
+            restartForceLayout(FORCE.SIMULATION.ALPHA);
+            stopForceLayout();
+
+            expect(d3.interval).toHaveBeenCalledWith(expect.any(Function), 100);
+            expect(stopTimer).toHaveBeenCalled();
+            expect(networkManager.forceLayout.stop).toHaveBeenCalled();
+        } finally {
+            FORCE.SIMULATION.TICK_INTERVAL_MS = originalInterval;
+        }
+    });
+
+    it("resets the random source to the same sequence on every restart", () => {
+        networkManager.forceLayout = d3.forceSimulation();
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
+        restartForceLayout(FORCE.SIMULATION.ALPHA);
+
+        const randomSource = vi.mocked(networkManager.forceLayout.randomSource);
+        const firstSource = randomSource.mock.calls[0][0];
+        const secondSource = randomSource.mock.calls[1][0];
+        const sample = (source: () => number): number[] => [
+            source(),
+            source(),
+            source(),
+        ];
+        const firstValues = sample(firstSource);
+
+        expect(sample(secondSource)).toEqual(firstValues);
+        expect(sample(createForceLayoutRandom())).toEqual(firstValues);
+    });
+
+    it("settles the same graph to the same positions on separate runs", async () => {
+        const d3Actual = await vi.importActual<typeof import("d3")>("d3");
+
+        const layoutPositions = (): Array<[number, number]> => {
+            const nodes = [
+                { key: "a", x: 400, y: 300 },
+                { key: "b", x: 400, y: 300 },
+                { key: "c", x: 400, y: 300 },
+            ];
+            const simulation = d3Actual
+                .forceSimulation(nodes)
+                .randomSource(createForceLayoutRandom())
+                .force("charge", d3Actual.forceManyBody())
+                .force(
+                    "link",
+                    d3Actual
+                        .forceLink([
+                            { source: "a", target: "b" },
+                            { source: "b", target: "c" },
+                        ])
+                        .id((node) => {
+                            const key = "key" in node ? node.key : undefined;
+                            return typeof key === "string" ? key : "";
+                        }),
+                )
+                .stop();
+
+            for (let tick = 0; tick < 40; tick += 1) {
+                simulation.tick();
+            }
+
+            return nodes.map((node) => [node.x, node.y]);
+        };
+
+        expect(layoutPositions()).toEqual(layoutPositions());
     });
 
     it("should stop force layout", () => {

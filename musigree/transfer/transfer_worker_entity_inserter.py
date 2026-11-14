@@ -49,16 +49,18 @@ and `musigree.runtime.runtime_database_manager` for managing concurrency.
 import asyncio
 import logging
 import multiprocessing
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from musigree.exceptions import DatabaseError
-from musigree.offline.offline_domain.entity import Entity
 from musigree.runtime.data_access_layer.runtime_entity_data_access import RuntimeEntityDataAccess
 from musigree.runtime.runtime_database.runtime_entity_repository import (
     RuntimeEntityRepository,
 )
 from musigree.runtime.runtime_database.runtime_transaction import runtime_transaction
 from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+if TYPE_CHECKING:
+    from musigree.offline.offline_domain.entity import Entity
 
 log = logging.getLogger(__name__)
 
@@ -97,9 +99,7 @@ async def transfer_worker_entity_inserter_async(
     """Log the number of entities inserted."""
 
 
-def transfer_worker_entity_inserter(
-    entity_list: list[Entity], current_total: int, total_count: int
-) -> None:
+def transfer_worker_entity_inserter(entity_list: list[Entity], current_total: int, total_count: int) -> None:
     # Run the async function
     try:
         loop = asyncio.get_running_loop()
@@ -112,9 +112,7 @@ def transfer_worker_entity_inserter(
     RuntimeDatabaseManager.reinitialize_runtime_database_async_engine(loop)
     """Initialize the database engine."""
 
-    runtime_entity_dicts_list = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(
-        entity_list
-    )
+    runtime_entity_dicts_list = RuntimeEntityDataAccess.get_runtime_entity_dicts_from_entities(entity_list)
 
     loop.run_until_complete(
         transfer_worker_entity_inserter_async(runtime_entity_dicts_list, current_total, total_count)

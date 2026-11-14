@@ -4,8 +4,8 @@ import logging
 import multiprocessing
 import socket
 import time
-from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 import uvicorn
@@ -20,6 +20,9 @@ from musigree.config import (
 from musigree.constants import CacheType
 from musigree.logging_config import TEST_LOGGING_CONFIG, setup_logging
 from tests.e2e.end_to_end_utils import TEST_SERVER_BASE_PORT, TEST_SERVER_BASE_URL
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Generator
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +43,8 @@ def run_server(runtime_db_path: str) -> None:
 
     app = create_app(readonly_config)
 
-    # uvicorn.run(app, host="0.0.0.0", port=TEST_SERVER_BASE_PORT, log_level="trace", access_log=True)
+    # uvicorn.run(app, host="0.0.0.0", port=TEST_SERVER_BASE_PORT, log_level="trace",
+    # access_log=True)
     uvicorn.run(
         app,
         host="0.0.0.0",
@@ -62,7 +66,7 @@ def is_server_ready(
         result = sock.connect_ex((host, port))
         sock.close()
         return result == 0
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
 
 

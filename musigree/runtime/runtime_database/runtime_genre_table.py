@@ -20,7 +20,8 @@ class RuntimeGenreTable(RuntimeBase):
         __tablename__ (str): The name of the table in the runtime_database.
         id (Mapped[int]): The primary key of the table, an auto-incrementing
             integer representing the unique identifier for the runtime genre.
-        genre_name (Mapped[str]): The name of the genre (e.g., 'Electronic', 'Rock'). This column is indexed for faster lookups.
+        genre_name (Mapped[str]): The name of the genre (e.g., 'Electronic', 'Rock'). This column is
+        indexed for faster lookups.
     """
 
     __tablename__ = "genre"

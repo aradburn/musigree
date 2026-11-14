@@ -15,3 +15,14 @@ ALL_OFFLINE_DATABASE_TABLES = [
     MasterTable,
     TokenTable,
 ]
+
+__all__ = [
+    "ALL_OFFLINE_DATABASE_TABLES",
+    "EntityTable",
+    "MasterTable",
+    "MetadataTable",
+    "RelationTable",
+    "ReleaseTable",
+    "RoleTable",
+    "TokenTable",
+]

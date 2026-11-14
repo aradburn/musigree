@@ -8,7 +8,10 @@ that header for the one image.
 
 from __future__ import annotations
 
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 _OPEN_GRAPH_IMAGE_PATH = "/img/og_image.png"
 _CORP_HEADER_NAME = b"cross-origin-resource-policy"
@@ -35,11 +38,7 @@ class OpenGraphImageEmbeddingMiddleware:
                 raw_headers = message.setdefault("headers", [])
                 # SecWeb writes the header in mixed case. Match case-insensitively
                 # so the same-site value is replaced rather than sent twice.
-                message["headers"] = [
-                    (name, value)
-                    for name, value in raw_headers
-                    if name.lower() != _CORP_HEADER_NAME
-                ]
+                message["headers"] = [(name, value) for name, value in raw_headers if name.lower() != _CORP_HEADER_NAME]
                 message["headers"].append((_CORP_HEADER_NAME, b"cross-origin"))
             await send(message)
 
