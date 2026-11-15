@@ -18,13 +18,13 @@ LOGGING_CONFIG: dict[str, Any] = {
     },
     "handlers": {
         "default": {
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },
         "console_handler": {
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
@@ -63,7 +63,7 @@ LOGGING_CONFIG: dict[str, Any] = {
         },
         "musigree": {
             "handlers": ["console_handler"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         "tests": {
@@ -88,12 +88,12 @@ LOGGING_CONFIG: dict[str, Any] = {
         },
         "fastapi": {
             "handlers": ["console_handler"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
         "__main__": {  # if __name__ == '__main__'
             "handlers": ["console_handler"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": False,
         },
     },
