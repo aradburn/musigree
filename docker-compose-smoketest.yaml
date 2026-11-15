@@ -1,12 +1,11 @@
 # Smoke-test the production image against the local SQLite runtime database
-# and the Redis server on this machine.
+# and a Redis container on this stack's private network.
 # SqliteProductionConfiguration resolves the runtime database to
 # ROOT_DIR/../data/musigree_runtime_prod.db, which is /data/musigree_runtime_prod.db
 # when the app lives in /app.
 #
-# Host networking makes localhost inside the container the host's localhost,
-# where Redis is listening. Published ports are not used in this mode, so
-# gunicorn binds 127.0.0.1:5000 directly.
+# Redis keeps the cache in memory only, capped at 512MB, and evicts the least
+# recently used keys when that cap is reached. It is not published on a host port.
 #
 # The root filesystem is read-only. Writable scratch is a noexec tmpfs on
 # /tmp and /var/tmp. Gunicorn heartbeats use the default /dev/shm tmpfs
@@ -16,7 +15,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    network_mode: host
+    ports:
+      - "127.0.0.1:5000:5000"
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m
@@ -29,39 +29,44 @@ services:
     init: true
     user: "65532:65532"
     environment:
-      REDIS_HOST: localhost
+      REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_USERNAME: default
       REDIS_PASSWORD: redis_dev
-    command:
-      - gunicorn
-      - --workers
-      - "1"
-      - --worker-class
-      - uvicorn.workers.UvicornWorker
-      - --bind
-      - 127.0.0.1:5000
-      - --timeout
-      - "60"
-      - --keep-alive
-      - "5"
-      - --max-requests
-      - "100000"
-      - --max-requests-jitter
-      - "100"
-      - --graceful-timeout
-      - "30"
-      - --access-logfile
-      - "-"
-      - --error-logfile
-      - "-"
-      - --log-level
-      - info
-      - --worker-tmp-dir
-      - /dev/shm
-      - musigree.app.fastapi_prod_app:app
     volumes:
       - type: bind
         source: ./runtime_database/musigree_runtime_dev.db
         target: /data/musigree_runtime_prod.db
         read_only: true
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8-alpine
+    environment:
+      REDIS_PASSWORD: redis_dev
+    command:
+      - redis-server
+      - --requirepass
+      - redis_dev
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+    tmpfs:
+      - /data:rw,noexec,nosuid,nodev,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

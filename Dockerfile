@@ -56,8 +56,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.14.7-slim-trixie AS final
 
 # Image metadata. Filled in by release.sh
-ARG IMAGE_VERSION="1.1.4"
-ARG IMAGE_CREATED="2026-11-14T12:04:52Z"
+ARG IMAGE_VERSION="1.1.5"
+ARG IMAGE_CREATED="2026-11-15T16:09:20Z"
 # Keep interpreter scratch off the application tree so a read-only root
 # filesystem only needs a tmpfs on /tmp. Gunicorn heartbeats use /dev/shm.
 ENV PATH="/app/.venv/bin:$PATH" \
@@ -117,7 +117,7 @@ COPY --from=frontend-builder --chmod=555 /app/frontend/dist /app/frontend/dist
 
 # Drop setuid/setgid from privileged binaries in the base image.
 # /tmp and /var/tmp stay available as mount points; run the container with a
-# read-only root and tmpfs on those paths (see docker-compose.yml and
+# read-only root and tmpfs on those paths (see docker-compose.yaml and
 # docker-compose-smoketest.yaml).
 RUN set -eu; \
     for dir in /bin /usr/bin /usr/sbin /usr/lib /usr/libexec; do \
@@ -136,9 +136,9 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=120s --retries=3 \
     CMD ["python", "health.py"]
 
-# Run the application with gunicorn
+# Run the application with gunicorn with four workers
 CMD ["gunicorn", \
-     "--workers", "1", \
+     "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", \
      "--timeout", "60", \
