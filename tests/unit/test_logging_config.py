@@ -56,13 +56,13 @@ class TestLoggingConfig:
 
         # Check default handler
         default = handlers["default"]
-        assert default["level"] == "DEBUG"
+        assert default["level"] == "INFO"
         assert default["formatter"] == "standard"
         assert default["class"] == "logging.StreamHandler"
 
         # Check console handler
         console = handlers["console_handler"]
-        assert console["level"] == "DEBUG"
+        assert console["level"] == "INFO"
         assert console["formatter"] == "standard"
         assert console["class"] == "logging.StreamHandler"
 
@@ -76,7 +76,7 @@ class TestLoggingConfig:
         # Check musigree logger
         musigree_logger = loggers["musigree"]
         assert "console_handler" in musigree_logger["handlers"]
-        assert musigree_logger["level"] == "DEBUG"
+        assert musigree_logger["level"] == "INFO"
         assert musigree_logger["propagate"] is False
 
     def test_test_logging_config_structure(self) -> None:
@@ -242,11 +242,15 @@ class TestLoggingConfig:
 
     def test_musigree_logger_configuration(self) -> None:
         """Test specific configuration for musigree logger."""
-        for config in [LOGGING_CONFIG, TEST_LOGGING_CONFIG]:
-            musigree_logger = config["loggers"]["musigree"]
-            assert musigree_logger["level"] == "DEBUG"
-            assert musigree_logger["propagate"] is False
-            assert "console_handler" in musigree_logger["handlers"]
+        production_logger = LOGGING_CONFIG["loggers"]["musigree"]
+        assert production_logger["level"] == "INFO"
+        assert production_logger["propagate"] is False
+        assert "console_handler" in production_logger["handlers"]
+
+        test_logger = TEST_LOGGING_CONFIG["loggers"]["musigree"]
+        assert test_logger["level"] == "DEBUG"
+        assert test_logger["propagate"] is False
+        assert "console_handler" in test_logger["handlers"]
 
     def test_root_logger_configuration(self) -> None:
         """Test specific configuration for root logger."""
