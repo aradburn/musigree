@@ -1,0 +1,73 @@
+# Coolify Git Docker Compose build pack.
+# https://coolify.io/docs/applications/builds/docker-compose
+#
+# Coolify generates SERVICE_URL_MUSIGREE_5000 and routes public HTTPS to
+# port 5000. It generates SERVICE_PASSWORD_REDIS once and uses that password
+# for both the Redis service and the application. Musigree reaches Redis
+# by the Compose service name on this stack's private network. Redis keeps
+# the cache in memory only, capped at 512MB, and evicts the least recently
+# used keys when that cap is reached.
+#
+# The runtime SQLite file is /data/musigree_runtime_prod.db inside the
+# container. That path is the host directory /home/musigree/data, mounted
+# read-only. The database file must be world-readable; the process runs as
+# uid 65532.
+
+services:
+  musigree:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=1777,size=64m
+      - /var/tmp:rw,noexec,nosuid,nodev,mode=1777,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    init: true
+    user: "65532:65532"
+    environment:
+      SERVICE_URL_MUSIGREE_5000: /
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_USERNAME: default
+      REDIS_PASSWORD: ${SERVICE_PASSWORD_REDIS}
+    volumes:
+      - /home/musigree/data:/data:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${SERVICE_PASSWORD_REDIS}
+    command:
+      - redis-server
+      - --requirepass
+      - ${SERVICE_PASSWORD_REDIS}
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+    tmpfs:
+      - /data:rw,noexec,nosuid,nodev,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
