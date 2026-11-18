@@ -236,6 +236,7 @@ def test_rate_limit_error_default() -> None:
     error = RateLimitError()
     assert error.message == "Too Many Requests"
     assert error.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+    assert error.headers == {}
 
 
 def test_rate_limit_error_custom_message() -> None:
@@ -243,6 +244,13 @@ def test_rate_limit_error_custom_message() -> None:
     custom_message = "Rate limit exceeded"
     error = RateLimitError(message=custom_message)
     assert error.message == custom_message
+    assert error.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+
+def test_rate_limit_error_stores_headers() -> None:
+    """Test RateLimitError keeps headers for the HTTP response."""
+    error = RateLimitError(headers={"X-RateLimit-Limit": "500"})
+    assert error.headers == {"X-RateLimit-Limit": "500"}
     assert error.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
 

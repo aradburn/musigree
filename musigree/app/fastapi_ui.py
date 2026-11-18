@@ -26,7 +26,7 @@ for role caching. It interacts with `musigree.runtime` for database operations.
 import json
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from musigree.app.fastapi_dependencies import (
@@ -35,6 +35,7 @@ from musigree.app.fastapi_dependencies import (
     OnMobileQuery,
     RolesDep,
     YearBoundsDep,
+    ui_rate_limit,
 )
 from musigree.exceptions import NotFoundError
 from musigree.library.fields.entity_type import EntityType
@@ -45,7 +46,7 @@ log = logging.getLogger(__name__)
 The logger for the UI module.
 """
 
-router = APIRouter(tags=["ui"])
+router = APIRouter(tags=["ui"], dependencies=[Depends(ui_rate_limit)])
 """
 The FastAPI router for the UI routes.
 

@@ -49,6 +49,7 @@ from musigree.constants import (
 from musigree.exceptions import (
     BaseError,
     NotFoundError,
+    RateLimitError,
 )
 from musigree.library.cache.cache_manager import CacheManager
 from musigree.logging_config import setup_logging, shutdown_logging
@@ -276,7 +277,7 @@ def create_app(config: Configuration) -> FastAPI:
     @app.exception_handler(BaseError)
     async def base_error_handler(request: Request, exc: BaseError) -> Response:
         if request.url.path.startswith("/api/"):
-            return JSONResponse(
+            response: Response = JSONResponse(
                 status_code=exc.status_code,
                 content={
                     "success": False,
@@ -285,7 +286,7 @@ def create_app(config: Configuration) -> FastAPI:
                 },
             )
         elif request.url.path.startswith("/health/"):
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=exc.status_code,
                 content={
                     "success": False,
@@ -295,12 +296,15 @@ def create_app(config: Configuration) -> FastAPI:
             )
         else:
             # For non-API routes, return an HTML response
-            return templates.TemplateResponse(
+            response = templates.TemplateResponse(
                 request=request,
                 name="error.html",
                 context={"error": exc},
                 status_code=exc.status_code,
             )
+        if isinstance(exc, RateLimitError):
+            response.headers.update(exc.headers)
+        return response
 
     # noinspection PyUnusedLocal,unused-parameter
     @app.exception_handler(status.HTTP_404_NOT_FOUND)
@@ -371,7 +375,7 @@ def create_app(config: Configuration) -> FastAPI:
 #             )
 #             analytics_api_url = "https://swetrix-api.musigree.com/ "
 #         case AnalyticsType.OPENPANEL:
-#             analytics_script_url = "https://openpanel.dev/op1.js "
+#             # Tracker is vendored at /js/vendor/op1.js.
 #             analytics_api_url = "https://opapi.musigree.com/ "
 
 
