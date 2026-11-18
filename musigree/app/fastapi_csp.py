@@ -52,6 +52,13 @@ def get_content_security_policy_report_only() -> Content_Security_Policy_Options
     return csp
 
 
+def _with_remote_script(sources: list[str], analytics_script_url: str) -> list[str]:
+    """Add a remote script host only when the tracker is not served by this origin."""
+    if not analytics_script_url:
+        return sources
+    return [*sources, analytics_script_url]
+
+
 def get_content_security_policy_production(
     analytics_script_url: str, analytics_api_url: str
 ) -> Content_Security_Policy_Options:
@@ -59,17 +66,21 @@ def get_content_security_policy_production(
     csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
         "default-src": ["'none'"],
-        "script-src": [
-            "'self'",
-            # "data:",
+        "script-src": _with_remote_script(
+            [
+                "'self'",
+                # "data:",
+            ],
             analytics_script_url,
-        ],
+        ),
         # Inline scripts are allowed per response by a nonce, not 'unsafe-inline'.
-        "script-src-elem": [
-            "'self'",
-            # "data:",
+        "script-src-elem": _with_remote_script(
+            [
+                "'self'",
+                # "data:",
+            ],
             analytics_script_url,
-        ],
+        ),
         "style-src": [
             "'self'",
         ],
@@ -106,20 +117,24 @@ def get_content_security_policy_development(
     csp: Content_Security_Policy_Options = {
         "frame-ancestors": ["'self'"],
         "default-src": ["'none'"],
-        "script-src": [
-            "'self'",
-            # "data:",
-            "http://localhost:5173",
-            "http://localhost:5173/assets/@vite/client",
+        "script-src": _with_remote_script(
+            [
+                "'self'",
+                # "data:",
+                "http://localhost:5173",
+                "http://localhost:5173/assets/@vite/client",
+            ],
             analytics_script_url,
-        ],
-        "script-src-elem": [
-            "'self'",
-            # "data:",
-            "http://localhost:5173",
-            "http://localhost:5173/assets/@vite/client",
+        ),
+        "script-src-elem": _with_remote_script(
+            [
+                "'self'",
+                # "data:",
+                "http://localhost:5173",
+                "http://localhost:5173/assets/@vite/client",
+            ],
             analytics_script_url,
-        ],
+        ),
         "style-src": [
             "'self'",
             "http://localhost:5173",
@@ -229,7 +244,7 @@ def setup_csp_middleware(app: FastAPI, config: Configuration) -> None:
             analytics_script_url = "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ "
             analytics_api_url = "https://swetrix-api.musigree.com/ "
         case AnalyticsType.OPENPANEL:
-            analytics_script_url = "https://openpanel.dev/op1.js "
+            # Tracker is vendored at /js/vendor/op1.js and allowed by 'self'.
             analytics_api_url = "https://opapi.musigree.com/ "
 
     is_report_only = False

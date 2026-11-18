@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, status
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
@@ -24,7 +24,7 @@ from musigree.app.fastapi_app import (
 )
 from musigree.app.fastapi_permissions_policy import PermissionsPolicy
 from musigree.config import Configuration, SqliteTestConfiguration
-from musigree.exceptions import BaseError
+from musigree.exceptions import BaseError, RateLimitError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -262,6 +262,22 @@ class TestExceptionHandlers:
         # Assert
         assert isinstance(response, JSONResponse)
         assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_base_error_handler_keeps_rate_limit_headers(self, app: FastAPI) -> None:
+        """Test that a rate-limit response keeps the limiter headers."""
+        mock_request = MagicMock(spec=Request)
+        mock_request.url.path = "/api/test"
+        error = RateLimitError(headers={"X-RateLimit-Limit": "500", "X-RateLimit-Remaining": "0"})
+
+        handler = app.exception_handlers.get(BaseError)
+        assert handler is not None, "BaseError handler not found"
+
+        response = await _invoke_http_exception_handler(handler, mock_request, error)
+
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert response.headers["X-RateLimit-Limit"] == "500"
+        assert response.headers["X-RateLimit-Remaining"] == "0"
 
     @pytest.mark.asyncio
     async def test_base_error_handler_non_api_route(self, app: FastAPI) -> None:

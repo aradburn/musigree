@@ -7,13 +7,22 @@ year range parsing, role filtering, Redis client management, and rate limiting f
 """
 
 import time
-from typing import Annotated, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, get_args, get_origin
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastapi import Request, Response
+from fastapi.routing import APIRoute
 
+from musigree.app.fastapi_api import router as api_router
+from musigree.app.fastapi_assets import create_assets_router
 from musigree.app.fastapi_dependencies import (
+    DEFAULT_BURST_MAX_REQUESTS,
+    HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+    HEAVY_USAGE_DAILY_REQUEST_THRESHOLD,
+    HEAVY_USAGE_HOURLY_PERIOD_SECONDS,
+    HEAVY_USAGE_HOURLY_REQUEST_LIMIT,
+    SEARCH_BURST_MAX_REQUESTS,
     EntityIdDep,
     EntityTypeDep,
     MaxYearDep,
@@ -21,6 +30,7 @@ from musigree.app.fastapi_dependencies import (
     OnMobileQuery,
     RolesDep,
     YearBoundsDep,
+    api_rate_limit,
     get_entity_id,
     get_entity_type,
     get_max_year,
@@ -29,9 +39,15 @@ from musigree.app.fastapi_dependencies import (
     get_year_bounds,
     rate_limiter,
 )
+from musigree.app.fastapi_healthcheck import router as health_router
+from musigree.app.fastapi_ui import router as ui_router
 from musigree.exceptions import BadRequestError, RateLimitError
+from musigree.library.cache.cache_manager import FakeRedisCache
 from musigree.library.fields.entity_type import EntityType
 from tests.type_helpers import as_object
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class TestGetEntityType:
@@ -561,6 +577,268 @@ class TestRateLimiter:
 
             # Should not increment when limit exceeded
             mock_cache.incr.assert_not_called()
+
+
+class TestHeavyUsageRateLimit:
+    """Daily threshold keeps the burst limit, then switches to an hourly cap."""
+
+    @pytest.fixture
+    def mock_request(self) -> Mock:
+        """Create a mock FastAPI Request object."""
+        request = Mock(spec=Request)
+        request.url.path = "/api/roles"
+        request.client = Mock()
+        request.client.host = "127.0.0.1"
+        return request
+
+    @pytest.fixture
+    def mock_response(self) -> Mock:
+        """Create a mock FastAPI Response object."""
+        response = Mock(spec=Response)
+        response.headers = {}
+        return response
+
+    @pytest.fixture
+    async def fake_cache(self) -> AsyncIterator[FakeRedisCache]:
+        """Provide an isolated in-memory Redis stand-in."""
+        cache = FakeRedisCache()
+        try:
+            yield cache
+        finally:
+            await cache.close()
+
+    async def test_under_daily_threshold_keeps_burst_limit(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A client below 1000 requests a day still uses the route burst limit."""
+        await fake_cache.set("ratelimit:daily:127.0.0.1", "5", timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS)
+        limiter = rate_limiter(
+            max_requests=DEFAULT_BURST_MAX_REQUESTS,
+            period=60,
+            enforce_heavy_usage_limit=True,
+        )
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await limiter(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+        assert mock_response.headers["X-RateLimit-Daily-Limit"] == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
+        assert mock_response.headers["X-RateLimit-Daily-Remaining"] == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD - 6)
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == "6"
+
+    async def test_request_at_daily_threshold_still_uses_burst_limit(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """The 1000th request of the day is still on the normal burst limit."""
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD - 1),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await limiter(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+        assert mock_response.headers["X-RateLimit-Daily-Remaining"] == "0"
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
+
+    async def test_over_daily_threshold_limits_to_hourly_cap(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """After 1000 requests in a day, the next requests are limited to 500 per hour."""
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        await fake_cache.set("ratelimit:hourly:127.0.0.1", "10", timeout=HEAVY_USAGE_HOURLY_PERIOD_SECONDS)
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await limiter(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT)
+        assert mock_response.headers["X-RateLimit-Remaining"] == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT - 11)
+        assert mock_response.headers["X-RateLimit-Daily-Remaining"] == "0"
+        assert await fake_cache.get("ratelimit:hourly:127.0.0.1") == "11"
+
+    async def test_hourly_cap_rejects_without_counting_the_request(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A request over the hourly cap is rejected and does not move the counters."""
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        await fake_cache.set(
+            "ratelimit:hourly:127.0.0.1",
+            str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT),
+            timeout=HEAVY_USAGE_HOURLY_PERIOD_SECONDS,
+        )
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError) as error,
+        ):
+            await limiter(mock_request, mock_response)
+
+        assert error.value.headers["X-RateLimit-Limit"] == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT)
+        assert error.value.headers["X-RateLimit-Remaining"] == "0"
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
+        assert await fake_cache.get("ratelimit:hourly:127.0.0.1") == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT)
+        assert await fake_cache.get("ratelimit:/api/roles:127.0.0.1") is None
+
+    async def test_burst_limit_still_rejects_low_daily_usage(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """The per-route burst limit still applies before the daily threshold."""
+        await fake_cache.set(
+            "ratelimit:/api/roles:127.0.0.1",
+            str(DEFAULT_BURST_MAX_REQUESTS),
+            timeout=60,
+        )
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError),
+        ):
+            await limiter(mock_request, mock_response)
+
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") is None
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+
+    async def test_daily_counter_is_shared_across_routes(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """Routes share one daily counter for the client."""
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await limiter(mock_request, mock_response)
+            mock_request.url.path = "/api/random"
+            await limiter(mock_request, mock_response)
+
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == "2"
+        assert await fake_cache.get("ratelimit:/api/roles:127.0.0.1") == "1"
+        assert await fake_cache.get("ratelimit:/api/random:127.0.0.1") == "1"
+
+    async def test_search_burst_is_higher_than_other_routes(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """Search keeps its higher per-minute limit until the daily threshold."""
+        await fake_cache.set("ratelimit:/api/search/beatles:127.0.0.1", "60", timeout=60)
+        mock_request.url.path = "/api/search/beatles"
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await api_rate_limit(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(SEARCH_BURST_MAX_REQUESTS)
+
+        mock_request.url.path = "/api/roles"
+        mock_response.headers = {}
+        await fake_cache.set("ratelimit:/api/roles:127.0.0.1", str(DEFAULT_BURST_MAX_REQUESTS), timeout=60)
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError),
+        ):
+            await api_rate_limit(mock_request, mock_response)
+
+    async def test_sustained_cache_error_still_allows_burst_request(
+        self,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A cache failure while reading the daily counter does not block a normal request."""
+
+        async def get(key: str) -> str | None:
+            if key.startswith("ratelimit:daily:") or key.startswith("ratelimit:hourly:"):
+                raise ConnectionError("cache down")
+            return None
+
+        cache = MagicMock()
+        cache.get = AsyncMock(side_effect=get)
+        cache.ttl = AsyncMock(return_value=60)
+        cache.incr = AsyncMock()
+        cache.expire = AsyncMock()
+        limiter = rate_limiter(max_requests=DEFAULT_BURST_MAX_REQUESTS, period=60, enforce_heavy_usage_limit=True)
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=cache):
+            await limiter(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+
+
+def _dependency_calls(dependant: Any) -> list[Any]:
+    """Return every nested dependency callable on a route."""
+    calls: list[Any] = []
+    for sub_dependant in dependant.dependencies:
+        calls.append(sub_dependant.call)
+        calls.extend(_dependency_calls(sub_dependant))
+    return calls
+
+
+def _route_is_rate_limited(route: APIRoute) -> bool:
+    """Return whether the route runs a rate-limiter dependency."""
+    return any(getattr(call, "is_rate_limiter", False) for call in _dependency_calls(route.dependant))
+
+
+class TestEveryRouteIsRateLimited:
+    """Data routes must declare a rate limiter. Health and the asset helper stay open."""
+
+    # Static file mounts are not API routes. Limiting them at the API burst
+    # size would block a normal page, which loads many scripts and images.
+    EXEMPT_PATHS = frozenset({"/health", "/context"})
+
+    def test_application_routes_are_rate_limited_or_explicitly_exempt(self) -> None:
+        """Every HTTP route is rate limited unless it is on the exempt list."""
+        assets_router, _templates = create_assets_router(Mock(PRODUCTION=False))
+        routes = [
+            route
+            for router in (api_router, ui_router, health_router, assets_router)
+            for route in router.routes
+            if isinstance(route, APIRoute)
+        ]
+        assert routes
+
+        unlimited = sorted(route.path for route in routes if not _route_is_rate_limited(route))
+        assert set(unlimited) == self.EXEMPT_PATHS
+
+        limited_paths = {route.path for route in routes if _route_is_rate_limited(route)}
+        assert "/api/search/{search_string}" in limited_paths
+        assert "/api/{entity_type_str}/network/{entity_id}" in limited_paths
+        assert "/api/{entity_type_str}/details/{entity_id}" in limited_paths
+        assert "/api/{entity_type_str}/relations/{entity_id}" in limited_paths
+        assert "/api/random" in limited_paths
+        assert "/api/roles" in limited_paths
+        assert "/" in limited_paths
+        assert "/artist/{entity_id}" in limited_paths
+        assert "/label/{entity_id}" in limited_paths
 
 
 class TestAnnotatedDependencies:

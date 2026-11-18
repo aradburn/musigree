@@ -36,7 +36,7 @@ from musigree.app.fastapi_dependencies import (
     OnMobileQuery,
     RolesDep,
     YearBoundsDep,
-    rate_limiter,
+    api_rate_limit,
 )
 from musigree.app.fastapi_ui import get_roles_with_defaults
 from musigree.exceptions import DatabaseError, NotFoundError
@@ -51,23 +51,6 @@ log = logging.getLogger(__name__)
 """
 The logger for this module.
 """
-
-DEFAULT_RATE_LIMIT_MAX_REQUESTS = 60
-DEFAULT_RATE_LIMIT_PERIOD_SECONDS = 60
-SEARCH_RATE_LIMIT_MAX_REQUESTS = 120
-
-DEFAULT_RATE_LIMIT = Depends(
-    rate_limiter(
-        max_requests=DEFAULT_RATE_LIMIT_MAX_REQUESTS,
-        period=DEFAULT_RATE_LIMIT_PERIOD_SECONDS,
-    )
-)
-SEARCH_RATE_LIMIT = Depends(
-    rate_limiter(
-        max_requests=SEARCH_RATE_LIMIT_MAX_REQUESTS,
-        period=DEFAULT_RATE_LIMIT_PERIOD_SECONDS,
-    )
-)
 
 
 def network_cache_id(
@@ -107,6 +90,7 @@ router = APIRouter(
     prefix="/api",
     tags=["api"],
     responses=API_ERROR_RESPONSES,
+    dependencies=[Depends(api_rate_limit)],
 )
 """
 The FastAPI router for the API endpoints.
@@ -118,7 +102,6 @@ This router is used to organize the API routes and their related functionality.
 @router.get(
     "/{entity_type_str}/details/{entity_id}",
     summary="Get entity details",
-    dependencies=[DEFAULT_RATE_LIMIT],
 )
 async def route__api__entity_type__details__entity_id(
     entity_type: EntityTypeDep,
@@ -182,7 +165,6 @@ async def route__api__entity_type__details__entity_id(
 @router.get(
     "/{entity_type_str}/network/{entity_id}",
     summary="Get entity network graph",
-    dependencies=[DEFAULT_RATE_LIMIT],
 )
 async def route__api__entity_type__network__entity_id(
     entity_type: EntityTypeDep,
@@ -274,7 +256,6 @@ async def route__api__entity_type__network__entity_id(
 @router.get(
     "/{entity_type_str}/relations/{entity_id}",
     summary="Get entity relations",
-    dependencies=[DEFAULT_RATE_LIMIT],
 )
 async def route__api__entity_type__relations__entity_id(
     entity_type: EntityTypeDep,
@@ -342,7 +323,6 @@ async def route__api__entity_type__relations__entity_id(
 @router.get(
     "/search/{search_string}",
     summary="Search entities by name",
-    dependencies=[SEARCH_RATE_LIMIT],
 )
 async def route__api__search(
     search_string: Annotated[
@@ -405,7 +385,6 @@ async def route__api__search(
 @router.get(
     "/random",
     summary="Get a random entity",
-    dependencies=[DEFAULT_RATE_LIMIT],
 )
 async def route__api__random() -> dict[str, str]:
     """
@@ -449,7 +428,6 @@ async def route__api__random() -> dict[str, str]:
 @router.get(
     "/roles",
     summary="List available roles",
-    dependencies=[DEFAULT_RATE_LIMIT],
 )
 async def route__api__role() -> dict[str, Any]:
     """

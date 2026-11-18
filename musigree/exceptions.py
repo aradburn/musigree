@@ -30,9 +30,12 @@ The module utilizes `typing` for type hinting and `starlette.status` for
 the status code.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import status
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = (
     "AuthenticationError",
@@ -256,14 +259,23 @@ class RateLimitError(BaseError):
     This exception is raised when the client has made too many requests.
     """
 
-    def __init__(self, *_: tuple[Any], message: str = "Too Many Requests") -> None:
+    def __init__(
+        self,
+        *_: tuple[Any],
+        message: str = "Too Many Requests",
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
         """
         Initializes a RateLimitError instance.
 
         Args:
             *_: Unused positional arguments.
-            message (str, optional): The error message. Defaults to
-                "Too Many Requests".
+            message: The error message.
+            headers: Rate-limit headers to copy onto the HTTP response.
+                The exception handler builds a new response, so headers set
+                on the dependency response are not kept.
         """
         super().__init__(message=message, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
         """Call the constructor of the parent class."""
+        self.headers = dict(headers or {})
+        """Rate-limit headers for the HTTP response."""

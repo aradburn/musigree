@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
 
 from musigree.app.fastapi_csp import (
     CSP_NONCE_STATE_KEY,
@@ -19,7 +20,7 @@ from musigree.app.fastapi_csp import (
     setup_csp_middleware,
 )
 from musigree.config import Configuration, SqliteTestConfiguration
-from musigree.constants import TEMPLATES_DIR, AnalyticsType
+from musigree.constants import PUBLIC_DIR, TEMPLATES_DIR, AnalyticsType
 from tests.type_helpers import as_object
 
 if TYPE_CHECKING:
@@ -139,6 +140,30 @@ class TestCSPMiddleware:
         assert "https://swetrix.org/swetrix.js https://cdn.jsdelivr.net/gh/Swetrix/ " in csp_options["script-src"]
         assert "https://swetrix-api.musigree.com/ " in csp_options["connect-src"]
 
+    @pytest.mark.parametrize("production", [True, False])
+    def test_setup_csp_middleware_analytics_openpanel_omits_script_host(
+        self,
+        test_config: Configuration,
+        production: bool,
+    ) -> None:
+        """OpenPanel is served from this origin, so its script host is not a CSP source."""
+        # Arrange
+        app = FastAPI()
+        test_config.PRODUCTION = production
+        test_config.ANALTICS_TYPE = AnalyticsType.OPENPANEL
+
+        # Act
+        setup_csp_middleware(app, test_config)
+
+        # Assert
+        csp_options = _csp_options(_csp_middleware(app))
+        for directive in ("script-src", "script-src-elem"):
+            sources = csp_options[directive]
+            assert all("openpanel.dev" not in source for source in sources)
+            assert "" not in sources
+        assert "https://opapi.musigree.com/ " in csp_options["connect-src"]
+        assert "https://opapi.musigree.com/ " in csp_options["img-src"]
+
     def test_rendered_policy_adds_nonce_to_script_elements(
         self,
         test_config: Configuration,
@@ -231,3 +256,21 @@ class TestIndexTemplateCsp:
 
         assert 'nonce="prod-nonce"' in html
         assert "window.op" in html
+        assert 'src="/js/vendor/op1.js"' in html
+        assert "openpanel.dev" not in html
+
+    def test_backend_serves_vendored_openpanel_script(self) -> None:
+        """The public directory mount serves the vendored tracker at /js/vendor/op1.js."""
+        # Arrange
+        app = FastAPI()
+        app.mount("/", StaticFiles(directory=PUBLIC_DIR), name="public")
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/js/vendor/op1.js")
+
+        # Assert
+        assert response.status_code == 200
+        assert "javascript" in response.headers["content-type"]
+        assert "Vendored from https://openpanel.dev/op1.js" in response.text
+        assert "openpanel-sdk-version" in response.text
