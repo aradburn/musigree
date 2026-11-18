@@ -10,7 +10,8 @@ Key functionalities include:
       testing) to track the number of requests made by a specific client
       within a defined time period. API and page routes also share a daily
       counter: after 1000 requests in a day, that client is limited to
-      500 requests an hour.
+      500 requests an hour. Search, citation, preview, and uptime bots skip
+      that cap and keep the standard per-minute burst.
 
 The `rate_limiter` dependency interacts with the following components:
     - `fastapi.Request`: For accessing information about the current request,
@@ -51,6 +52,29 @@ HEAVY_USAGE_DAILY_REQUEST_THRESHOLD = 1000
 HEAVY_USAGE_HOURLY_REQUEST_LIMIT = 500
 HEAVY_USAGE_DAILY_PERIOD_SECONDS = 24 * 60 * 60
 HEAVY_USAGE_HOURLY_PERIOD_SECONDS = 60 * 60
+# Search indexing, live answer fetchers, link previews, and uptime checks.
+# Matching is a case-insensitive substring of the User-Agent.
+GOOD_BOT_USER_AGENT_TOKENS: tuple[str, ...] = (
+    "Googlebot",
+    "Bingbot",
+    "Applebot",
+    "DuckDuckBot",
+    "OAI-SearchBot",
+    "PerplexityBot",
+    "ChatGPT-User",
+    "Claude-User",
+    "Claude-SearchBot",
+    "facebookexternalhit",
+    "Twitterbot",
+    "LinkedInBot",
+    "UptimeRobot",
+    "Pingdom",
+)
+# Training crawlers whose token contains a good-bot name. Applebot-Extended
+# is Apple's model-training crawler and would otherwise match Applebot.
+GOOD_BOT_USER_AGENT_EXCLUSIONS: tuple[str, ...] = ("Applebot-Extended",)
+_GOOD_BOT_USER_AGENT_TOKENS = tuple(token.casefold() for token in GOOD_BOT_USER_AGENT_TOKENS)
+_GOOD_BOT_USER_AGENT_EXCLUSIONS = tuple(token.casefold() for token in GOOD_BOT_USER_AGENT_EXCLUSIONS)
 
 
 def get_entity_type(
@@ -149,6 +173,29 @@ OnMobileQuery = Annotated[
     bool,
     Query(description="Whether the request is from a mobile device"),
 ]
+
+
+def is_good_bot(user_agent: str | None) -> bool:
+    """Return whether this client should skip the daily and hourly usage cap.
+
+    Search, citation, link-preview, and uptime bots keep
+    ``DEFAULT_BURST_MAX_REQUESTS``. Training crawlers stay on the stricter
+    policy even when their name contains a search-bot token.
+    """
+    if not isinstance(user_agent, str) or not user_agent:
+        return False
+    folded = user_agent.casefold()
+    if any(token in folded for token in _GOOD_BOT_USER_AGENT_EXCLUSIONS):
+        return False
+    return any(token in folded for token in _GOOD_BOT_USER_AGENT_TOKENS)
+
+
+def _user_agent(request: Request) -> str | None:
+    """Return the User-Agent header when the client sent one."""
+    user_agent = request.headers.get("user-agent")
+    if isinstance(user_agent, str):
+        return user_agent
+    return None
 
 
 def _client_host(request: Request) -> str:
@@ -365,10 +412,22 @@ _search_burst_limiter = rate_limiter(
     period=BURST_PERIOD_SECONDS,
     enforce_heavy_usage_limit=True,
 )
+_good_bot_limiter = rate_limiter(
+    max_requests=DEFAULT_BURST_MAX_REQUESTS,
+    period=BURST_PERIOD_SECONDS,
+    enforce_heavy_usage_limit=False,
+)
 
 
 async def api_rate_limit(request: Request, response: Response) -> None:
-    """Rate-limit every API route, with a higher burst for search."""
+    """Rate-limit every API route, with a higher burst for search.
+
+    Whitelisted bots skip the daily threshold and its hourly cap. They use
+    the standard per-minute burst on every route, including search.
+    """
+    if is_good_bot(_user_agent(request)):
+        await _good_bot_limiter(request, response)
+        return
     if request.url.path.startswith(SEARCH_PATH_PREFIX):
         await _search_burst_limiter(request, response)
         return
@@ -376,7 +435,13 @@ async def api_rate_limit(request: Request, response: Response) -> None:
 
 
 async def ui_rate_limit(request: Request, response: Response) -> None:
-    """Rate-limit HTML pages with the same daily budget as the API."""
+    """Rate-limit HTML pages with the same daily budget as the API.
+
+    Whitelisted bots skip that daily budget and keep the standard burst.
+    """
+    if is_good_bot(_user_agent(request)):
+        await _good_bot_limiter(request, response)
+        return
     await _default_burst_limiter(request, response)
 
 

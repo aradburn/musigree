@@ -37,7 +37,9 @@ from musigree.app.fastapi_dependencies import (
     get_min_year,
     get_roles,
     get_year_bounds,
+    is_good_bot,
     rate_limiter,
+    ui_rate_limit,
 )
 from musigree.app.fastapi_healthcheck import router as health_router
 from musigree.app.fastapi_ui import router as ui_router
@@ -839,6 +841,204 @@ class TestEveryRouteIsRateLimited:
         assert "/" in limited_paths
         assert "/artist/{entity_id}" in limited_paths
         assert "/label/{entity_id}" in limited_paths
+
+
+class TestGoodBotWhitelist:
+    """Search, citation, preview, and uptime bots skip the hourly cap."""
+
+    @pytest.fixture
+    def mock_request(self) -> Mock:
+        """Create a mock FastAPI Request object."""
+        request = Mock(spec=Request)
+        request.url.path = "/api/roles"
+        request.client = Mock()
+        request.client.host = "127.0.0.1"
+        request.headers = {}
+        return request
+
+    @pytest.fixture
+    def mock_response(self) -> Mock:
+        """Create a mock FastAPI Response object."""
+        response = Mock(spec=Response)
+        response.headers = {}
+        return response
+
+    @pytest.fixture
+    async def fake_cache(self) -> AsyncIterator[FakeRedisCache]:
+        """Provide an isolated in-memory Redis stand-in."""
+        cache = FakeRedisCache()
+        try:
+            yield cache
+        finally:
+            await cache.close()
+
+    @pytest.mark.parametrize(
+        "user_agent",
+        [
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+            "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (Applebot/0.1)",
+            "DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)",
+            "Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; PerplexityBot/1.0",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; Claude-User/1.0",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +searchbot@anthropic.com)",
+            "facebookexternalhit/1.1",
+            "Twitterbot/1.0",
+            "LinkedInBot/1.0",
+            "Mozilla/5.0 (compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+            "Pingdom.com_bot_version_1.4_(http://www.pingdom.com/)",
+        ],
+    )
+    def test_indexing_and_monitor_bots_are_whitelisted(self, user_agent: str) -> None:
+        """Bots that send visitors or check uptime skip the heavy-usage policy."""
+        assert is_good_bot(user_agent)
+
+    @pytest.mark.parametrize(
+        "user_agent",
+        [
+            None,
+            "",
+            "Mozilla/5.0",
+            "python-requests/2.32.0",
+            "curl/8.7.1",
+            "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ClaudeBot/1.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (Applebot-Extended/1.0)",
+            "Mozilla/5.0 (compatible; Bytespider; https://zhanzhang.toutiao.com/)",
+            "CCBot/2.0 (https://commoncrawl.org/faq/)",
+            "Meta-ExternalAgent/1.1",
+            "Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)",
+            "Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)",
+            "Mozilla/5.0 (compatible; MJ12bot/v1.4.8; http://mj12bot.com/)",
+            "Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot)",
+        ],
+    )
+    def test_training_scrapers_and_anonymous_clients_stay_limited(self, user_agent: str | None) -> None:
+        """Training crawlers and clients without a known bot name keep the strict policy."""
+        assert not is_good_bot(user_agent)
+
+    async def test_good_bot_skips_hourly_cap(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A whitelisted bot over the daily threshold still uses the per-minute burst."""
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        await fake_cache.set(
+            "ratelimit:hourly:127.0.0.1",
+            str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT),
+            timeout=HEAVY_USAGE_HOURLY_PERIOD_SECONDS,
+        )
+        mock_request.headers = {"user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)"}
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await api_rate_limit(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+        assert "X-RateLimit-Daily-Limit" not in mock_response.headers
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
+        assert await fake_cache.get("ratelimit:hourly:127.0.0.1") == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT)
+
+    async def test_training_bot_keeps_hourly_cap(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A training crawler over the daily threshold is limited to 500 requests an hour."""
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        await fake_cache.set(
+            "ratelimit:hourly:127.0.0.1",
+            str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT),
+            timeout=HEAVY_USAGE_HOURLY_PERIOD_SECONDS,
+        )
+        mock_request.headers = {"user-agent": "Mozilla/5.0 (compatible; GPTBot/1.2)"}
+
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError) as error,
+        ):
+            await api_rate_limit(mock_request, mock_response)
+
+        assert error.value.headers["X-RateLimit-Limit"] == str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT)
+
+    async def test_good_bot_still_uses_standard_burst(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A whitelisted bot is still limited to the standard per-minute burst."""
+        await fake_cache.set(
+            "ratelimit:/api/roles:127.0.0.1",
+            str(DEFAULT_BURST_MAX_REQUESTS),
+            timeout=60,
+        )
+        mock_request.headers = {"user-agent": "UptimeRobot/2.0"}
+
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError) as error,
+        ):
+            await api_rate_limit(mock_request, mock_response)
+
+        assert error.value.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+
+    async def test_good_bot_search_uses_standard_burst_not_search_burst(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """Search requests from a whitelisted bot use the standard burst, not the higher search burst."""
+        await fake_cache.set("ratelimit:/api/search/beatles:127.0.0.1", str(DEFAULT_BURST_MAX_REQUESTS), timeout=60)
+        mock_request.url.path = "/api/search/beatles"
+        mock_request.headers = {"user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)"}
+
+        with (
+            patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache),
+            pytest.raises(RateLimitError) as error,
+        ):
+            await api_rate_limit(mock_request, mock_response)
+
+        assert error.value.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+
+    async def test_good_bot_page_request_skips_hourly_cap(
+        self,
+        fake_cache: FakeRedisCache,
+        mock_request: Mock,
+        mock_response: Mock,
+    ) -> None:
+        """A whitelisted bot loading an HTML page also skips the hourly cap."""
+        await fake_cache.set(
+            "ratelimit:hourly:127.0.0.1",
+            str(HEAVY_USAGE_HOURLY_REQUEST_LIMIT),
+            timeout=HEAVY_USAGE_HOURLY_PERIOD_SECONDS,
+        )
+        await fake_cache.set(
+            "ratelimit:daily:127.0.0.1",
+            str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD),
+            timeout=HEAVY_USAGE_DAILY_PERIOD_SECONDS,
+        )
+        mock_request.url.path = "/artist/1"
+        mock_request.headers = {"user-agent": "facebookexternalhit/1.1"}
+
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache", return_value=fake_cache):
+            await ui_rate_limit(mock_request, mock_response)
+
+        assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
+        assert await fake_cache.get("ratelimit:daily:127.0.0.1") == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
 
 
 class TestAnnotatedDependencies:
