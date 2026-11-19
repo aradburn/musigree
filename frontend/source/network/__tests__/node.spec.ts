@@ -7,6 +7,7 @@ import {
     afterEach,
     type Mock,
 } from "vitest";
+import { now } from "d3";
 import type * as d3 from "d3";
 
 // Create a proper mock for networkManager
@@ -896,28 +897,15 @@ describe("Network Node Functions", () => {
             const event = new MouseEvent("mousedown");
             const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
 
-            // Mock d3.now() to return a controlled value
-            const mockNow = vi.fn(() => 2000);
-            vi.doMock("d3", async () => {
-                const actual = await vi.importActual<typeof import("d3")>("d3");
-                return {
-                    ...actual,
-                    now: mockNow,
-                };
-            });
-
-            // Set lastClickTime to a value that's definitely > 700ms before the mocked now()
-            mockArtistNode.lastClickTime = 1000; // 1000ms before now (2000)
+            // onNodeMouseDown reads d3.now(), which is performance.now().
+            // A fixed lastClickTime is still inside the double-click window
+            // until that clock has moved past it.
+            mockArtistNode.lastClickTime = now() - 701;
             onNodeMouseDown(event, mockArtistNode);
 
             expect(dispatchEventSpy).toHaveBeenCalled();
             const dispatchedEvent = dispatchEventSpy.mock.calls[0]?.[0];
-            // Should dispatch SelectEntityEvent when time > 700ms (2000 - 1000 = 1000 > 700)
-            expect(dispatchedEvent).toBeDefined();
-            // Check the event type instead of instanceof for mocked classes
-            if (dispatchedEvent instanceof CustomEvent) {
-                expect(dispatchedEvent.type).toBe("musigree:select-entity");
-            }
+            expect(dispatchedEvent).toBeInstanceOf(SelectEntityEvent);
             dispatchEventSpy.mockRestore();
         });
 
@@ -925,8 +913,9 @@ describe("Network Node Functions", () => {
             const event = new MouseEvent("mousedown");
             const dispatchEventSpy = vi.spyOn(window, "dispatchEvent");
 
-            // Click within 700ms (double click)
-            mockArtistNode.lastClickTime = Date.now() - 200;
+            // Same clock as onNodeMouseDown. Date.now() is epoch time and
+            // does not match d3.now().
+            mockArtistNode.lastClickTime = now() - 200;
             onNodeMouseDown(event, mockArtistNode);
 
             expect(dispatchEventSpy).toHaveBeenCalled();
