@@ -164,6 +164,7 @@ def restrict_links_to_year_bounds(
         return links
     kept: dict[str, RuntimeRelationResult] = {}
     for link_key, relation in links.items():
+        # noinspection protected-member
         known_years = relation._release_years()
         if not known_years:
             kept[link_key] = relation
@@ -200,6 +201,7 @@ def drop_undated_center_member_links(
     center = nodes.get(center_id)
     if center is None:
         return links
+    # noinspection protected-member
     drop = {
         key
         for key in center.links

@@ -16,6 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from musigree.app import fastapi_app as fastapi_app_module
 from musigree.app.fastapi_app import (
     create_app,
     init_app,
@@ -367,15 +368,22 @@ class TestInitApp:
             mock_cache_manager.setup_and_clear_cache = AsyncMock()
             mock_runtime_db_manager.setup_database = AsyncMock()
             mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+            previous_health_ok = fastapi_app_module.health_ok
+            fastapi_app_module.health_ok = False
 
             # Act
-            await init_app(test_config)
+            try:
+                await init_app(test_config)
+            finally:
+                health_ok_after_init = fastapi_app_module.health_ok
+                fastapi_app_module.health_ok = previous_health_ok
 
             # Assert
             # Note: setup_logging is called in create_app, not init_app
             mock_cache_manager.setup_and_clear_cache.assert_awaited_once_with(test_config)
             mock_runtime_db_manager.setup_database.assert_awaited_once_with(test_config)
             mock_role_data_access.load_all_roles_into_cache.assert_awaited_once()
+            assert health_ok_after_init is True
 
     @pytest.mark.asyncio
     async def test_init_app_raises_when_cache_not_initialized(
@@ -387,9 +395,15 @@ class TestInitApp:
             mock_cache_manager.setup_and_clear_cache = AsyncMock(
                 side_effect=RuntimeError("Cache not initialized after setup")
             )
+            previous_health_ok = fastapi_app_module.health_ok
+            fastapi_app_module.health_ok = False
 
-            with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
-                await init_app(test_config)
+            try:
+                with pytest.raises(RuntimeError, match="Cache not initialized after setup"):
+                    await init_app(test_config)
+                assert fastapi_app_module.health_ok is False
+            finally:
+                fastapi_app_module.health_ok = previous_health_ok
 
     @pytest.mark.asyncio
     async def test_init_app_database_setup_called(
@@ -407,9 +421,13 @@ class TestInitApp:
             mock_cache_manager.setup_and_clear_cache = AsyncMock()
             mock_runtime_db_manager.setup_database = AsyncMock()
             mock_role_data_access.load_all_roles_into_cache = AsyncMock()
+            previous_health_ok = fastapi_app_module.health_ok
 
             # Act
-            await init_app(test_config)
+            try:
+                await init_app(test_config)
+            finally:
+                fastapi_app_module.health_ok = previous_health_ok
 
             # Assert
             mock_runtime_db_manager.setup_database.assert_called_once_with(test_config)
@@ -435,9 +453,15 @@ class TestShutdownApplication:
         # Arrange
         mock_runtime_db_manager.shutdown_database = AsyncMock()
         mock_cache_manager.shutdown_cache = AsyncMock()
+        previous_health_ok = fastapi_app_module.health_ok
+        fastapi_app_module.health_ok = True
 
         # Act
-        await shutdown_application()
+        try:
+            await shutdown_application()
+            assert fastapi_app_module.health_ok is False
+        finally:
+            fastapi_app_module.health_ok = previous_health_ok
 
         # Assert
         mock_setup_logging.assert_called_once()

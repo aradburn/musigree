@@ -8,8 +8,9 @@ from musigree.app.fastapi_middleware import add_app_middleware
 from musigree.constants import AnalyticsType, CSPSetting
 
 if TYPE_CHECKING:
-    # noinspection protected-member
     from fastapi import FastAPI
+
+    # noinspection protected-member
     from Secweb._types import Content_Security_Policy_Options
     from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
