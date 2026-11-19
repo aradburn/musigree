@@ -24,6 +24,7 @@ The `rate_limiter` dependency interacts with the following components:
     - `logging`: For logging operations.
 """
 
+import ipaddress
 import logging
 import time
 from typing import TYPE_CHECKING, Annotated
@@ -75,6 +76,18 @@ GOOD_BOT_USER_AGENT_TOKENS: tuple[str, ...] = (
 GOOD_BOT_USER_AGENT_EXCLUSIONS: tuple[str, ...] = ("Applebot-Extended",)
 _GOOD_BOT_USER_AGENT_TOKENS = tuple(token.casefold() for token in GOOD_BOT_USER_AGENT_TOKENS)
 _GOOD_BOT_USER_AGENT_EXCLUSIONS = tuple(token.casefold() for token in GOOD_BOT_USER_AGENT_EXCLUSIONS)
+# Coolify's proxy connects from the Docker network, not from the browser.
+# Only those private peers may supply the visitor address. A public peer is
+# the visitor, and a forwarded header from them can be spoofed.
+_TRUSTED_PROXY_NETWORKS = (
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+)
 
 
 def get_entity_type(
@@ -198,11 +211,90 @@ def _user_agent(request: Request) -> str | None:
     return None
 
 
+def _header_value(request: Request, name: str) -> str | None:
+    """Return one request header when the client sent a string value."""
+    value = request.headers.get(name)
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def _parse_ip(value: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """Return an IP address, dropping a trailing port and ignoring other text."""
+    host = value.strip().strip('"')
+    if host.startswith("["):
+        bracket_end = host.find("]")
+        if bracket_end == -1:
+            return None
+        host = host[1:bracket_end]
+    elif host.count(":") == 1:
+        host_part, port = host.rsplit(":", 1)
+        if port.isdigit():
+            host = host_part
+    try:
+        parsed = ipaddress.ip_address(host)
+    except ValueError:
+        return None
+    if isinstance(parsed, ipaddress.IPv6Address) and parsed.ipv4_mapped is not None:
+        return parsed.ipv4_mapped
+    return parsed
+
+
+def _is_trusted_proxy(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Return whether this address is a local or private reverse proxy."""
+    return any(ip in network for network in _TRUSTED_PROXY_NETWORKS)
+
+
+def _client_from_forwarded_for(header: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """Return the visitor from an X-Forwarded-For chain.
+
+    Proxies append the address they saw, so the visitor is the rightmost
+    address that is not itself a trusted proxy. A spoofed value at the
+    left of the chain is ignored.
+    """
+    addresses = [ip for part in header.split(",") if (ip := _parse_ip(part)) is not None]
+    for ip in reversed(addresses):
+        if not _is_trusted_proxy(ip):
+            return ip
+    return None
+
+
+def _socket_host(request: Request) -> str | None:
+    """Return the address of the TCP peer that opened this connection."""
+    client = request.client
+    if client is None or not hasattr(client, "host"):
+        return None
+    host = client.host
+    if isinstance(host, str) and host:
+        return host
+    return None
+
+
 def _client_host(request: Request) -> str:
-    """Return the client address used to bucket rate-limit counters."""
-    if request.client is not None and hasattr(request.client, "host"):
-        return request.client.host
-    return "unknown"
+    """Return the visitor address used to bucket rate-limit counters.
+
+    The socket peer is the visitor when that peer is a public address.
+    Behind the reverse proxy the peer is a private network address, and
+    the visitor is taken from the proxy's forwarded headers.
+    """
+    peer = _socket_host(request)
+    if peer is None:
+        return "unknown"
+
+    peer_ip = _parse_ip(peer)
+    if peer_ip is not None and _is_trusted_proxy(peer_ip):
+        forwarded_for = _header_value(request, "x-forwarded-for")
+        if forwarded_for is not None:
+            client_ip = _client_from_forwarded_for(forwarded_for)
+            if client_ip is not None:
+                return str(client_ip)
+        real_ip = _header_value(request, "x-real-ip")
+        if real_ip is not None:
+            parsed_real_ip = _parse_ip(real_ip)
+            if parsed_real_ip is not None and not _is_trusted_proxy(parsed_real_ip):
+                return str(parsed_real_ip)
+
+    return peer
 
 
 def _parse_count(redis_value: object) -> int:

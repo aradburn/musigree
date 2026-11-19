@@ -36,6 +36,10 @@ services:
       REDIS_PORT: "6379"
       REDIS_USERNAME: default
       REDIS_PASSWORD: ${SERVICE_PASSWORD_REDIS}
+      # Trust forwarded visitor addresses from the private proxy network.
+      # The default only trusts localhost, so every browser was counted as
+      # the proxy's single Docker address.
+      FORWARDED_ALLOW_IPS: "127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,fe80::/10"
     volumes:
       - /home/musigree/data:/data:ro
     depends_on:
