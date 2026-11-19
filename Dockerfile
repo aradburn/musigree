@@ -56,8 +56,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.14.7-slim-trixie AS final
 
 # Image metadata. Filled in by release.sh
-ARG IMAGE_VERSION="1.1.7"
-ARG IMAGE_CREATED="2026-11-18T21:46:37Z"
+ARG IMAGE_VERSION="1.1.8"
+ARG IMAGE_CREATED="2026-11-19T10:46:04Z"
 # Keep interpreter scratch off the application tree so a read-only root
 # filesystem only needs a tmpfs on /tmp. Gunicorn heartbeats use /dev/shm.
 ENV PATH="/app/.venv/bin:$PATH" \

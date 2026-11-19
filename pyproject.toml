@@ -1,6 +1,6 @@
 [project]
 name = "musigree"
-version = "1.1.7"
+version = "1.1.8"
 description = "Interactive visualization of the Discogs database"
 authors = [
     { name = "Andy Radburn", email = "andy.radburn@outlook.com" },
