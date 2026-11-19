@@ -70,6 +70,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 """The logger for the application module."""
 
+health_ok: bool = False
+"""True once application startup has finished and the service can accept traffic."""
+
 # SecWeb's referrer option is list[policy-name], and list is invariant.
 # A bare ["strict-origin-when-cross-origin"] is inferred as list[str].
 ReferrerPolicyName = Literal[
@@ -306,7 +309,6 @@ def create_app(config: Configuration) -> FastAPI:
             response.headers.update(exc.headers)
         return response
 
-    # noinspection PyUnusedLocal,unused-parameter
     @app.exception_handler(status.HTTP_404_NOT_FOUND)
     async def not_found_handler(request: Request, exc: Any) -> Response:
         if request.url.path.startswith("/api/"):
@@ -336,7 +338,6 @@ def create_app(config: Configuration) -> FastAPI:
                 status_code=error.status_code,
             )
 
-    # noinspection PyUnusedLocal,unused-parameter
     @app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
     async def server_error_handler(request: Request, exc: Any) -> Response:
         error = BaseError(message="Server Error")
@@ -387,7 +388,12 @@ async def shutdown_application() -> None:
     performs cleanup tasks such as closing database connections, shutting
     down the cache, and shutting down logging.
     """
+    global health_ok
+
     from musigree.runtime.runtime_database_manager import RuntimeDatabaseManager
+
+    # The process is no longer ready to serve traffic.
+    health_ok = False
 
     # Logging may have been shutdown automatically before this point, so we need to reinitialize it
     # again
@@ -404,11 +410,13 @@ async def init_app(config: Configuration) -> None:
     Initializes the application.
 
     This function initializes the application components, including logging,
-    caching, and the database.
+    caching, and the database. ``health_ok`` stays false until that work
+    finishes, so the healthcheck can report that startup is still in progress.
 
     Args:
         config: The application configuration object.
     """
+    global health_ok
 
     log.info("######## APPLICATION STARTUP BEGIN ########")
     log.info(f"Using runtime configuration: {config.__class__.__name__}")
@@ -430,4 +438,5 @@ async def init_app(config: Configuration) -> None:
     if config.PRODUCTION:
         await RuntimeEntityDataAccess.init_random_entity()
 
+    health_ok = True
     log.info("######## APPLICATION STARTUP END ########")

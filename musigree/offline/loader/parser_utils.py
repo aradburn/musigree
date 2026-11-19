@@ -253,7 +253,7 @@ class ParserUtils:
             return [_.text for _ in element if _.text is not None]
         return None
 
-    # noinspection PyUnusedLocal,unused-parameter
+    # noinspection unused-parameter
     @staticmethod
     def element_to_none(element: Element | None) -> str | None:
         """

@@ -2,15 +2,25 @@
 Unit tests for musigree.app.fastapi_healthcheck module.
 """
 
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
-from fastapi import APIRouter, FastAPI, status
+from fastapi import APIRouter, FastAPI, Response, status
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from musigree.app.fastapi_healthcheck import HealthCheck, get_health, router
+from musigree.app import fastapi_app
+from musigree.app.fastapi_healthcheck import (
+    HEALTH_STATUS_NOT_READY,
+    HealthCheck,
+    get_health,
+    router,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def create_test_app() -> FastAPI:
@@ -18,6 +28,15 @@ def create_test_app() -> FastAPI:
     app = FastAPI()
     app.include_router(router)
     return app
+
+
+@pytest.fixture
+def application_ready() -> Iterator[None]:
+    """Mark application startup as finished for the duration of a test."""
+    previous = fastapi_app.health_ok
+    fastapi_app.health_ok = True
+    yield
+    fastapi_app.health_ok = previous
 
 
 class TestHealthCheck:
@@ -97,13 +116,14 @@ class TestHealthCheck:
             HealthCheck(status=None)  # type: ignore[arg-type]
 
 
+@pytest.mark.usefixtures("application_ready")
 class TestGetHealth:
     """Test cases for get_health endpoint function."""
 
     def test_get_health_returns_healthcheck(self) -> None:
         """Test that get_health returns a HealthCheck instance."""
         # Act
-        result = get_health()
+        result = get_health(Response())
 
         # Assert
         assert isinstance(result, HealthCheck)
@@ -112,16 +132,16 @@ class TestGetHealth:
     def test_get_health_returns_correct_status(self) -> None:
         """Test that get_health returns the correct status."""
         # Act
-        result = get_health()
+        result = get_health(Response())
 
         # Assert
         assert result.status == "OK"
 
-    def test_get_health_is_pure_function(self) -> None:
-        """Test that get_health is a pure function with no side effects."""
+    def test_get_health_is_stable_for_a_given_flag(self) -> None:
+        """Test that repeated calls return the same status while health_ok is unchanged."""
         # Act
-        result1 = get_health()
-        result2 = get_health()
+        result1 = get_health(Response())
+        result2 = get_health(Response())
 
         # Assert
         assert result1.status == result2.status
@@ -132,7 +152,7 @@ class TestGetHealth:
         # Arrange
         with patch("musigree.app.fastapi_healthcheck.log") as _mock_log:
             # Act
-            result = get_health()
+            result = get_health(Response())
 
             # Assert
             assert result.status == "OK"
@@ -147,6 +167,45 @@ class TestGetHealth:
         assert "HTTP status code" in get_health.__doc__
 
 
+class TestGetHealthNotReady:
+    """Healthcheck responses before application startup has finished."""
+
+    def test_get_health_reports_not_ready(self) -> None:
+        """Test that get_health reports NOT_READY while health_ok is false."""
+        # Arrange
+        previous = fastapi_app.health_ok
+        fastapi_app.health_ok = False
+        response = Response()
+
+        try:
+            # Act
+            result = get_health(response)
+        finally:
+            fastapi_app.health_ok = previous
+
+        # Assert
+        assert result.status == HEALTH_STATUS_NOT_READY
+        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+
+    def test_health_endpoint_returns_not_ready(self) -> None:
+        """Test that /health returns 503 until the application is initialised."""
+        # Arrange
+        previous = fastapi_app.health_ok
+        fastapi_app.health_ok = False
+        client = TestClient(create_test_app())
+
+        try:
+            # Act
+            response = client.get("/health")
+        finally:
+            fastapi_app.health_ok = previous
+
+        # Assert
+        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        assert response.json() == {"status": HEALTH_STATUS_NOT_READY}
+
+
+@pytest.mark.usefixtures("application_ready")
 class TestRouter:
     """Test cases for the APIRouter configuration."""
 
@@ -266,6 +325,7 @@ class TestRouter:
         assert response_200["description"] == "Return HTTP Status Code 200 (OK)"
 
 
+@pytest.mark.usefixtures("application_ready")
 class TestIntegration:
     """Integration tests for the healthcheck module."""
 
@@ -352,6 +412,7 @@ class TestIntegration:
         assert all(response_status == status.HTTP_200_OK for response_status in results)
 
 
+@pytest.mark.usefixtures("application_ready")
 class TestErrorHandling:
     """Test error handling scenarios."""
 

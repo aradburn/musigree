@@ -95,11 +95,11 @@ class TestParserBase:
         """
         mock_file = io.BytesIO(xml_string.encode())
 
-        # noinspection PyUnusedLocal,unused-parameter,unused-parameter
+        # noinspection unused-parameter,unused-parameter
         def mock_get_xml_path(*args: Any, **kwargs: Any) -> str:
             return "dummy_path.xml.gz"
 
-        # noinspection PyUnusedLocal,unused-parameter,unused-parameter
+        # noinspection unused-parameter,unused-parameter
         def mock_open(*args: Any, **kwargs: Any) -> io.BytesIO:
             return mock_file
 

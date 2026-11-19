@@ -873,6 +873,7 @@ class TestGoodBotWhitelist:
         finally:
             await cache.close()
 
+    # noinspection HttpUrlsUsage
     @pytest.mark.parametrize(
         "user_agent",
         [

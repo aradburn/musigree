@@ -82,25 +82,14 @@ class RoleDataUtils:
 
         # noinspection PyTypeChecker
         input_names = [
-            RoleDataUtils.normalise_role_name(name)
-            for name in input_names
-            if name is not None and name != ""
+            RoleDataUtils.normalise_role_name(name) for name in input_names if name is not None and name != ""
         ]
         # noinspection PyTypeChecker
-        input_names_list = [
-            re.split(r"\. ", name) for name in input_names if name is not None and name != ""
-        ]
-        input_names = [
-            name
-            for name_list in input_names_list
-            for name in name_list
-            if name is not None and name != ""
-        ]
+        input_names_list = [re.split(r"\. ", name) for name in input_names if name is not None and name != ""]
+        input_names = [name for name_list in input_names_list for name in name_list if name is not None and name != ""]
         # noinspection PyTypeChecker
         input_names = [
-            RoleDataUtils.normalise_role_name(name)
-            for name in input_names
-            if name is not None and name != ""
+            RoleDataUtils.normalise_role_name(name) for name in input_names if name is not None and name != ""
         ]
         return input_names
 
@@ -184,11 +173,11 @@ class RoleDataUtils:
         def to_lower_upper(matches: re.Match[str]) -> str:
             return matches.group(1).lower() + matches.group(2).upper()
 
-        # noinspection PyUnusedLocal,unused-function
+        # noinspection unused-function
         def lower(matches: re.Match[str]) -> str:
             return matches.group(1).lower()
 
-        # noinspection PyUnusedLocal,unused-function
+        # noinspection unused-function
         def capitalize(matches: re.Match[str]) -> str:
             return "(" + matches.group(1).capitalize() + ")"
 
@@ -210,9 +199,7 @@ class RoleDataUtils:
         # Numbers that are instruments
         name = RoleDataUtils.get_instrument_name_with_number(name)
 
-        name = " ".join(
-            word.capitalize() if not word.isupper() else word for word in name.split(" ")
-        )
+        name = " ".join(word.capitalize() if not word.isupper() else word for word in name.split(" "))
         # Capitalise after hyphen
         name = re.sub(r"(-[a-z])", upper, name)
         # Do not capitalise before apostrophe
@@ -338,12 +325,7 @@ class RoleDataUtils:
         if match := re.search(r"^(\S)\.(\S)\.(\S)\. *$", name):
             name = match.group(1).upper() + match.group(2).upper() + match.group(3).upper()
         if match := re.search(r"^(\S)\.(\S)\.(\S)\.(\S)\. *$", name):
-            name = (
-                match.group(1).upper()
-                + match.group(2).upper()
-                + match.group(3).upper()
-                + match.group(4).upper()
-            )
+            name = match.group(1).upper() + match.group(2).upper() + match.group(3).upper() + match.group(4).upper()
 
         # Odd characters
         name = re.sub(r" {2}", " ", name)
