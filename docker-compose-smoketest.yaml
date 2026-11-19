@@ -10,6 +10,10 @@
 # The root filesystem is read-only. Writable scratch is a noexec tmpfs on
 # /tmp and /var/tmp. Gunicorn heartbeats use the default /dev/shm tmpfs
 # (--worker-tmp-dir in the image).
+#
+# `docker compose -f docker-compose-smoketest.yaml up --wait` blocks until
+# musigree's healthcheck passes. Without --wait the port is published as
+# soon as the process binds it, which is before workers finish startup.
 services:
   musigree:
     build:
@@ -39,6 +43,17 @@ services:
         source: ./runtime_database/musigree_runtime_dev.db
         target: /data/musigree_runtime_prod.db
         read_only: true
+    # The process binds :5000 before workers finish startup. Early probes fail
+    # until /health returns 200. start_period does not count those failures,
+    # and start_interval checks again every few seconds so the service is
+    # marked healthy as soon as startup completes.
+    healthcheck:
+      test: ["CMD", "python", "/app/health.py"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+      start_interval: 5s
     depends_on:
       redis:
         condition: service_healthy
