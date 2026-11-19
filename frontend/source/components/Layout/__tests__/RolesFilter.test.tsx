@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { RolesFilter } from "../RolesFilter";
 import {
@@ -33,15 +33,21 @@ describe("RolesFilter", () => {
         updateSelectedRoleIds([]);
     });
 
-    it("updates the selected roles and notifies the parent", () => {
+    it("updates the selected roles and notifies the parent", async () => {
         const onSelectionChange = vi.fn();
         render(
             <RolesFilter roles={roles} onSelectionChange={onSelectionChange} />,
         );
 
-        fireEvent.click(screen.getByRole("checkbox", { name: "Production" }));
+        // The tree measures itself before the checkbox is in the document.
+        const production = await screen.findByRole("checkbox", {
+            name: "Production",
+        });
+        fireEvent.click(production);
 
-        expect(onSelectionChange).toHaveBeenCalledTimes(1);
+        await waitFor(() => {
+            expect(onSelectionChange).toHaveBeenCalledTimes(1);
+        });
         expect(getSelectedRoles()).not.toContain("Production");
     });
 

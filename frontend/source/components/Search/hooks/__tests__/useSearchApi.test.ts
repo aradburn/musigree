@@ -42,6 +42,7 @@ describe("useSearchApi", () => {
     afterEach(() => {
         vi.restoreAllMocks();
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     // Test for short query

@@ -55,7 +55,8 @@ describe("MusigreeTourProvider", () => {
     });
 
     it("closes the tour when the user skips", async () => {
-        const user = userEvent.setup();
+        // delay 0 waits on setTimeout. A leaked fake-timer clock never fires it.
+        const user = userEvent.setup({ delay: null });
 
         render(
             <MusigreeTourProvider>
@@ -78,7 +79,7 @@ describe("MusigreeTourProvider", () => {
     });
 
     it("shows End Tour on the last step and closes the tour", async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
 
         render(
             <MusigreeTourProvider>
@@ -87,6 +88,11 @@ describe("MusigreeTourProvider", () => {
         );
 
         await user.click(screen.getByRole("button", { name: /open tour/i }));
+        // The popover is positioned after open, so the control is not in the
+        // document on the same turn as the click.
+        expect(
+            await screen.findByRole("button", { name: /go to next step/i }),
+        ).toBeInTheDocument();
         expect(
             screen.queryByRole("button", { name: /end tour/i }),
         ).not.toBeInTheDocument();
@@ -94,7 +100,7 @@ describe("MusigreeTourProvider", () => {
         const stepCount = 5;
         for (let step = 0; step < stepCount - 1; step += 1) {
             await user.click(
-                screen.getByRole("button", { name: /go to next step/i }),
+                await screen.findByRole("button", { name: /go to next step/i }),
             );
         }
 

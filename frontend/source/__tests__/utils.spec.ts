@@ -77,6 +77,7 @@ describe("Utility Functions", () => {
         });
 
         afterEach(() => {
+            vi.useRealTimers();
             vi.restoreAllMocks();
         });
 

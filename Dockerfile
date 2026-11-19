@@ -56,8 +56,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.14.7-slim-trixie AS final
 
 # Image metadata. Filled in by release.sh
-ARG IMAGE_VERSION="1.1.9"
-ARG IMAGE_CREATED="2026-11-19T11:26:29Z"
+ARG IMAGE_VERSION="1.1.10"
+ARG IMAGE_CREATED="2026-11-19T17:03:40Z"
 # Keep interpreter scratch off the application tree so a read-only root
 # filesystem only needs a tmpfs on /tmp. Gunicorn heartbeats use /dev/shm.
 ENV PATH="/app/.venv/bin:$PATH" \
@@ -132,16 +132,21 @@ USER 65532:65532
 # Expose the application port
 EXPOSE 5000
 
-# Health check for container orchestration
-HEALTHCHECK --interval=30s --timeout=3s --start-period=120s --retries=3 \
-    CMD ["python", "health.py"]
+# Probes fail until a worker finishes startup and /health returns 200.
+# start-period keeps those failures from marking the container unhealthy.
+# start-interval retries during that window so the container becomes healthy
+# within a few seconds of startup, rather than waiting out --interval.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --start-interval=5s --retries=3 \
+    CMD ["python", "/app/health.py"]
 
-# Run the application with gunicorn with four workers
+# Workers do not heartbeat until lifespan startup finishes. The silence
+# timeout must outlast the healthcheck start period, or gunicorn kills the
+# worker while Docker is still waiting for /health.
 CMD ["gunicorn", \
      "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:5000", \
-     "--timeout", "60", \
+     "--timeout", "150", \
      "--keep-alive", "5", \
      "--max-requests", "100000", \
      "--max-requests-jitter", "100", \
