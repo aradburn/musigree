@@ -30,6 +30,7 @@ from musigree.app.fastapi_dependencies import (
     OnMobileQuery,
     RolesDep,
     YearBoundsDep,
+    _client_host,
     api_rate_limit,
     get_entity_id,
     get_entity_type,
@@ -1039,6 +1040,97 @@ class TestGoodBotWhitelist:
 
         assert mock_response.headers["X-RateLimit-Limit"] == str(DEFAULT_BURST_MAX_REQUESTS)
         assert await fake_cache.get("ratelimit:daily:127.0.0.1") == str(HEAVY_USAGE_DAILY_REQUEST_THRESHOLD)
+
+
+class TestClientAddress:
+    """Rate-limit buckets follow the visitor, not the reverse proxy."""
+
+    def _request(self, peer: str | None, headers: dict[str, str] | None = None) -> Mock:
+        request = Mock(spec=Request)
+        if peer is None:
+            request.client = None
+        else:
+            request.client = Mock()
+            request.client.host = peer
+        request.headers = headers or {}
+        return request
+
+    def test_public_peer_is_the_visitor(self) -> None:
+        """A direct connection uses the socket address and ignores a spoofed forwarding header."""
+        request = self._request("203.0.113.9", {"x-forwarded-for": "198.51.100.20"})
+        assert _client_host(request) == "203.0.113.9"
+
+    def test_private_proxy_uses_the_forwarded_visitor(self) -> None:
+        """A Docker or localhost proxy contributes the visitor from X-Forwarded-For."""
+        request = self._request("172.18.0.5", {"x-forwarded-for": "203.0.113.50"})
+        assert _client_host(request) == "203.0.113.50"
+
+    def test_spoofed_forwarded_entry_is_not_the_visitor(self) -> None:
+        """The address appended by the proxy is the visitor; an earlier value is not."""
+        request = self._request(
+            "10.0.1.8",
+            {"x-forwarded-for": "198.51.100.20, 203.0.113.50"},
+        )
+        assert _client_host(request) == "203.0.113.50"
+
+    def test_two_visitors_behind_one_proxy_are_distinct(self) -> None:
+        """Browsers behind the same proxy receive separate rate-limit identities."""
+        first = self._request("172.18.0.5", {"x-forwarded-for": "203.0.113.10"})
+        second = self._request("172.18.0.5", {"x-forwarded-for": "203.0.113.11"})
+        assert _client_host(first) == "203.0.113.10"
+        assert _client_host(second) == "203.0.113.11"
+        assert _client_host(first) != _client_host(second)
+
+    def test_private_proxy_uses_x_real_ip_without_forwarded_for(self) -> None:
+        """X-Real-IP supplies the visitor when the proxy does not send X-Forwarded-For."""
+        request = self._request("192.168.1.2", {"x-real-ip": "203.0.113.80"})
+        assert _client_host(request) == "203.0.113.80"
+
+    def test_forwarded_port_is_removed(self) -> None:
+        """A port on the forwarded address is not part of the rate-limit identity."""
+        request = self._request("127.0.0.1", {"x-forwarded-for": "203.0.113.50:54432"})
+        assert _client_host(request) == "203.0.113.50"
+
+    def test_ipv6_visitor_behind_proxy(self) -> None:
+        """An IPv6 visitor behind a private proxy keeps that address."""
+        request = self._request("172.18.0.5", {"x-forwarded-for": "[2001:db8::5]:443"})
+        assert _client_host(request) == "2001:db8::5"
+
+    def test_localhost_without_forwarding_stays_localhost(self) -> None:
+        """A local request with no forwarding header remains the local peer."""
+        request = self._request("127.0.0.1")
+        assert _client_host(request) == "127.0.0.1"
+
+    def test_missing_client_is_unknown(self) -> None:
+        """A request with no socket peer has no address to bucket."""
+        assert _client_host(self._request(None)) == "unknown"
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_keys_visitors_separately_behind_one_proxy(self) -> None:
+        """The burst counter for one visitor does not include another visitor on the same proxy."""
+        with patch("musigree.app.fastapi_dependencies.CacheManager.get_cache") as mock_get_cache:
+            mock_cache = MagicMock()
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.ttl = AsyncMock(return_value=60)
+            mock_cache.incr = AsyncMock()
+            mock_cache.expire = AsyncMock()
+            mock_get_cache.return_value = mock_cache
+
+            limiter = rate_limiter(max_requests=10, period=60)
+            first = self._request("172.18.0.5", {"x-forwarded-for": "203.0.113.10"})
+            second = self._request("172.18.0.5", {"x-forwarded-for": "203.0.113.11"})
+            first.url.path = "/api/roles"
+            second.url.path = "/api/roles"
+            response = Mock(spec=Response)
+            response.headers = {}
+
+            await limiter(first, response)
+            await limiter(second, response)
+
+        keys = [call.args[0] for call in mock_cache.get.await_args_list]
+        assert "ratelimit:/api/roles:203.0.113.10" in keys
+        assert "ratelimit:/api/roles:203.0.113.11" in keys
+        assert "ratelimit:/api/roles:172.18.0.5" not in keys
 
 
 class TestAnnotatedDependencies:
